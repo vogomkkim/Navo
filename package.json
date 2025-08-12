@@ -1,0 +1,13 @@
+{
+  "name": "navo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p .",
+    "demo": "npm run build && node dist/navo/demo.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
