@@ -1,4 +1,4 @@
-import type { GraphNode } from './node';
+import type { GraphNode } from './node.js';
 
 export function validateDag(nodes: GraphNode[]): void {
   const nameSet = new Set(nodes.map((n) => n.name));

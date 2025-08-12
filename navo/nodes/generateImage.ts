@@ -1,4 +1,4 @@
-import type { GraphNode } from '../core/node';
+import type { GraphNode } from '../core/node.js';
 
 export const generateImage: GraphNode = {
   name: 'generateImage',

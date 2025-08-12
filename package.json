@@ -5,10 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p .",
-    "demo": "node --loader ts-node/esm navo/demo.ts"
+    "demo": "npm run build && node dist/navo/demo.js"
   },
   "devDependencies": {
-    "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   }
 }

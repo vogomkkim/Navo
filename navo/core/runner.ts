@@ -1,5 +1,5 @@
-import type { GraphNode, NodeContext } from './node';
-import { validateDag, topologicalGroups } from './graph';
+import type { GraphNode, NodeContext } from './node.js';
+import { validateDag, topologicalGroups } from './graph.js';
 
 export type RunnerOptions = {
   concurrency?: number; // max parallel per group

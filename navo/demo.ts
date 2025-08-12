@@ -1,9 +1,9 @@
-import { runGraph } from './core/runner';
-import type { GraphNode } from './core/node';
-import { generateImage } from './nodes/generateImage';
-import { writeCopy } from './nodes/writeCopy';
-import { buildPage } from './nodes/buildPage';
-import { deploySite } from './nodes/deploySite';
+import { runGraph } from './core/runner.js';
+import type { GraphNode } from './core/node.js';
+import { generateImage } from './nodes/generateImage.js';
+import { writeCopy } from './nodes/writeCopy.js';
+import { buildPage } from './nodes/buildPage.js';
+import { deploySite } from './nodes/deploySite.js';
 
 async function main(): Promise<void> {
   const nodes: GraphNode[] = [writeCopy, generateImage, buildPage, deploySite];
