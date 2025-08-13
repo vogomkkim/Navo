@@ -8,6 +8,7 @@
     "demo": "npm run build && node dist/navo/demo.js"
   },
   "devDependencies": {
+    "@types/node": "^24.2.1",
     "typescript": "^5.5.4"
   }
 }
