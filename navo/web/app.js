@@ -2,6 +2,14 @@ const statusEl = document.getElementById('status');
 const canvasEl = document.getElementById('canvas');
 const infoEl = document.getElementById('info');
 const saveBtn = document.getElementById('saveBtn');
+const chatInput = document.getElementById('chatInput');
+const chatSendBtn = document.getElementById('chatSendBtn');
+const chatHistory = document.getElementById('chatHistory');
+const togglePanelBtn = document.getElementById('togglePanelBtn');
+const layoutEl = document.querySelector('.layout');
+
+// 페이지의 현재 상태를 JSON으로 저장할 변수
+let currentLayout = null;
 
 init();
 
@@ -9,19 +17,83 @@ async function init() {
   setStatus('Loading draft…');
   try {
     const res = await fetch('/api/draft');
+    if (!res.ok) {
+      throw new Error(`API responded with status ${res.status}`);
+    }
     const data = await res.json();
-    canvasEl.innerHTML = data?.draft?.html || '<section></section>';
+
+    // API로부터 받은 layout 데이터를 변수에 저장
+    currentLayout = data?.draft?.layout;
+    renderLayout(currentLayout);
+
     infoEl.textContent = `Draft loaded in ${data.tookMs ?? 0} ms`;
     setStatus('Ready');
     track({ type: 'view:page', page: 'editor' });
   } catch (e) {
-    setStatus('Failed to load draft');
+    setStatus(`Failed to load draft: ${e.message}`);
+    console.error(e);
   }
+}
+
+/**
+ * 스타일 객체를 인라인 스타일 문자열로 변환합니다.
+ * e.g., { color: 'blue', fontSize: '16px' } -> 'color:blue;font-size:16px'
+ * @param {object | undefined} styleObject
+ * @returns {string}
+ */
+function toStyleString(styleObject) {
+  if (!styleObject) return '';
+  return Object.entries(styleObject)
+    .map(([key, value]) => `${key.replace(/([A-Z])/g, ' -$1').toLowerCase()}:${value}`)
+    .join(';');
+}
+
+function renderLayout(layout) {
+  if (!layout || !Array.isArray(layout.components)) {
+    canvasEl.innerHTML = '<p class="error">Error: Invalid layout data received from API.</p>';
+    return;
+  }
+
+  const html = layout.components.map(component => {
+    const { id, type, props } = component;
+    // props에서 스타일 객체를 가져와 문자열로 변환합니다.
+    const styleString = toStyleString(props.style);
+
+    switch (type) {
+      case 'Header':
+        // data-editable 속성을 추가하여 편집 가능함을 표시하고,
+        // data-component-id와 data-prop-name으로 어떤 데이터를 수정해야 하는지 명시합니다.
+        return `<header class="component-header" data-id="${id}">
+                  <h1 data-editable="true" data-component-id="${id}" data-prop-name="title" style="${styleString}">${props.title || ''}</h1>
+                </header>`;
+      case 'Hero':
+        // Hero 섹션의 경우, 스타일을 섹션 전체에 적용해 보겠습니다.
+        return `<section class="component-hero" data-id="${id}" style="${styleString}">
+                  <h2 data-editable="true" data-component-id="${id}" data-prop-name="headline">${props.headline || ''}</h2>
+                  <p data-editable="true" data-component-id="${id}" data-prop-name="cta">${props.cta || ''}</p>
+                </section>`;
+      case 'Footer':
+        return `<footer class="component-footer" data-id="${id}">
+                  <p data-editable="true" data-component-id="${id}" data-prop-name="text" style="${styleString}">${props.text || ''}</p>
+                </footer>`;
+      default:
+        return `<div class="component-unknown" data-id="${id}"><p>Unknown component type: <strong>${type}</strong></p></div>`;
+    }
+  }).join('');
+
+  canvasEl.innerHTML = html;
 }
 
 saveBtn.addEventListener('click', async () => {
   setStatus('Saving…');
-  const payload = { html: canvasEl.innerHTML };
+  // HTML 대신, 현재 layout JSON 객체를 서버로 전송
+  if (!currentLayout) {
+    setStatus('Save failed: No layout data');
+    return;
+  }
+
+  const payload = { layout: currentLayout };
+
   try {
     const res = await fetch('/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
@@ -33,9 +105,88 @@ saveBtn.addEventListener('click', async () => {
 });
 
 canvasEl.addEventListener('click', (ev) => {
-  const target = ev.target?.tagName || 'UNKNOWN';
-  track({ type: 'click:canvas', target });
+  const target = ev.target;
+
+  // 클릭된 요소가 data-editable="true" 속성을 가졌는지 확인합니다.
+  if (target.dataset.editable === 'true') {
+    handleTextEdit(target);
+  }
+
+  // 기존의 이벤트 트래킹 로직은 그대로 둡니다.
+  track({ type: 'click:canvas', target: target.tagName || 'UNKNOWN' });
 });
+
+/**
+ * 텍스트 요소의 편집 모드를 처리합니다.
+ * 요소를 숨기고, 그 자리에 입력 상자를 만들어 편집을 수행합니다.
+ * 편집이 완료되면(Enter 또는 blur), 화면과 내부 데이터(currentLayout)를 모두 업데이트합니다.
+ * @param {HTMLElement} element - 편집할 대상 요소
+ */
+function handleTextEdit(element) {
+  // 1. 기존 요소를 숨기고, 그 내용을 가진 입력 상자를 만듭니다.
+  element.style.display = 'none';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = element.textContent.trim();
+  input.className = 'inline-editor';
+
+  // --- 추가된 부분 시작 ---
+  // 2. 원래 요소의 계산된 스타일을 가져와 입력 상자에 적용합니다.
+  const style = window.getComputedStyle(element);
+  input.style.fontSize = style.fontSize;
+  input.style.fontWeight = style.fontWeight;
+  input.style.fontFamily = style.fontFamily;
+  input.style.lineHeight = style.lineHeight;
+  input.style.letterSpacing = style.letterSpacing;
+  input.style.padding = style.padding;
+  input.style.margin = style.margin;
+  input.style.width = style.width; // 너비도 복사
+  input.style.border = '1px solid #007bff'; // 편집 중임을 알리는 테두리 추가
+  input.style.outline = 'none';
+  // --- 추가된 부분 끝 ---
+
+  // 3. 기존 요소 바로 뒤에 입력 상자를 삽입하고 포커스를 줍니다.
+  element.parentNode.insertBefore(input, element.nextSibling);
+  input.focus();
+
+  // ... 이하 편집 완료 로직은 동일 ...
+  const finishEditing = () => {
+    const newValue = input.value;
+
+    // 3a. UI 텍스트 업데이트
+    element.textContent = newValue;
+
+    // 3b. 내부 데이터(currentLayout) 업데이트
+    const componentId = element.dataset.componentId;
+    const propName = element.dataset.propName;
+
+    if (currentLayout && componentId && propName) {
+      const componentToUpdate = currentLayout.components.find(c => c.id === componentId);
+      if (componentToUpdate) {
+        componentToUpdate.props[propName] = newValue;
+        console.log('Updated layout:', currentLayout); // 데이터 변경 확인용 로그
+      }
+    }
+
+    // 3c. 입력 상자를 제거하고, 원래 요소를 다시 보여줍니다.
+    input.remove();
+    element.style.display = '';
+    setStatus('Ready');
+    track({ type: 'editor:change', details: { componentId, propName, newValue } });
+  };
+
+  input.addEventListener('blur', finishEditing);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      finishEditing();
+    } else if (e.key === 'Escape') {
+      // Escape 키를 누르면 편집을 취소하고 원상 복구합니다.
+      input.remove();
+      element.style.display = '';
+      setStatus('Ready');
+    }
+  });
+}
 
 let eventQueue = [];
 let flushTimer = null;
@@ -43,7 +194,7 @@ let flushTimer = null;
 function track(event) {
   eventQueue.push({ ...event, ts: Date.now() });
   if (!flushTimer) {
-    flushTimer = setTimeout(flushEvents, 500);
+    flushTimer = setTimeout(flushEvents, 2000);
   }
 }
 
@@ -61,3 +212,69 @@ async function flushEvents() {
 function setStatus(text) {
   statusEl.textContent = text;
 }
+
+// --- 채팅 UI 로직 추가 ---
+chatSendBtn.addEventListener('click', handleChatMessage);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    handleChatMessage();
+  }
+});
+
+/**
+ * 채팅 메시지 전송을 처리합니다.
+ */
+function handleChatMessage() {
+  const command = chatInput.value.trim();
+  if (!command) return;
+
+  console.log(`Chat command: ${command}`);
+  addMessageToHistory('user', command);
+  chatInput.value = '';
+
+  // --- "Chat->Diff" 규칙 구현 시작 ---
+  let response = `(AI Mock): I'm not sure how to do that yet.`; // 기본 응답
+
+  // 규칙 1: "제목"과 "파란색" 키워드가 있으면, Header 컴포넌트의 색상을 blue로 변경
+  if (command.includes('제목') && command.includes('파란색')) {
+    if (currentLayout) {
+      const header = currentLayout.components.find(c => c.type === 'Header');
+      if (header) {
+        // style 객체가 없으면 새로 만들어줍니다.
+        if (!header.props.style) {
+          header.props.style = {};
+        }
+        header.props.style.color = 'blue';
+
+        // 데이터가 변경되었으니, 화면을 다시 렌더링합니다.
+        renderLayout(currentLayout);
+        response = '(AI Mock): OK, I changed the title color to blue.';
+      }
+    }
+  }
+  // --- 구현 끝 ---
+
+
+  // AI가 생각하는 것처럼 보이게 약간의 딜레이를 줍니다.
+  setTimeout(() => {
+    addMessageToHistory('assistant', response);
+  }, 500);
+}
+
+/**
+ * 채팅 기록에 메시지를 추가합니다.
+ * @param {'user' | 'assistant'} sender
+ * @param {string} message
+ */
+function addMessageToHistory(sender, message) {
+  const msgEl = document.createElement('div');
+  msgEl.className = `chat-message ${sender}`;
+  msgEl.textContent = message;
+  chatHistory.appendChild(msgEl);
+  chatHistory.scrollTop = chatHistory.scrollHeight; // 항상 맨 아래로 스크롤
+}
+
+// --- 패널 토글 로직 추가 ---
+togglePanelBtn.addEventListener('click', () => {
+  layoutEl.classList.toggle('panel-left');
+});

@@ -9,7 +9,10 @@
 <body>
   <header class="topbar">
     <h1>Navo — Editor (W1)</h1>
-    <div class="status" id="status">Idle</div>
+    <div class="topbar-actions">
+      <button id="togglePanelBtn">Toggle Panel</button>
+      <div class="status" id="status">Idle</div>
+    </div>
   </header>
   <main class="layout">
     <section class="canvas" id="canvas" aria-label="Canvas"></section>
@@ -22,6 +25,17 @@
         <h2>Info</h2>
         <div id="info"></div>
       </div>
+      
+      <!-- 추가될 부분 -->
+      <div class="panel-section chat-section">
+        <h2>Chat</h2>
+        <div class="chat-history" id="chatHistory"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" placeholder="e.g., Make the title blue">
+          <button id="chatSendBtn">Send</button>
+        </div>
+      </div>
+      <!-- 추가 끝 -->
     </aside>
   </main>
   <script src="/app.js" defer></script>

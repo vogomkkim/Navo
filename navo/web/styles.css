@@ -1,9 +1,45 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #111; }
 .topbar { height: 48px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid #e5e7eb; justify-content: space-between; }
-.layout { display: grid; grid-template-columns: 1fr 320px; height: calc(100vh - 48px); }
-.canvas { padding: 24px; overflow: auto; background: #fafafa; }
-.panel { border-left: 1px solid #e5e7eb; padding: 16px; overflow: auto; }
+
+/* --- Layout Rules (Refactored with Grid Areas) --- */
+.layout {
+  display: grid;
+  /* 기본 컬럼 너비와 영역 이름을 정의합니다. */
+  grid-template-columns: 1fr 320px;
+  grid-template-areas: "canvas panel";
+  height: calc(100vh - 48px);
+}
+
+.canvas {
+  /* 이 요소가 "canvas" 영역임을 지정합니다. */
+  grid-area: canvas;
+  padding: 24px;
+  overflow: auto;
+  background: #fafafa;
+}
+
+.panel {
+  /* 이 요소가 "panel" 영역임을 지정합니다. */
+  grid-area: panel;
+  border-left: 1px solid #e5e7eb;
+  padding: 16px;
+  overflow: auto;
+}
+
+/* .panel-left 활성 상태일 때의 규칙 */
+.layout.panel-left {
+  /* 컬럼 너비와 영역 이름의 순서를 모두 바꿉니다. */
+  grid-template-columns: 320px 1fr;
+  grid-template-areas: "panel canvas";
+}
+
+.layout.panel-left .panel {
+  border-left: none;
+  border-right: 1px solid #e5e7eb;
+}
+/* --- End of Layout Rules --- */
+
 .panel-section { margin-bottom: 24px; }
 button { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer; }
 button:hover { background: #f8fafc; }

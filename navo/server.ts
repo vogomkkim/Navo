@@ -2,11 +2,7 @@ import http from 'node:http';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { runGraph } from './core/runner.js';
-import type { GraphNode } from './core/node.js';
-import { writeCopy } from './nodes/writeCopy.js';
-import { generateImage } from './nodes/generateImage.js';
-import { buildPage } from './nodes/buildPage.js';
+import { PageLayout, ID } from './data/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,17 +55,19 @@ server.listen(PORT, () => {
 });
 
 async function handleDraft(_req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  const nodes: GraphNode[] = [writeCopy, generateImage, buildPage];
-  const outputs = await runGraph(nodes, {
-    logger: {
-      info: (m, meta) => console.log(`[I] ${m}`, meta ?? ''),
-      error: (m, meta) => console.error(`[E] ${m}`, meta ?? ''),
-    },
-  }, { concurrency: 2, timeoutMs: 5_000 });
-  const built = outputs.get('buildPage') as { html: string } | undefined;
+  // W1 목표: 실제 그래프 실행 대신, 예측 가능한 목업 JSON 응답을 반환합니다.
+  // 이 구조는 우리가 방금 types.ts에 정의한 PageLayout 타입과 호환됩니다.
+  const mockLayout: PageLayout = {
+    components: [
+      { id: 'c1', type: 'Header', props: { title: 'Welcome to Navo' } },
+      { id: 'c2', type: 'Hero', props: { headline: 'Build your app by talking to it.', cta: 'Get Started' } },
+      { id: 'c3', type: 'Footer', props: { text: `© ${new Date().getFullYear()} Navo` } },
+    ],
+  };
+
   // Simulate small network and processing delay
   await delay(200);
-  json(res, { ok: true, draft: { html: built?.html ?? '<section></section>' }, tookMs: 200 });
+  json(res, { ok: true, draft: { layout: mockLayout }, tookMs: 200 });
 }
 
 async function handleSave(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
