@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Navo Editor (W1 Mock)</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Navo — Editor (W1)</h1>
+    <div class="status" id="status">Idle</div>
+  </header>
+  <main class="layout">
+    <section class="canvas" id="canvas" aria-label="Canvas"></section>
+    <aside class="panel" aria-label="Side Panel">
+      <div class="panel-section">
+        <h2>Actions</h2>
+        <button id="saveBtn">Save</button>
+      </div>
+      <div class="panel-section">
+        <h2>Info</h2>
+        <div id="info"></div>
+      </div>
+    </aside>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>
