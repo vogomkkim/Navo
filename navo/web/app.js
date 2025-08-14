@@ -11,7 +11,7 @@ const layoutEl = document.querySelector('.layout');
 // 페이지의 현재 상태를 JSON으로 저장할 변수
 let currentLayout = null;
 
-const API_BASE_URL = 'https://YOUR_RENDER_APP_NAME.onrender.com'; // TODO: Replace with your actual Render app URL
+const API_BASE_URL = 'https://navo-jvh6.onrender.com';
 
 init();
 
