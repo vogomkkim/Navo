@@ -5,6 +5,13 @@
 
 ---
 
+## 📄 Full Project Direction
+
+For the complete architectural vision, including frontend/mobile strategy, Go backend plan, node-graph orchestration, LLM integration, and CI/CD automation:  
+➡️ [**Project Direction Document**](docs/plan/000_project_direction.md)
+
+---
+
 ## 0) Executive One‑Pager
 
 **What**: AI‑assisted product builder for non‑developers.  
