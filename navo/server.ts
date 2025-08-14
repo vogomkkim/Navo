@@ -28,7 +28,7 @@ const publicDir = path.join(__dirname, 'web');
 app.use(express.static(publicDir));
 
 // For any other GET request, serve index.html, allowing client-side routing
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   const indexPath = path.join(publicDir, 'index.html');
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
