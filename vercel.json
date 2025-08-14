@@ -5,11 +5,11 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "dist/navo/server.js"
+      "dest": "navo/server.js"
     },
     {
       "src": "/(.*)",
-      "dest": "dist/web/$1"
+      "dest": "web/$1"
     }
   ]
 }
