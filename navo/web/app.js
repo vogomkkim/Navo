@@ -11,12 +11,14 @@ const layoutEl = document.querySelector('.layout');
 // 페이지의 현재 상태를 JSON으로 저장할 변수
 let currentLayout = null;
 
+const API_BASE_URL = 'https://YOUR_RENDER_APP_NAME.onrender.com'; // TODO: Replace with your actual Render app URL
+
 init();
 
 async function init() {
   setStatus('Loading draft…');
   try {
-    const res = await fetch('/api/draft');
+    const res = await fetch(`${API_BASE_URL}/api/draft`);
     if (!res.ok) {
       throw new Error(`API responded with status ${res.status}`);
     }
@@ -95,7 +97,7 @@ saveBtn.addEventListener('click', async () => {
   const payload = { layout: currentLayout };
 
   try {
-    const res = await fetch('/api/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await fetch(`${API_BASE_URL}/api/save`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
     setStatus(`Saved (${data.versionId})`);
     track({ type: 'editor:change', versionId: data.versionId });
@@ -203,7 +205,7 @@ async function flushEvents() {
   flushTimer = null;
   if (batch.length === 0) return;
   try {
-    await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ events: batch }) });
+    await fetch(`${API_BASE_URL}/api/events`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ events: batch }) });
   } catch (_) {
     // ignore errors for mock
   }
