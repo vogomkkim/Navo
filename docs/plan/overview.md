@@ -31,15 +31,9 @@ Navo is a zero‑code AI web/app builder that helps non‑developers turn ideas 
 5. Analytics: track views and clicks; surface daily suggestions to improve copy or style.
 
 ## MVP Scope (v0.9)
-- Draft preview ≤ 10 seconds (mock allowed early).
-- Editor supports inline text edits, image replace/upload, style sliders, structure edits, and chat‑to‑diff.
-- Publish with subdomain automation and rollback (last 3 builds).
-- Analytics events for view/click; daily suggestion surfaced.
+Core features: AI-powered draft generation, visual editor with inline editing, one-click publish with rollback, and basic analytics with AI suggestions.
 
-## SLO Targets
-- Editor perceived latency ≤ 200 ms
-- Average publish time ≤ 60 s
-- Availability ≥ 99.5%
+**See [docs/tech/mvp-scope.md](../tech/mvp-scope.md) for full acceptance criteria and SLO targets.**
 
 ## Architecture
 - Client: Visual Editor, Preview, Publish UI

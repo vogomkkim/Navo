@@ -4,14 +4,30 @@
 
 **Phase 0 — Foundation** *(✅ 완료)*  
 - 리포지토리 초기화 (`README`, `docs/`, `navo/` 구조)  
-- Copilot 실행 계획 포함한 개전선언  
 - 기본 위생 파일 (`CONTRIBUTING`, `CODE_OF_CONDUCT`, `LICENSE` 등)  
 
 **Phase 1 — MVP (4주)**  
 - **W1**: DB 스키마 초안, Draft API(Mock), 에디터 프레임(Canavs/Panel/Save), 이벤트 수집기 스켈레톤  
+   - Define schemas for core objects
+   - Draft API (mock)
+   - Editor frame: canvas, panel, save plumbing
+   - Events collector skeleton
+   - Demo: show draft preview stub in ~10 s
 - **W2**: 텍스트/이미지/스타일 편집, Chat→Diff(3~5 규칙), 에셋 업로드 & 갤러리  
+   - Text/image/style edits
+   - Chat → diff with 3–5 safe rules
+   - Asset upload and gallery
+   - Demo: edit flow with visible diffs and autosave stub
 - **W3**: 배포 파이프라인(서브도메인·SSL·CDN), 기본 분석(뷰/클릭), AI 제안 v1  
+   - Publish pipeline (mock → real)
+   - Analytics (view/click)
+   - Suggestion type 1 (style or copy)
+   - Demo: one‑click publish to subdomain and basic metrics
 - **W4**: 안정화, Undo/Redo/Autosave, 롤백 기능  
+   - Stabilization and polish
+   - Undo/Redo/Autosave
+   - Rollback recent builds
+   - Demo: smooth editing, rollback, and applied suggestion
 
 **Phase 2 — Private Beta (4~6주)**  
 - A/B 테스트, 제안 v2, 템플릿 라이브러리  

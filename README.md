@@ -16,7 +16,7 @@ For the complete architectural vision, including frontend/mobile strategy, Go ba
 
 **What**: AI‑assisted product builder for non‑developers.  
 **Who**: SMB owners, creators, non‑technical founders, marketers.  
-**Why**: People don’t care about tech choices; they want visible results fast.  
+**Why**: People don't care about tech choices; they want visible results fast.  
 **How**: Standardized renderer + **DI + Node Graph** orchestrator + automatic hosting/CDN + feedback loop.
 
 **Principles**
@@ -36,143 +36,69 @@ For the complete architectural vision, including frontend/mobile strategy, Go ba
 
 **Non‑goals**: exposing code/infra terms to end users; forcing tech choices.
 
----
-
-## 2) MVP Scope v0.9 (Acceptance Criteria)
-
-**Must‑have**
-- Draft preview ≤ 10s (stub/mock acceptable for Week 1–2).
-- Editor: inline text edit, image replace/upload, basic style sliders, add/move/remove section, chat edit → visible diff.
-- Publish: subdomain auto, success URL, last 3 builds rollback.
-- Analytics: `view`, `click` events; daily 1 suggestion (style or copy).
-
-**SLO**
-- Editor perceived latency ≤ **200ms**.
-- Average publish time ≤ **60s**.
-- Availability ≥ **99.5%** (MVP).
-
-**Events (min)**
-`view:page`, `click:cta`, `submit:form`, `purchase`, `editor:change`, `publish:success`.
+**See [docs/ux/flow.md](docs/ux/flow.md) for detailed user journey and [docs/ux/wireframes.md](docs/ux/wireframes.md) for screen descriptions.**
 
 ---
 
-## 3) Architecture (Big Picture)
+## 2) MVP Scope v0.9
 
-**Client**
-- Visual Editor (canvas, side panel, chat box)
-- Preview, Publish UI
+Core features: AI-powered draft generation, visual editor with inline editing, one-click publish with rollback, and basic analytics with AI suggestions.
 
-**Orchestrator**
-- **DI + Node Graph Runner**:
-  - Node = small task (`GenerateImage`, `WriteCopy`, `BuildPage`, `DeploySite`)
-    - Graph = DAG of dependencies (do independent tasks **in parallel**, respect order where needed)
-      - DI = inject required resources (APIs, config) into each node automatically
+**See [docs/tech/mvp-scope.md](docs/tech/mvp-scope.md) for full acceptance criteria and SLO targets.**
 
-      **Services**
-      - Generation: LLM (copy), image
-      - Storage: assets, layout JSON
-      - Deploy: build → CDN/hosting → URL
-      - Analytics: event collector → aggregation → AI suggestions
+---
 
-      **Data (sketch)**
-      - `users`, `projects`, `pages`, `components`, `assets`, `events`, `suggestions`, `publish_deploys`.
+## 3) Architecture Overview
 
-      **Design Tenets**
-      - Simplicity / Observability / Undo&Rollback / Contract‑first.
+**Client**: Visual Editor, Preview, Publish UI  
+**Orchestrator**: DI + Node Graph Runner for parallel task execution  
+**Services**: Generation, Storage, Deploy, Analytics  
+**Data**: Users, projects, pages, components, assets, events, suggestions, deployments
 
-      ---
+**See [docs/tech/architecture.md](docs/tech/architecture.md) for detailed architecture and [docs/tech/dag-di.md](docs/tech/dag-di.md) for DI + Node Graph implementation details.**
 
-      ## 4) DI + Node Graph (Plain Language)
+---
 
-      - **Node** = one small job with inputs/outputs.  
-      - **Graph (DAG)** = a map of who depends on whom; independent nodes run **together**; some wait.  
-      - **DI** = “prep station”: each node gets its ingredients (APIs, tokens, configs) handed in.
+## 4) Roadmap (0→1)
 
-      **Why it matters**
-      - Faster (parallel where possible), safer (isolate & retry a node), easier to extend (add a node + link).
+**W1**: Schema, Draft API (mock), Editor frame, events collector skeleton  
+**W2**: Text/image/style edits, Chat→diff, assets upload/gallery  
+**W3**: Publish pipeline (mock→real), analytics, suggestion type 1  
+**W4**: Stabilization, Undo/Redo/Autosave, rollback, polish
 
-      ---
+**See [docs/tech/roadmap.md](docs/tech/roadmap.md) for detailed deliverables and demo goals.**
 
-      ## 5) Roadmap (0→1)
+---
 
-      **W1**: Schema, Draft API (mock), Editor frame (canvas/panel/save), events collector skeleton  
-      **W2**: Text/image/style edits, Chat→diff (3–5 rules), assets upload/gallery  
-      **W3**: Publish pipeline (mock→real), analytics (view/click), suggestion type 1  
-      **W4**: Stabilization, Undo/Redo/Autosave, rollback, polish
+## 5) KPIs
 
-      ---
+- **Speed**: TTV(draft), P95 edit latency, publish duration  
+- **Efficiency**: instances/cores, throughput per vCPU/GB  
+- **Reliability**: error/timeout/retry rates, rollback ratio  
+- **Dev Velocity**: PR lead time, deploy frequency, change‑fail rate
 
-      ## 6) KPIs
+---
 
-      - **Speed**: TTV(draft), P95 edit latency, publish duration  
-      - **Efficiency**: instances/cores, throughput per vCPU/GB  
-      - **Reliability**: error/timeout/retry rates, rollback ratio  
-      - **Dev Velocity**: PR lead time, deploy frequency, change‑fail rate
+## 6) Working Agreements
 
-      ---
+- Keep docs short, **link back to this README**.  
+- Prefer plain language; no framework wars or jargon.  
+- Every change should include a short "why" in the PR description.  
+- We optimize **experience** first; tech choices are replaceable.
 
-      ## 7) Repository Workplan (What Copilot Should Do)
+---
 
-      > **Use Copilot Chat inside Codespaces.** Paste the prompts verbatim. Confirm at each step.  
-      > Goal: keep this README short‑ish while generating proper docs and skeletons into `docs/` and `navo/`.
+## 7) Credits & Contact
 
-      ### 7.1 Create Documentation Files
-      **Prompt to Copilot Chat:**
-      > Create the following files with concise, well‑structured content based on this README. Use 80‑100 lines per file max. Keep language plain.  
-      > 
-      > - `docs/overview.md` — one‑pager; What/Who/Why/How; the “Speak it, see it, ship it” line.  
-      > - `docs/product-vision.md` — problem, value proposition, success metrics, out‑of‑scope.  
-      > - `docs/ux/flow.md` — the 5‑step journey with example user verbs; no images.  
-      > - `docs/ux/wireframes.md` — describe 5 key screens in bullets: Onboarding, Draft Preview, Editor, Publish, Analytics.  
-      > - `docs/tech/architecture.md` — big picture; components, services, data, observability.  
-      > - `docs/tech/dag-di.md` — DI + Node Graph in plain language + 2 concrete Navo examples.  
-      > - `docs/tech/mvp-scope.md` — MVP v0.9 acceptance criteria & SLO & events list.  
-      > - `docs/tech/roadmap.md` — W1–W4 with deliverables and demo goals.  
-      > - `docs/rfcs/0001-editor-collab.md` — RFC template with problem/decision/options.  
-      > - `adr/ADR-0001-runtime.md` — choose orchestrator runtime pattern; decision & consequences.
+Internal codename: **Navo**.  
+Questions/ideas: open an Issue or start an RFC under `docs/rfcs/`.
 
-      Then:  
-      > Show me a diff preview of all files you will add. Ask before writing.
+---
 
-      If OK:  
-      > Proceed to create the files and stage them. Suggest a single commit message.
+## 📚 Documentation
 
-      ### 7.2 Add Project Hygiene
-      **Prompt:**
-      > Generate `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md` (email placeholder), `CHANGELOG.md` (0.1.0 init), and `LICENSE` (MIT for now). Keep each file minimal and readable. Show diff, then write & stage.
-
-      ### 7.3 (Optional) Orchestrator Skeleton (no full impl yet)
-      **Prompt (TypeScript option):**
-      > Create a minimal TypeScript skeleton under `navo/` for a DI + DAG orchestrator:  
-      > - `navo/core/node.ts` (Node interface: `name`, `deps`, `run(ctx)`),  
-      > - `navo/core/graph.ts` (DAG validation + topological order),  
-      > - `navo/core/runner.ts` (run nodes with concurrency; respect deps; basic timeout/cancel hooks),  
-      > - `navo/nodes/{generateImage,writeCopy,buildPage,deploySite}.ts` (dummy implementations),  
-      > - `navo/demo.ts` (wire nodes into a small graph; `npm run demo`).  
-      > Add `package.json` scripts: `build`, `demo`. Provide simple log outputs.  
-      > Show diff, then write & stage.
-
-      **Prompt (Go option, if we prefer later):**
-      > Create the same structure in Go under `navo/` (`node.go`, `graph.go`, `runner.go`, `nodes/…`, `cmd/demo/main.go`) with simple logging and context cancellation. Show diff before writing.
-
-      ### 7.4 Commit & Push
-      **Prompt:**
-      > Propose a conventional commit message for everything staged and push to the current branch.
-
-      ---
-
-      ## 8) Working Agreements
-
-      - Keep docs short, **link back to this README**.  
-      - Prefer plain language; no framework wars or jargon.  
-      - Every change should include a short “why” in the PR description.  
-      - We optimize **experience** first; tech choices are replaceable.
-
-      ---
-
-      ## 9) Credits & Contact
-
-      Internal codename: **Navo**.  
-      Questions/ideas: open an Issue or start an RFC under `docs/rfcs/`.
-
-      ---
+- **Product Vision**: [docs/plan/product-vision.md](docs/plan/product-vision.md)
+- **Technical Architecture**: [docs/tech/architecture.md](docs/tech/architecture.md)
+- **MVP Scope**: [docs/tech/mvp-scope.md](docs/tech/mvp-scope.md)
+- **Development Roadmap**: [docs/tech/roadmap.md](docs/tech/roadmap.md)
+- **Contributing**: [docs/team/CONTRIBUTING.md](docs/team/CONTRIBUTING.md)
