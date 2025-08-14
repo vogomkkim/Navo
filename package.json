@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p .",
-    "demo": "npm run build && node dist/navo/demo.js"
+    "demo": "npm run build && node dist/navo/demo.js",
+    "start": "npm run build && node dist/navo/server.js"
   },
   "devDependencies": {
     "@types/node": "^24.2.1",
