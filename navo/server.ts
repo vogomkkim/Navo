@@ -22,6 +22,7 @@ app.use(express.json({ limit: '5mb' }));
 app.get('/api/draft', handleDraft);
 app.post('/api/save', handleSave);
 app.post('/api/events', handleEvents);
+app.get('/health', handleHealth);
 
 // Serve static files from the 'web' directory
 const publicDir = path.join(__dirname, 'web');
@@ -69,6 +70,10 @@ async function handleEvents(req: express.Request, res: express.Response): Promis
   const lines = events.filter(Boolean).map((e: any) => JSON.stringify({ ts, ...e }) + '\n').join('');
   if (lines) fs.appendFileSync(path.join(dataDir, 'events.ndjson'), lines, 'utf8');
   res.json({ ok: true, received: events.length });
+}
+
+async function handleHealth(_req: express.Request, res: express.Response): Promise<void> {
+  res.json({ ok: true, message: 'Server is healthy' });
 }
 
 // --- Utilities ---
