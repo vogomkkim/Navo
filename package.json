@@ -14,5 +14,8 @@
     "@types/node": "^24.2.1",
     "copyfiles": "^2.4.1",
     "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
   }
 }

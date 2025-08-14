@@ -35,10 +35,7 @@ app.get('*', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  console.log(`Serving static files from: ${publicDir}`);
-});
+export default app;
 
 // --- Handlers ---
 
