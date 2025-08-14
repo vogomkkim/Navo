@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p .",
-    "postbuild": "copyfiles -u 1 \"navo/web/**/*\" dist/web",
+    "postbuild": "copyfiles -u 2 \"navo/web/**/*\" dist/web",
     "demo": "npm run build && node dist/navo/demo.js",
     "start": "npm run build && node dist/navo/server.js"
   },
