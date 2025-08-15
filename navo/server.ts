@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { PageLayout } from './data/types.js';
+import pg from 'pg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +12,22 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(cors());
 const PORT = process.env.PORT ?? 3000;
+
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+// Test database connection
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('Error connecting to the database', err);
+  } else {
+    console.log('Database connected at:', res.rows[0].now);
+  }
+});
 
 const dataDir = path.join(__dirname, 'data');
 ensureDir(dataDir);
@@ -23,6 +40,7 @@ app.get('/api/draft', handleDraft);
 app.post('/api/save', handleSave);
 app.post('/api/events', handleEvents);
 app.get('/health', handleHealth);
+app.get('/api/db-test', handleDbTest);
 
 // Serve static files from the 'web' directory
 const publicDir = path.join(__dirname, 'web');
@@ -73,6 +91,21 @@ async function handleEvents(req: express.Request, res: express.Response): Promis
 
 async function handleHealth(_req: express.Request, res: express.Response): Promise<void> {
   res.json({ ok: true, message: 'Server is healthy' });
+}
+
+async function handleDbTest(_req: express.Request, res: express.Response): Promise<void> {
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query('SELECT NOW() as now');
+      res.json({ ok: true, dbTime: result.rows[0].now });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Database test failed', err);
+    res.status(500).json({ ok: false, error: 'Database connection error' });
+  }
 }
 
 // --- Utilities ---
