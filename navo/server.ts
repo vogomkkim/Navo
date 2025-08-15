@@ -58,7 +58,6 @@ async function handleSave(req: express.Request, res: express.Response): Promise<
   const body = req.body || {};
   await delay(100);
   const versionId = `v_${Date.now()}`;
-  const versionId = `v_${Date.now()}`;
   fs.appendFileSync(path.join(dataDir, 'saves.ndjson'), JSON.stringify({ ts: new Date().toISOString(), versionId, body }) + '\n', 'utf8');
   res.json({ ok: true, versionId });
 }
