@@ -43,7 +43,7 @@ app.get('/health', handleHealth);
 app.get('/api/db-test', handleDbTest);
 
 // Serve static files from the 'web' directory
-const publicDir = path.join(__dirname, 'web');
+const publicDir = path.join(__dirname, '..', 'web');
 app.use(express.static(publicDir));
 
 // For any other GET request, serve index.html, allowing client-side routing
