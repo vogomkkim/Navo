@@ -55,3 +55,27 @@ Database size is managed through two key strategies:
 - Publish ≤ 60 s average
 
 See `README.md` for the canonical summary and goals.
+
+## MCP Server Configuration
+
+The Model Context Protocol (MCP) server is a component designed to facilitate interaction between AI models and external data sources, such as databases. In this project, the MCP server is configured to connect to a PostgreSQL database hosted on Render.
+
+Configuration details for the MCP server, including database connection strings, are managed within the `settings.json` file located in the project root. This file contains an `mcpServers` object where individual server configurations are defined.
+
+For connecting to Render PostgreSQL, the `connectionString` within the `mcpServers` configuration specifies the database URL. It is crucial to use environment variables for sensitive credentials (like passwords) to enhance security, rather than hardcoding them directly in `settings.json`. Additionally, `sslmode=require` is used in the connection string to ensure a secure, encrypted connection to the PostgreSQL database.
+
+Example configuration in `settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "renderPostgres": {
+      "type": "postgresql",
+      "config": {
+        "connectionString": "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require"
+      },
+      "description": "Render PostgreSQL connection for Navo data."
+    }
+  }
+}
+```

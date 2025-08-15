@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "renderPostgres": {
+      "type": "postgresql",
+      "config": {
+        "connectionString": "postgresql://navo_data_user:0zDoAcyIqTP726qSs0i4GrzRztWqnjNF@dpg-d2fln3ruibrs73a56a0g-a.singapore-postgres.render.com/navo_data?sslmode=require"
+      },
+      "description": "Render PostgreSQL connection for Navo data. Consider using environment variables for sensitive credentials."
+    }
+  }
+}
