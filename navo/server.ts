@@ -83,10 +83,25 @@ async function handleSave(req: express.Request, res: express.Response): Promise<
 async function handleEvents(req: express.Request, res: express.Response): Promise<void> {
   const body = req.body || {};
   const events = Array.isArray(body) ? body : Array.isArray(body?.events) ? body.events : [body];
-  const ts = new Date().toISOString();
-  const lines = events.filter(Boolean).map((e: any) => JSON.stringify({ ts, ...e }) + '\n').join('');
-  if (lines) fs.appendFileSync(path.join(dataDir, 'events.ndjson'), lines, 'utf8');
-  res.json({ ok: true, received: events.length });
+
+  try {
+    const client = await pool.connect();
+    try {
+      for (const event of events) {
+        const { type, ...data } = event; // Extract type and rest of the event as data
+        await client.query(
+          'INSERT INTO events(type, data) VALUES($1, $2)',
+          [type, data]
+        );
+      }
+      res.json({ ok: true, received: events.length });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Error inserting events:', err);
+    res.status(500).json({ ok: false, error: 'Failed to store events' });
+  }
 }
 
 async function handleHealth(_req: express.Request, res: express.Response): Promise<void> {
