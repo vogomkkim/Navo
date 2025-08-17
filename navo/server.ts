@@ -5,6 +5,10 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { PageLayout } from './data/types.js';
 import pg from 'pg';
+import { GoogleGenerativeAI } from '@google/generative-ai'; // Import Gemini SDK
+import dotenv from 'dotenv'; // Import dotenv
+
+dotenv.config(); // Load environment variables
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +45,8 @@ app.post('/api/save', handleSave);
 app.post('/api/events', handleEvents);
 app.get('/health', handleHealth);
 app.get('/api/db-test', handleDbTest);
+app.get('/api/analytics/events', handleAnalyticsEvents); // New endpoint for analytics events
+app.post('/api/ai-command', handleAiCommand); // New endpoint for AI commands
 
 // Serve static files from the 'web' directory
 const publicDir = path.join(__dirname, '..', 'web');
@@ -120,6 +126,144 @@ async function handleDbTest(_req: express.Request, res: express.Response): Promi
   } catch (err) {
     console.error('Database test failed', err);
     res.status(500).json({ ok: false, error: 'Database connection error' });
+  }
+}
+
+async function handleAnalyticsEvents(req: express.Request, res: express.Response): Promise<void> {
+  const { projectId, eventType, limit = 100, offset = 0 } = req.query;
+  let query = 'SELECT * FROM events WHERE 1=1';
+  const params: (string | number)[] = [];
+  let paramIndex = 1;
+
+  if (projectId) {
+    query += ` AND project_id = ${paramIndex++}`;
+    params.push(projectId as string);
+  }
+  if (eventType) {
+    query += ` AND type = ${paramIndex++}`;
+    params.push(eventType as string);
+  }
+
+  query += ` ORDER BY ts DESC LIMIT ${paramIndex++} OFFSET ${paramIndex++}`;
+  params.push(parseInt(limit as string));
+  params.push(parseInt(offset as string));
+
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(query, params);
+      res.json({ ok: true, events: result.rows });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Error fetching analytics events:', err);
+    res.status(500).json({ ok: false, error: 'Failed to fetch analytics events' });
+  }
+}
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+
+async function handleAiCommand(req: express.Request, res: express.Response): Promise<void> {
+  const { command, currentLayout } = req.body;
+  console.log(`Received AI command: "${command}"`);
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+    const prompt = `You are an AI assistant for a web page builder.
+The user wants to modify their current web page.
+Their command is: "${command}"
+The current page layout is: ${JSON.stringify(currentLayout, null, 2)}
+
+Based on the command and the current layout, generate a JSON object with two properties:
+1. "layoutChanges": An object or array of objects describing the changes to be applied to the currentLayout.
+   - If adding a component, use type: "add", payload: { id: "new_id", type: "ComponentType", props: {} }
+   - If updating a component, use type: "update", id: "component_id", payload: { props: {} }
+   - If replacing the entire layout, use { components: [...] }
+   - Ensure new IDs are unique (e.g., "comp_12345").
+   - Available component types are: Header, Hero, Footer.
+   - For style changes, update the 'style' property within 'props'.
+2. "aiResponseText": A brief, friendly message to the user confirming the action.
+
+Example for "change header color to blue":
+{
+  "layoutChanges": [
+    {
+      "type": "update",
+      "id": "c1", // Assuming c1 is the header
+      "payload": {
+        "props": {
+          "style": {
+            "color": "blue"
+          }
+        }
+      }
+    }
+  ],
+  "aiResponseText": "I changed the header color to blue for you."
+}
+
+Example for "add a new hero section":
+{
+  "layoutChanges": [
+    {
+      "type": "add",
+      "payload": {
+        "id": "hero_new_123",
+        "type": "Hero",
+        "props": {
+          "headline": "New Section",
+          "cta": "Learn More"
+        }
+      }
+    }
+  ],
+  "aiResponseText": "I added a new hero section to your page."
+}
+
+Example for "make an online shopping mall":
+{
+  "layoutChanges": {
+    "components": [
+      { "id": "shop_header", "type": "Header", "props": { "title": "Navo Shop" } },
+      { "id": "shop_hero", "type": "Hero", "props": { "headline": "Welcome to our Online Store!", "cta": "Shop Now" } },
+      { "id": "shop_footer", "type": "Footer", "props": { "text": "© Navo Shop" } }
+    ]
+  },
+  "aiResponseText": "I generated a basic online shopping mall layout for you."
+}
+
+Your response MUST be a valid JSON object. Do not include any other text or markdown outside the JSON.
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log("Gemini Raw Response:", text);
+
+    // Attempt to parse the JSON response
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(text);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response as JSON:", parseError);
+      console.error("Raw Gemini text:", text);
+      res.status(500).json({ ok: false, error: 'AI response was not valid JSON.' });
+      return; // Explicitly return void after sending response
+    }
+
+    const { layoutChanges, aiResponseText } = parsedResponse;
+
+    res.json({ ok: true, layoutChanges, aiResponseText });
+    return; // Explicitly return void after sending response
+
+  } catch (err) {
+    console.error('Error calling Gemini API:', err);
+    res.status(500).json({ ok: false, error: 'Failed to get response from AI.' });
+    return; // Explicitly return void after sending response
   }
 }
 

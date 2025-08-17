@@ -226,7 +226,7 @@ chatInput.addEventListener('keydown', (e) => {
 /**
  * 채팅 메시지 전송을 처리합니다.
  */
-function handleChatMessage() {
+async function handleChatMessage() { // Made async
   const command = chatInput.value.trim();
   if (!command) return;
 
@@ -234,33 +234,52 @@ function handleChatMessage() {
   addMessageToHistory('user', command);
   chatInput.value = '';
 
-  // --- "Chat->Diff" 규칙 구현 시작 ---
-  let response = `(AI Mock): I'm not sure how to do that yet.`; // 기본 응답
+  // --- AI API 호출 시작 ---
+  setStatus('Thinking...');
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/ai-command`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command, currentLayout }), // Send command and current layout
+    });
 
-  // 규칙 1: "제목"과 "파란색" 키워드가 있으면, Header 컴포넌트의 색상을 blue로 변경
-  if (command.includes('제목') && command.includes('파란색')) {
-    if (currentLayout) {
-      const header = currentLayout.components.find(c => c.type === 'Header');
-      if (header) {
-        // style 객체가 없으면 새로 만들어줍니다.
-        if (!header.props.style) {
-          header.props.style = {};
-        }
-        header.props.style.color = 'blue';
-
-        // 데이터가 변경되었으니, 화면을 다시 렌더링합니다.
-        renderLayout(currentLayout);
-        response = '(AI Mock): OK, I changed the title color to blue.';
-      }
+    if (!res.ok) {
+      throw new Error(`AI API responded with status ${res.status}`);
     }
+
+    const { layoutChanges, aiResponseText } = await res.json();
+
+    if (layoutChanges && currentLayout) {
+      // Apply layout changes received from AI
+      // This is a simplified application of changes. A more robust solution
+      // would handle various types of changes (add, remove, update components).
+      // For now, we assume layoutChanges directly replaces or updates components.
+      if (layoutChanges.components) {
+        currentLayout.components = layoutChanges.components;
+      } else if (Array.isArray(layoutChanges)) { // If layoutChanges is an array of updates
+        layoutChanges.forEach(change => {
+          if (change.type === 'update' && change.id) {
+            const index = currentLayout.components.findIndex(c => c.id === change.id);
+            if (index !== -1) {
+              currentLayout.components[index] = { ...currentLayout.components[index], ...change.payload };
+            }
+          } else if (change.type === 'add') {
+            currentLayout.components.push(change.payload);
+          }
+          // Add more change types (e.g., 'remove') as needed
+        });
+      }
+      renderLayout(currentLayout); // Re-render the page with updated layout
+    }
+
+    addMessageToHistory('assistant', aiResponseText || '(AI): Done.');
+    setStatus('Ready');
+  } catch (e) {
+    console.error('AI command failed:', e);
+    addMessageToHistory('assistant', `(AI Error): ${e.message}`);
+    setStatus('Error');
   }
-  // --- 구현 끝 ---
-
-
-  // AI가 생각하는 것처럼 보이게 약간의 딜레이를 줍니다.
-  setTimeout(() => {
-    addMessageToHistory('assistant', response);
-  }, 500);
+  // --- AI API 호출 끝 ---
 }
 
 /**
