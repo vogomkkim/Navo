@@ -38,6 +38,42 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helve
   border-left: none;
   border-right: 1px solid #e5e7eb;
 }
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr; /* Single column for mobile */
+    grid-template-rows: auto 1fr; /* Stack panel and canvas */
+    grid-template-areas:
+      "panel"
+      "canvas";
+    height: calc(100vh - 48px); /* Adjust height for mobile */
+  }
+
+  .panel {
+    border-left: none;
+    border-bottom: 1px solid #e5e7eb; /* Add border to bottom when stacked */
+    width: 100%; /* Full width for panel on mobile */
+    padding: 16px;
+  }
+
+  .canvas {
+    padding: 16px; /* Adjust padding for mobile */
+  }
+
+  .layout.panel-left {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "panel"
+      "canvas";
+  }
+
+  .layout.panel-left .panel {
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+}
 /* --- End of Layout Rules --- */
 
 .panel-section { margin-bottom: 24px; }
