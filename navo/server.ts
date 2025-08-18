@@ -1,62 +1,72 @@
-import http from 'node:http';
-import path from 'node:path';
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { PageLayout, ID } from './data/types.js';
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { PageLayout } from './data/types.js';
+import pg from 'pg';
+import { GoogleGenerativeAI } from '@google/generative-ai'; // Import Gemini SDK
+import dotenv from 'dotenv'; // Import dotenv
+
+dotenv.config(); // Load environment variables
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const candidates = [
-  path.join(__dirname, 'web'),
-  path.resolve(__dirname, '..', '..', '..', 'navo', 'web'),
-  path.resolve(process.cwd(), 'navo', 'web'),
-];
-const publicDir = candidates.find((p) => fs.existsSync(path.join(p, 'index.html'))) ?? candidates[0];
-const dataDir = path.join(__dirname, 'data');
+const app = express();
+app.use(cors());
+const PORT = process.env.PORT ?? 3000;
 
-ensureDir(dataDir);
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
 
-const PORT = Number(process.env.PORT ?? 3000);
-
-const server = http.createServer(async (req, res) => {
-  try {
-    const method = req.method || 'GET';
-    const url = new URL(req.url || '/', `http://${req.headers.host}`);
-
-    if (url.pathname === '/api/draft' && method === 'GET') {
-      return handleDraft(req, res);
-    }
-    if (url.pathname === '/api/save' && method === 'POST') {
-      return handleSave(req, res);
-    }
-    if (url.pathname === '/api/events' && method === 'POST') {
-      return handleEvents(req, res);
-    }
-
-    // static files
-    if (method === 'GET') {
-      return serveStatic(url.pathname, res);
-    }
-
-    res.statusCode = 404;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Not found' }));
-  } catch (err) {
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Server error', detail: String(err) }));
+// Test database connection
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('Error connecting to the database', err);
+  } else {
+    console.log('Database connected at:', res.rows[0].now);
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Mock server running at http://localhost:${PORT}`);
-  console.log(`Serving static from: ${publicDir}`);
+const dataDir = path.join(__dirname, 'data');
+ensureDir(dataDir);
+
+// Middleware to parse JSON bodies
+app.use(express.json({ limit: '5mb' }));
+
+// API routes
+app.get('/api/draft', handleDraft);
+app.post('/api/save', handleSave);
+app.post('/api/events', handleEvents);
+app.get('/health', handleHealth);
+app.get('/api/db-test', handleDbTest);
+app.get('/api/analytics/events', handleAnalyticsEvents); // New endpoint for analytics events
+app.post('/api/ai-command', handleAiCommand); // New endpoint for AI commands
+
+// Serve static files from the 'web' directory
+const publicDir = path.join(__dirname, '..', 'web');
+app.use(express.static(publicDir));
+
+// For any other GET request, serve index.html, allowing client-side routing
+app.get('/*', (req, res) => {
+  const indexPath = path.join(publicDir, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Not Found');
+  }
 });
 
-async function handleDraft(_req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  // W1 목표: 실제 그래프 실행 대신, 예측 가능한 목업 JSON 응답을 반환합니다.
-  // 이 구조는 우리가 방금 types.ts에 정의한 PageLayout 타입과 호환됩니다.
+export default app;
+
+// --- Handlers ---
+
+async function handleDraft(_req: express.Request, res: express.Response): Promise<void> {
   const mockLayout: PageLayout = {
     components: [
       { id: 'c1', type: 'Header', props: { title: 'Welcome to Navo' } },
@@ -64,93 +74,203 @@ async function handleDraft(_req: http.IncomingMessage, res: http.ServerResponse)
       { id: 'c3', type: 'Footer', props: { text: `© ${new Date().getFullYear()} Navo` } },
     ],
   };
-
-  // Simulate small network and processing delay
   await delay(200);
-  json(res, { ok: true, draft: { layout: mockLayout }, tookMs: 200 });
+  res.json({ ok: true, draft: { layout: mockLayout }, tookMs: 200 });
 }
 
-async function handleSave(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  const body = await readJson(req).catch(() => ({}));
+async function handleSave(req: express.Request, res: express.Response): Promise<void> {
+  const body = req.body || {};
   await delay(100);
   const versionId = `v_${Date.now()}`;
-  const line = JSON.stringify({ ts: new Date().toISOString(), versionId, body }) + '\n';
-  fs.appendFileSync(path.join(dataDir, 'saves.ndjson'), line, 'utf8');
-  json(res, { ok: true, versionId });
+  fs.appendFileSync(path.join(dataDir, 'saves.ndjson'), JSON.stringify({ ts: new Date().toISOString(), versionId, body }) + '\n', 'utf8');
+  res.json({ ok: true, versionId });
 }
 
-async function handleEvents(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  const body = await readJson(req).catch(() => ({}));
+async function handleEvents(req: express.Request, res: express.Response): Promise<void> {
+  const body = req.body || {};
   const events = Array.isArray(body) ? body : Array.isArray(body?.events) ? body.events : [body];
-  const ts = new Date().toISOString();
-  const lines = events.filter(Boolean).map((e: any) => JSON.stringify({ ts, ...e }) + '\n').join('');
-  if (lines) fs.appendFileSync(path.join(dataDir, 'events.ndjson'), lines, 'utf8');
-  json(res, { ok: true, received: events.length });
-}
 
-function serveStatic(requestPath: string, res: http.ServerResponse): void {
-  const safePathRaw = requestPath === '/' ? 'index.html' : requestPath.replace(/^\/+/, '');
-  const filePath = path.normalize(path.join(publicDir, safePathRaw));
-  if (!filePath.startsWith(publicDir)) {
-    res.statusCode = 403;
-    res.end('Forbidden');
-    return;
-  }
-  if (!fs.existsSync(filePath)) {
-    res.statusCode = 404;
-    res.end('Not found');
-    return;
-  }
-  const ext = path.extname(filePath);
-  const contentType = mime(ext);
-  res.statusCode = 200;
-  res.setHeader('Content-Type', contentType);
-  fs.createReadStream(filePath).pipe(res);
-}
-
-function mime(ext: string): string {
-  switch (ext) {
-    case '.html': return 'text/html; charset=utf-8';
-    case '.js': return 'application/javascript; charset=utf-8';
-    case '.css': return 'text/css; charset=utf-8';
-    case '.json': return 'application/json; charset=utf-8';
-    case '.png': return 'image/png';
-    case '.jpg':
-    case '.jpeg': return 'image/jpeg';
-    case '.svg': return 'image/svg+xml';
-    default: return 'application/octet-stream';
+  try {
+    const client = await pool.connect();
+    try {
+      for (const event of events) {
+        const { type, ...data } = event; // Extract type and rest of the event as data
+        await client.query(
+          'INSERT INTO events(type, data) VALUES($1, $2)',
+          [type, data]
+        );
+      }
+      res.json({ ok: true, received: events.length });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Error inserting events:', err);
+    res.status(500).json({ ok: false, error: 'Failed to store events' });
   }
 }
 
-function json(res: http.ServerResponse, obj: unknown): void {
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify(obj));
+async function handleHealth(_req: express.Request, res: express.Response): Promise<void> {
+  res.json({ ok: true, message: 'Server is healthy' });
 }
+
+async function handleDbTest(_req: express.Request, res: express.Response): Promise<void> {
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query('SELECT NOW() as now');
+      res.json({ ok: true, dbTime: result.rows[0].now });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Database test failed', err);
+    res.status(500).json({ ok: false, error: 'Database connection error' });
+  }
+}
+
+async function handleAnalyticsEvents(req: express.Request, res: express.Response): Promise<void> {
+  const { projectId, eventType, limit = 100, offset = 0 } = req.query;
+  let query = 'SELECT * FROM events WHERE 1=1';
+  const params: (string | number)[] = [];
+  let paramIndex = 1;
+
+  if (projectId) {
+    query += ` AND project_id = ${paramIndex++}`;
+    params.push(projectId as string);
+  }
+  if (eventType) {
+    query += ` AND type = ${paramIndex++}`;
+    params.push(eventType as string);
+  }
+
+  query += ` ORDER BY ts DESC LIMIT ${paramIndex++} OFFSET ${paramIndex++}`;
+  params.push(parseInt(limit as string));
+  params.push(parseInt(offset as string));
+
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(query, params);
+      res.json({ ok: true, events: result.rows });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Error fetching analytics events:', err);
+    res.status(500).json({ ok: false, error: 'Failed to fetch analytics events' });
+  }
+}
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+
+async function handleAiCommand(req: express.Request, res: express.Response): Promise<void> {
+  const { command, currentLayout } = req.body;
+  console.log(`Received AI command: "${command}"`);
+
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+    const prompt = `You are an AI assistant for a web page builder.
+The user wants to modify their current web page.
+Their command is: "${command}"
+The current page layout is: ${JSON.stringify(currentLayout, null, 2)}
+
+Based on the command and the current layout, generate a JSON object with two properties:
+1. "layoutChanges": An object or array of objects describing the changes to be applied to the currentLayout.
+   - If adding a component, use type: "add", payload: { id: "new_id", type: "ComponentType", props: {} }
+   - If updating a component, use type: "update", id: "component_id", payload: { props: {} }
+   - If replacing the entire layout, use { components: [...] }
+   - Ensure new IDs are unique (e.g., "comp_12345").
+   - Available component types are: Header, Hero, Footer.
+   - For style changes, update the 'style' property within 'props'.
+2. "aiResponseText": A brief, friendly message to the user confirming the action.
+
+Example for "change header color to blue":
+{
+  "layoutChanges": [
+    {
+      "type": "update",
+      "id": "c1", // Assuming c1 is the header
+      "payload": {
+        "props": {
+          "style": {
+            "color": "blue"
+          }
+        }
+      }
+    }
+  ],
+  "aiResponseText": "I changed the header color to blue for you."
+}
+
+Example for "add a new hero section":
+{
+  "layoutChanges": [
+    {
+      "type": "add",
+      "payload": {
+        "id": "hero_new_123",
+        "type": "Hero",
+        "props": {
+          "headline": "New Section",
+          "cta": "Learn More"
+        }
+      }
+    }
+  ],
+  "aiResponseText": "I added a new hero section to your page."
+}
+
+Example for "make an online shopping mall":
+{
+  "layoutChanges": {
+    "components": [
+      { "id": "shop_header", "type": "Header", "props": { "title": "Navo Shop" } },
+      { "id": "shop_hero", "type": "Hero", "props": { "headline": "Welcome to our Online Store!", "cta": "Shop Now" } },
+      { "id": "shop_footer", "type": "Footer", "props": { "text": "© Navo Shop" } }
+    ]
+  },
+  "aiResponseText": "I generated a basic online shopping mall layout for you."
+}
+
+Your response MUST be a valid JSON object. Do not include any other text or markdown outside the JSON.
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log("Gemini Raw Response:", text);
+
+    // Attempt to parse the JSON response
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(text);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response as JSON:", parseError);
+      console.error("Raw Gemini text:", text);
+      res.status(500).json({ ok: false, error: 'AI response was not valid JSON.' });
+      return; // Explicitly return void after sending response
+    }
+
+    const { layoutChanges, aiResponseText } = parsedResponse;
+
+    res.json({ ok: true, layoutChanges, aiResponseText });
+    return; // Explicitly return void after sending response
+
+  } catch (err) {
+    console.error('Error calling Gemini API:', err);
+    res.status(500).json({ ok: false, error: 'Failed to get response from AI.' });
+    return; // Explicitly return void after sending response
+  }
+}
+
+// --- Utilities ---
 
 function ensureDir(dir: string): void {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-function readJson(req: http.IncomingMessage): Promise<any> {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', (chunk) => {
-      data += chunk;
-      if (data.length > 5 * 1024 * 1024) {
-        reject(new Error('Payload too large'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      try {
-        resolve(data ? JSON.parse(data) : {});
-      } catch (e) {
-        reject(e);
-      }
-    });
-    req.on('error', reject);
-  });
 }
 
 function delay(ms: number): Promise<void> {
