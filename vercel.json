@@ -1,11 +1,5 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/web",
-  "crons": [
-    {
-      "path": "/health",
-      "schedule": "*/10 * * * *"
-    }
-  ]
+  "outputDirectory": "dist/web"
 }
