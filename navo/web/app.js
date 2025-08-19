@@ -106,6 +106,24 @@ saveBtn.addEventListener('click', async () => {
   }
 });
 
+const generateDummySuggestionBtn = document.getElementById('generateDummySuggestionBtn');
+if (generateDummySuggestionBtn) {
+  generateDummySuggestionBtn.addEventListener('click', async () => {
+    setStatus('Generating dummy suggestion...');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/generate-dummy-suggestion`, { method: 'POST' });
+      if (!res.ok) {
+        throw new Error(`API responded with status ${res.status}`);
+      }
+      const data = await res.json();
+      setStatus(data.message || 'Dummy suggestion generated.');
+    } catch (e) {
+      setStatus(`Failed to generate dummy suggestion: ${e.message}`);
+      console.error('Error generating dummy suggestion:', e);
+    }
+  });
+}
+
 canvasEl.addEventListener('click', (ev) => {
   const target = ev.target;
 

@@ -267,6 +267,46 @@ Your response MUST be a valid JSON object. Do not include any other text or mark
   }
 }
 
+async function generateAndStoreDummySuggestion(): Promise<void> {
+  const dummySuggestion = {
+    project_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', // Replace with a valid project ID from your DB or a test one
+    type: 'style',
+    content: {
+      type: 'update',
+      id: 'c1', // Assuming 'c1' is the ID of the Header component
+      payload: {
+        props: {
+          style: {
+            backgroundColor: '#f0f8ff' // AliceBlue
+          }
+        }
+      },
+      description: 'Suggests changing header background to AliceBlue for a softer look.'
+    }
+  };
+
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query(
+        'INSERT INTO suggestions(project_id, type, content) VALUES($1, $2, $3)',
+        [dummySuggestion.project_id, dummySuggestion.type, dummySuggestion.content]
+      );
+      console.log('Dummy suggestion stored successfully.');
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Error storing dummy suggestion:', err);
+  }
+}
+
+// Temporary endpoint to trigger dummy suggestion generation
+app.post('/api/generate-dummy-suggestion', async (_req: express.Request, res: express.Response) => {
+  await generateAndStoreDummySuggestion();
+  res.json({ ok: true, message: 'Dummy suggestion generation triggered.' });
+});
+
 // --- Utilities ---
 
 function ensureDir(dir: string): void {
