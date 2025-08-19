@@ -48,6 +48,7 @@ app.get('/api/db-test', handleDbTest);
 app.get('/api/analytics/events', handleAnalyticsEvents); // New endpoint for analytics events
 app.post('/api/ai-command', handleAiCommand); // New endpoint for AI commands
 app.get('/api/suggestions', handleGetSuggestions); // New endpoint to get suggestions
+app.get('/api/test-db-suggestions', handleTestDbSuggestions); // Temporary endpoint to test suggestions DB connection
 
 // Serve static files from the 'web' directory
 const publicDir = path.join(__dirname, '..', 'web');
@@ -319,7 +320,22 @@ async function handleGetSuggestions(_req: express.Request, res: express.Response
     }
   } catch (err) {
     console.error('Error fetching suggestions:', err);
-    res.status(500).json({ ok: false, error: 'Failed to fetch suggestions' });
+    res.status(500).json({ ok: false, error: 'Failed to fetch suggestions', details: err.message });
+  }
+}
+
+async function handleTestDbSuggestions(_req: express.Request, res: express.Response): Promise<void> {
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query('SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC LIMIT 1');
+      res.json({ ok: true, message: 'Successfully connected to database and queried suggestions table.' });
+    } finally {
+      client.release();
+    }
+  } catch (err: any) {
+    console.error('Error testing suggestions DB connection:', err);
+    res.status(500).json({ ok: false, error: 'Failed to connect to database or query suggestions table.', details: err.message });
   }
 }
 
