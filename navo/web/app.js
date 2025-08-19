@@ -13,6 +13,8 @@ let currentLayout = null;
 
 const API_BASE_URL = 'https://navo-jvh6.onrender.com';
 
+const suggestionsListEl = document.getElementById('suggestionsList');
+
 init();
 
 async function init() {
@@ -31,9 +33,39 @@ async function init() {
     infoEl.textContent = `Draft loaded in ${data.tookMs ?? 0} ms`;
     setStatus('Ready');
     track({ type: 'view:page', page: 'editor' });
+    fetchAndRenderSuggestions(); // Fetch and render suggestions on init
   } catch (e) {
     setStatus(`Failed to load draft: ${e.message}`);
     console.error(e);
+  }
+}
+
+async function fetchAndRenderSuggestions() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/suggestions`);
+    if (!res.ok) {
+      throw new Error(`API responded with status ${res.status}`);
+    }
+    const { suggestions } = await res.json();
+
+    suggestionsListEl.innerHTML = ''; // Clear previous suggestions
+
+    if (suggestions && suggestions.length > 0) {
+      suggestions.forEach(suggestion => {
+        const suggestionEl = document.createElement('div');
+        suggestionEl.className = 'suggestion-card';
+        suggestionEl.innerHTML = `
+          <p>${suggestion.content.description || 'No description'}</p>
+          <button class="apply-suggestion-btn" data-suggestion-id="${suggestion.id}">Apply</button>
+        `;
+        suggestionsListEl.appendChild(suggestionEl);
+      });
+    } else {
+      suggestionsListEl.innerHTML = '<p>No suggestions available.</p>';
+    }
+  } catch (e) {
+    console.error('Error fetching suggestions:', e);
+    suggestionsListEl.innerHTML = `<p class="error">Failed to load suggestions: ${e.message}</p>`;
   }
 }
 
@@ -117,6 +149,7 @@ if (generateDummySuggestionBtn) {
       }
       const data = await res.json();
       setStatus(data.message || 'Dummy suggestion generated.');
+      fetchAndRenderSuggestions(); // Refresh suggestions after generating a new one
     } catch (e) {
       setStatus(`Failed to generate dummy suggestion: ${e.message}`);
       console.error('Error generating dummy suggestion:', e);

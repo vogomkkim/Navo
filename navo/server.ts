@@ -47,6 +47,7 @@ app.get('/health', handleHealth);
 app.get('/api/db-test', handleDbTest);
 app.get('/api/analytics/events', handleAnalyticsEvents); // New endpoint for analytics events
 app.post('/api/ai-command', handleAiCommand); // New endpoint for AI commands
+app.get('/api/suggestions', handleGetSuggestions); // New endpoint to get suggestions
 
 // Serve static files from the 'web' directory
 const publicDir = path.join(__dirname, '..', 'web');
@@ -306,6 +307,21 @@ app.post('/api/generate-dummy-suggestion', async (_req: express.Request, res: ex
   await generateAndStoreDummySuggestion();
   res.json({ ok: true, message: 'Dummy suggestion generation triggered.' });
 });
+
+async function handleGetSuggestions(_req: express.Request, res: express.Response): Promise<void> {
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query('SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC');
+      res.json({ ok: true, suggestions: result.rows });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Error fetching suggestions:', err);
+    res.status(500).json({ ok: false, error: 'Failed to fetch suggestions' });
+  }
+}
 
 // --- Utilities ---
 
