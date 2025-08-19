@@ -43,10 +43,10 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helve
 @media (max-width: 768px) {
   .layout {
     grid-template-columns: 1fr; /* Single column for mobile */
-    grid-template-rows: auto 1fr; /* Stack panel and canvas */
+    grid-template-rows: 1fr auto; /* Stack canvas and panel */
     grid-template-areas:
-      "panel"
-      "canvas";
+      "canvas"
+      "panel";
     height: calc(100vh - 48px); /* Adjust height for mobile */
   }
 
