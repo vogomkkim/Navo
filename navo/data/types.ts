@@ -66,6 +66,10 @@ export interface PublishDeploy {
   createdAt: string;
 }
 
+export interface BuildPageOutput {
+  html: string;
+}
+
 
 // -- Component-specific props --
 // These provide strict type checking for each component's expected properties.

@@ -16,6 +16,13 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[REQ] ${req.method} ${req.path}`);
+  next();
+});
+
 const PORT = process.env.PORT ?? 3000;
 
 const pool = new pg.Pool({
@@ -85,6 +92,7 @@ export default app;
 // --- Handlers ---
 
 async function handleDraft(_req: express.Request, res: express.Response): Promise<void> {
+  console.log('[HANDLER] Entering handleDraft');
   const mockLayout: PageLayout = {
     components: [
       { id: 'c1', type: 'Header', props: { title: 'Welcome to Navo' } },
@@ -94,17 +102,21 @@ async function handleDraft(_req: express.Request, res: express.Response): Promis
   };
   await delay(200);
   res.json({ ok: true, draft: { layout: mockLayout }, tookMs: 200 });
+  console.log('[HANDLER] Exiting handleDraft');
 }
 
 async function handleSave(req: express.Request, res: express.Response): Promise<void> {
+  console.log('[HANDLER] Entering handleSave', { body: req.body });
   const body = req.body || {};
   await delay(100);
   const versionId = `v_${Date.now()}`;
   fs.appendFileSync(path.join(dataDir, 'saves.ndjson'), JSON.stringify({ ts: new Date().toISOString(), versionId, body }) + '\n', 'utf8');
   res.json({ ok: true, versionId });
+  console.log('[HANDLER] Exiting handleSave', { versionId });
 }
 
 async function handleEvents(req: express.Request, res: express.Response): Promise<void> {
+  console.log('[HANDLER] Entering handleEvents', { body: req.body });
   const body = req.body || {};
   const events = Array.isArray(body) ? body : Array.isArray(body?.events) ? body.events : [body];
 
@@ -113,17 +125,19 @@ async function handleEvents(req: express.Request, res: express.Response): Promis
     try {
       for (const event of events) {
         const { type, ...data } = event; // Extract type and rest of the event as data
+        console.log('[HANDLER] Inserting event:', { type, data });
         await client.query(
           'INSERT INTO events(type, data) VALUES($1, $2)',
           [type, data]
         );
       }
       res.json({ ok: true, received: events.length });
+      console.log('[HANDLER] Exiting handleEvents', { received: events.length });
     } finally {
       client.release();
     }
   } catch (err) {
-    console.error('Error inserting events:', err);
+    console.error('[HANDLER] Error inserting events:', err, { eventsToInsert: events });
     res.status(500).json({ ok: false, error: 'Failed to store events' });
   }
 }
@@ -133,17 +147,20 @@ async function handleHealth(_req: express.Request, res: express.Response): Promi
 }
 
 async function handleDbTest(_req: express.Request, res: express.Response): Promise<void> {
+  console.log('[HANDLER] Entering handleDbTest');
   try {
     const client = await pool.connect();
     try {
       const result = await client.query('SELECT NOW() as now');
       res.json({ ok: true, dbTime: result.rows[0].now });
+      console.log('[HANDLER] Exiting handleDbTest - Success');
     } finally {
       client.release();
     }
   } catch (err) {
-    console.error('Database test failed', err);
+    console.error('[HANDLER] Database test failed:', err);
     res.status(500).json({ ok: false, error: 'Database connection error' });
+    console.log('[HANDLER] Exiting handleDbTest - Failure');
   }
 }
 
@@ -319,11 +336,14 @@ Your suggestion:
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
+    let text = response.text();
     console.log("Gemini Suggestion Raw Response:", text);
 
     let parsedSuggestion;
     try {
+      if (text.startsWith('```json')) {
+        text = text.replace(/```json\s*/, '').replace(/\s*```$/, '');
+      }
       parsedSuggestion = JSON.parse(text);
     } catch (parseError) {
       console.error("Failed to parse Gemini suggestion as JSON:", parseError);
