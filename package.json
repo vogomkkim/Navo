@@ -7,7 +7,10 @@
     "build": "tsc -p .",
     "postbuild": "copyfiles -u 2 \"navo/web/**/*\" dist/web",
     "demo": "npm run build && node dist/navo/demo.js",
-    "start": "node dist/navo/start.js"
+    "start": "node dist/navo/start.js",
+    "dev": "tsx watch navo/start.ts",
+    "dev:server": "nodemon --exec tsx navo/start.ts --watch navo/",
+    "dev:web": "tsx watch navo/server.ts"
   },
   "engines": {
     "node": "22.x"
@@ -18,7 +21,9 @@
     "@types/node": "^24.2.1",
     "@types/pg": "^8.15.5",
     "copyfiles": "^2.4.1",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "tsx": "^4.19.2",
+    "nodemon": "^3.1.0"
   },
   "dependencies": {
     "@google/generative-ai": "^0.15.0",

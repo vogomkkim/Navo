@@ -8,7 +8,8 @@ import pg from 'pg';
 import { GoogleGenerativeAI } from '@google/generative-ai'; // Import Gemini SDK
 import dotenv from 'dotenv'; // Import dotenv
 
-dotenv.config(); // Load environment variables
+dotenv.config(); // Loads .env
+dotenv.config({ path: '.env.local', override: true }); // Loads .env.local and overrides existing variables
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,18 +52,33 @@ app.get('/api/suggestions', handleGetSuggestions); // New endpoint to get sugges
 app.get('/api/test-db-suggestions', handleTestDbSuggestions); // Temporary endpoint to test suggestions DB connection
 
 // Serve static files from the 'web' directory
-const publicDir = path.join(__dirname, '..', 'web');
-app.use(express.static(publicDir));
+if (process.env.VERCEL_ENV !== 'production' && process.env.VERCEL_ENV !== 'preview') {
+  const publicDir = path.join(process.cwd(), 'dist', 'web');
+  app.use(express.static(publicDir, { index: false }));
 
-// For any other GET request, serve index.html, allowing client-side routing
-app.get('/*', (req, res) => {
-  const indexPath = path.join(publicDir, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(404).send('Not Found');
-  }
-});
+  // For any other GET request, serve index.html, allowing client-side routing
+  app.get('/*', (req, res) => {
+    console.log(`[LOG] Received request for: ${req.path}`);
+    const indexPath = path.join(publicDir, 'index.html');
+    console.log(`[LOG] Reading index.html from: ${indexPath}`);
+
+    fs.readFile(indexPath, 'utf8', (err, htmlData) => {
+      if (err) {
+        console.error('[LOG] Error reading index.html:', err);
+        return res.status(404).send('Not Found');
+      }
+      console.log('[LOG] Successfully read index.html.');
+
+      const apiUrl = process.env.API_URL || '';
+      console.log(`[LOG] Environment variable API_URL is: "${apiUrl}"`);
+
+      const modifiedHtml = htmlData.replace('__API_URL__', apiUrl);
+      console.log(`[LOG] Placeholder __API_URL__ replaced with "${apiUrl}".`);
+
+      res.send(modifiedHtml);
+    });
+  });
+}
 
 export default app;
 
@@ -320,7 +336,7 @@ async function handleGetSuggestions(_req: express.Request, res: express.Response
     }
   } catch (err) {
     console.error('Error fetching suggestions:', err);
-    res.status(500).json({ ok: false, error: 'Failed to fetch suggestions', details: err.message });
+    res.status(500).json({ ok: false, error: 'Failed to fetch suggestions'});
   }
 }
 

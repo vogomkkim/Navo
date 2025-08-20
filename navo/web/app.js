@@ -11,7 +11,7 @@ const layoutEl = document.querySelector('.layout');
 // 페이지의 현재 상태를 JSON으로 저장할 변수
 let currentLayout = null;
 
-const API_BASE_URL = 'https://navo-jvh6.onrender.com';
+const API_BASE_URL = window.API_BASE_URL || '';
 
 const suggestionsListEl = document.getElementById('suggestionsList');
 
@@ -132,7 +132,7 @@ saveBtn.addEventListener('click', async () => {
     const res = await fetch(`${API_BASE_URL}/api/save`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
     setStatus(`Saved (${data.versionId})`);
-    track({ type: 'editor:change', versionId: data.versionId });
+    track({ type: 'editor:save', versionId: data.versionId });
   } catch (e) {
     setStatus('Save failed');
   }
@@ -162,11 +162,27 @@ canvasEl.addEventListener('click', (ev) => {
 
   // 클릭된 요소가 data-editable="true" 속성을 가졌는지 확인합니다.
   if (target.dataset.editable === 'true') {
+    // The track() call for edits is in handleTextEdit -> finishEditing,
+    // so we don't need to track here to avoid duplicates.
     handleTextEdit(target);
+    return;
   }
 
-  // 기존의 이벤트 트래킹 로직은 그대로 둡니다.
-  track({ type: 'click:canvas', target: target.tagName || 'UNKNOWN' });
+  // Track general component clicks
+  const componentEl = target.closest('[data-id]');
+  if (componentEl) {
+    const componentId = componentEl.dataset.id;
+    const component = currentLayout.components.find(c => c.id === componentId);
+    track({
+      type: 'click:component',
+      componentId: componentId,
+      componentType: component?.type || 'unknown',
+      target: target.tagName || 'UNKNOWN',
+    });
+  } else {
+    // Fallback for clicks on the canvas background
+    track({ type: 'click:canvas', target: target.tagName || 'UNKNOWN' });
+  }
 });
 
 /**
@@ -325,10 +341,12 @@ async function handleChatMessage() { // Made async
 
     addMessageToHistory('assistant', aiResponseText || '(AI): Done.');
     setStatus('Ready');
+    track({ type: 'chat:command', command, response: aiResponseText });
   } catch (e) {
     console.error('AI command failed:', e);
     addMessageToHistory('assistant', `(AI Error): ${e.message}`);
     setStatus('Error');
+    track({ type: 'chat:command', command, error: e.message });
   }
   // --- AI API 호출 끝 ---
 }
@@ -350,3 +368,56 @@ function addMessageToHistory(sender, message) {
 togglePanelBtn.addEventListener('click', () => {
   layoutEl.classList.toggle('panel-left');
 });
+
+// --- 제안 적용 로직 추가 ---
+suggestionsListEl.addEventListener('click', (ev) => {
+  if (ev.target.classList.contains('apply-suggestion-btn')) {
+    const suggestionId = ev.target.dataset.suggestionId;
+    applySuggestion(suggestionId);
+  }
+});
+
+async function applySuggestion(suggestionId) {
+  // For now, we'll just log the action.
+  // In a real app, you would fetch the suggestion details
+  // and apply the changes to the currentLayout.
+  console.log(`Applying suggestion ${suggestionId}`);
+  setStatus(`Applying suggestion ${suggestionId}...`);
+
+  // This is a placeholder. You would need an API endpoint to get a single suggestion
+  // or have the suggestion data available on the client.
+  // For this example, let's assume we need to fetch it.
+  try {
+    // This is a mock implementation. In a real scenario, you'd fetch the suggestion
+    // and apply its `content` to the `currentLayout`.
+    const res = await fetch(`${API_BASE_URL}/api/suggestions`);
+    const { suggestions } = await res.json();
+    const suggestionToApply = suggestions.find(s => s.id === suggestionId);
+
+    if (suggestionToApply && suggestionToApply.content) {
+      const change = suggestionToApply.content;
+      if (change.type === 'update' && change.id) {
+        const index = currentLayout.components.findIndex(c => c.id === change.id);
+        if (index !== -1) {
+          // Deep merge props to avoid overwriting existing ones
+          const originalComponent = currentLayout.components[index];
+          const newProps = { ...originalComponent.props, ...change.payload.props };
+          if (change.payload.props.style) {
+            newProps.style = { ...originalComponent.props.style, ...change.payload.props.style };
+          }
+          currentLayout.components[index] = { ...originalComponent, props: newProps };
+        }
+      } else if (change.type === 'add') {
+        currentLayout.components.push(change.payload);
+      }
+      renderLayout(currentLayout);
+      setStatus(`Suggestion ${suggestionId} applied.`);
+      track({ type: 'suggestion:apply', suggestionId });
+    } else {
+      throw new Error('Suggestion not found or has no content.');
+    }
+  } catch (e) {
+    console.error('Failed to apply suggestion:', e);
+    setStatus(`Error applying suggestion: ${e.message}`);
+  }
+}
