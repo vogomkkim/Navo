@@ -188,7 +188,7 @@ async function handleAiCommand(req: express.Request, res: express.Response): Pro
   console.log(`Received AI command: "${command}"`);
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `You are an AI assistant for a web page builder.
 The user wants to modify their current web page.
@@ -285,44 +285,100 @@ Your response MUST be a valid JSON object. Do not include any other text or mark
   }
 }
 
-async function generateAndStoreDummySuggestion(): Promise<void> {
-  const dummySuggestion = {
-    project_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', // Replace with a valid project ID from your DB or a test one
-    type: 'style',
-    content: {
-      type: 'update',
-      id: 'c1', // Assuming 'c1' is the ID of the Header component
-      payload: {
-        props: {
-          style: {
-            backgroundColor: '#f0f8ff' // AliceBlue
-          }
-        }
-      },
-      description: 'Suggests changing header background to AliceBlue for a softer look.'
+async function generateAiSuggestion(currentLayout: PageLayout): Promise<any> {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+  const prompt = `You are an AI assistant that suggests improvements for web page layouts.
+Analyze the provided 
+currentLayout (a JSON object representing the page components).
+Suggest ONE actionable improvement. The suggestion should be concise and focus on a single change.
+The suggestion should be in the following JSON format:
+{
+  "type": "style" | "content" | "component", // Type of suggestion
+  "content": { // The actual change to apply, matching the structure expected by the frontend
+    "type": "update" | "add" | "remove",
+    "id": "component_id", // If updating/removing
+    "payload": { // The data for the change
+      // e.g., for style update: { props: { style: { color: "blue" } } }
+      // e.g., for content update: { props: { headline: "New Headline" } }
+      // e.g., for add: { id: "new_id", type: "ComponentType", props: {} }
+    },
+    "description": "A brief, human-readable description of the suggestion."
+  }
+}
+
+Example:
+If the layout has a Header, suggest changing its background color.
+If the layout has a Hero, suggest a different CTA text.
+
+Current Layout: ${JSON.stringify(currentLayout, null, 2)}
+
+Your suggestion:
+`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    console.log("Gemini Suggestion Raw Response:", text);
+
+    let parsedSuggestion;
+    try {
+      parsedSuggestion = JSON.parse(text);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini suggestion as JSON:", parseError);
+      console.error("Raw Gemini suggestion text:", text);
+      throw new Error('AI suggestion was not valid JSON.');
     }
-  };
+    return parsedSuggestion;
+
+  } catch (err) {
+    console.error('Error calling Gemini API for suggestion:', err);
+    throw new Error('Failed to get suggestion from AI.');
+  }
+}
+
+async function generateAndStoreDummySuggestion(): Promise<void> {
+  // Fetch the current layout from the draft API to pass to the AI
+  const draftRes = await fetch(`http://localhost:${PORT}/api/draft`);
+  const draftData = await draftRes.json();
+  const currentLayout = draftData?.draft?.layout;
+
+  if (!currentLayout) {
+    console.error('Could not fetch current layout for AI suggestion.');
+    return;
+  }
+
+  const aiSuggestion = await generateAiSuggestion(currentLayout);
+
+  // Use a placeholder project_id for now. In a real app, this would come from context.
+  const projectId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'; 
 
   try {
     const client = await pool.connect();
     try {
       await client.query(
         'INSERT INTO suggestions(project_id, type, content) VALUES($1, $2, $3)',
-        [dummySuggestion.project_id, dummySuggestion.type, dummySuggestion.content]
+        [projectId, aiSuggestion.type, aiSuggestion.content]
       );
-      console.log('Dummy suggestion stored successfully.');
+      console.log('AI-generated suggestion stored successfully.');
     } finally {
       client.release();
     }
   } catch (err) {
-    console.error('Error storing dummy suggestion:', err);
+    console.error('Error storing AI-generated suggestion:', err);
   }
 }
 
 // Temporary endpoint to trigger dummy suggestion generation
 app.post('/api/generate-dummy-suggestion', async (_req: express.Request, res: express.Response) => {
-  await generateAndStoreDummySuggestion();
-  res.json({ ok: true, message: 'Dummy suggestion generation triggered.' });
+  try {
+    await generateAndStoreDummySuggestion();
+    res.json({ ok: true, message: 'AI suggestion generated and stored.' });
+  } catch (err: any) {
+    console.error('Error generating and storing AI suggestion:', err);
+    res.status(500).json({ ok: false, error: err.message || 'Failed to generate and store AI suggestion.' });
+  }
 });
 
 async function handleGetSuggestions(_req: express.Request, res: express.Response): Promise<void> {
