@@ -1,13 +1,33 @@
-* { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #111; }
-.topbar { min-height: 48px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid #e5e7eb; justify-content: space-between; }
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  color: #111;
+}
+.topbar {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid #e5e7eb;
+  justify-content: space-between;
+}
 
 /* --- Layout Rules (Refactored with Grid Areas) --- */
 .layout {
   display: grid;
   /* 기본 컬럼 너비와 영역 이름을 정의합니다. */
   grid-template-columns: 1fr 320px;
-  grid-template-areas: "canvas panel";
+  grid-template-areas: 'canvas panel';
   height: calc(100vh - 48px);
 }
 
@@ -31,7 +51,7 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helve
 .layout.panel-left {
   /* 컬럼 너비와 영역 이름의 순서를 모두 바꿉니다. */
   grid-template-columns: 320px 1fr;
-  grid-template-areas: "panel canvas";
+  grid-template-areas: 'panel canvas';
 }
 
 .layout.panel-left .panel {
@@ -45,8 +65,8 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helve
     grid-template-columns: 1fr; /* Single column for mobile */
     grid-template-rows: 1fr auto; /* Stack canvas and panel */
     grid-template-areas:
-      "canvas"
-      "panel";
+      'canvas'
+      'panel';
     height: calc(100vh - 48px); /* Adjust height for mobile */
   }
 
@@ -65,8 +85,8 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helve
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
     grid-template-areas:
-      "panel"
-      "canvas";
+      'panel'
+      'canvas';
   }
 
   .layout.panel-left .panel {
@@ -76,12 +96,37 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helve
 }
 /* --- End of Layout Rules --- */
 
-.panel-section { margin-bottom: 24px; }
-button { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer; }
-button:hover { background: #f8fafc; }
-section { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; max-width: 720px; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-section h1 { font-size: 28px; margin: 0 0 16px; }
-section img { max-width: 100%; height: auto; border-radius: 8px; }
+.panel-section {
+  margin-bottom: 24px;
+}
+button {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+}
+button:hover {
+  background: #f8fafc;
+}
+section {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 720px;
+  margin: 0 auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+section h1 {
+  font-size: 28px;
+  margin: 0 0 16px;
+}
+section img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
 
 .suggestion-card {
   background: #ffffff;
@@ -89,7 +134,7 @@ section img { max-width: 100%; height: auto; border-radius: 8px; }
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 10px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -104,4 +149,95 @@ section img { max-width: 100%; height: auto; border-radius: 8px; }
 
 .suggestion-card button {
   align-self: flex-end; /* Align button to the end */
+}
+
+/* Project Generation Section */
+.project-generation-section {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 1rem;
+}
+
+.project-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.project-form input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.project-form input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.project-form button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.project-form button:hover {
+  background: #0056b3;
+}
+
+.project-form button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.project-result {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.project-result h3 {
+  margin: 0 0 0.5rem 0;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.project-result pre {
+  background: #e9ecef;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.project-result .structure-item {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 4px;
+  border-left: 3px solid #007bff;
+}
+
+.project-result .structure-item h4 {
+  margin: 0 0 0.25rem 0;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.project-result .structure-item p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.8rem;
 }

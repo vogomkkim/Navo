@@ -8,6 +8,14 @@ const chatHistory = document.getElementById('chatHistory');
 const togglePanelBtn = document.getElementById('togglePanelBtn');
 const layoutEl = document.querySelector('.layout');
 
+// Project generation elements
+const projectDescription = document.getElementById('projectDescription');
+const projectFeatures = document.getElementById('projectFeatures');
+const targetAudience = document.getElementById('targetAudience');
+const businessType = document.getElementById('businessType');
+const generateProjectBtn = document.getElementById('generateProjectBtn');
+const projectResult = document.getElementById('projectResult');
+
 // 페이지의 현재 상태를 JSON으로 저장할 변수
 let currentLayout = null;
 
@@ -51,7 +59,7 @@ async function fetchAndRenderSuggestions() {
     suggestionsListEl.innerHTML = ''; // Clear previous suggestions
 
     if (suggestions && suggestions.length > 0) {
-      suggestions.forEach(suggestion => {
+      suggestions.forEach((suggestion) => {
         const suggestionEl = document.createElement('div');
         suggestionEl.className = 'suggestion-card';
         suggestionEl.innerHTML = `
@@ -88,32 +96,34 @@ function renderLayout(layout) {
     return;
   }
 
-  const html = layout.components.map(component => {
-    const { id, type, props } = component;
-    // props에서 스타일 객체를 가져와 문자열로 변환합니다.
-    const styleString = toStyleString(props.style);
+  const html = layout.components
+    .map((component) => {
+      const { id, type, props } = component;
+      // props에서 스타일 객체를 가져와 문자열로 변환합니다.
+      const styleString = toStyleString(props.style);
 
-    switch (type) {
-      case 'Header':
-        // data-editable 속성을 추가하여 편집 가능함을 표시하고,
-        // data-component-id와 data-prop-name으로 어떤 데이터를 수정해야 하는지 명시합니다.
-        return `<header class="component-header" data-id="${id}">
+      switch (type) {
+        case 'Header':
+          // data-editable 속성을 추가하여 편집 가능함을 표시하고,
+          // data-component-id와 data-prop-name으로 어떤 데이터를 수정해야 하는지 명시합니다.
+          return `<header class="component-header" data-id="${id}">
                   <h1 data-editable="true" data-component-id="${id}" data-prop-name="title" style="${styleString}">${props.title || ''}</h1>
                 </header>`;
-      case 'Hero':
-        // Hero 섹션의 경우, 스타일을 섹션 전체에 적용해 보겠습니다.
-        return `<section class="component-hero" data-id="${id}" style="${styleString}">
+        case 'Hero':
+          // Hero 섹션의 경우, 스타일을 섹션 전체에 적용해 보겠습니다.
+          return `<section class="component-hero" data-id="${id}" style="${styleString}">
                   <h2 data-editable="true" data-component-id="${id}" data-prop-name="headline">${props.headline || ''}</h2>
                   <p data-editable="true" data-component-id="${id}" data-prop-name="cta">${props.cta || ''}</p>
                 </section>`;
-      case 'Footer':
-        return `<footer class="component-footer" data-id="${id}">
+        case 'Footer':
+          return `<footer class="component-footer" data-id="${id}">
                   <p data-editable="true" data-component-id="${id}" data-prop-name="text" style="${styleString}">${props.text || ''}</p>
                 </footer>`;
-      default:
-        return `<div class="component-unknown" data-id="${id}"><p>Unknown component type: <strong>${type}</strong></p></div>`;
-    }
-  }).join('');
+        default:
+          return `<div class="component-unknown" data-id="${id}"><p>Unknown component type: <strong>${type}</strong></p></div>`;
+      }
+    })
+    .join('');
 
   canvasEl.innerHTML = html;
 }
@@ -129,7 +139,11 @@ saveBtn.addEventListener('click', async () => {
   const payload = { layout: currentLayout };
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/save`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await fetch(`${API_BASE_URL}/api/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
     const data = await res.json();
     setStatus(`Saved (${data.versionId})`);
     track({ type: 'editor:save', versionId: data.versionId });
@@ -172,7 +186,7 @@ canvasEl.addEventListener('click', (ev) => {
   const componentEl = target.closest('[data-id]');
   if (componentEl) {
     const componentId = componentEl.dataset.id;
-    const component = currentLayout.components.find(c => c.id === componentId);
+    const component = currentLayout.components.find((c) => c.id === componentId);
     track({
       type: 'click:component',
       componentId: componentId,
@@ -230,7 +244,7 @@ function handleTextEdit(element) {
     const propName = element.dataset.propName;
 
     if (currentLayout && componentId && propName) {
-      const componentToUpdate = currentLayout.components.find(c => c.id === componentId);
+      const componentToUpdate = currentLayout.components.find((c) => c.id === componentId);
       if (componentToUpdate) {
         componentToUpdate.props[propName] = newValue;
         console.log('Updated layout:', currentLayout); // 데이터 변경 확인용 로그
@@ -272,7 +286,11 @@ async function flushEvents() {
   flushTimer = null;
   if (batch.length === 0) return;
   try {
-    await fetch(`${API_BASE_URL}/api/events`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ events: batch }) });
+    await fetch(`${API_BASE_URL}/api/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ events: batch }),
+    });
   } catch (_) {
     // ignore errors for mock
   }
@@ -293,7 +311,8 @@ chatInput.addEventListener('keydown', (e) => {
 /**
  * 채팅 메시지 전송을 처리합니다.
  */
-async function handleChatMessage() { // Made async
+async function handleChatMessage() {
+  // Made async
   const command = chatInput.value.trim();
   if (!command) return;
 
@@ -323,12 +342,16 @@ async function handleChatMessage() { // Made async
       // For now, we assume layoutChanges directly replaces or updates components.
       if (layoutChanges.components) {
         currentLayout.components = layoutChanges.components;
-      } else if (Array.isArray(layoutChanges)) { // If layoutChanges is an array of updates
-        layoutChanges.forEach(change => {
+      } else if (Array.isArray(layoutChanges)) {
+        // If layoutChanges is an array of updates
+        layoutChanges.forEach((change) => {
           if (change.type === 'update' && change.id) {
-            const index = currentLayout.components.findIndex(c => c.id === change.id);
+            const index = currentLayout.components.findIndex((c) => c.id === change.id);
             if (index !== -1) {
-              currentLayout.components[index] = { ...currentLayout.components[index], ...change.payload };
+              currentLayout.components[index] = {
+                ...currentLayout.components[index],
+                ...change.payload,
+              };
             }
           } else if (change.type === 'add') {
             currentLayout.components.push(change.payload);
@@ -392,12 +415,12 @@ async function applySuggestion(suggestionId) {
     // and apply its `content` to the `currentLayout`.
     const res = await fetch(`${API_BASE_URL}/api/suggestions`);
     const { suggestions } = await res.json();
-    const suggestionToApply = suggestions.find(s => s.id === suggestionId);
+    const suggestionToApply = suggestions.find((s) => s.id === suggestionId);
 
     if (suggestionToApply && suggestionToApply.content) {
       const change = suggestionToApply.content;
       if (change.type === 'update' && change.id) {
-        const index = currentLayout.components.findIndex(c => c.id === change.id);
+        const index = currentLayout.components.findIndex((c) => c.id === change.id);
         if (index !== -1) {
           // Deep merge props to avoid overwriting existing ones
           const originalComponent = currentLayout.components[index];
@@ -420,4 +443,103 @@ async function applySuggestion(suggestionId) {
     console.error('Failed to apply suggestion:', e);
     setStatus(`Error applying suggestion: ${e.message}`);
   }
+}
+
+// --- Project Generation Logic ---
+generateProjectBtn.addEventListener('click', async () => {
+  await generateProject();
+});
+
+async function generateProject() {
+  const description = projectDescription.value.trim();
+  const features = projectFeatures.value.trim();
+  const audience = targetAudience.value.trim();
+  const business = businessType.value.trim();
+
+  if (!description) {
+    alert('Please enter a project description');
+    return;
+  }
+
+  setStatus('Generating project structure...');
+  generateProjectBtn.disabled = true;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/generate-project`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        description,
+        features: features ? features.split(',').map(f => f.trim()) : [],
+        targetAudience: audience,
+        businessType: business
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.ok && data.project) {
+      displayProjectResult(data.project);
+      setStatus(`Project "${data.project.structure.name}" generated successfully!`);
+      track({ type: 'project:generated', projectName: data.project.structure.name });
+    } else {
+      throw new Error(data.error || 'Failed to generate project');
+    }
+
+  } catch (error) {
+    console.error('Project generation failed:', error);
+    setStatus(`Error: ${error.message}`);
+    projectResult.innerHTML = `<p class="error">Failed to generate project: ${error.message}</p>`;
+  } finally {
+    generateProjectBtn.disabled = false;
+  }
+}
+
+function displayProjectResult(project) {
+  const { structure, code, instructions } = project;
+  
+  let html = `
+    <h3>Generated Project: ${structure.name}</h3>
+    <p><strong>Description:</strong> ${structure.description}</p>
+    
+    <div class="structure-item">
+      <h4>📄 Pages (${structure.pages.length})</h4>
+      <p>${structure.pages.map(p => `${p.name} (${p.path})`).join(', ')}</p>
+    </div>
+    
+    <div class="structure-item">
+      <h4>🧩 Components (${structure.components.length})</h4>
+      <p>${structure.components.map(c => c.name).join(', ')}</p>
+    </div>
+    
+    <div class="structure-item">
+      <h4>🗄️ Database Tables (${structure.database.tables.length})</h4>
+      <p>${structure.database.tables.map(t => t.name).join(', ')}</p>
+    </div>
+    
+    <div class="structure-item">
+      <h4>🔌 API Endpoints (${structure.apiEndpoints.length})</h4>
+      <p>${structure.apiEndpoints.map(e => `${e.method} ${e.path}`).join(', ')}</p>
+    </div>
+    
+    <div class="structure-item">
+      <h4>📋 Next Steps</h4>
+      <ul>
+        ${instructions.map(instruction => `<li>${instruction}</li>`).join('')}
+      </ul>
+    </div>
+    
+    <details>
+      <summary>📊 Database Schema</summary>
+      <pre>${code.database}</pre>
+    </details>
+  `;
+  
+  projectResult.innerHTML = html;
 }
