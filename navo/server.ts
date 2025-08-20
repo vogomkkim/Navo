@@ -57,7 +57,9 @@ app.get('/api/analytics/events', handleAnalyticsEvents); // New endpoint for ana
 app.post('/api/ai-command', handleAiCommand); // New endpoint for AI commands
 app.get('/api/suggestions', handleGetSuggestions); // New endpoint to get suggestions
 app.get('/api/test-db-suggestions', handleTestDbSuggestions); // Temporary endpoint to test suggestions DB connection
+app.post('/api/generate-project', handleGenerateProject); // New endpoint for AI Intent Parser
 app.post('/api/seed-dummy-data', handleSeedDummyData); // Temporary endpoint to seed dummy user and project
+app.post('/api/apply-suggestion', handleApplySuggestion); // New endpoint to apply AI suggestions
 
 // Serve static files from the 'web' directory
 if (process.env.VERCEL_ENV !== 'production' && process.env.VERCEL_ENV !== 'preview') {
@@ -92,17 +94,22 @@ export default app;
 
 // --- Handlers ---
 
+let currentMockLayout: PageLayout = {
+  components: [
+    { id: 'c1', type: 'Header', props: { title: 'Welcome to Navo' } },
+    {
+      id: 'c2',
+      type: 'Hero',
+      props: { headline: 'Build your app by talking to it.', cta: 'Get Started' },
+    },
+    { id: 'c3', type: 'Footer', props: { text: `© ${new Date().getFullYear()} Navo` } },
+  ],
+};
+
 async function handleDraft(_req: express.Request, res: express.Response): Promise<void> {
   console.log('[HANDLER] Entering handleDraft');
-  const mockLayout: PageLayout = {
-    components: [
-      { id: 'c1', type: 'Header', props: { title: 'Welcome to Navo' } },
-      { id: 'c2', type: 'Hero', props: { headline: 'Build your app by talking to it.', cta: 'Get Started' } },
-      { id: 'c3', type: 'Footer', props: { text: `© ${new Date().getFullYear()} Navo` } },
-    ],
-  };
   await delay(200);
-  res.json({ ok: true, draft: { layout: mockLayout }, tookMs: 200 });
+  res.json({ ok: true, draft: { layout: currentMockLayout }, tookMs: 200 });
   console.log('[HANDLER] Exiting handleDraft');
 }
 
@@ -111,7 +118,11 @@ async function handleSave(req: express.Request, res: express.Response): Promise<
   const body = req.body || {};
   await delay(100);
   const versionId = `v_${Date.now()}`;
-  fs.appendFileSync(path.join(dataDir, 'saves.ndjson'), JSON.stringify({ ts: new Date().toISOString(), versionId, body }) + '\n', 'utf8');
+  fs.appendFileSync(
+    path.join(dataDir, 'saves.ndjson'),
+    JSON.stringify({ ts: new Date().toISOString(), versionId, body }) + '\n',
+    'utf8',
+  );
   res.json({ ok: true, versionId });
   console.log('[HANDLER] Exiting handleSave', { versionId });
 }
@@ -127,10 +138,7 @@ async function handleEvents(req: express.Request, res: express.Response): Promis
       for (const event of events) {
         const { type, ...data } = event; // Extract type and rest of the event as data
         console.log('[HANDLER] Inserting event:', { type, data });
-        await client.query(
-          'INSERT INTO events(type, data) VALUES($1, $2)',
-          [type, data]
-        );
+        await client.query('INSERT INTO events(type, data) VALUES($1, $2)', [type, data]);
       }
       res.json({ ok: true, received: events.length });
       console.log('[HANDLER] Exiting handleEvents', { received: events.length });
@@ -206,7 +214,7 @@ async function handleAiCommand(req: express.Request, res: express.Response): Pro
   console.log(`Received AI command: "${command}"`);
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `You are an AI assistant for a web page builder.
 The user wants to modify their current web page.
@@ -278,15 +286,15 @@ Your response MUST be a valid JSON object. Do not include any other text or mark
     const response = await result.response;
     const text = response.text();
 
-    console.log("Gemini Raw Response:", text);
+    console.log('Gemini Raw Response:', text);
 
     // Attempt to parse the JSON response
     let parsedResponse;
     try {
       parsedResponse = JSON.parse(text);
     } catch (parseError) {
-      console.error("Failed to parse Gemini response as JSON:", parseError);
-      console.error("Raw Gemini text:", text);
+      console.error('Failed to parse Gemini response as JSON:', parseError);
+      console.error('Raw Gemini text:', text);
       res.status(500).json({ ok: false, error: 'AI response was not valid JSON.' });
       return; // Explicitly return void after sending response
     }
@@ -295,7 +303,6 @@ Your response MUST be a valid JSON object. Do not include any other text or mark
 
     res.json({ ok: true, layoutChanges, aiResponseText });
     return; // Explicitly return void after sending response
-
   } catch (err) {
     console.error('Error calling Gemini API:', err);
     res.status(500).json({ ok: false, error: 'Failed to get response from AI.' });
@@ -305,7 +312,7 @@ Your response MUST be a valid JSON object. Do not include any other text or mark
 
 async function generateAiSuggestion(currentLayout: PageLayout): Promise<any> {
   console.log('[AI] Entering generateAiSuggestion', { currentLayout });
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
   const prompt = `You are an AI assistant that suggests improvements for web page layouts.
 Analyze the provided 
@@ -357,7 +364,6 @@ Your suggestion:
     }
     console.log('[AI] Exiting generateAiSuggestion - Success');
     return parsedSuggestion;
-
   } catch (err) {
     console.error('[AI] Error calling Gemini API for suggestion:', err);
     console.log('[AI] Exiting generateAiSuggestion - Failure');
@@ -385,7 +391,7 @@ async function generateAndStoreDummySuggestion(): Promise<void> {
     console.log('[AI] AI suggestion generated:', aiSuggestion);
 
     // Use a placeholder project_id for now. In a real app, this would come from context.
-    const projectId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'; 
+    const projectId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
     try {
       const client = await pool.connect();
@@ -393,7 +399,7 @@ async function generateAndStoreDummySuggestion(): Promise<void> {
         console.log('[AI] Storing AI suggestion in database...');
         await client.query(
           'INSERT INTO suggestions(project_id, type, content) VALUES($1, $2, $3)',
-          [projectId, aiSuggestion.type, aiSuggestion.content]
+          [projectId, aiSuggestion.type, aiSuggestion.content],
         );
         console.log('[AI] AI-generated suggestion stored successfully.');
       } finally {
@@ -415,7 +421,9 @@ app.post('/api/generate-dummy-suggestion', async (_req: express.Request, res: ex
     res.json({ ok: true, message: 'AI suggestion generated and stored.' });
   } catch (err: any) {
     console.error('Error generating and storing AI suggestion:', err);
-    res.status(500).json({ ok: false, error: err.message || 'Failed to generate and store AI suggestion.' });
+    res
+      .status(500)
+      .json({ ok: false, error: err.message || 'Failed to generate and store AI suggestion.' });
   }
 });
 
@@ -425,35 +433,112 @@ async function handleGetSuggestions(_req: express.Request, res: express.Response
     const client = await pool.connect();
     try {
       console.log('[HANDLER] Fetching suggestions from database...');
-      const result = await client.query('SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC');
+      const result = await client.query(
+        'SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC',
+      );
       res.json({ ok: true, suggestions: result.rows });
-      console.log('[HANDLER] Exiting handleGetSuggestions - Success', { count: result.rows.length });
+      console.log('[HANDLER] Exiting handleGetSuggestions - Success', {
+        count: result.rows.length,
+      });
     } finally {
       client.release();
     }
   } catch (err) {
     console.error('[HANDLER] Error fetching suggestions:', err);
-    res.status(500).json({ ok: false, error: 'Failed to fetch suggestions'});
+    res.status(500).json({ ok: false, error: 'Failed to fetch suggestions' });
     console.log('[HANDLER] Exiting handleGetSuggestions - Failure');
   }
 }
 
-async function handleTestDbSuggestions(_req: express.Request, res: express.Response): Promise<void> {
+async function handleTestDbSuggestions(
+  _req: express.Request,
+  res: express.Response,
+): Promise<void> {
   console.log('[HANDLER] Entering handleTestDbSuggestions');
   try {
     const client = await pool.connect();
     try {
       console.log('[HANDLER] Testing suggestions DB connection...');
-      await client.query('SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC LIMIT 1');
-      res.json({ ok: true, message: 'Successfully connected to database and queried suggestions table.' });
+      await client.query(
+        'SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC LIMIT 1',
+      );
+      res.json({
+        ok: true,
+        message: 'Successfully connected to database and queried suggestions table.',
+      });
       console.log('[HANDLER] Exiting handleTestDbSuggestions - Success');
     } finally {
       client.release();
     }
   } catch (err: any) {
     console.error('[HANDLER] Error testing suggestions DB connection:', err);
-    res.status(500).json({ ok: false, error: 'Failed to connect to database or query suggestions table.', details: err.message });
+    res.status(500).json({
+      ok: false,
+      error: 'Failed to connect to database or query suggestions table.',
+      details: err.message,
+    });
     console.log('[HANDLER] Exiting handleTestDbSuggestions - Failure');
+  }
+}
+
+async function handleApplySuggestion(req: express.Request, res: express.Response): Promise<void> {
+  console.log('[HANDLER] Entering handleApplySuggestion', { body: req.body });
+  const { suggestionId, layoutChanges } = req.body;
+
+  if (!layoutChanges) {
+    res.status(400).json({ ok: false, error: 'layoutChanges are required.' });
+    console.log('[HANDLER] Exiting handleApplySuggestion - Failure: Missing layoutChanges');
+    return;
+  }
+
+  try {
+    // Apply layout changes to currentMockLayout
+    if (Array.isArray(layoutChanges)) {
+      for (const change of layoutChanges) {
+        if (change.type === 'add') {
+          currentMockLayout.components.push(change.payload);
+          console.log('[HANDLER] Applied add change:', change.payload);
+        } else if (change.type === 'update') {
+          currentMockLayout.components = currentMockLayout.components.map((comp) =>
+            comp.id === change.id ? { ...comp, ...change.payload } : comp,
+          );
+          console.log('[HANDLER] Applied update change for ID:', change.id);
+        } else if (change.type === 'remove') {
+          currentMockLayout.components = currentMockLayout.components.filter(
+            (comp) => comp.id !== change.id,
+          );
+          console.log('[HANDLER] Applied remove change for ID:', change.id);
+        }
+      }
+    } else if (layoutChanges.components) {
+      // If the entire layout is replaced
+      currentMockLayout = layoutChanges;
+      console.log('[HANDLER] Replaced entire layout.');
+    }
+
+    // Update applied_at timestamp in DB
+    if (suggestionId) {
+      const client = await pool.connect();
+      try {
+        await client.query('UPDATE suggestions SET applied_at = NOW() WHERE id = $1', [
+          suggestionId,
+        ]);
+        console.log('[HANDLER] Updated applied_at for suggestionId:', suggestionId);
+      } finally {
+        client.release();
+      }
+    }
+
+    res.json({
+      ok: true,
+      message: 'Suggestion applied successfully.',
+      newLayout: currentMockLayout,
+    });
+    console.log('[HANDLER] Exiting handleApplySuggestion - Success');
+  } catch (err: any) {
+    console.error('[HANDLER] Error applying suggestion:', err);
+    res.status(500).json({ ok: false, error: 'Failed to apply suggestion.', details: err.message });
+    console.log('[HANDLER] Exiting handleApplySuggestion - Failure');
   }
 }
 
@@ -470,10 +555,11 @@ async function handleSeedDummyData(_req: express.Request, res: express.Response)
       const userExists = await client.query('SELECT 1 FROM users WHERE id = $1', [dummyUserId]);
       if (userExists.rows.length === 0) {
         console.log('[HANDLER] Inserting dummy user...');
-        await client.query(
-          'INSERT INTO users(id, email, name) VALUES($1, $2, $3)',
-          [dummyUserId, 'dummy@example.com', 'Dummy User']
-        );
+        await client.query('INSERT INTO users(id, email, name) VALUES($1, $2, $3)', [
+          dummyUserId,
+          'dummy@example.com',
+          'Dummy User',
+        ]);
         console.log('[HANDLER] Dummy user inserted.');
       } else {
         console.log('[HANDLER] Dummy user already exists.');
@@ -481,13 +567,16 @@ async function handleSeedDummyData(_req: express.Request, res: express.Response)
 
       // Insert dummy project if not exists
       console.log('[HANDLER] Checking for dummy project...');
-      const projectExists = await client.query('SELECT 1 FROM projects WHERE id = $1', [dummyProjectId]);
+      const projectExists = await client.query('SELECT 1 FROM projects WHERE id = $1', [
+        dummyProjectId,
+      ]);
       if (projectExists.rows.length === 0) {
         console.log('[HANDLER] Inserting dummy project...');
-        await client.query(
-          'INSERT INTO projects(id, owner_id, name) VALUES($1, $2, $3)',
-          [dummyProjectId, dummyUserId, 'Dummy Project for AI Suggestions']
-        );
+        await client.query('INSERT INTO projects(id, owner_id, name) VALUES($1, $2, $3)', [
+          dummyProjectId,
+          dummyUserId,
+          'Dummy Project for AI Suggestions',
+        ]);
         console.log('[HANDLER] Dummy project inserted.');
       } else {
         console.log('[HANDLER] Dummy project already exists.');
@@ -502,6 +591,159 @@ async function handleSeedDummyData(_req: express.Request, res: express.Response)
     console.error('[HANDLER] Error seeding dummy data:', err);
     res.status(500).json({ ok: false, error: 'Failed to seed dummy data.', details: err.message });
     console.log('[HANDLER] Exiting handleSeedDummyData - Failure');
+  }
+}
+
+async function handleGenerateProject(req: express.Request, res: express.Response): Promise<void> {
+  const { description, features, targetAudience, businessType } = req.body;
+  console.log(`Received project generation request: "${description}"`);
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+    const prompt = `You are an AI architect for a web application builder. The user wants to create a website with the following requirements:
+
+Description: "${description}"
+Features: ${features ? features.join(', ') : 'Not specified'}
+Target Audience: ${targetAudience || 'General users'}
+Business Type: ${businessType || 'Not specified'}
+
+Based on these requirements, generate a complete project structure including:
+
+1. Database schema with tables, columns, and relationships
+2. Page structure with routes and layouts
+3. Component definitions for the UI
+4. API endpoints for functionality
+5. SQL schema for database creation
+
+Your response MUST be a valid JSON object with this structure:
+{
+  "structure": {
+    "name": "Project Name",
+    "description": "Brief description",
+    "pages": [
+      {
+        "name": "Page Name",
+        "path": "/route",
+        "components": [
+          {
+            "id": "comp_id",
+            "type": "ComponentType",
+            "props": { "title": "Value" }
+          }
+        ],
+        "layout": "single-column"
+      }
+    ],
+    "components": [
+      {
+        "name": "Component Name",
+        "type": "ComponentType",
+        "props": { "title": "Default Value" }
+      }
+    ],
+    "database": {
+      "tables": [
+        {
+          "name": "table_name",
+          "columns": [
+            {
+              "name": "column_name",
+              "type": "text|integer|boolean|timestamp|json|uuid",
+              "nullable": false,
+              "primaryKey": true
+            }
+          ],
+          "indexes": ["index_name"]
+        }
+      ],
+      "relationships": [
+        {
+          "from": "table1",
+          "to": "table2",
+          "type": "one-to-many",
+          "foreignKey": "table2.table1_id"
+        }
+      ]
+    },
+    "apiEndpoints": [
+      {
+        "path": "/api/endpoint",
+        "method": "GET|POST|PUT|DELETE",
+        "description": "What this endpoint does"
+      }
+    ]
+  },
+  "code": {
+    "database": "CREATE TABLE...",
+    "components": {},
+    "pages": {},
+    "api": {}
+  },
+  "instructions": [
+    "Step 1: Create database tables",
+    "Step 2: Set up API endpoints",
+    "Step 3: Create page components"
+  ]
+}
+
+Focus on creating a realistic, functional structure. For example, if it's an Instagram-like site, include tables for users, posts, comments, likes, follows, etc.
+
+Your response MUST be valid JSON. Do not include any other text or markdown outside the JSON.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log('AI Project Generation Raw Response:', text);
+
+    // Attempt to parse the JSON response
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Failed to parse AI project generation response as JSON:', parseError);
+      console.error('Raw AI text:', text);
+      res.status(500).json({ ok: false, error: 'AI response was not valid JSON.' });
+      return;
+    }
+
+    // Validate the response structure
+    if (!parsedResponse.structure || !parsedResponse.code) {
+      res.status(500).json({ ok: false, error: 'AI response missing required structure or code.' });
+      return;
+    }
+
+    // Save the generated project to database (optional)
+    try {
+      const client = await pool.connect();
+      try {
+        await client.query(
+          'INSERT INTO projects (id, owner_id, name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)',
+          [
+            `proj_${Date.now()}`,
+            'temp_owner', // You might want to get this from auth
+            parsedResponse.structure.name,
+            new Date().toISOString(),
+            new Date().toISOString(),
+          ],
+        );
+      } finally {
+        client.release();
+      }
+    } catch (dbError) {
+      console.warn('Failed to save project to database:', dbError);
+      // Continue even if DB save fails
+    }
+
+    res.json({
+      ok: true,
+      project: parsedResponse,
+      message: `Successfully generated project structure for: ${parsedResponse.structure.name}`,
+    });
+  } catch (error) {
+    console.error('AI project generation failed:', error);
+    res.status(500).json({ ok: false, error: 'Failed to generate project structure.' });
   }
 }
 

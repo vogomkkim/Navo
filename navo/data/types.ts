@@ -70,7 +70,6 @@ export interface BuildPageOutput {
   html: string;
 }
 
-
 // -- Component-specific props --
 // These provide strict type checking for each component's expected properties.
 
@@ -90,20 +89,97 @@ export interface FooterProps {
   style?: Record<string, string>;
 }
 
-
 // -- Discriminated Union for Page Components --
 // This allows TypeScript to infer the correct props type based on the 'type' field.
 // It's the core of our type-safe rendering strategy.
 
-export type PageComponent = 
+export type PageComponent =
   | { id: ID; type: 'Header'; props: HeaderProps }
   | { id: ID; type: 'Hero'; props: HeroProps }
   | { id: ID; type: 'Footer'; props: FooterProps };
-
 
 // -- Page Layout Definition --
 // This defines the overall shape of the data our API will return for a page draft.
 
 export interface PageLayout {
   components: PageComponent[];
+}
+
+// New types for AI Intent Parser and Project Generation
+export interface ProjectRequirement {
+  description: string;
+  features: string[];
+  targetAudience: string;
+  businessType: string;
+}
+
+export interface DatabaseSchema {
+  tables: TableSchema[];
+  relationships: Relationship[];
+}
+
+export interface TableSchema {
+  name: string;
+  columns: ColumnSchema[];
+  indexes: string[];
+}
+
+export interface ColumnSchema {
+  name: string;
+  type: 'text' | 'integer' | 'boolean' | 'timestamp' | 'json' | 'uuid';
+  nullable: boolean;
+  primaryKey?: boolean;
+  foreignKey?: string;
+  defaultValue?: any;
+}
+
+export interface Relationship {
+  from: string;
+  to: string;
+  type: 'one-to-many' | 'many-to-many' | 'one-to-one';
+  foreignKey: string;
+}
+
+export interface ProjectStructure {
+  name: string;
+  description: string;
+  pages: PageDefinition[];
+  components: ComponentDefinition[];
+  database: DatabaseSchema;
+  apiEndpoints: APIEndpoint[];
+}
+
+export interface PageDefinition {
+  name: string;
+  path: string;
+  components: PageComponent[];
+  layout: 'single-column' | 'two-column' | 'grid' | 'dashboard';
+}
+
+export interface ComponentDefinition {
+  name: string;
+  type: string;
+  props: Record<string, any>;
+  children?: ComponentDefinition[];
+}
+
+export interface APIEndpoint {
+  path: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  description: string;
+  requestBody?: Record<string, any>;
+  response?: Record<string, any>;
+}
+
+export interface GeneratedProject {
+  structure: ProjectStructure;
+  code: GeneratedCode;
+  instructions: string[];
+}
+
+export interface GeneratedCode {
+  database: string; // SQL schema
+  components: Record<string, string>; // Component code
+  pages: Record<string, string>; // Page code
+  api: Record<string, string>; // API code
 }
