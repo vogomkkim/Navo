@@ -20,8 +20,9 @@ For the complete architectural vision, including frontend/mobile strategy, Go ba
 **How**: Standardized renderer + **DI + Node Graph** orchestrator + automatic hosting/CDN + feedback loop.
 
 **Principles**
-- **Zero‑code first** (code is hidden; dev‑mode optional)  
-- **Minutes to live** (draft ≤ 10s, publish ≈ 60s)  
+
+- **Zero‑code first** (code is hidden; dev‑mode optional)
+- **Minutes to live** (draft ≤ 10s, publish ≈ 60s)
 - **Always improving** (analytics → AI suggestions → one‑click apply)
 
 ---
@@ -72,18 +73,18 @@ Core features: AI-powered draft generation, visual editor with inline editing, o
 
 ## 5) KPIs
 
-- **Speed**: TTV(draft), P95 edit latency, publish duration  
-- **Efficiency**: instances/cores, throughput per vCPU/GB  
-- **Reliability**: error/timeout/retry rates, rollback ratio  
+- **Speed**: TTV(draft), P95 edit latency, publish duration
+- **Efficiency**: instances/cores, throughput per vCPU/GB
+- **Reliability**: error/timeout/retry rates, rollback ratio
 - **Dev Velocity**: PR lead time, deploy frequency, change‑fail rate
 
 ---
 
 ## 6) Working Agreements
 
-- Keep docs short, **link back to this README**.  
-- Prefer plain language; no framework wars or jargon.  
-- Every change should include a short "why" in the PR description.  
+- Keep docs short, **link back to this README**.
+- Prefer plain language; no framework wars or jargon.
+- Every change should include a short "why" in the PR description.
 - We optimize **experience** first; tech choices are replaceable.
 
 ---
