@@ -9,27 +9,28 @@
 
 **Phase 1 — MVP (4주)**
 
-- **W1**: DB 스키마 초안, Draft API(Mock), 에디터 프레임(Canavs/Panel/Save), 이벤트 수집기 스켈레톤
+- **W1**: DB 스키마 초안, Draft API(Mock), 에디터 프레임(Canavs/Panel/Save), 이벤트 수집기 스켈레톤 ✅
   - Define schemas for core objects
   - Draft API (mock)
   - Editor frame: canvas, panel, save plumbing
   - Events collector skeleton
   - Demo: show draft preview stub in ~10 s
-- **W2**: 텍스트/이미지/스타일 편집, Chat→Diff(3~5 규칙), 에셋 업로드 & 갤러리
+- **W2**: 텍스트/이미지/스타일 편집, Chat→Diff(3~5 규칙), 에셋 업로드 & 갤러리 ✅
   - Text/image/style edits
   - Chat → diff with 3–5 safe rules
   - Asset upload and gallery
   - Demo: edit flow with visible diffs and autosave stub
-- **W3**: 배포 파이프라인(서브도메인·SSL·CDN), 기본 분석(뷰/클릭), AI 제안 v1
+- **W3**: AI Intent Parser, 프로젝트 구조 생성, Hot-reload 개발 환경 ✅
+  - **AI Intent Parser**: 사용자 요청을 분석하여 완전한 프로젝트 구조 생성
+  - 데이터베이스 스키마, 페이지 구조, 컴포넌트, API 엔드포인트 자동 설계
+  - Hot-reload 개발 환경으로 개발 효율성 대폭 향상
+  - Demo: "인스타그램같은 사이트" → 완전한 프로젝트 구조 생성
+- **W4**: 배포 파이프라인(서브도메인·SSL·CDN), 기본 분석(뷰/클릭), AI 제안 v1, 안정화
   - Publish pipeline (mock → real)
   - Analytics (view/click)
   - Suggestion type 1 (style or copy)
-  - Demo: one‑click publish to subdomain and basic metrics
-- **W4**: 안정화, Undo/Redo/Autosave, 롤백 기능
   - Stabilization and polish
-  - Undo/Redo/Autosave
-  - Rollback recent builds
-  - Demo: smooth editing, rollback, and applied suggestion
+  - Demo: one‑click publish to subdomain and basic metrics
 
 **Phase 2 — Private Beta (4~6주)**
 
@@ -66,11 +67,12 @@
 
 **주요 기술 마일스톤**
 
-- **S1**: Draft API (Mock → 실 서비스 연결)
-- **S2**: 에디터 핵심 기능 (텍스트/이미지/스타일)
-- **S3**: Chat→Diff 엔진
-- **S4**: 배포 파이프라인 (서브도메인·SSL·CDN)
-- **S5**: 분석 수집기 (뷰/클릭) + AI 제안 v1
-- **S6**: Undo/Autosave/롤백
+- **S1**: Draft API (Mock → 실 서비스 연결) ✅
+- **S2**: 에디터 핵심 기능 (텍스트/이미지/스타일) ✅
+- **S3**: Chat→Diff 엔진 ✅
+- **S4**: **AI Intent Parser** ✅ - 사용자 요청을 분석하여 완전한 프로젝트 구조 생성
+- **S5**: 배포 파이프라인 (서브도메인·SSL·CDN) 🔄
+- **S6**: 분석 수집기 (뷰/클릭) + AI 제안 v1 🔄
+- **S7**: Undo/Autosave/롤백 📋
 
 현재 진행 중인 작업은 [Current Focus](current-focus.md) 문서를 참조하세요.
