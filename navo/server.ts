@@ -57,6 +57,7 @@ app.get('/api/analytics/events', handleAnalyticsEvents); // New endpoint for ana
 app.post('/api/ai-command', handleAiCommand); // New endpoint for AI commands
 app.get('/api/suggestions', handleGetSuggestions); // New endpoint to get suggestions
 app.get('/api/test-db-suggestions', handleTestDbSuggestions); // Temporary endpoint to test suggestions DB connection
+app.post('/api/seed-dummy-data', handleSeedDummyData); // Temporary endpoint to seed dummy user and project
 
 // Serve static files from the 'web' directory
 if (process.env.VERCEL_ENV !== 'production' && process.env.VERCEL_ENV !== 'preview') {
@@ -303,6 +304,7 @@ Your response MUST be a valid JSON object. Do not include any other text or mark
 }
 
 async function generateAiSuggestion(currentLayout: PageLayout): Promise<any> {
+  console.log('[AI] Entering generateAiSuggestion', { currentLayout });
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `You are an AI assistant that suggests improvements for web page layouts.
@@ -334,60 +336,76 @@ Your suggestion:
 `;
 
   try {
+    console.log('[AI] Sending prompt to Gemini:', prompt);
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let text = response.text();
-    console.log("Gemini Suggestion Raw Response:", text);
+    console.log('[AI] Gemini Suggestion Raw Response:', text);
 
     let parsedSuggestion;
     try {
       if (text.startsWith('```json')) {
         text = text.replace(/```json\s*/, '').replace(/\s*```$/, '');
       }
+      console.log('[AI] Attempting to parse Gemini response:', text);
       parsedSuggestion = JSON.parse(text);
+      console.log('[AI] Successfully parsed Gemini response.', parsedSuggestion);
     } catch (parseError) {
-      console.error("Failed to parse Gemini suggestion as JSON:", parseError);
-      console.error("Raw Gemini suggestion text:", text);
+      console.error('[AI] Failed to parse Gemini suggestion as JSON:', parseError);
+      console.error('[AI] Raw Gemini suggestion text:', text);
       throw new Error('AI suggestion was not valid JSON.');
     }
+    console.log('[AI] Exiting generateAiSuggestion - Success');
     return parsedSuggestion;
 
   } catch (err) {
-    console.error('Error calling Gemini API for suggestion:', err);
+    console.error('[AI] Error calling Gemini API for suggestion:', err);
+    console.log('[AI] Exiting generateAiSuggestion - Failure');
     throw new Error('Failed to get suggestion from AI.');
   }
 }
 
 async function generateAndStoreDummySuggestion(): Promise<void> {
-  // Fetch the current layout from the draft API to pass to the AI
-  const draftRes = await fetch(`http://localhost:${PORT}/api/draft`);
-  const draftData = await draftRes.json();
-  const currentLayout = draftData?.draft?.layout;
-
-  if (!currentLayout) {
-    console.error('Could not fetch current layout for AI suggestion.');
-    return;
-  }
-
-  const aiSuggestion = await generateAiSuggestion(currentLayout);
-
-  // Use a placeholder project_id for now. In a real app, this would come from context.
-  const projectId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'; 
-
+  console.log('[AI] Entering generateAndStoreDummySuggestion');
   try {
-    const client = await pool.connect();
-    try {
-      await client.query(
-        'INSERT INTO suggestions(project_id, type, content) VALUES($1, $2, $3)',
-        [projectId, aiSuggestion.type, aiSuggestion.content]
-      );
-      console.log('AI-generated suggestion stored successfully.');
-    } finally {
-      client.release();
+    // Fetch the current layout from the draft API to pass to the AI
+    console.log('[AI] Fetching current layout from /api/draft');
+    const draftRes = await fetch(`http://localhost:${PORT}/api/draft`);
+    const draftData = await draftRes.json();
+    const currentLayout = draftData?.draft?.layout;
+
+    if (!currentLayout) {
+      console.error('[AI] Could not fetch current layout for AI suggestion.');
+      return;
     }
-  } catch (err) {
-    console.error('Error storing AI-generated suggestion:', err);
+    console.log('[AI] Successfully fetched current layout.');
+
+    console.log('[AI] Generating AI suggestion...');
+    const aiSuggestion = await generateAiSuggestion(currentLayout);
+    console.log('[AI] AI suggestion generated:', aiSuggestion);
+
+    // Use a placeholder project_id for now. In a real app, this would come from context.
+    const projectId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'; 
+
+    try {
+      const client = await pool.connect();
+      try {
+        console.log('[AI] Storing AI suggestion in database...');
+        await client.query(
+          'INSERT INTO suggestions(project_id, type, content) VALUES($1, $2, $3)',
+          [projectId, aiSuggestion.type, aiSuggestion.content]
+        );
+        console.log('[AI] AI-generated suggestion stored successfully.');
+      } finally {
+        client.release();
+      }
+    } catch (err) {
+      console.error('[AI] Error storing AI-generated suggestion:', err);
+    }
+  } catch (err: any) {
+    console.error('[AI] Error in generateAndStoreDummySuggestion:', err);
   }
+  console.log('[AI] Exiting generateAndStoreDummySuggestion');
 }
 
 // Temporary endpoint to trigger dummy suggestion generation
@@ -402,32 +420,88 @@ app.post('/api/generate-dummy-suggestion', async (_req: express.Request, res: ex
 });
 
 async function handleGetSuggestions(_req: express.Request, res: express.Response): Promise<void> {
+  console.log('[HANDLER] Entering handleGetSuggestions');
   try {
     const client = await pool.connect();
     try {
+      console.log('[HANDLER] Fetching suggestions from database...');
       const result = await client.query('SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC');
       res.json({ ok: true, suggestions: result.rows });
+      console.log('[HANDLER] Exiting handleGetSuggestions - Success', { count: result.rows.length });
     } finally {
       client.release();
     }
   } catch (err) {
-    console.error('Error fetching suggestions:', err);
+    console.error('[HANDLER] Error fetching suggestions:', err);
     res.status(500).json({ ok: false, error: 'Failed to fetch suggestions'});
+    console.log('[HANDLER] Exiting handleGetSuggestions - Failure');
   }
 }
 
 async function handleTestDbSuggestions(_req: express.Request, res: express.Response): Promise<void> {
+  console.log('[HANDLER] Entering handleTestDbSuggestions');
   try {
     const client = await pool.connect();
     try {
+      console.log('[HANDLER] Testing suggestions DB connection...');
       await client.query('SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC LIMIT 1');
       res.json({ ok: true, message: 'Successfully connected to database and queried suggestions table.' });
+      console.log('[HANDLER] Exiting handleTestDbSuggestions - Success');
     } finally {
       client.release();
     }
   } catch (err: any) {
-    console.error('Error testing suggestions DB connection:', err);
+    console.error('[HANDLER] Error testing suggestions DB connection:', err);
     res.status(500).json({ ok: false, error: 'Failed to connect to database or query suggestions table.', details: err.message });
+    console.log('[HANDLER] Exiting handleTestDbSuggestions - Failure');
+  }
+}
+
+async function handleSeedDummyData(_req: express.Request, res: express.Response): Promise<void> {
+  console.log('[HANDLER] Entering handleSeedDummyData');
+  const dummyUserId = 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+  const dummyProjectId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
+  try {
+    const client = await pool.connect();
+    try {
+      // Insert dummy user if not exists
+      console.log('[HANDLER] Checking for dummy user...');
+      const userExists = await client.query('SELECT 1 FROM users WHERE id = $1', [dummyUserId]);
+      if (userExists.rows.length === 0) {
+        console.log('[HANDLER] Inserting dummy user...');
+        await client.query(
+          'INSERT INTO users(id, email, name) VALUES($1, $2, $3)',
+          [dummyUserId, 'dummy@example.com', 'Dummy User']
+        );
+        console.log('[HANDLER] Dummy user inserted.');
+      } else {
+        console.log('[HANDLER] Dummy user already exists.');
+      }
+
+      // Insert dummy project if not exists
+      console.log('[HANDLER] Checking for dummy project...');
+      const projectExists = await client.query('SELECT 1 FROM projects WHERE id = $1', [dummyProjectId]);
+      if (projectExists.rows.length === 0) {
+        console.log('[HANDLER] Inserting dummy project...');
+        await client.query(
+          'INSERT INTO projects(id, owner_id, name) VALUES($1, $2, $3)',
+          [dummyProjectId, dummyUserId, 'Dummy Project for AI Suggestions']
+        );
+        console.log('[HANDLER] Dummy project inserted.');
+      } else {
+        console.log('[HANDLER] Dummy project already exists.');
+      }
+
+      res.json({ ok: true, message: 'Dummy user and project seeded successfully.' });
+      console.log('[HANDLER] Exiting handleSeedDummyData - Success');
+    } finally {
+      client.release();
+    }
+  } catch (err: any) {
+    console.error('[HANDLER] Error seeding dummy data:', err);
+    res.status(500).json({ ok: false, error: 'Failed to seed dummy data.', details: err.message });
+    console.log('[HANDLER] Exiting handleSeedDummyData - Failure');
   }
 }
 
