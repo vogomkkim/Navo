@@ -693,18 +693,21 @@ Your response MUST be valid JSON. Do not include any other text or markdown outs
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
+    let text = response.text();
 
     console.log('AI Project Generation Raw Response:', text);
 
     // Attempt to parse the JSON response
     let parsedResponse;
     try {
+      if (text.startsWith('```json')) {
+        text = text.replace(/```json\s*/, '').replace(/\s*```$/, '');
+      }
       parsedResponse = JSON.parse(text);
     } catch (parseError) {
       console.error('Failed to parse AI project generation response as JSON:', parseError);
       console.error('Raw AI text:', text);
-      res.status(500).json({ ok: false, error: 'AI response was not valid JSON.' });
+      res.status(500).json({ ok: false, error: 'AI response was not valid JSON.', details: text });
       return;
     }
 
