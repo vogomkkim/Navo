@@ -40,7 +40,6 @@ export const deploySite: GraphNode = {
       });
 
       return { url: `file://${filePath}` };
-
     } catch (error) {
       ctx.logger.error(`Deployment failed: ${error}`);
       throw error;
