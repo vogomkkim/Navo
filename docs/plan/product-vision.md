@@ -52,3 +52,34 @@ Make product creation conversational and visual. Users describe the goal, tweak 
 - High‑level in `README.md`
 - Architecture in `docs/tech/architecture.md`
 - Orchestrator details in `docs/tech/dag-di.md`
+
+## User Data Ownership & AI Actions
+
+A core aspect of our vision is empowering end-users with full ownership and control over their data, even when AI actions are involved. This means:
+
+### Key Concepts & Challenges:
+
+- **Data Segregation (Multi-tenancy):** Each user's data must be securely isolated. This can be achieved through isolated databases, separate database schemas per user, or robust row-level security within a shared database. The choice impacts complexity and scalability.
+- **Authentication & Authorization:** A strong system is required to verify user identity and control their access to only their own data and permitted actions.
+- **Privacy & Compliance:** Adherence to data protection regulations (e.g., GDPR, CCPA) is paramount, including consent, data minimization, and the right to data export/deletion.
+- **AI Interaction with User Data:** AI actions must operate strictly within the boundaries of a user's data, respecting privacy and permissions. This implies careful design of AI prompts and data access patterns.
+
+### Required Resources & Components:
+
+To support this vision, we will need:
+
+- **Backend Services:**
+  - **User Management System:** For user lifecycle (registration, login, profile).
+  - **API Gateway:** Secure entry point for all client requests.
+  - **Core Application Logic:** Services implementing platform features, interacting with user-specific data.
+  - **AI Service Integration:** Secure APIs for interacting with AI models (like Gemini), ensuring data isolation during processing.
+- **Data Storage:**
+  - **Database System:** A scalable database (e.g., PostgreSQL) configured for multi-tenancy (e.g., using separate schemas or row-level security).
+  - **File Storage:** For user-uploaded assets (e.g., cloud storage like S3).
+- **Frontend Application:** User interface for data management and AI-driven interactions.
+- **Infrastructure & Operations:**
+  - **Cloud Provider:** For hosting and scaling (e.g., Render, AWS, GCP).
+  - **Compute Resources:** Servers (VMs, containers, serverless) for backend services.
+  - **Networking:** Load balancers, firewalls for secure and performant access.
+  - **Monitoring & Logging:** For system health, performance, and security.
+  - **CI/CD Pipeline:** For automated deployments.

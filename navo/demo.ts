@@ -15,7 +15,7 @@ async function main(): Promise<void> {
         error: (m, meta) => console.error(`[E] ${m}`, meta ?? ''),
       },
     },
-    { concurrency: 2, timeoutMs: 5_000 },
+    { concurrency: 2, timeoutMs: 5_000 }
   );
 
   const deployed = outputs.get('deploySite') as { url: string } | undefined;

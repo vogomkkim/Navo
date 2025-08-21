@@ -280,7 +280,7 @@ section img {
 .toggle-suggestions-btn:hover {
   background: #218838;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .suggestions-panel {
@@ -291,7 +291,7 @@ section img {
   height: 100vh;
   background: white;
   border-left: 2px solid #e0e0e0;
-  box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
   transition: right 0.3s ease;
   z-index: 1000;
   overflow-y: auto;
@@ -344,7 +344,7 @@ section img {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0, 0, 0, 0.3);
   z-index: 999;
   opacity: 0;
   visibility: hidden;

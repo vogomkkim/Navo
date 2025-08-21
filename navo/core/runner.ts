@@ -9,7 +9,7 @@ export type RunnerOptions = {
 export async function runGraph(
   nodes: GraphNode[],
   baseCtx: Omit<NodeContext, 'outputs'>,
-  options: RunnerOptions = {},
+  options: RunnerOptions = {}
 ): Promise<Map<string, unknown>> {
   validateDag(nodes);
   const groups = topologicalGroups(nodes);
@@ -65,7 +65,7 @@ async function withTimeout<T>(p: Promise<T>, timeoutMs?: number): Promise<T> {
       (e) => {
         clearTimeout(t);
         reject(e);
-      },
+      }
     );
   });
 }

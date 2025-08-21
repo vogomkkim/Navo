@@ -1,3 +1,19 @@
+// Check authentication first
+function checkAuth() {
+  const token = localStorage.getItem('navo_token');
+  if (!token) {
+    window.location.href = '/login.html';
+    return false;
+  }
+  return token;
+}
+
+const token = checkAuth();
+if (!token) {
+  // This will redirect to login, so we don't need to continue
+  throw new Error('Authentication required');
+}
+
 const statusEl = document.getElementById('status');
 const canvasEl = document.getElementById('canvas');
 const infoEl = document.getElementById('info');
@@ -27,6 +43,14 @@ const toggleSuggestionsBtn = document.getElementById('toggleSuggestionsBtn');
 const suggestionsPanel = document.getElementById('suggestionsPanel');
 const closeSuggestionsBtn = document.getElementById('closeSuggestionsBtn');
 const suggestionsOverlay = document.getElementById('suggestionsOverlay');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// Logout functionality
+logoutBtn.addEventListener('click', () => {
+  localStorage.removeItem('navo_token');
+  localStorage.removeItem('navo_user');
+  window.location.href = '/login.html';
+});
 
 init();
 
@@ -40,7 +64,11 @@ document.addEventListener('keydown', (event) => {
 async function init() {
   setStatus('Loading draft…');
   try {
-    const res = await fetch(`${API_BASE_URL}/api/draft`);
+    const res = await fetch(`${API_BASE_URL}/api/draft`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     if (!res.ok) {
       throw new Error(`API responded with status ${res.status}`);
     }
@@ -67,8 +95,12 @@ async function fetchAndRenderSuggestions(refresh = false) {
       url.searchParams.set('refresh', 'true');
     }
     url.searchParams.set('limit', '3');
-    
-    const res = await fetch(url);
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     if (!res.ok) {
       throw new Error(`API responded with status ${res.status}`);
     }
@@ -86,7 +118,9 @@ async function fetchAndRenderSuggestions(refresh = false) {
         `;
         suggestionsListEl.appendChild(suggestionEl);
       });
-      console.log(`Loaded ${suggestions.length} suggestions (refresh: ${refresh})`);
+      console.log(
+        `Loaded ${suggestions.length} suggestions (refresh: ${refresh})`
+      );
     } else {
       suggestionsListEl.innerHTML = '<p>No suggestions available.</p>';
     }
@@ -105,13 +139,17 @@ async function fetchAndRenderSuggestions(refresh = false) {
 function toStyleString(styleObject) {
   if (!styleObject) return '';
   return Object.entries(styleObject)
-    .map(([key, value]) => `${key.replace(/([A-Z])/g, ' -$1').toLowerCase()}:${value}`)
+    .map(
+      ([key, value]) =>
+        `${key.replace(/([A-Z])/g, ' -$1').toLowerCase()}:${value}`
+    )
     .join(';');
 }
 
 function renderLayout(layout) {
   if (!layout || !Array.isArray(layout.components)) {
-    canvasEl.innerHTML = '<p class="error">Error: Invalid layout data received from API.</p>';
+    canvasEl.innerHTML =
+      '<p class="error">Error: Invalid layout data received from API.</p>';
     return;
   }
 
@@ -171,12 +209,16 @@ saveBtn.addEventListener('click', async () => {
   }
 });
 
-const generateDummySuggestionBtn = document.getElementById('generateDummySuggestionBtn');
+const generateDummySuggestionBtn = document.getElementById(
+  'generateDummySuggestionBtn'
+);
 if (generateDummySuggestionBtn) {
   generateDummySuggestionBtn.addEventListener('click', async () => {
     setStatus('Generating dummy suggestion...');
     try {
-      const res = await fetch(`${API_BASE_URL}/api/generate-dummy-suggestion`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/generate-dummy-suggestion`, {
+        method: 'POST',
+      });
       if (!res.ok) {
         throw new Error(`API responded with status ${res.status}`);
       }
@@ -205,7 +247,9 @@ canvasEl.addEventListener('click', (ev) => {
   const componentEl = target.closest('[data-id]');
   if (componentEl) {
     const componentId = componentEl.dataset.id;
-    const component = currentLayout.components.find((c) => c.id === componentId);
+    const component = currentLayout.components.find(
+      (c) => c.id === componentId
+    );
     track({
       type: 'click:component',
       componentId: componentId,
@@ -263,7 +307,9 @@ function handleTextEdit(element) {
     const propName = element.dataset.propName;
 
     if (currentLayout && componentId && propName) {
-      const componentToUpdate = currentLayout.components.find((c) => c.id === componentId);
+      const componentToUpdate = currentLayout.components.find(
+        (c) => c.id === componentId
+      );
       if (componentToUpdate) {
         componentToUpdate.props[propName] = newValue;
         console.log('Updated layout:', currentLayout); // 데이터 변경 확인용 로그
@@ -274,7 +320,10 @@ function handleTextEdit(element) {
     input.remove();
     element.style.display = '';
     setStatus('Ready');
-    track({ type: 'editor:change', details: { componentId, propName, newValue } });
+    track({
+      type: 'editor:change',
+      details: { componentId, propName, newValue },
+    });
   };
 
   input.addEventListener('blur', finishEditing);
@@ -365,7 +414,9 @@ async function handleChatMessage() {
         // If layoutChanges is an array of updates
         layoutChanges.forEach((change) => {
           if (change.type === 'update' && change.id) {
-            const index = currentLayout.components.findIndex((c) => c.id === change.id);
+            const index = currentLayout.components.findIndex(
+              (c) => c.id === change.id
+            );
             if (index !== -1) {
               currentLayout.components[index] = {
                 ...currentLayout.components[index],
@@ -439,15 +490,26 @@ async function applySuggestion(suggestionId) {
     if (suggestionToApply && suggestionToApply.content) {
       const change = suggestionToApply.content;
       if (change.type === 'update' && change.id) {
-        const index = currentLayout.components.findIndex((c) => c.id === change.id);
+        const index = currentLayout.components.findIndex(
+          (c) => c.id === change.id
+        );
         if (index !== -1) {
           // Deep merge props to avoid overwriting existing ones
           const originalComponent = currentLayout.components[index];
-          const newProps = { ...originalComponent.props, ...change.payload.props };
+          const newProps = {
+            ...originalComponent.props,
+            ...change.payload.props,
+          };
           if (change.payload.props.style) {
-            newProps.style = { ...originalComponent.props.style, ...change.payload.props.style };
+            newProps.style = {
+              ...originalComponent.props.style,
+              ...change.payload.props.style,
+            };
           }
-          currentLayout.components[index] = { ...originalComponent, props: newProps };
+          currentLayout.components[index] = {
+            ...originalComponent,
+            props: newProps,
+          };
         }
       } else if (change.type === 'add') {
         currentLayout.components.push(change.payload);
@@ -530,10 +592,10 @@ async function generateProject() {
       },
       body: JSON.stringify({
         description,
-        features: features ? features.split(',').map(f => f.trim()) : [],
+        features: features ? features.split(',').map((f) => f.trim()) : [],
         targetAudience: audience,
-        businessType: business
-      })
+        businessType: business,
+      }),
     });
 
     if (!response.ok) {
@@ -541,15 +603,19 @@ async function generateProject() {
     }
 
     const data = await response.json();
-    
+
     if (data.ok && data.project) {
       displayProjectResult(data.project);
-      setStatus(`Project "${data.project.structure.name}" generated successfully!`);
-      track({ type: 'project:generated', projectName: data.project.structure.name });
+      setStatus(
+        `Project "${data.project.structure.name}" generated successfully!`
+      );
+      track({
+        type: 'project:generated',
+        projectName: data.project.structure.name,
+      });
     } else {
       throw new Error(data.error || 'Failed to generate project');
     }
-
   } catch (error) {
     console.error('Project generation failed:', error);
     setStatus(`Error: ${error.message}`);
@@ -561,43 +627,43 @@ async function generateProject() {
 
 function displayProjectResult(project) {
   const { structure, code, instructions } = project;
-  
+
   let html = `
     <h3>Generated Project: ${structure.name}</h3>
     <p><strong>Description:</strong> ${structure.description}</p>
-    
+
     <div class="structure-item">
       <h4>📄 Pages (${structure.pages.length})</h4>
-      <p>${structure.pages.map(p => `${p.name} (${p.path})`).join(', ')}</p>
+      <p>${structure.pages.map((p) => `${p.name} (${p.path})`).join(', ')}</p>
     </div>
-    
+
     <div class="structure-item">
       <h4>🧩 Components (${structure.components.length})</h4>
-      <p>${structure.components.map(c => c.name).join(', ')}</p>
+      <p>${structure.components.map((c) => c.name).join(', ')}</p>
     </div>
-    
+
     <div class="structure-item">
       <h4>🗄️ Database Tables (${structure.database.tables.length})</h4>
-      <p>${structure.database.tables.map(t => t.name).join(', ')}</p>
+      <p>${structure.database.tables.map((t) => t.name).join(', ')}</p>
     </div>
-    
+
     <div class="structure-item">
       <h4>🔌 API Endpoints (${structure.apiEndpoints.length})</h4>
-      <p>${structure.apiEndpoints.map(e => `${e.method} ${e.path}`).join(', ')}</p>
+      <p>${structure.apiEndpoints.map((e) => `${e.method} ${e.path}`).join(', ')}</p>
     </div>
-    
+
     <div class="structure-item">
       <h4>📋 Next Steps</h4>
       <ul>
-        ${instructions.map(instruction => `<li>${instruction}</li>`).join('')}
+        ${instructions.map((instruction) => `<li>${instruction}</li>`).join('')}
       </ul>
     </div>
-    
+
     <details>
       <summary>📊 Database Schema</summary>
       <pre>${code.database}</pre>
     </details>
   `;
-  
+
   projectResult.innerHTML = html;
 }

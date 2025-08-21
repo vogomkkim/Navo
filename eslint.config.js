@@ -8,32 +8,32 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const compat = new FlatCompat({
-    baseDirectory: __dirname,
-    resolvePluginsRelativeTo: __dirname,
+  baseDirectory: __dirname,
+  resolvePluginsRelativeTo: __dirname,
 });
 
 export default tseslint.config(
-    {
-        files: ['**/*.ts'],
-        extends: [
-            ...tseslint.configs.recommended, // Use the recommended configs from typescript-eslint
-            eslintPluginPrettierRecommended,
-        ],
-        languageOptions: {
-            parserOptions: {
-                ecmaVersion: 'latest',
-                sourceType: 'module',
-                project: ['./tsconfig.json'],
-            },
-        },
-        rules: {
-            'prettier/prettier': 'error',
-            '@typescript-eslint/no-explicit-any': 'off',
-            'linebreak-style': ['error', 'unix'],
-        },
+  {
+    files: ['**/*.ts'],
+    extends: [
+      ...tseslint.configs.recommended, // Use the recommended configs from typescript-eslint
+      eslintPluginPrettierRecommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: ['./tsconfig.json'],
+      },
     },
-    {
-        // Ignore build output and node_modules
-        ignores: ['dist/**', 'node_modules/**'],
+    rules: {
+      'prettier/prettier': 'error',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'linebreak-style': ['error', 'unix'],
     },
+  },
+  {
+    // Ignore build output and node_modules
+    ignores: ['dist/**', 'node_modules/**'],
+  }
 );

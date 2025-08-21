@@ -8,23 +8,31 @@
     "postbuild": "copyfiles -u 2 \"navo/web/**/*\" dist/web",
     "demo": "npm run build && node dist/navo/demo.js",
     "start": "node dist/navo/start.js",
-    "dev": "tsx watch navo/start.ts",
+    "dev": "dotenv -e .env.local -e .env -- tsx watch navo/start.ts",
+    "dev2": "tsx watch navo/start.ts > server.log 2>&1",
     "dev:server": "nodemon --exec tsx navo/start.ts --watch navo/",
     "dev:web": "tsx watch navo/server.ts",
     "lint": "eslint . --ext .ts",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:pull": "prisma db pull",
+    "db:studio": "prisma studio"
   },
   "engines": {
     "node": "22.x"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^24.2.1",
     "@types/pg": "^8.15.5",
     "@typescript-eslint/eslint-plugin": "^8.40.0",
     "@typescript-eslint/parser": "^8.40.0",
     "copyfiles": "^2.4.1",
+    "dotenv-cli": "^10.0.0",
     "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
@@ -36,10 +44,14 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.15.0",
+    "@prisma/client": "^6.14.0",
     "@vercel/speed-insights": "^1.2.0",
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^4.18.2",
-    "pg": "^8.16.3"
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "prisma": "^6.14.0"
   }
 }

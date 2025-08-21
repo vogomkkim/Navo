@@ -9,7 +9,9 @@ export const deploySite: GraphNode = {
   deps: ['buildPage'],
   async run(ctx) {
     ctx.logger.info('Deploying site...');
-    const htmlContent = (ctx.outputs.get('buildPage') as BuildPageOutput | undefined)?.html;
+    const htmlContent = (
+      ctx.outputs.get('buildPage') as BuildPageOutput | undefined
+    )?.html;
 
     if (!htmlContent) {
       ctx.logger.error('No HTML content found from buildPage node.');

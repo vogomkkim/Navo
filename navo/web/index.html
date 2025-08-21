@@ -11,6 +11,19 @@
       <h1>Navo — Editor (W1)</h1>
       <div class="topbar-actions">
         <button id="togglePanelBtn">Toggle Panel</button>
+        <button
+          id="logoutBtn"
+          style="
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+          "
+        >
+          Logout
+        </button>
         <div class="status" id="status">Idle</div>
       </div>
     </header>
@@ -20,7 +33,9 @@
         <div class="panel-section">
           <h2>Actions</h2>
           <button id="saveBtn">Save</button>
-          <button id="generateDummySuggestionBtn">Generate Dummy Suggestion</button>
+          <button id="generateDummySuggestionBtn">
+            Generate Dummy Suggestion
+          </button>
         </div>
         <div class="panel-section">
           <h2>Info</h2>
@@ -32,23 +47,31 @@
           <h2>Chat</h2>
           <div class="chat-history" id="chatHistory"></div>
           <div class="chat-input-area">
-            <input type="text" id="chatInput" placeholder="e.g., Make the title blue" />
+            <input
+              type="text"
+              id="chatInput"
+              placeholder="e.g., Make the title blue"
+            />
             <button id="chatSendBtn">Send</button>
           </div>
         </div>
 
         <div class="panel-section suggestions-toggle-section">
-          <button id="toggleSuggestionsBtn" class="toggle-suggestions-btn">💡 Suggestions</button>
+          <button id="toggleSuggestionsBtn" class="toggle-suggestions-btn">
+            💡 Suggestions
+          </button>
         </div>
-        
+
         <div class="suggestions-overlay" id="suggestionsOverlay"></div>
-        
+
         <div class="panel-section suggestions-panel" id="suggestionsPanel">
           <div class="suggestions-header">
             <h2>AI Suggestions</h2>
             <button id="closeSuggestionsBtn" class="close-btn">×</button>
           </div>
-          <button id="refreshSuggestionsBtn" class="refresh-btn">🔄 Refresh</button>
+          <button id="refreshSuggestionsBtn" class="refresh-btn">
+            🔄 Refresh
+          </button>
           <div id="suggestionsList"></div>
         </div>
 
@@ -56,10 +79,26 @@
         <div class="panel-section project-generation-section">
           <h2>Generate New Project</h2>
           <div class="project-form">
-            <input type="text" id="projectDescription" placeholder="e.g., Instagram-like social media site" />
-            <input type="text" id="projectFeatures" placeholder="Features: posts, comments, likes, follows" />
-            <input type="text" id="targetAudience" placeholder="Target: young adults, social media users" />
-            <input type="text" id="businessType" placeholder="Business: social platform, content sharing" />
+            <input
+              type="text"
+              id="projectDescription"
+              placeholder="e.g., Instagram-like social media site"
+            />
+            <input
+              type="text"
+              id="projectFeatures"
+              placeholder="Features: posts, comments, likes, follows"
+            />
+            <input
+              type="text"
+              id="targetAudience"
+              placeholder="Target: young adults, social media users"
+            />
+            <input
+              type="text"
+              id="businessType"
+              placeholder="Business: social platform, content sharing"
+            />
             <button id="generateProjectBtn">Generate Project</button>
           </div>
           <div id="projectResult" class="project-result"></div>

@@ -3,6 +3,7 @@
 ## Acceptance Criteria
 
 ### ✅ **Completed Features**
+
 - **AI Intent Parser**: 사용자 요청을 분석하여 완전한 프로젝트 구조 생성
   - 데이터베이스 스키마, 페이지 구조, 컴포넌트, API 엔드포인트 자동 설계
   - Gemini AI를 활용한 지능형 프로젝트 아키텍처 생성
@@ -11,6 +12,7 @@
 - **이벤트 추적**: 페이지 뷰, 클릭, 채팅 명령 등 사용자 액션 추적
 
 ### 🔄 **In Progress**
+
 - Draft preview ≤ 10 s (mock acceptable in early weeks)
 - Editor supports: inline text edit, image replace/upload, style sliders, add/move/remove section, chat edits with visible diff
 - Publish: subdomain auto, success URL, rollback last 3 builds
