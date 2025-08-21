@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "npm run db:generate",
     "build": "tsc -p .",
-    "postbuild": "copyfiles -u 2 \"navo/web/**/*\" dist/web",
+    "postbuild": "copyfiles -u 2 \"navo/web/**/*\" dist/web && copyfiles -u 2 \"generated/prisma/**/*\" dist/generated/prisma",
     "demo": "npm run build && node dist/navo/demo.js",
     "start": "node dist/navo/start.js",
     "dev": "dotenv -e .env.local -e .env -- tsx watch navo/start.ts",
