@@ -11,19 +11,20 @@
       <h1>Navo — Editor (W1)</h1>
       <div class="topbar-actions">
         <button id="togglePanelBtn">Toggle Panel</button>
-        <button
-          id="logoutBtn"
-          style="
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-          "
-        >
-          Logout
-        </button>
+        <div class="profile">
+          <button
+            id="profileToggle"
+            class="profile-toggle"
+            aria-haspopup="true"
+            aria-expanded="false"
+            title="Account"
+          >
+            <span class="avatar" id="profileAvatar">👤</span>
+          </button>
+          <div class="profile-menu" id="profileMenu" role="menu">
+            <button id="logoutBtn" role="menuitem">Logout</button>
+          </div>
+        </div>
         <div class="status" id="status">Idle</div>
       </div>
     </header>
@@ -40,6 +41,12 @@
         <div class="panel-section">
           <h2>Info</h2>
           <div id="info"></div>
+        </div>
+
+        <!-- Mobile-only account actions -->
+        <div class="panel-section panel-mobile-only">
+          <h2>Account</h2>
+          <button id="logoutBtnMobile" style="background:#e74c3c;color:#fff;border:none">Logout</button>
         </div>
 
         <!-- 추가될 부분 -->
