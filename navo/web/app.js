@@ -1,3 +1,6 @@
+// Import component rendering functions
+import { renderLayout, loadComponentDefinitions } from './components.js';
+
 // Check authentication first
 function checkAuth() {
   const token = localStorage.getItem('navo_token');
@@ -44,6 +47,15 @@ const suggestionsPanel = document.getElementById('suggestionsPanel');
 const closeSuggestionsBtn = document.getElementById('closeSuggestionsBtn');
 const suggestionsOverlay = document.getElementById('suggestionsOverlay');
 const logoutBtn = document.getElementById('logoutBtn');
+// New Project/Page List Elements
+const projectListEl = document.getElementById('projectList');
+const pageListEl = document.getElementById('pageList');
+const currentPageProjectNameEl = document.getElementById(
+  'currentPageProjectName'
+);
+const projectListSectionEl = document.querySelector('.project-list-section');
+const pageListSectionEl = document.querySelector('.page-list-section');
+const backToProjectsBtn = document.getElementById('backToProjectsBtn');
 
 // Logout functionality
 logoutBtn.addEventListener('click', () => {
@@ -62,8 +74,12 @@ document.addEventListener('keydown', (event) => {
 });
 
 async function init() {
-  setStatus('Loading draft…');
+  setStatus('Loading components and draft…');
   try {
+    // First, load component definitions
+    await loadComponentDefinitions();
+
+    // Then load draft
     const res = await fetch(`${API_BASE_URL}/api/draft`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -76,12 +92,13 @@ async function init() {
 
     // API로부터 받은 layout 데이터를 변수에 저장
     currentLayout = data?.draft?.layout;
-    renderLayout(currentLayout);
+    canvasEl.innerHTML = renderLayout(currentLayout);
 
     infoEl.textContent = `Draft loaded in ${data.tookMs ?? 0} ms`;
     setStatus('Ready');
     track({ type: 'view:page', page: 'editor' });
     fetchAndRenderSuggestions(); // Fetch and render suggestions on init
+    fetchAndRenderProjects(); // New: Fetch and render projects on init
   } catch (e) {
     setStatus(`Failed to load draft: ${e.message}`);
     console.error(e);
@@ -136,54 +153,6 @@ async function fetchAndRenderSuggestions(refresh = false) {
  * @param {object | undefined} styleObject
  * @returns {string}
  */
-function toStyleString(styleObject) {
-  if (!styleObject) return '';
-  return Object.entries(styleObject)
-    .map(
-      ([key, value]) =>
-        `${key.replace(/([A-Z])/g, ' -$1').toLowerCase()}:${value}`
-    )
-    .join(';');
-}
-
-function renderLayout(layout) {
-  if (!layout || !Array.isArray(layout.components)) {
-    canvasEl.innerHTML =
-      '<p class="error">Error: Invalid layout data received from API.</p>';
-    return;
-  }
-
-  const html = layout.components
-    .map((component) => {
-      const { id, type, props } = component;
-      // props에서 스타일 객체를 가져와 문자열로 변환합니다.
-      const styleString = toStyleString(props.style);
-
-      switch (type) {
-        case 'Header':
-          // data-editable 속성을 추가하여 편집 가능함을 표시하고,
-          // data-component-id와 data-prop-name으로 어떤 데이터를 수정해야 하는지 명시합니다.
-          return `<header class="component-header" data-id="${id}">
-                  <h1 data-editable="true" data-component-id="${id}" data-prop-name="title" style="${styleString}">${props.title || ''}</h1>
-                </header>`;
-        case 'Hero':
-          // Hero 섹션의 경우, 스타일을 섹션 전체에 적용해 보겠습니다.
-          return `<section class="component-hero" data-id="${id}" style="${styleString}">
-                  <h2 data-editable="true" data-component-id="${id}" data-prop-name="headline">${props.headline || ''}</h2>
-                  <p data-editable="true" data-component-id="${id}" data-prop-name="cta">${props.cta || ''}</p>
-                </section>`;
-        case 'Footer':
-          return `<footer class="component-footer" data-id="${id}">
-                  <p data-editable="true" data-component-id="${id}" data-prop-name="text" style="${styleString}">${props.text || ''}</p>
-                </footer>`;
-        default:
-          return `<div class="component-unknown" data-id="${id}"><p>Unknown component type: <strong>${type}</strong></p></div>`;
-      }
-    })
-    .join('');
-
-  canvasEl.innerHTML = html;
-}
 
 saveBtn.addEventListener('click', async () => {
   setStatus('Saving…');
@@ -368,8 +337,73 @@ function setStatus(text) {
   statusEl.textContent = text;
 }
 
+projectListEl.addEventListener('click', (event) => {
+  const projectItem = event.target.closest('.project-item');
+  if (projectItem) {
+    const projectId = projectItem.dataset.projectId;
+    const projectName = projectItem.dataset.projectName;
+    console.log(`Project clicked: ${projectName} (${projectId})`);
+    fetchAndRenderPages(projectId, projectName); // Call the new function
+  }
+});
+
+async function fetchAndRenderPages(projectId, projectName) {
+  setStatus(`Loading pages for ${projectName}...`);
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/pages`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`API responded with status ${res.status}`);
+    }
+    const { pages } = await res.json();
+
+    pageListEl.innerHTML = ''; // Clear previous pages
+    currentPageProjectNameEl.textContent = projectName; // Set project name in header
+
+    if (pages && pages.length > 0) {
+      pages.forEach((page) => {
+        const pageItem = document.createElement('li');
+        pageItem.className = 'page-item';
+        pageItem.dataset.pageId = page.id;
+        pageItem.innerHTML = `
+          <span>${page.path}</span>
+          <span class="page-date">${new Date(page.updated_at).toLocaleDateString()}</span>
+        `;
+        pageListEl.appendChild(pageItem);
+      });
+      setStatus(`Pages loaded for ${projectName}.`);
+    } else {
+      pageListEl.innerHTML = '<p>No pages found for this project.</p>';
+      setStatus(`No pages for ${projectName}.`);
+    }
+
+    // Toggle UI visibility
+    projectListSectionEl.style.display = 'none';
+    pageListSectionEl.style.display = 'block';
+  } catch (e) {
+    console.error('Error fetching pages:', e);
+    pageListEl.innerHTML = `<p class="error">Failed to load pages: ${e.message}</p>`;
+    setStatus('Error loading pages.');
+  }
+}
+
 // --- 채팅 UI 로직 추가 ---
 chatSendBtn.addEventListener('click', handleChatMessage);
+
+pageListEl.addEventListener('click', (event) => {
+  const pageItem = event.target.closest('.page-item');
+  if (pageItem) {
+    const pageId = pageItem.dataset.pageId;
+    // Placeholder for handling page click - will be implemented in a later step
+    console.log(`Page clicked: ${pageId}`);
+    // Call a function to fetch and render the page layout
+    // For now, just a placeholder:
+    // fetchAndRenderPageLayout(pageId);
+  }
+});
 chatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     handleChatMessage();
@@ -429,7 +463,7 @@ async function handleChatMessage() {
           // Add more change types (e.g., 'remove') as needed
         });
       }
-      renderLayout(currentLayout); // Re-render the page with updated layout
+      canvasEl.innerHTML = renderLayout(currentLayout); // Re-render the page with updated layout
     }
 
     addMessageToHistory('assistant', aiResponseText || '(AI): Done.');
@@ -457,9 +491,59 @@ function addMessageToHistory(sender, message) {
   chatHistory.scrollTop = chatHistory.scrollHeight; // 항상 맨 아래로 스크롤
 }
 
+pageListEl.addEventListener('click', (event) => {
+  const pageItem = event.target.closest('.page-item');
+  if (pageItem) {
+    const pageId = pageItem.dataset.pageId;
+    console.log(`Page clicked: ${pageId}`);
+    fetchAndRenderPageLayout(pageId); // Call the new function
+  }
+});
+
+async function fetchAndRenderPageLayout(pageId) {
+  setStatus('Loading page layout...');
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/pages/${pageId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`API responded with status ${res.status}`);
+    }
+    const { layout } = await res.json();
+
+    currentLayout = layout; // Update currentLayout with the fetched page layout
+    canvasEl.innerHTML = renderLayout(currentLayout); // Render the fetched layout
+
+    setStatus('Page loaded.');
+
+    // Toggle UI visibility: hide page list, show canvas
+    pageListSectionEl.style.display = 'none';
+    canvasEl.style.display = 'block'; // Assuming canvas is hidden when page list is shown
+    projectListSectionEl.style.display = 'none'; // Ensure project list is hidden
+  } catch (e) {
+    console.error('Error fetching page layout:', e);
+    setStatus(`Failed to load page: ${e.message}`);
+  }
+}
+
 // --- 패널 토글 로직 추가 ---
 togglePanelBtn.addEventListener('click', () => {
   layoutEl.classList.toggle('panel-left');
+});
+
+// --- 패널 토글 로직 추가 ---
+togglePanelBtn.addEventListener('click', () => {
+  layoutEl.classList.toggle('panel-left');
+});
+
+// --- Back to Projects Button Listener ---
+backToProjectsBtn.addEventListener('click', () => {
+  pageListSectionEl.style.display = 'none';
+  projectListSectionEl.style.display = 'block';
+  canvasEl.style.display = 'block'; // Ensure canvas is visible when returning to project list
+  setStatus('Ready.');
 });
 
 // --- 제안 적용 로직 추가 ---
@@ -514,7 +598,7 @@ async function applySuggestion(suggestionId) {
       } else if (change.type === 'add') {
         currentLayout.components.push(change.payload);
       }
-      renderLayout(currentLayout);
+      canvasEl.innerHTML = renderLayout(currentLayout);
       setStatus(`Suggestion ${suggestionId} applied.`);
       track({ type: 'suggestion:apply', suggestionId });
     } else {
@@ -667,3 +751,57 @@ function displayProjectResult(project) {
 
   projectResult.innerHTML = html;
 }
+
+// --- Project Listing Functions ---
+async function fetchAndRenderProjects() {
+  setStatus('Loading projects...');
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/projects`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`API responded with status ${res.status}`);
+    }
+    const { projects } = await res.json();
+
+    projectListEl.innerHTML = ''; // Clear previous projects
+
+    if (projects && projects.length > 0) {
+      projects.forEach((project) => {
+        const projectItem = document.createElement('li');
+        projectItem.className = 'project-item';
+        projectItem.dataset.projectId = project.id;
+        projectItem.dataset.projectName = project.name;
+        projectItem.innerHTML = `
+          <span>${project.name}</span>
+          <span class="project-date">${new Date(project.createdAt).toLocaleDateString()}</span>
+        `;
+        projectListEl.appendChild(projectItem);
+      });
+      setStatus('Projects loaded.');
+    } else {
+      projectListEl.innerHTML = '<p>No projects found.</p>';
+      setStatus('No projects.');
+    }
+  } catch (e) {
+    console.error('Error fetching projects:', e);
+    projectListEl.innerHTML = `<p class="error">Failed to load projects: ${e.message}</p>`;
+    setStatus('Error loading projects.');
+  }
+}
+
+// --- Event Listeners for Project/Page Navigation ---
+projectListEl.addEventListener('click', (event) => {
+  const projectItem = event.target.closest('.project-item');
+  if (projectItem) {
+    const projectId = projectItem.dataset.projectId;
+    const projectName = projectItem.dataset.projectName;
+    // Placeholder for handling project click - will be implemented in a later step
+    console.log(`Project clicked: ${projectName} (${projectId})`);
+    // Call a function to fetch and render pages for this project
+    // For now, just a placeholder:
+    // fetchAndRenderPages(projectId, projectName);
+  }
+});

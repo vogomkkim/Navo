@@ -104,11 +104,30 @@
           <div id="projectResult" class="project-result"></div>
         </div>
         <!-- End Project Generation Section -->
+
+        <!-- Project and Page List Section -->
+        <div class="panel-section project-list-section">
+          <h2>My Projects</h2>
+          <ul id="projectList" class="project-list">
+            <!-- Projects will be loaded here -->
+          </ul>
+        </div>
+
+        <div class="panel-section page-list-section" style="display: none">
+          <h2>Pages in <span id="currentPageProjectName"></span></h2>
+          <ul id="pageList" class="page-list">
+            <!-- Pages will be loaded here -->
+          </ul>
+          <button id="backToProjectsBtn" class="back-button">
+            ← Back to Projects
+          </button>
+        </div>
+        <!-- End Project and Page List Section -->
       </aside>
     </main>
     <script>
       window.API_BASE_URL = '__API_URL__';
     </script>
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>
