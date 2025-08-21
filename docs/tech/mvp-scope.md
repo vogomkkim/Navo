@@ -43,4 +43,4 @@
 - **AI Intent Parser now enables non-developers to generate complete project structures**
 - **Project generation includes database schema, API endpoints, and component architecture**
 
-See `README.md` for the canonical list and `docs/tech/roadmap.md` for milestones.
+See `README.md` for the canonical list and `docs/plan/roadmap.md` for milestones.

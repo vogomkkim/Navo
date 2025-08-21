@@ -86,6 +86,7 @@ Core features: AI-powered draft generation, visual editor with inline editing, o
 - Prefer plain language; no framework wars or jargon.
 - Every change should include a short "why" in the PR description.
 - We optimize **experience** first; tech choices are replaceable.
+- **Agent Role**: As the primary agent, I am responsible for leading the project's planning, documentation, vision setting, and goal definition. I will proactively drive the project forward, ensuring clear communication and detailed progress tracking.
 
 ---
 

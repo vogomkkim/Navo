@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **데이터베이스 및 보안 강화**: Prisma 클라이언트 및 bcrypt 종속성 추가, 데이터베이스 상호 작용 개선.
+- **인증 기능**: 웹 애플리케이션에 로그아웃 기능 및 인증 검사 추가.
+- **개발 스크립트 개선**: 데이터베이스 작업 및 서버 관리를 위한 스크립트 향상.
 - **AI Intent Parser**: 사용자 요청을 분석하여 완전한 프로젝트 구조를 생성하는 시스템 구현
   - `/api/generate-project` 엔드포인트 추가
   - 데이터베이스 스키마, 페이지 구조, 컴포넌트, API 엔드포인트 자동 설계
@@ -26,8 +29,12 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **ESLint 구성 업데이트**: 코드 형식 지정 및 일관성 향상.
+- **서버 코드 리팩토링**: 더 나은 구성 및 명확성을 위해 코드 구조 개선.
+- **문서 업데이트**: 제품 비전, 로드맵, MVP 범위 문서 개선 (특히 사용자 데이터 소유권).
 - **Vercel 배포 설정**: `vercel.json`에서 지원하지 않는 `analytics` 속성 제거
 - `deploySite` 노드: 플레이스홀더에서 실제 파일 배포 기능으로 전환.
+- `.gitignore` 업데이트: 생성된 Prisma 파일 제외.
 
 ### Fixed
 
