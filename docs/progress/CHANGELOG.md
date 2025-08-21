@@ -20,6 +20,13 @@ All notable changes to this project will be documented in this file.
     - `app.js`에서 컴포넌트 정의 동적 로드
     - 기본 컴포넌트 4개 시드 (Header, Hero, Footer, AuthForm)
     - 하드코딩된 컴포넌트에서 데이터베이스 기반 컴포넌트로 전환
+  - **3-1단계**: 자연어 컴포넌트 생성 UI 구현
+    - 복잡한 개발자용 컴포넌트 생성 폼 제거
+    - 자연어 입력 기반 UI로 교체 (일반 사용자 친화적)
+    - 사용자 친화적인 예시문 포함
+    - 간단한 텍스트 영역 + 생성 버튼 구조
+    - 상태 표시 UI 추가 (로딩/성공/에러)
+    - 컴포넌트 CRUD API 구현 완료
 - **인증 시스템 강화**: `getUserIdFromToken` 함수 추가로 토큰 기반 사용자 인증 개선
 - **프로젝트 관리 API**: `projectHandlers.ts` 생성하여 프로젝트/페이지 관리 기능 구현
 
