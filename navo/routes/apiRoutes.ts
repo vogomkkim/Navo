@@ -16,6 +16,7 @@ import {
   handleApplySuggestion,
   handleSeedDummyData,
   handleGenerateProject,
+  handleGenerateComponentFromNaturalLanguage,
 } from '../handlers/aiHandlers.js';
 import {
   handleGetComponentDefinitions,
@@ -56,6 +57,7 @@ export function setupApiRoutes(app: Express) {
   app.get('/api/components/:name', handleGetComponentDefinition);
   app.post('/api/components/seed', handleSeedComponentDefinitions);
   app.post('/api/components', handleCreateComponentDefinition);
+  app.post('/api/components/generate', handleGenerateComponentFromNaturalLanguage);
   app.put('/api/components/:id', handleUpdateComponentDefinition);
   app.delete('/api/components/:id', handleDeleteComponentDefinition);
 
