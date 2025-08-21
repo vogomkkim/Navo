@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **컴포넌트 시스템 아키텍처 개선**: 플랫폼과 사용자 컴포넌트 로직 분리
+  - **1단계**: 컴포넌트 렌더링 로직 분리
+    - `components.js` 생성하여 컴포넌트 렌더링 로직 분리
+    - `app.js`에서 하드코딩된 컴포넌트 로직 제거
+    - `index.html`에 ES6 모듈 지원 추가
+    - 플랫폼 로직과 컴포넌트 렌더링 로직 명확히 분리
+  - **2단계**: 동적 컴포넌트 로딩 시스템 구현
+    - `component_definitions` 테이블 스키마 추가
+    - `componentHandlers.ts` 생성하여 컴포넌트 정의 관리 API 구현
+    - API 라우트에 컴포넌트 관련 엔드포인트 추가 (`/api/components`, `/api/components/seed`)
+    - `components.js`에 동적 컴포넌트 로딩 및 템플릿 렌더링 시스템 구현
+    - `app.js`에서 컴포넌트 정의 동적 로드
+    - 기본 컴포넌트 4개 시드 (Header, Hero, Footer, AuthForm)
+    - 하드코딩된 컴포넌트에서 데이터베이스 기반 컴포넌트로 전환
+- **인증 시스템 강화**: `getUserIdFromToken` 함수 추가로 토큰 기반 사용자 인증 개선
+- **프로젝트 관리 API**: `projectHandlers.ts` 생성하여 프로젝트/페이지 관리 기능 구현
+
 - **데이터베이스 및 보안 강화**: Prisma 클라이언트 및 bcrypt 종속성 추가, 데이터베이스 상호 작용 개선.
 - **인증 기능**: 웹 애플리케이션에 로그아웃 기능 및 인증 검사 추가.
 - **개발 스크립트 개선**: 데이터베이스 작업 및 서버 관리를 위한 스크립트 향상.

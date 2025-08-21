@@ -8,6 +8,46 @@ Navo combines a client‑side visual editor with a DI + DAG orchestrator to gene
 - Orchestrator: Node Graph runner with DI, timeouts, and retries
 - Services: generation (LLM, image), storage, deploy/CDN, analytics
 
+## Component System Architecture
+
+The component system has been refactored to separate platform logic from user component logic:
+
+### Phase 1: Component Rendering Logic Separation
+
+- **`components.js`**: Handles all component rendering logic, separated from platform code
+- **`app.js`**: Focuses on platform logic (authentication, project management, AI commands)
+- **ES6 Modules**: Modern JavaScript module system for better code organization
+
+### Phase 2: Dynamic Component Loading System
+
+- **Database-driven Components**: Component definitions stored in `component_definitions` table
+- **Template-based Rendering**: HTML templates with variable substitution (`{{variable}}`)
+- **Dynamic Loading**: Components loaded at runtime from database via API
+- **Fallback System**: Maintains backward compatibility with hardcoded components
+
+### Component Definition Schema
+
+```sql
+model component_definitions {
+  id              String   @id
+  name            String   @unique        -- Component type name (Header, Hero, etc.)
+  display_name    String                  -- User-friendly display name
+  description     String?                 -- Component description
+  category        String                  -- Component category (basic, forms, etc.)
+  props_schema    Json                    -- JSON Schema for component properties
+  render_template String                  -- HTML template with placeholders
+  css_styles      String?                 -- Component-specific CSS
+  is_active       Boolean  @default(true) -- Whether component is available
+}
+```
+
+### Benefits
+
+- **Scalability**: New component types can be added without code changes
+- **Maintainability**: Platform and user logic clearly separated
+- **Flexibility**: Components can be customized per user/project
+- **Performance**: Components loaded on-demand, reducing initial bundle size
+
 ## Flow
 
 1. User completes onboarding and requests a draft.

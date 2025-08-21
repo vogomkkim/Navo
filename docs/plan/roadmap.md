@@ -25,12 +25,16 @@
   - 데이터베이스 스키마, 페이지 구조, 컴포넌트, API 엔드포인트 자동 설계
   - Hot-reload 개발 환경으로 개발 효율성 대폭 향상
   - Demo: "인스타그램같은 사이트" → 완전한 프로젝트 구조 생성
-- **W4**: 배포 파이프라인(서브도메인·SSL·CDN), 기본 분석(뷰/클릭), AI 제안 v1, 안정화
+- **W4**: 배포 파이프라인(서브도메인·SSL·CDN), 기본 분석(뷰/클릭), AI 제안 v1, 안정화 ✅
   - Publish pipeline (mock → real)
   - Analytics (view/click)
   - Suggestion type 1 (style or copy)
   - Stabilization and polish
   - Demo: one‑click publish to subdomain and basic metrics
+- **W4+**: 컴포넌트 시스템 아키텍처 개선 ✅
+  - **1단계**: 컴포넌트 렌더링 로직 분리 - 플랫폼과 사용자 컴포넌트 로직 명확히 분리
+  - **2단계**: 동적 컴포넌트 로딩 시스템 - DB 기반 컴포넌트 정의, 템플릿 렌더링 시스템
+  - **3단계**: 사용자 컴포넌트 생성 UI - 웹 UI에서 새로운 컴포넌트 타입 직접 생성 및 편집
 
 **Phase 2 — Private Beta (4~6주)**
 
