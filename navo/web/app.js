@@ -53,6 +53,9 @@ const suggestionsPanel = document.getElementById('suggestionsPanel');
 const closeSuggestionsBtn = document.getElementById('closeSuggestionsBtn');
 const suggestionsOverlay = document.getElementById('suggestionsOverlay');
 const logoutBtn = document.getElementById('logoutBtn');
+const logoutBtnMobile = document.getElementById('logoutBtnMobile');
+const profileToggle = document.getElementById('profileToggle');
+const profileMenu = document.getElementById('profileMenu');
 // New Project/Page List Elements
 const projectListEl = document.getElementById('projectList');
 const pageListEl = document.getElementById('pageList');
@@ -72,11 +75,32 @@ const componentList = document.getElementById('componentList');
 const previewComponentBtn = document.getElementById('previewComponentBtn');
 
 // Logout functionality
-logoutBtn.addEventListener('click', () => {
+function handleLogout() {
   localStorage.removeItem('navo_token');
   localStorage.removeItem('navo_user');
   window.location.href = '/login.html';
-});
+}
+
+if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+if (logoutBtnMobile) logoutBtnMobile.addEventListener('click', handleLogout);
+
+// Profile menu toggle (desktop)
+if (profileToggle && profileMenu) {
+  profileToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = profileMenu.classList.toggle('open');
+    profileToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!profileMenu.classList.contains('open')) return;
+    if (e.target === profileMenu || profileMenu.contains(e.target)) return;
+    if (e.target === profileToggle || profileToggle.contains(e.target)) return;
+    profileMenu.classList.remove('open');
+    profileToggle.setAttribute('aria-expanded', 'false');
+  });
+}
 
 init();
 
@@ -564,6 +588,10 @@ function closeMobilePanel() {
   panelEl.classList.remove('mobile-open');
   if (panelOverlayEl) panelOverlayEl.classList.remove('active');
   document.body.style.overflow = '';
+  // Reset any inline styles applied during swipe
+  if (panelOverlayEl) panelOverlayEl.style.opacity = '';
+  panelEl.style.transform = '';
+  panelEl.style.transition = '';
 }
 
 function togglePanel() {
@@ -591,6 +619,58 @@ window.addEventListener('resize', () => {
     closeMobilePanel();
   }
 });
+
+// --- Swipe-to-close gesture for mobile panel ---
+let touchStartX = 0;
+let touchCurrentX = 0;
+let isSwiping = false;
+
+function onPanelTouchStart(e) {
+  if (!isMobile()) return;
+  if (!panelEl.classList.contains('mobile-open')) return;
+  isSwiping = true;
+  touchStartX = e.touches ? e.touches[0].clientX : e.clientX;
+  touchCurrentX = touchStartX;
+  panelEl.style.transition = 'none';
+}
+
+function onPanelTouchMove(e) {
+  if (!isSwiping) return;
+  touchCurrentX = e.touches ? e.touches[0].clientX : e.clientX;
+  const deltaX = Math.max(0, touchCurrentX - touchStartX); // only allow swipe to the right to close
+  // Move panel along with finger, capped to panel width
+  const panelWidth = panelEl.getBoundingClientRect().width;
+  const translateX = Math.min(deltaX, panelWidth);
+  panelEl.style.transform = `translateX(${translateX}px)`;
+  // Dim overlay according to progress
+  if (panelOverlayEl) {
+    const progress = 1 - Math.min(1, translateX / panelWidth);
+    panelOverlayEl.style.opacity = String(0.28 * progress);
+  }
+}
+
+function onPanelTouchEnd() {
+  if (!isSwiping) return;
+  isSwiping = false;
+  const panelWidth = panelEl.getBoundingClientRect().width;
+  const deltaX = Math.max(0, touchCurrentX - touchStartX);
+  panelEl.style.transition = '';
+  panelEl.style.transform = '';
+  if (deltaX > panelWidth * 0.33) {
+    closeMobilePanel();
+  } else {
+    // restore overlay opacity
+    if (panelOverlayEl) panelOverlayEl.style.opacity = '';
+  }
+}
+
+// Attach listeners
+panelEl.addEventListener('touchstart', onPanelTouchStart, { passive: true });
+panelEl.addEventListener('touchmove', onPanelTouchMove, { passive: true });
+panelEl.addEventListener('touchend', onPanelTouchEnd, { passive: true });
+panelEl.addEventListener('mousedown', onPanelTouchStart);
+window.addEventListener('mousemove', onPanelTouchMove);
+window.addEventListener('mouseup', onPanelTouchEnd);
 
 // --- Back to Projects Button Listener ---
 backToProjectsBtn.addEventListener('click', () => {

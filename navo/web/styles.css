@@ -22,6 +22,52 @@ body {
   justify-content: space-between;
 }
 
+.topbar .topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Profile menu */
+.profile {
+  position: relative;
+}
+
+.profile-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+}
+
+.profile-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 6px;
+  min-width: 160px;
+  display: none;
+  z-index: 1100;
+}
+
+.profile-menu.open {
+  display: block;
+}
+
+.profile-menu button {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+}
+
 /* --- Layout Rules (Refactored with Grid Areas) --- */
 .layout {
   display: grid;
@@ -115,6 +161,17 @@ body {
 .panel-overlay.active {
   opacity: 1;
   visibility: visible;
+}
+
+/* Mobile-only section visibility */
+.panel-mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .panel-mobile-only {
+    display: block;
+  }
 }
 
 .panel-section {
