@@ -1,0 +1,32 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # (옵션) 빌드/테스트 단계 추가 가능
+      # - run: npm ci && npm test
+
+      - name: Trigger Render Deploy (latest commit)
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          curl --fail --silent --show-error "$DEPLOY_HOOK"
+
+      # 특정 커밋을 정확히 배포하려면 ↓ 주석 해제
+      # - name: Trigger Render Deploy (pin to SHA)
+      #   env:
+      #     DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      #   run: |
+      #     curl --fail --silent --show-error "$DEPLOY_HOOK&ref=${{ github.sha }}"
