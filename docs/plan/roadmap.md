@@ -76,3 +76,35 @@
 - **S7**: Undo/Autosave/롤백 📋
 
 현재 진행 중인 작업은 [Current Focus](current-focus.md) 문서를 참조하세요.
+
+## 3. Future Work: From Plan to Live Preview
+
+This section outlines the next major engineering challenge: building the system that takes an AI-generated project plan and turns it into a live, functioning application for the user.
+
+### 1. Project Scaffolding
+
+This is the first step where we create the basic file and directory structure. We will write a script that:
+
+*   Creates the directories (`src`, `src/pages`, `src/components`, etc.).
+*   Creates the initial files (`package.json`, `tsconfig.json`, `src/index.tsx`, etc.).
+*   Installs the necessary dependencies (like React, Express, etc.) using `npm install`.
+
+### 2. Code Generation
+
+This is the most complex part. We will need to build a "compiler" that takes the AI's JSON output and translates it into actual code:
+
+*   **Database:** The `code.database` SQL schema will be executed against a new, dedicated database for the user's project.
+*   **Backend API:** The `structure.apiEndpoints` will be used to generate the Express routes and functions. For example, a `GET /api/posts` endpoint will be created with code to fetch posts from the database.
+*   **Frontend UI:** The `structure.pages` and `structure.components` will be used to generate the React components (`.tsx` files). The generator will create the JSX markup and the logic to fetch data from the new API.
+
+### 3. Automated Deployment
+
+Once the code is generated, we need to get it running somewhere:
+
+*   **Infrastructure:** We will need to programmatically create a new preview environment for each user's project. This could be done using the APIs of cloud providers like Vercel or Render.
+*   **Deployment:** Our script will then deploy the generated frontend and backend code to this new environment.
+*   **Configuration:** The environment will be configured with the correct database credentials and other necessary settings.
+
+### 4. The Preview URL
+
+Finally, once the deployment is successful, we will provide the user with the URL to their live, functioning preview.

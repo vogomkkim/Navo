@@ -738,7 +738,7 @@ Your response MUST be valid JSON. Do not include any other text or markdown outs
     } catch (parseError) {
       console.error('Failed to parse AI project generation response as JSON:', parseError);
       console.error('Raw AI text:', text);
-      res.status(500).json({ ok: false, error: 'AI response was not valid JSON.' });
+      res.status(500).json({ ok: false, error: 'AI response was not valid JSON.', details: text });
       return;
     }
 
