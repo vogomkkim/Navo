@@ -30,6 +30,8 @@ const chatSendBtn = document.getElementById('chatSendBtn');
 const chatHistory = document.getElementById('chatHistory');
 const togglePanelBtn = document.getElementById('togglePanelBtn');
 const layoutEl = document.querySelector('.layout');
+const panelEl = document.querySelector('.panel');
+const panelOverlayEl = document.getElementById('panelOverlay');
 
 // Project generation elements
 const projectDescription = document.getElementById('projectDescription');
@@ -82,6 +84,7 @@ init();
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     closeSuggestionsPanel();
+    closeMobilePanel();
   }
 });
 
@@ -396,6 +399,7 @@ async function fetchAndRenderPages(projectId, projectName) {
     // Toggle UI visibility
     projectListSectionEl.style.display = 'none';
     pageListSectionEl.style.display = 'block';
+    closeMobilePanel();
   } catch (e) {
     console.error('Error fetching pages:', e);
     pageListEl.innerHTML = `<p class="error">Failed to load pages: ${e.message}</p>`;
@@ -535,20 +539,57 @@ async function fetchAndRenderPageLayout(pageId) {
     pageListSectionEl.style.display = 'none';
     canvasEl.style.display = 'block'; // Assuming canvas is hidden when page list is shown
     projectListSectionEl.style.display = 'none'; // Ensure project list is hidden
+    // Close mobile panel after navigation
+    closeMobilePanel();
   } catch (e) {
     console.error('Error fetching page layout:', e);
     setStatus(`Failed to load page: ${e.message}`);
   }
 }
 
-// --- 패널 토글 로직 추가 ---
-togglePanelBtn.addEventListener('click', () => {
-  layoutEl.classList.toggle('panel-left');
-});
+// --- Responsive panel toggle ---
+function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
 
-// --- 패널 토글 로직 추가 ---
-togglePanelBtn.addEventListener('click', () => {
-  layoutEl.classList.toggle('panel-left');
+function openMobilePanel() {
+  if (!panelEl) return;
+  panelEl.classList.add('mobile-open');
+  if (panelOverlayEl) panelOverlayEl.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMobilePanel() {
+  if (!panelEl) return;
+  panelEl.classList.remove('mobile-open');
+  if (panelOverlayEl) panelOverlayEl.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function togglePanel() {
+  if (isMobile()) {
+    if (panelEl.classList.contains('mobile-open')) {
+      closeMobilePanel();
+    } else {
+      openMobilePanel();
+    }
+  } else {
+    layoutEl.classList.toggle('panel-left');
+  }
+}
+
+if (togglePanelBtn) {
+  togglePanelBtn.addEventListener('click', togglePanel);
+}
+
+if (panelOverlayEl) {
+  panelOverlayEl.addEventListener('click', closeMobilePanel);
+}
+
+window.addEventListener('resize', () => {
+  if (!isMobile()) {
+    closeMobilePanel();
+  }
 });
 
 // --- Back to Projects Button Listener ---
@@ -740,6 +781,7 @@ function openSuggestionsPanel() {
   suggestionsPanel.classList.add('open');
   suggestionsOverlay.classList.add('active');
   document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  closeMobilePanel();
 }
 
 function closeSuggestionsPanel() {
@@ -754,6 +796,28 @@ if (toggleSuggestionsBtn) {
     openSuggestionsPanel();
   });
 }
+
+// --- Accordion behavior for panel sections on mobile ---
+function setupMobileAccordions() {
+  const sectionHeaders = document.querySelectorAll('.panel-section > h2');
+  sectionHeaders.forEach((header) => {
+    header.addEventListener('click', () => {
+      if (!isMobile()) return;
+      const section = header.parentElement;
+      section.classList.toggle('collapsed');
+    });
+  });
+}
+
+setupMobileAccordions();
+window.addEventListener('resize', () => {
+  // Expand all sections when moving to desktop for safety
+  if (!isMobile()) {
+    document
+      .querySelectorAll('.panel-section.collapsed')
+      .forEach((el) => el.classList.remove('collapsed'));
+  }
+});
 
 if (closeSuggestionsBtn) {
   closeSuggestionsBtn.addEventListener('click', () => {

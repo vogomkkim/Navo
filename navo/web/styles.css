@@ -63,41 +63,78 @@ body {
 @media (max-width: 768px) {
   .layout {
     grid-template-columns: 1fr; /* Single column for mobile */
-    grid-template-rows: 1fr auto; /* Stack canvas and panel */
-    grid-template-areas:
-      'canvas'
-      'panel';
-    height: calc(100vh - 48px); /* Adjust height for mobile */
+    grid-template-rows: 1fr; /* Only canvas in the flow */
+    grid-template-areas: 'canvas';
+    height: calc(100vh - 48px);
   }
 
+  /* Off-canvas panel for mobile */
   .panel {
-    border-left: none;
-    border-bottom: 1px solid #e5e7eb; /* Add border to bottom when stacked */
-    width: 100%; /* Full width for panel on mobile */
+    position: fixed;
+    top: 48px; /* height of .topbar */
+    right: -100%;
+    width: min(92vw, 420px);
+    height: calc(100vh - 48px);
+    background: #fff;
+    border-left: 1px solid #e5e7eb;
     padding: 16px;
+    overflow: auto;
+    transition: right 0.25s ease;
+    z-index: 1001;
+  }
+
+  .panel.mobile-open {
+    right: 0;
   }
 
   .canvas {
-    padding: 16px; /* Adjust padding for mobile */
+    padding: 16px;
   }
 
-  .layout.panel-left {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    grid-template-areas:
-      'panel'
-      'canvas';
-  }
-
+  /* When in mobile, left/right swap is irrelevant */
   .layout.panel-left .panel {
     border-right: none;
-    border-bottom: 1px solid #e5e7eb;
   }
 }
 /* --- End of Layout Rules --- */
 
+/* Overlay for mobile panel */
+.panel-overlay {
+  position: fixed;
+  top: 48px; /* below topbar */
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - 48px);
+  background: rgba(0, 0, 0, 0.28);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.panel-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
 .panel-section {
   margin-bottom: 24px;
+}
+
+/* Accordion behavior for panel sections on mobile */
+@media (max-width: 768px) {
+  .panel-section h2 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+
+  .panel-section.collapsed > *:not(h2) {
+    display: none !important;
+  }
 }
 button {
   padding: 8px 12px;
