@@ -37,8 +37,18 @@
           </div>
         </div>
 
-        <div class="panel-section suggestions-section">
-          <h2>Suggestions</h2>
+        <div class="panel-section suggestions-toggle-section">
+          <button id="toggleSuggestionsBtn" class="toggle-suggestions-btn">💡 Suggestions</button>
+        </div>
+        
+        <div class="suggestions-overlay" id="suggestionsOverlay"></div>
+        
+        <div class="panel-section suggestions-panel" id="suggestionsPanel">
+          <div class="suggestions-header">
+            <h2>AI Suggestions</h2>
+            <button id="closeSuggestionsBtn" class="close-btn">×</button>
+          </div>
+          <button id="refreshSuggestionsBtn" class="refresh-btn">🔄 Refresh</button>
           <div id="suggestionsList"></div>
         </div>
 

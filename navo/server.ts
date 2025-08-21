@@ -7,6 +7,7 @@ import { PageLayout } from './data/types.js';
 import pg from 'pg';
 import { GoogleGenerativeAI } from '@google/generative-ai'; // Import Gemini SDK
 import dotenv from 'dotenv'; // Import dotenv
+import crypto from 'crypto';
 
 dotenv.config(); // Loads .env
 dotenv.config({ path: '.env.local', override: true }); // Loads .env.local and overrides existing variables
@@ -63,7 +64,11 @@ app.post('/api/apply-suggestion', handleApplySuggestion); // New endpoint to app
 
 // Serve static files from the 'web' directory
 if (process.env.VERCEL_ENV !== 'production' && process.env.VERCEL_ENV !== 'preview') {
-  const publicDir = path.join(process.cwd(), 'dist', 'web');
+  // In development mode, serve from navo/web directory
+  const publicDir = path.join(__dirname, 'web');
+
+  console.log(`[LOG] Serving static files from: ${publicDir}`);
+
   app.use(express.static(publicDir, { index: false }));
 
   // For any other GET request, serve index.html, allowing client-side routing
@@ -427,18 +432,44 @@ app.post('/api/generate-dummy-suggestion', async (_req: express.Request, res: ex
   }
 });
 
-async function handleGetSuggestions(_req: express.Request, res: express.Response): Promise<void> {
+async function handleGetSuggestions(req: express.Request, res: express.Response): Promise<void> {
   console.log('[HANDLER] Entering handleGetSuggestions');
+
+  // Get query parameters for refresh and limit
+  const refresh = req.query.refresh === 'true';
+  const limit = parseInt(req.query.limit as string) || 3;
+
   try {
     const client = await pool.connect();
     try {
-      console.log('[HANDLER] Fetching suggestions from database...');
-      const result = await client.query(
-        'SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC',
-      );
-      res.json({ ok: true, suggestions: result.rows });
+      console.log('[HANDLER] Fetching suggestions from database...', { refresh, limit });
+      let query: string;
+      let params: any[] = [];
+
+      if (refresh) {
+        // Random selection for refresh
+        query =
+          'SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY RANDOM() LIMIT $1';
+        params = [limit];
+      } else {
+        // Default: latest suggestions
+        query =
+          'SELECT id, type, content, created_at, applied_at FROM suggestions ORDER BY created_at DESC LIMIT $1';
+        params = [limit];
+      }
+
+      const result = await client.query(query, params);
+      res.json({
+        ok: true,
+        suggestions: result.rows,
+        total: result.rows.length,
+        refresh: refresh,
+        limit: limit,
+      });
       console.log('[HANDLER] Exiting handleGetSuggestions - Success', {
         count: result.rows.length,
+        refresh,
+        limit,
       });
     } finally {
       client.release();
@@ -693,13 +724,16 @@ Your response MUST be valid JSON. Do not include any other text or markdown outs
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
+    let text = response.text();
 
     console.log('AI Project Generation Raw Response:', text);
 
     // Attempt to parse the JSON response
     let parsedResponse;
     try {
+      if (text.startsWith('```json')) {
+        text = text.replace(/```json\s*/, '').replace(/\s*```$/, '');
+      }
       parsedResponse = JSON.parse(text);
     } catch (parseError) {
       console.error('Failed to parse AI project generation response as JSON:', parseError);
@@ -714,26 +748,70 @@ Your response MUST be valid JSON. Do not include any other text or markdown outs
       return;
     }
 
-    // Save the generated project to database (optional)
+    // Save the generated project to database
     try {
       const client = await pool.connect();
       try {
+        // Use the existing dummy user ID for now
+        const dummyUserId = 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
+        // Generate a proper UUID for the project
+        console.log('[DEBUG-START] Entering handleGenerateProject');
+        const projectId = crypto.randomUUID();
+        console.log('[DEBUG] Generated projectId:', projectId);
+        console.error('[DEBUG-ERROR] Project ID before DB insert:', projectId);
+
+        console.log('[PROJECT] Saving generated project to database:', {
+          projectId,
+          ownerId: dummyUserId,
+          name: parsedResponse.structure.name,
+        });
+
         await client.query(
           'INSERT INTO projects (id, owner_id, name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)',
           [
-            `proj_${Date.now()}`,
-            'temp_owner', // You might want to get this from auth
+            projectId,
+            dummyUserId,
             parsedResponse.structure.name,
             new Date().toISOString(),
             new Date().toISOString(),
           ],
         );
+
+        console.log('[PROJECT] Project saved successfully to database');
+
+        // Also save the generated pages if they exist
+        if (parsedResponse.structure.pages && parsedResponse.structure.pages.length > 0) {
+          console.log('[PROJECT] Saving generated pages to database...');
+
+          for (const page of parsedResponse.structure.pages) {
+            const pageId = crypto.randomUUID();
+            const pageLayout = {
+              components: page.components || [],
+              layout: page.layout || 'single-column',
+            };
+
+            await client.query(
+              'INSERT INTO pages (id, project_id, path, layout_json, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)',
+              [
+                pageId,
+                projectId,
+                page.path,
+                JSON.stringify(pageLayout),
+                new Date().toISOString(),
+                new Date().toISOString(),
+              ],
+            );
+
+            console.log(`[PROJECT] Page "${page.name}" saved with path: ${page.path}`);
+          }
+        }
       } finally {
         client.release();
       }
     } catch (dbError) {
-      console.warn('Failed to save project to database:', dbError);
-      // Continue even if DB save fails
+      console.error('[PROJECT] Failed to save project to database:', dbError);
+      // Continue even if DB save fails, but log the error properly
     }
 
     res.json({

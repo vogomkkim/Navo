@@ -29,6 +29,7 @@ export default tseslint.config(
         rules: {
             'prettier/prettier': 'error',
             '@typescript-eslint/no-explicit-any': 'off',
+            'linebreak-style': ['error', 'unix'],
         },
     },
     {

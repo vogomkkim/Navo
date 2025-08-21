@@ -22,8 +22,20 @@ let currentLayout = null;
 const API_BASE_URL = window.API_BASE_URL || '';
 
 const suggestionsListEl = document.getElementById('suggestionsList');
+const refreshSuggestionsBtn = document.getElementById('refreshSuggestionsBtn');
+const toggleSuggestionsBtn = document.getElementById('toggleSuggestionsBtn');
+const suggestionsPanel = document.getElementById('suggestionsPanel');
+const closeSuggestionsBtn = document.getElementById('closeSuggestionsBtn');
+const suggestionsOverlay = document.getElementById('suggestionsOverlay');
 
 init();
+
+// Add keyboard event listener for ESC key
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    closeSuggestionsPanel();
+  }
+});
 
 async function init() {
   setStatus('Loading draft…');
@@ -48,9 +60,15 @@ async function init() {
   }
 }
 
-async function fetchAndRenderSuggestions() {
+async function fetchAndRenderSuggestions(refresh = false) {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/suggestions`);
+    const url = new URL(`${API_BASE_URL}/api/suggestions`);
+    if (refresh) {
+      url.searchParams.set('refresh', 'true');
+    }
+    url.searchParams.set('limit', '3');
+    
+    const res = await fetch(url);
     if (!res.ok) {
       throw new Error(`API responded with status ${res.status}`);
     }
@@ -68,6 +86,7 @@ async function fetchAndRenderSuggestions() {
         `;
         suggestionsListEl.appendChild(suggestionEl);
       });
+      console.log(`Loaded ${suggestions.length} suggestions (refresh: ${refresh})`);
     } else {
       suggestionsListEl.innerHTML = '<p>No suggestions available.</p>';
     }
@@ -449,6 +468,45 @@ async function applySuggestion(suggestionId) {
 generateProjectBtn.addEventListener('click', async () => {
   await generateProject();
 });
+
+// --- Suggestions Panel Functions ---
+function openSuggestionsPanel() {
+  suggestionsPanel.classList.add('open');
+  suggestionsOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function closeSuggestionsPanel() {
+  suggestionsPanel.classList.remove('open');
+  suggestionsOverlay.classList.remove('active');
+  document.body.style.overflow = ''; // Restore scrolling
+}
+
+// --- Suggestions Toggle Logic ---
+if (toggleSuggestionsBtn) {
+  toggleSuggestionsBtn.addEventListener('click', () => {
+    openSuggestionsPanel();
+  });
+}
+
+if (closeSuggestionsBtn) {
+  closeSuggestionsBtn.addEventListener('click', () => {
+    closeSuggestionsPanel();
+  });
+}
+
+if (suggestionsOverlay) {
+  suggestionsOverlay.addEventListener('click', () => {
+    closeSuggestionsPanel();
+  });
+}
+
+// --- Suggestions Refresh Logic ---
+if (refreshSuggestionsBtn) {
+  refreshSuggestionsBtn.addEventListener('click', async () => {
+    await fetchAndRenderSuggestions(true); // true = refresh mode
+  });
+}
 
 async function generateProject() {
   const description = projectDescription.value.trim();
