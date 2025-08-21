@@ -145,4 +145,5 @@ export {
   renderComponent,
   toStyleString,
   loadComponentDefinitions,
+  renderFromTemplate,
 };

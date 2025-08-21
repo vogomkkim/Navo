@@ -64,6 +64,147 @@ export async function handleGetComponentDefinition(
 /**
  * Seed default component definitions
  */
+/**
+ * Create a new component definition
+ */
+export async function handleCreateComponentDefinition(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const {
+      name,
+      display_name,
+      description,
+      category,
+      props_schema,
+      render_template,
+      css_styles,
+    } = req.body;
+
+    if (!name || !display_name || !render_template) {
+      res.status(400).json({
+        ok: false,
+        error: 'Name, display_name, and render_template are required',
+      });
+      return;
+    }
+
+    // Check if component with same name already exists
+    const existingComponent = await prisma.component_definitions.findUnique({
+      where: { name },
+    });
+
+    if (existingComponent) {
+      res.status(400).json({
+        ok: false,
+        error: 'Component with this name already exists',
+      });
+      return;
+    }
+
+    // Create new component definition
+    const component = await prisma.component_definitions.create({
+      data: {
+        name,
+        display_name,
+        description: description || '',
+        category: category || 'custom',
+        props_schema: props_schema || { type: 'object', properties: {} },
+        render_template,
+        css_styles: css_styles || '',
+        is_active: true,
+      },
+    });
+
+    res.json({
+      ok: true,
+      message: 'Component definition created successfully',
+      component,
+    });
+  } catch (error) {
+    console.error('Error creating component definition:', error);
+    res.status(500).json({
+      ok: false,
+      error: 'Failed to create component definition',
+    });
+  }
+}
+
+/**
+ * Update an existing component definition
+ */
+export async function handleUpdateComponentDefinition(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const {
+      display_name,
+      description,
+      category,
+      props_schema,
+      render_template,
+      css_styles,
+      is_active,
+    } = req.body;
+
+    const component = await prisma.component_definitions.update({
+      where: { id },
+      data: {
+        display_name,
+        description,
+        category,
+        props_schema,
+        render_template,
+        css_styles,
+        is_active,
+        updated_at: new Date(),
+      },
+    });
+
+    res.json({
+      ok: true,
+      message: 'Component definition updated successfully',
+      component,
+    });
+  } catch (error) {
+    console.error('Error updating component definition:', error);
+    res.status(500).json({
+      ok: false,
+      error: 'Failed to update component definition',
+    });
+  }
+}
+
+/**
+ * Delete a component definition
+ */
+export async function handleDeleteComponentDefinition(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    await prisma.component_definitions.delete({
+      where: { id },
+    });
+
+    res.json({
+      ok: true,
+      message: 'Component definition deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting component definition:', error);
+    res.status(500).json({
+      ok: false,
+      error: 'Failed to delete component definition',
+    });
+  }
+}
+
 export async function handleSeedComponentDefinitions(
   req: Request,
   res: Response

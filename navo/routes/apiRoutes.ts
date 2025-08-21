@@ -21,6 +21,9 @@ import {
   handleGetComponentDefinitions,
   handleGetComponentDefinition,
   handleSeedComponentDefinitions,
+  handleCreateComponentDefinition,
+  handleUpdateComponentDefinition,
+  handleDeleteComponentDefinition,
 } from '../handlers/componentHandlers.js';
 import { handleGenerateDummySuggestion } from '../server.js';
 import {
@@ -52,6 +55,9 @@ export function setupApiRoutes(app: Express) {
   app.get('/api/components', handleGetComponentDefinitions);
   app.get('/api/components/:name', handleGetComponentDefinition);
   app.post('/api/components/seed', handleSeedComponentDefinitions);
+  app.post('/api/components', handleCreateComponentDefinition);
+  app.put('/api/components/:id', handleUpdateComponentDefinition);
+  app.delete('/api/components/:id', handleDeleteComponentDefinition);
 
   // Project and Page Management Routes
   app.get('/api/projects', handleListProjects);

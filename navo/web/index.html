@@ -123,8 +123,26 @@
           </button>
         </div>
         <!-- End Project and Page List Section -->
+
+        <!-- Natural Language Component Builder Section -->
+        <div class="panel-section component-builder-section">
+          <h2>Create Component</h2>
+          <div class="natural-language-input">
+            <textarea
+              id="componentDescription"
+              placeholder="Describe the component you want...&#10;&#10;Examples:&#10;• A photo gallery that shows images in a grid&#10;• A contact form with name, email, and message fields&#10;• A pricing table with three columns&#10;• A hero section with a big title and call-to-action button"
+              rows="6"
+            ></textarea>
+            <button id="generateComponentBtn" class="generate-component-btn">
+              🚀 Generate Component
+            </button>
+          </div>
+          <div id="generationStatus" class="generation-status"></div>
+        </div>
+        <!-- End Natural Language Component Builder Section -->
       </aside>
     </main>
+
     <script>
       window.API_BASE_URL = '__API_URL__';
     </script>
