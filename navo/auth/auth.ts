@@ -109,6 +109,26 @@ export async function handleLogin(req: Request, res: Response): Promise<void> {
   }
 }
 
+export function getUserIdFromToken(
+  authHeader: string | undefined
+): string | null {
+  if (!authHeader) return null;
+
+  const token = authHeader.split(' ')[1];
+  if (!token) return null;
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'your-secret-key'
+    ) as { userId: string; email: string };
+
+    return decoded.userId;
+  } catch (error) {
+    return null;
+  }
+}
+
 export async function authenticateToken(
   req: AuthenticatedRequest,
   res: Response,
