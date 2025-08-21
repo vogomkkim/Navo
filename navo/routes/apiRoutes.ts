@@ -17,7 +17,17 @@ import {
   handleSeedDummyData,
   handleGenerateProject,
 } from '../handlers/aiHandlers.js';
+import {
+  handleGetComponentDefinitions,
+  handleGetComponentDefinition,
+  handleSeedComponentDefinitions,
+} from '../handlers/componentHandlers.js';
 import { handleGenerateDummySuggestion } from '../server.js';
+import {
+  handleListProjects,
+  handleListProjectPages,
+  handleGetPageLayout,
+} from '../handlers/projectHandlers.js';
 
 export function setupApiRoutes(app: Express) {
   app.get('/api/draft', handleDraft);
@@ -37,4 +47,14 @@ export function setupApiRoutes(app: Express) {
   // User Authentication Routes
   app.post('/api/register', handleRegister);
   app.post('/api/login', handleLogin);
+
+  // Component Definition Routes
+  app.get('/api/components', handleGetComponentDefinitions);
+  app.get('/api/components/:name', handleGetComponentDefinition);
+  app.post('/api/components/seed', handleSeedComponentDefinitions);
+
+  // Project and Page Management Routes
+  app.get('/api/projects', handleListProjects);
+  app.get('/api/projects/:projectId/pages', handleListProjectPages);
+  app.get('/api/pages/:pageId', handleGetPageLayout);
 }
