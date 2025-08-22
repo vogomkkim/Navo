@@ -5,6 +5,70 @@ import {
   renderFromTemplate,
 } from './components.js';
 
+// --- Global Error Handling ---
+window.addEventListener('error', async (event) => {
+  console.log('🚨 JavaScript 에러 캐치:', {
+    message: event.error?.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    stack: event.error?.stack
+  });
+
+  // 서버로 에러 로그 전송
+  try {
+    await fetch(`${API_BASE_URL}/api/log-error`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        type: 'javascript_error',
+        message: event.error?.message || 'Unknown JavaScript error',
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        stack: event.error?.stack,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch (e) {
+    console.log('❌ 에러 로깅 실패:', e);
+  }
+});
+
+// Promise 에러 캐치
+window.addEventListener('unhandledrejection', async (event) => {
+  console.log('🚨 Promise 에러 캐치:', {
+    reason: event.reason,
+    promise: event.promise
+  });
+
+  // 서버로 에러 로그 전송
+  try {
+    await fetch(`${API_BASE_URL}/api/log-error`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        type: 'promise_error',
+        message: event.reason?.message || 'Unknown Promise error',
+        stack: event.reason?.stack,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch (e) {
+    console.log('❌ 에러 로깅 실패:', e);
+  }
+});
+
 // Check authentication first
 function checkAuth() {
   const token = localStorage.getItem('navo_token');
@@ -71,8 +135,37 @@ const createComponentBtn = document.getElementById('createComponentBtn');
 const componentModal = document.getElementById('componentModal');
 const closeComponentModal = document.getElementById('closeComponentModal');
 const componentForm = document.getElementById('componentForm');
-const componentList = document.getElementById('componentList');
 const previewComponentBtn = document.getElementById('previewComponentBtn');
+
+// Natural Language Component Generation Elements
+const componentDescription = document.getElementById('componentDescription');
+const generateComponentBtn = document.getElementById('generateComponentBtn');
+const generationStatus = document.getElementById('generationStatus');
+
+// Toggle Section Elements
+const toggleProjectGenerationBtn = document.getElementById(
+  'toggleProjectGenerationBtn'
+);
+const toggleProjectListBtn = document.getElementById('toggleProjectListBtn');
+const toggleComponentBuilderBtn = document.getElementById(
+  'toggleComponentBuilderBtn'
+);
+
+// Toggle Panel Elements
+const projectGenerationPanel = document.getElementById(
+  'projectGenerationPanel'
+);
+const projectListPanel = document.getElementById('projectListPanel');
+const componentBuilderPanel = document.getElementById('componentBuilderPanel');
+
+// Close Button Elements
+const closeProjectGenerationBtn = document.getElementById(
+  'closeProjectGenerationBtn'
+);
+const closeProjectListBtn = document.getElementById('closeProjectListBtn');
+const closeComponentBuilderBtn = document.getElementById(
+  'closeComponentBuilderBtn'
+);
 
 // Logout functionality
 function handleLogout() {
@@ -681,98 +774,115 @@ backToProjectsBtn.addEventListener('click', () => {
 });
 
 // --- Component Builder Event Listeners ---
-createComponentBtn.addEventListener('click', () => {
-  componentModal.classList.add('show');
-});
-
-closeComponentModal.addEventListener('click', () => {
-  componentModal.classList.remove('show');
-  componentForm.reset();
-});
-
-// Close modal when clicking outside
-componentModal.addEventListener('click', (e) => {
-  if (e.target === componentModal) {
-    componentModal.classList.remove('show');
-    componentForm.reset();
-  }
-});
-
-// Preview component
-previewComponentBtn.addEventListener('click', () => {
-  const formData = new FormData(componentForm);
-  const template = formData.get('render_template');
-  const css = formData.get('css_styles');
-
-  if (template) {
-    // Create a preview component
-    const previewComponent = {
-      id: 'preview',
-      type: 'preview',
-      props: {
-        content: 'Preview Content',
-        style: 'color: #666; font-style: italic;',
-      },
-    };
-
-    // Render preview
-    const previewHtml = renderFromTemplate(template, previewComponent.props);
-
-    // Show preview in canvas
-    canvasEl.innerHTML = `
-      <div class="preview-container">
-        <h3>Component Preview</h3>
-        <div class="preview-component">
-          ${previewHtml}
-        </div>
-        <style>${css}</style>
-      </div>
-    `;
-
-    setStatus('Component preview loaded');
-  }
-});
-
-// Save component
-componentForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const formData = new FormData(componentForm);
-  const componentData = {
-    name: formData.get('name'),
-    display_name: formData.get('display_name'),
-    description: formData.get('description'),
-    category: formData.get('category'),
-    render_template: formData.get('render_template'),
-    css_styles: formData.get('css_styles'),
-  };
-
-  try {
-    setStatus('Creating component...');
-
-    const response = await fetch(`${API_BASE_URL}/api/components`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(componentData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API responded with status ${response.status}`);
+// 안전한 이벤트 리스너 등록 (요소가 존재할 때만)
+if (createComponentBtn) {
+  createComponentBtn.addEventListener('click', () => {
+    if (componentModal) {
+      componentModal.classList.add('show');
     }
+  });
+}
 
-    const data = await response.json();
-
-    if (data.ok) {
-      setStatus('Component created successfully!');
+if (closeComponentModal) {
+  closeComponentModal.addEventListener('click', () => {
+    if (componentModal && componentForm) {
       componentModal.classList.remove('show');
       componentForm.reset();
+    }
+  });
+}
 
-      // Refresh component list and reload component definitions
-      await loadComponentDefinitions();
-      await fetchAndRenderComponents();
+// Close modal when clicking outside
+if (componentModal) {
+  componentModal.addEventListener('click', (e) => {
+    if (e.target === componentModal && componentForm) {
+      componentModal.classList.remove('show');
+      componentForm.reset();
+    }
+  });
+}
+
+// Preview component
+if (previewComponentBtn && componentForm) {
+  previewComponentBtn.addEventListener('click', () => {
+    const formData = new FormData(componentForm);
+    const template = formData.get('render_template');
+    const css = formData.get('css_styles');
+
+    if (template) {
+      // Create a preview component
+      const previewComponent = {
+        id: 'preview',
+        type: 'preview',
+        props: {
+          content: 'Preview Content',
+          style: 'color: #666; font-style: italic;',
+        },
+      };
+
+      // Render preview
+      const previewHtml = renderFromTemplate(template, previewComponent.props);
+
+      // Show preview in canvas
+      if (canvasEl) {
+        canvasEl.innerHTML = `
+          <div class="preview-container">
+            <h3>Component Preview</h3>
+            <div class="preview-component">
+              ${previewHtml}
+            </div>
+            <style>${css}</style>
+          </div>
+        `;
+        setStatus('Component preview loaded');
+      }
+    }
+  });
+}
+
+// Save component
+if (componentForm) {
+  componentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(componentForm);
+    const componentData = {
+      name: formData.get('name'),
+      display_name: formData.get('display_name'),
+      description: formData.get('description'),
+      category: formData.get('category'),
+      render_template: formData.get('render_template'),
+      css_styles: formData.get('css_styles'),
+    };
+
+    try {
+      setStatus('Creating component...');
+
+      const response = await fetch(`${API_BASE_URL}/api/components`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(componentData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API responded with status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.ok) {
+        setStatus('Component created successfully!');
+        if (componentModal) {
+          componentModal.classList.remove('show');
+        }
+        componentForm.reset();
+
+        // Refresh component list and reload component definitions
+        await loadComponentDefinitions();
+        await fetchAndRenderComponents();
 
       // Refresh canvas if it has components
       if (currentLayout) {
@@ -1025,30 +1135,16 @@ async function fetchAndRenderComponents() {
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`API responded with status ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data.ok && data.components) {
-      const componentsHtml = data.components
-        .map(
-          (comp) => `
-          <div class="component-item" data-component-id="${comp.id}">
-            <h4>${comp.display_name}</h4>
-            <p>${comp.description || 'No description'}</p>
-            <small>Category: ${comp.category}</small>
-          </div>
-        `
-        )
-        .join('');
-
-      componentList.innerHTML = componentsHtml;
+    if (response.ok) {
+      const data = await response.json();
+      if (data.ok && data.components) {
+        console.log(`Loaded ${data.components.length} components`);
+        // Component list display is not implemented yet
+      }
     }
   } catch (error) {
     console.error('Error fetching components:', error);
-    componentList.innerHTML = '<p class="error">Failed to load components</p>';
+    // Component list display is not implemented yet
   }
 }
 
@@ -1104,3 +1200,230 @@ projectListEl.addEventListener('click', (event) => {
     // fetchAndRenderPages(projectId, projectName);
   }
 });
+
+// --- Natural Language Component Generation ---
+if (generateComponentBtn && componentDescription && generationStatus) {
+  generateComponentBtn.addEventListener('click', async () => {
+    const description = componentDescription.value.trim();
+
+    if (!description) {
+      generationStatus.innerHTML =
+        '<p class="error">Please describe the component you want to create.</p>';
+      return;
+    }
+
+    setStatus('Generating component...');
+    generationStatus.innerHTML =
+      '<p class="generating">🚀 Generating component from your description...</p>';
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/components/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          description,
+          save: true, // Save the generated component to database
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API responded with status ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.ok && result.component) {
+        const component = result.component;
+
+        // Show success message with component details
+        generationStatus.innerHTML = `
+          <div class="success">
+            <h4>✅ Component Generated Successfully!</h4>
+            <div class="component-preview">
+              <h5>${component.display_name}</h5>
+              <p><strong>Category:</strong> ${component.category}</p>
+              <p><strong>Description:</strong> ${component.description}</p>
+
+              <details>
+                <summary>📄 HTML Template</summary>
+                <pre><code>${escapeHtml(component.render_template)}</code></pre>
+              </details>
+
+              ${
+                component.css_styles
+                  ? `
+                <details>
+                  <summary>🎨 CSS Styles</summary>
+                  <pre><code>${escapeHtml(component.css_styles)}</code></pre>
+                </details>
+              `
+                  : ''
+              }
+
+              <details>
+                <summary>⚙️ Properties Schema</summary>
+                <pre><code>${escapeHtml(JSON.stringify(component.props_schema, null, 2))}</code></pre>
+              </details>
+            </div>
+
+            <div class="component-actions">
+              <button class="btn btn-primary" onclick="addComponentToCanvas('${component.name}')">
+                ➕ Add to Canvas
+              </button>
+              <button class="btn btn-secondary" onclick="previewComponent('${component.name}')">
+                👁️ Preview
+              </button>
+            </div>
+          </div>
+        `;
+
+        setStatus('Component generated successfully!');
+
+        // Clear the input
+        componentDescription.value = '';
+
+        // Refresh component list if it exists
+        if (typeof fetchAndRenderComponents === 'function') {
+          fetchAndRenderComponents();
+        }
+      } else {
+        throw new Error(result.error || 'Failed to generate component');
+      }
+    } catch (error) {
+      console.error('Error generating component:', error);
+      generationStatus.innerHTML = `
+        <p class="error">❌ Failed to generate component: ${error.message}</p>
+      `;
+      setStatus('Error generating component');
+    }
+  });
+}
+
+// --- Toggle Section Functionality ---
+function setupToggleSection(toggleBtn, panel, closeBtn) {
+  if (toggleBtn && panel) {
+    toggleBtn.addEventListener('click', () => {
+      try {
+        // Close all other panels first
+        [projectGenerationPanel, projectListPanel, componentBuilderPanel].forEach(
+          (p) => {
+            if (p && p !== panel) {
+              p.classList.remove('open');
+            }
+          }
+        );
+
+        // Toggle current panel
+        panel.classList.toggle('open');
+      } catch (error) {
+        console.error('Error in toggle section:', error);
+        // 에러가 발생해도 애플리케이션이 중단되지 않도록 함
+      }
+    });
+  }
+
+  if (closeBtn && panel) {
+    closeBtn.addEventListener('click', () => {
+      try {
+        panel.classList.remove('open');
+      } catch (error) {
+        console.error('Error closing panel:', error);
+      }
+    });
+  }
+}
+
+// --- Safe DOM Element Access ---
+function safeSetInnerHTML(element, html) {
+  try {
+    if (element && typeof element.innerHTML !== 'undefined') {
+      element.innerHTML = html;
+    } else {
+      console.warn('Element not found or innerHTML not supported:', element);
+    }
+  } catch (error) {
+    console.error('Error setting innerHTML:', error);
+  }
+}
+
+function safeAddEventListener(element, event, handler) {
+  try {
+    if (element && typeof element.addEventListener === 'function') {
+      element.addEventListener(event, handler);
+    } else {
+      console.warn('Element not found or addEventListener not supported:', element);
+    }
+  } catch (error) {
+    console.error('Error adding event listener:', error);
+  }
+}
+
+// --- Initialize Toggle Sections with Safe Access ---
+function initializeToggleSections() {
+  try {
+    if (
+      toggleProjectGenerationBtn &&
+      projectGenerationPanel &&
+      closeProjectGenerationBtn
+    ) {
+      setupToggleSection(
+        toggleProjectGenerationBtn,
+        projectGenerationPanel,
+        closeProjectGenerationBtn
+      );
+    }
+
+    if (toggleProjectListBtn && projectListPanel && closeProjectListBtn) {
+      setupToggleSection(
+        toggleProjectListBtn,
+        projectListPanel,
+        closeProjectListBtn
+      );
+    }
+
+    if (
+      toggleComponentBuilderBtn &&
+      componentBuilderPanel &&
+      closeComponentBuilderBtn
+    ) {
+      setupToggleSection(
+        toggleComponentBuilderBtn,
+        componentBuilderPanel,
+        closeComponentBuilderBtn
+      );
+    }
+  } catch (error) {
+    console.error('Error initializing toggle sections:', error);
+  }
+}
+
+// Initialize toggle sections when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeToggleSections);
+} else {
+  initializeToggleSections();
+}
+
+// Utility function to escape HTML for safe display
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Function to add generated component to canvas
+function addComponentToCanvas(componentName) {
+  // This will be implemented to add the component to the current canvas
+  console.log(`Adding component ${componentName} to canvas`);
+  setStatus(`Component ${componentName} added to canvas`);
+}
+
+// Function to preview generated component
+function previewComponent(componentName) {
+  // This will be implemented to show a preview of the component
+  console.log(`Previewing component ${componentName}`);
+  setStatus(`Previewing component ${componentName}`);
+}

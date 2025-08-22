@@ -46,7 +46,12 @@
         <!-- Mobile-only account actions -->
         <div class="panel-section panel-mobile-only">
           <h2>Account</h2>
-          <button id="logoutBtnMobile" style="background:#e74c3c;color:#fff;border:none">Logout</button>
+          <button
+            id="logoutBtnMobile"
+            style="background: #e74c3c; color: #fff; border: none"
+          >
+            Logout
+          </button>
         </div>
 
         <!-- 추가될 부분 -->
@@ -83,41 +88,64 @@
         </div>
 
         <!-- New Project Generation Section -->
-        <div class="panel-section project-generation-section">
-          <h2>Generate New Project</h2>
-          <div class="project-form">
-            <input
-              type="text"
-              id="projectDescription"
-              placeholder="e.g., Instagram-like social media site"
-            />
-            <input
-              type="text"
-              id="projectFeatures"
-              placeholder="Features: posts, comments, likes, follows"
-            />
-            <input
-              type="text"
-              id="targetAudience"
-              placeholder="Target: young adults, social media users"
-            />
-            <input
-              type="text"
-              id="businessType"
-              placeholder="Business: social platform, content sharing"
-            />
-            <button id="generateProjectBtn">Generate Project</button>
-          </div>
-          <div id="projectResult" class="project-result"></div>
+        <div class="panel-section project-generation-toggle-section">
+          <button id="toggleProjectGenerationBtn" class="toggle-section-btn">
+            🚀 Generate New Project
+          </button>
         </div>
-        <!-- End Project Generation Section -->
+
+        <div class="project-generation-panel" id="projectGenerationPanel">
+          <div class="panel-section project-generation-section">
+            <div class="section-header">
+              <h2>Generate New Project</h2>
+              <button id="closeProjectGenerationBtn" class="close-btn">
+                ×
+              </button>
+            </div>
+            <div class="project-form">
+              <input
+                type="text"
+                id="projectDescription"
+                placeholder="e.g., Instagram-like social media site"
+              />
+              <input
+                type="text"
+                id="projectFeatures"
+                placeholder="Features: posts, comments, likes, follows"
+              />
+              <input
+                type="text"
+                id="targetAudience"
+                placeholder="Target: young adults, social media users"
+              />
+              <input
+                type="text"
+                id="businessType"
+                placeholder="Business: social platform, content sharing"
+              />
+              <button id="generateProjectBtn">Generate Project</button>
+            </div>
+            <div id="projectResult" class="project-result"></div>
+          </div>
+        </div>
 
         <!-- Project and Page List Section -->
-        <div class="panel-section project-list-section">
-          <h2>My Projects</h2>
-          <ul id="projectList" class="project-list">
-            <!-- Projects will be loaded here -->
-          </ul>
+        <div class="panel-section project-list-toggle-section">
+          <button id="toggleProjectListBtn" class="toggle-section-btn">
+            📁 My Projects
+          </button>
+        </div>
+
+        <div class="project-list-panel" id="projectListPanel">
+          <div class="panel-section project-list-section">
+            <div class="section-header">
+              <h2>My Projects</h2>
+              <button id="closeProjectListBtn" class="close-btn">×</button>
+            </div>
+            <ul id="projectList" class="project-list">
+              <!-- Projects will be loaded here -->
+            </ul>
+          </div>
         </div>
 
         <div class="panel-section page-list-section" style="display: none">
@@ -132,19 +160,30 @@
         <!-- End Project and Page List Section -->
 
         <!-- Natural Language Component Builder Section -->
-        <div class="panel-section component-builder-section">
-          <h2>Create Component</h2>
-          <div class="natural-language-input">
-            <textarea
-              id="componentDescription"
-              placeholder="Describe the component you want...&#10;&#10;Examples:&#10;• A photo gallery that shows images in a grid&#10;• A contact form with name, email, and message fields&#10;• A pricing table with three columns&#10;• A hero section with a big title and call-to-action button"
-              rows="6"
-            ></textarea>
-            <button id="generateComponentBtn" class="generate-component-btn">
-              🚀 Generate Component
-            </button>
+        <div class="panel-section component-builder-toggle-section">
+          <button id="toggleComponentBuilderBtn" class="toggle-section-btn">
+            🧩 Create Component
+          </button>
+        </div>
+
+        <div class="component-builder-panel" id="componentBuilderPanel">
+          <div class="panel-section component-builder-section">
+            <div class="section-header">
+              <h2>Create Component</h2>
+              <button id="closeComponentBuilderBtn" class="close-btn">×</button>
+            </div>
+            <div class="natural-language-input">
+              <textarea
+                id="componentDescription"
+                placeholder="Describe the component you want...&#10;&#10;Examples:&#10;• A photo gallery that shows images in a grid&#10;• A contact form with name, email, and message fields&#10;• A pricing table with three columns&#10;• A hero section with a big title and call-to-action button"
+                rows="6"
+              ></textarea>
+              <button id="generateComponentBtn" class="generate-component-btn">
+                🚀 Generate Component
+              </button>
+            </div>
+            <div id="generationStatus" class="generation-status"></div>
           </div>
-          <div id="generationStatus" class="generation-status"></div>
         </div>
         <!-- End Natural Language Component Builder Section -->
       </aside>

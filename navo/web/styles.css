@@ -51,7 +51,7 @@ body {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   padding: 6px;
   min-width: 160px;
   display: none;
@@ -155,7 +155,9 @@ body {
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
 }
 
 .panel-overlay.active {
@@ -504,74 +506,274 @@ section img {
   transform: translateY(1px);
 }
 
-/* Natural Language Component Builder Styles */
+/* --- Natural Language Component Builder Styles --- */
 .component-builder-section {
-  border-top: 1px solid #e0e0e0;
-  padding-top: 1rem;
+  margin-top: 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
 }
 
-.natural-language-input {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.component-builder-section h2 {
+  margin: 0 0 16px 0;
+  color: #1e293b;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .natural-language-input textarea {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
   min-height: 120px;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  background: #fff;
 }
 
 .natural-language-input textarea:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .generate-component-btn {
-  background: #28a745;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  padding: 12px 16px;
   border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .generate-component-btn:hover {
-  background: #218838;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.generate-component-btn:active {
+  transform: translateY(0);
 }
 
 .generation-status {
-  margin-top: 12px;
-  padding: 8px 12px;
+  margin-top: 16px;
+}
+
+.generation-status .generating {
+  color: #059669;
+  font-weight: 500;
+  text-align: center;
+  padding: 12px;
+  background: #ecfdf5;
+  border-radius: 6px;
+  border: 1px solid #a7f3d0;
+}
+
+.generation-status .error {
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 0;
+}
+
+.generation-status .success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 0;
+}
+
+.generation-status .success h4 {
+  margin: 0 0 16px 0;
+  color: #059669;
+  font-size: 18px;
+}
+
+.component-preview {
+  margin: 16px 0;
+}
+
+.component-preview h5 {
+  margin: 0 0 8px 0;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.component-preview p {
+  margin: 8px 0;
+  color: #475569;
+  font-size: 14px;
+}
+
+.component-preview details {
+  margin: 12px 0;
+}
+
+.component-preview summary {
+  cursor: pointer;
+  padding: 8px 0;
+  color: #374151;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.component-preview pre {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 8px 0;
+}
+
+.component-preview code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.component-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.component-actions .btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.component-actions .btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.component-actions .btn-primary:hover {
+  background: #2563eb;
+}
+
+.component-actions .btn-secondary {
+  background: #6b7280;
+  color: white;
+}
+
+.component-actions .btn-secondary:hover {
+  background: #4b5563;
+}
+
+/* Mobile responsiveness for component builder */
+@media (max-width: 768px) {
+  .component-actions {
+    flex-direction: column;
+  }
+
+  .component-actions .btn {
+    flex: none;
+  }
+
+  .natural-language-input textarea {
+    min-height: 100px;
+  }
+}
+
+/* --- Toggle Section Styles --- */
+.toggle-section-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.toggle-section-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.toggle-section-btn:active {
+  background: #e2e8f0;
+}
+
+/* Panel sections that can be toggled */
+.project-generation-panel,
+.project-list-panel,
+.component-builder-panel {
+  display: none;
+  margin-top: 8px;
+}
+
+.project-generation-panel.open,
+.project-list-panel.open,
+.component-builder-panel.open {
+  display: block;
+}
+
+/* Section headers with close buttons */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
   border-radius: 4px;
-  font-size: 13px;
-  min-height: 20px;
+  line-height: 1;
+  transition: all 0.2s ease;
 }
 
-.generation-status.loading {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
+.close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
 }
 
-.generation-status.success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+/* Toggle section spacing */
+.project-generation-toggle-section,
+.project-list-toggle-section,
+.component-builder-toggle-section {
+  margin-bottom: 12px;
 }
 
-.generation-status.error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+/* Ensure proper spacing between toggle sections */
+.project-generation-toggle-section + .project-generation-panel,
+.project-list-toggle-section + .project-list-panel,
+.component-builder-toggle-section + .component-builder-panel {
+  margin-bottom: 16px;
 }
