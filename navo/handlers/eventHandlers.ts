@@ -1,35 +1,62 @@
 import { Request, Response } from 'express';
 import { prisma } from '../db/db.js';
+import { ErrorResolutionManager } from '../core/errorResolution.js';
+import { ErrorAnalyzerAgent } from '../agents/errorAnalyzerAgent.js';
+import { CodeFixerAgent } from '../agents/codeFixerAgent.js';
+import { TestRunnerAgent } from '../agents/testRunnerAgent.js';
+import { RollbackAgent } from '../agents/rollbackAgent.js';
+
+// 에러 해결 관리자 인스턴스 (싱글톤)
+let errorResolutionManager: ErrorResolutionManager | null = null;
+
+// 에러 해결 시스템 초기화
+function initializeErrorResolutionSystem() {
+  if (!errorResolutionManager) {
+    errorResolutionManager = new ErrorResolutionManager();
+
+    // 모든 에이전트 등록
+    const analyzerAgent = new ErrorAnalyzerAgent();
+    const codeFixerAgent = new CodeFixerAgent();
+    const testRunnerAgent = new TestRunnerAgent();
+    const rollbackAgent = new RollbackAgent();
+
+    errorResolutionManager.registerAgent(analyzerAgent);
+    errorResolutionManager.registerAgent(codeFixerAgent);
+    errorResolutionManager.registerAgent(testRunnerAgent);
+    errorResolutionManager.registerAgent(rollbackAgent);
+
+    console.log('🚀 자동 에러 해결 시스템 초기화 완료');
+    console.log(
+      `📊 등록된 에이전트: ${errorResolutionManager.getStatus().registeredAgents}개`
+    );
+  }
+  return errorResolutionManager;
+}
 
 export async function handleEvents(req: Request, res: Response): Promise<void> {
-  console.log('[HANDLER] Entering handleEvents', { body: req.body });
-  const body = req.body || {};
-  const events = Array.isArray(body)
-    ? body
-    : Array.isArray(body?.events)
-      ? body.events
-      : [body];
-
   try {
-    for (const event of events) {
-      const { type, ...data } = event; // Extract type and rest of the event as data
-      console.log('[HANDLER] Inserting event:', { type, data });
-      await prisma.events.create({
-        data: {
-          type,
-          data,
-        },
-      });
+    const { type, data, projectId } = req.body;
+    const userId = '00000000-0000-0000-0000-000000000000'; // Temporary hardcoded UUID for testing
+
+    if (!type) {
+      res.status(400).json({ error: 'Event type is required' });
+      return;
     }
-    res.json({ ok: true, received: events.length });
-    console.log('[HANDLER] Exiting handleEvents', {
-      received: events.length,
+
+    // Store the event
+    await prisma.events.create({
+      data: {
+        project_id: projectId || null,
+        user_id: userId,
+        type,
+        data: data || {},
+      },
     });
-  } catch (err) {
-    console.error('[HANDLER] Error inserting events:', err, {
-      eventsToInsert: events,
-    });
-    res.status(500).json({ ok: false, error: 'Failed to store events' });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error storing event:', error);
+    res.status(500).json({ error: 'Failed to store event' });
   }
 }
 
@@ -37,24 +64,170 @@ export async function handleAnalyticsEvents(
   req: Request,
   res: Response
 ): Promise<void> {
-  const { projectId, eventType, limit = 100, offset = 0 } = req.query;
-  const userId = 'dummy-user-id'; // Temporary hardcoded userId for testing
-
   try {
-    const events = await prisma.events.findMany({
-      where: {
-        project_id: (projectId as string) || undefined,
-        user_id: userId,
-        type: (eventType as string) || undefined,
-      },
-      take: Number(limit),
-      skip: Number(offset),
-      orderBy: { ts: 'desc' },
+    const { events } = req.body;
+    const userId = '00000000-0000-0000-0000-000000000000'; // Temporary hardcoded UUID for testing
+
+    if (!Array.isArray(events)) {
+      res.status(400).json({ error: 'Events array is required' });
+      return;
+    }
+
+    // Store multiple events
+    const eventData = events.map((event) => ({
+      project_id: event.projectId || null,
+      user_id: userId,
+      type: event.type,
+      data: event.data || {},
+    }));
+
+    await prisma.events.createMany({
+      data: eventData,
     });
 
-    res.json({ events });
+    res.json({ success: true, count: events.length });
   } catch (error) {
-    console.error('Error fetching analytics events:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics events' });
+    console.error('Error storing analytics events:', error);
+    res.status(500).json({ error: 'Failed to store analytics events' });
+  }
+}
+
+/**
+ * Handle client-side error logging
+ * POST body: { type, message, filename, lineno, colno, stack, url, userAgent, timestamp }
+ */
+export async function handleLogError(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const {
+      type,
+      message,
+      filename,
+      lineno,
+      colno,
+      stack,
+      url,
+      userAgent,
+      timestamp,
+    } = req.body;
+
+    const userId = '00000000-0000-0000-0000-000000000000'; // Temporary hardcoded UUID for testing
+
+    console.log('🚨 Client Error Logged:', {
+      type,
+      message,
+      filename,
+      lineno,
+      colno,
+      url,
+      timestamp,
+    });
+
+    // Store error in events table
+    await prisma.events.create({
+      data: {
+        project_id: null,
+        user_id: userId,
+        type: 'client_error',
+        data: {
+          error_type: type,
+          message,
+          filename,
+          lineno,
+          colno,
+          stack,
+          url,
+          userAgent,
+          timestamp,
+        },
+      },
+    });
+
+    // 🚀 자동 에러 해결 시스템 실행!
+    try {
+      console.log('🔧 자동 에러 해결 시스템 시작...');
+      console.log('📋 에러 정보:', { message, filename, lineno, colno });
+
+      // 에러 해결 시스템 초기화
+      console.log('🔄 에러 해결 시스템 초기화 중...');
+      const manager = initializeErrorResolutionSystem();
+      console.log('✅ 에러 해결 시스템 초기화 완료');
+
+      // 에러 객체 생성
+      console.log('🔨 에러 객체 생성 중...');
+      const error = new Error(message);
+      (error as any).filename = filename;
+      (error as any).lineno = lineno;
+      (error as any).colno = colno;
+      (error as any).stack = stack;
+      console.log('✅ 에러 객체 생성 완료:', error.message);
+
+      // 에러 컨텍스트 생성
+      console.log('🌍 에러 컨텍스트 생성 중...');
+      const context = {
+        timestamp: new Date(timestamp || Date.now()),
+        userAgent: userAgent || 'Unknown',
+        url: url || 'Unknown',
+        projectId: null,
+        sessionId: `session-${Date.now()}`,
+        metadata: {
+          filename,
+          lineno,
+          colno,
+          stack,
+        },
+      };
+      console.log('✅ 에러 컨텍스트 생성 완료:', context);
+
+      // 자동 에러 해결 실행
+      console.log('🚀 자동 에러 해결 실행 시작...');
+      const resolutionResult = await manager.resolveError(error, context);
+      console.log('✅ 자동 에러 해결 실행 완료:', resolutionResult);
+
+      if (resolutionResult.success) {
+        console.log('✅ 자동 에러 해결 성공!', {
+          changes: resolutionResult.changes.length,
+          executionTime: resolutionResult.executionTime,
+          nextSteps: resolutionResult.nextSteps,
+        });
+
+        // 클라이언트에게 해결 완료 알림
+        res.json({
+          success: true,
+          logged: true,
+          autoResolved: true,
+          changes: resolutionResult.changes.length,
+          message: '에러가 자동으로 해결되었습니다!',
+        });
+      } else {
+        console.log('❌ 자동 에러 해결 실패:', resolutionResult.errorMessage);
+
+        // 클라이언트에게 해결 실패 알림
+        res.json({
+          success: true,
+          logged: true,
+          autoResolved: false,
+          error: resolutionResult.errorMessage,
+          nextSteps: resolutionResult.nextSteps,
+        });
+      }
+    } catch (resolutionError) {
+      console.error('🚨 자동 에러 해결 시스템 실행 실패:', resolutionError);
+      console.error('🚨 에러 스택:', (resolutionError as Error).stack);
+
+      // 에러 해결 시스템 실패 시에도 기본 로깅은 성공
+      res.json({
+        success: true,
+        logged: true,
+        autoResolved: false,
+        error: '자동 에러 해결 시스템 실행 실패',
+        fallback: '에러는 로깅되었지만 자동 해결은 실패했습니다',
+      });
+    }
+  } catch (error) {
+    console.error('Error logging client error:', error);
+    res.status(500).json({ error: 'Failed to log error' });
   }
 }

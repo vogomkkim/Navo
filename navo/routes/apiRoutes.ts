@@ -8,6 +8,7 @@ import {
 import {
   handleEvents,
   handleAnalyticsEvents,
+  handleLogError,
 } from '../handlers/eventHandlers.js';
 import {
   handleAiCommand,
@@ -37,6 +38,7 @@ export function setupApiRoutes(app: Express) {
   app.get('/api/draft', handleDraft);
   app.post('/api/save', handleSave);
   app.post('/api/events', handleEvents);
+  app.post('/api/log-error', handleLogError); // Client error logging
   app.get('/health', handleHealthCheck);
   app.get('/api/db-test', handleDbTest);
   app.get('/api/analytics/events', handleAnalyticsEvents); // New endpoint for analytics events
