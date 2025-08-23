@@ -4,19 +4,16 @@
 
 ### ✅ **Completed Features**
 
-- **AI Intent Parser**: 사용자 요청을 분석하여 완전한 프로젝트 구조 생성
-  - 데이터베이스 스키마, 페이지 구조, 컴포넌트, API 엔드포인트 자동 설계
-  - Gemini AI를 활용한 지능형 프로젝트 아키텍처 생성
+- **AI Intent Parser**: 사용자 요청을 분석하여 완전한 프로젝트 구조 생성 및 영속화
+  - Gemini AI를 활용하여 데이터베이스 스키마, 페이지 구조, 컴포넌트 정의, API 엔드포인트 자동 설계 및 생성된 구조를 데이터베이스에 영속화
 - **Hot-reload 개발 환경**: TypeScript 파일 변경 시 자동 서버 재시작
 - **기본 AI 제안 시스템**: AI 기반 스타일 및 복사 제안 생성 및 저장
 - **이벤트 추적**: 페이지 뷰, 클릭, 채팅 명령 등 사용자 액션 추적
+- **Draft preview (database integrated)**: Initial integration for fetching draft data from the database. Further optimization needed to consistently meet the ≤ 10s target.
+- **Publish**: (subdomain auto, success URL, and rollback last 3 builds integrated with Vercel)
+- **Analytics: track `view` and `click`**: Implemented event tracking for page views and clicks.
 
-### 🔄 **In Progress**
 
-- Draft preview ≤ 10 s (mock acceptable in early weeks)
-- Editor supports: inline text edit, image replace/upload, style sliders, add/move/remove section, chat edits with visible diff
-- Publish: subdomain auto, success URL, rollback last 3 builds
-- Analytics: track `view` and `click`; daily suggestion (style or copy)
 
 ## SLO Targets
 

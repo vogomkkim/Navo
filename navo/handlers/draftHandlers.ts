@@ -1,37 +1,53 @@
 import { Request, Response } from 'express';
-
-// Mock layout for development
-const currentMockLayout = {
-  components: [
-    {
-      id: 'c1',
-      type: 'Header',
-      props: { title: 'Welcome to Navo', subtitle: 'AI-Powered Web Builder' },
-    },
-    {
-      id: 'c2',
-      type: 'Hero',
-      props: { headline: 'Build Amazing Websites', cta: 'Get Started' },
-    },
-    {
-      id: 'c3',
-      type: 'Footer',
-      props: { text: '© 2024 Navo. All rights reserved.' },
-    },
-  ],
-};
+import { db } from '../db/db.js';
+import { pages } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 
 export async function handleDraft(req: Request, res: Response): Promise<void> {
+  const startTime = process.hrtime.bigint();
   try {
-    // For now, return mock data
-    // TODO: Implement actual draft fetching from database
+    // For now, use a hardcoded project ID and path for testing
+    // TODO: Dynamically determine projectId and path based on user context or request parameters
+    const projectId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'; // Placeholder Project ID
+    const pagePath = '/'; // Placeholder Page Path (e.g., homepage)
+
+    const page = await db.query.pages.findFirst({
+      where: eq(pages.projectId, projectId),
+      where: eq(pages.path, pagePath),
+    });
+
+    let layout = {};
+    if (page) {
+      layout = page.layoutJson;
+    } else {
+      // If no page found, return a default empty layout or an initial template
+      layout = {
+        components: [
+          {
+            id: 'default-c1',
+            type: 'Header',
+            props: { title: 'Welcome to Navo (Default)', subtitle: 'AI-Powered Web Builder' },
+          },
+          {
+            id: 'default-c2',
+            type: 'Hero',
+            props: { headline: 'Build Amazing Websites (Default)', cta: 'Get Started' },
+          },
+        ],
+      };
+    }
+
+    const endTime = process.hrtime.bigint();
+    const tookMs = Number(endTime - startTime) / 1_000_000; // Convert nanoseconds to milliseconds
+
     res.json({
       ok: true,
       draft: {
-        id: 'mock-draft-id',
-        layout: currentMockLayout,
-        lastModified: new Date().toISOString(),
+        id: page?.id || 'default-draft-id',
+        layout: layout,
+        lastModified: page?.updatedAt?.toISOString() || new Date().toISOString(),
       },
+      tookMs: tookMs,
     });
   } catch (error) {
     console.error('Error fetching draft:', error);

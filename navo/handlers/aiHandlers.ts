@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '../db/db.js';
 import { events, suggestions as suggestionsTable, projects as projectsTable, componentDefinitions } from '../db/schema.js';
 import { and, desc, eq, sql } from 'drizzle-orm';
+import { scaffoldProject } from '../nodes/scaffoldProject.js'; // Added import
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -320,133 +321,184 @@ export async function handleGenerateProject(
   res: Response
 ): Promise<void> {
   try {
-    const { name } = req.body;
+    const { projectName, projectDescription } = req.body; // Expect project name and description
     const userId = 'dummy-user-id'; // Temporary hardcoded userId for testing
 
-    const created = await db
+    if (!projectName || !projectDescription) {
+      res.status(400).json({ error: 'Project name and description are required.' });
+      return;
+    }
+
+    // Step 1: Create the project entry in the database
+    const createdProject = await db
       .insert(projectsTable)
       .values({
-        name,
+        name: projectName,
         ownerId: userId,
       })
       .returning();
 
-    res.json({ project: created[0] });
-  } catch (error) {
-    console.error('Error generating project:', error);
-    res.status(500).json({ error: 'Failed to generate project' });
-  }
+    const projectId = createdProject[0].id;
+
+    // Step 2: Use Gemini AI to generate the project structure
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }); // Using a suitable model
+
+    const prompt = `You are an AI assistant that generates a complete web project structure based on a user's natural language description.
+The output should be a single JSON object containing:
+- databaseSchema: SQL DDL for PostgreSQL (e.g., CREATE TABLE statements)
+- pages: An array of page definitions, each with a path and an initial layout (array of component references).
+- componentDefinitions: An array of custom component definitions (name, display_name, render_template, css_styles, props_schema).
+- apiEndpoints: An array of API endpoint definitions (method, path, description).
+
+Constraints:
+- Output ONLY pure JSON, no backticks, no explanations.
+- Ensure all generated IDs are valid UUIDs.
+- For component layouts, use existing component types if applicable (e.g., 'Header', 'Hero', 'Footer', 'AuthForm'). If a custom component is needed, define it in 'componentDefinitions'.
+- Keep the database schema simple for now.
+- Provide a basic, functional structure.
+
+User's Project Name: ${projectName}
+User's Project Description: ${projectDescription}
+
+Example JSON structure:
+{
+  "databaseSchema": "CREATE TABLE users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name VARCHAR(255) NOT NULL, email VARCHAR(255) UNIQUE NOT NULL);",
+  "pages": [
+    {
+      "path": "/",
+      "layout": [
+        {"id": "home-header", "type": "Header", "props": {"title": "Welcome", "subtitle": "Our Homepage"}},
+        {"id": "home-hero", "type": "Hero", "props": {"headline": "Build Your Dream", "cta": "Learn More"}}
+      ]
+    },
+    {
+      "path": "/about",
+      "layout": [
+        {"id": "about-header", "type": "Header", "props": {"title": "About Us", "subtitle": "Our Story"}}
+      ]
+    }
+  ],
+  "componentDefinitions": [
+    {
+      "name": "CustomCard",
+      "display_name": "Custom Card",
+      "description": "A customizable card component",
+      "category": "basic",
+      "props_schema": {"type": "object", "properties": {"title": {"type": "string"}, "content": {"type": "string"}}},
+      "render_template": "<div class=\"card\"><h3 data-id=\"{{id}}-title\">{{title}}</h3><p>{{content}}</p></div>",
+      "css_styles": ".card { border: 1px solid #ccc; padding: 16px; }"
+    }
+  ],
+  "apiEndpoints": [
+    {"method": "GET", "path": "/api/users", "description": "Get all users"},
+    {"method": "POST", "path": "/api/users", "description": "Create a new user"}
+  ]
 }
 
-/**
- * Natural language -> Component Definition
- * POST body: { description: string, category?: string, save?: boolean }
- * Response: { ok: boolean, component: {...}, saved?: boolean }
- */
-export async function handleGenerateComponentFromNaturalLanguage(
-  req: Request,
-  res: Response
-): Promise<void> {
-  try {
-    const { description, category, save } = req.body || {};
+Generate the project structure for the user's project:
+`;
 
-    if (!description || typeof description !== 'string') {
-      res.status(400).json({ ok: false, error: 'description is required' });
-      return;
-    }
-
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const prompt = buildNlToComponentPrompt(description);
-
+    console.log('[AI] Sending project generation prompt to Gemini...');
     const result = await model.generateContent(prompt);
     const response = result.response;
     let text = response.text();
 
     // Strip possible markdown fences
     if (text.startsWith('```')) {
-      text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+      text = text.replace(/^```(?:json)?\s*/i, '').replace(/\\s*```$/i, '');
     }
 
-    let generated: any;
+    let generatedProjectStructure: any;
     try {
-      generated = JSON.parse(text);
-    } catch (e) {
-      console.error('[AI] Failed to parse model JSON for component:', text);
-      res
-        .status(502)
-        .json({ ok: false, error: 'Model returned invalid JSON' });
+      generatedProjectStructure = JSON.parse(text);
+      console.log('[AI] Successfully parsed generated project structure:', generatedProjectStructure);
+    } catch (parseError) {
+      console.error('[AI] Failed to parse Gemini response as JSON for project structure:', parseError);
+      console.error('[AI] Raw Gemini response text:', text);
+      res.status(502).json({ error: 'AI model returned invalid JSON for project structure.' });
       return;
     }
 
-    // Provide sane defaults and validations
-    if (!generated.name) {
-      generated.name = slugifyName(description);
-    } else {
-      generated.name = slugifyName(generated.name);
-    }
-    generated.display_name =
-      typeof generated.display_name === 'string' && generated.display_name.trim()
-        ? generated.display_name.trim()
-        : generated.name;
-    generated.category =
-      typeof (category || generated.category) === 'string'
-        ? (category || generated.category)
-        : 'custom';
-    if (generated.props_schema == null) {
-      generated.props_schema = { type: 'object', properties: {} };
-    }
-    if (generated.css_styles == null) {
-      generated.css_styles = '';
-    }
-
-    const validation = validateGeneratedComponentDef(generated);
-    if (!validation.ok) {
-      res.status(400).json({ ok: false, error: validation.error });
-      return;
-    }
-
-    // Optionally persist into DB
-    if (save) {
-      // ensure uniqueness of name
-      const baseName = generated.name;
-      let uniqueName = baseName;
-      let counter = 1;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const existing = await db
-          .select()
-          .from(componentDefinitions)
-          .where(eq(componentDefinitions.name, uniqueName))
-          .limit(1);
-        if (!existing[0]) break;
-        counter += 1;
-        uniqueName = `${baseName}-${counter}`.slice(0, 56);
+    // Step 3: Execute databaseSchema DDL
+    if (generatedProjectStructure.databaseSchema) {
+      try {
+        console.log('[AI] Executing database schema DDL...');
+        await db.execute(sql.raw(generatedProjectStructure.databaseSchema));
+        console.log('[AI] Database schema DDL executed successfully.');
+      } catch (dbError) {
+        console.error('[AI] Error executing database schema DDL:', dbError);
+        res.status(500).json({ error: 'Failed to execute database schema DDL.' });
+        return;
       }
-      generated.name = uniqueName;
+    }
 
-      const created = await db
-        .insert(componentDefinitions)
-        .values({
-          name: generated.name,
-          displayName: generated.display_name,
-          description: generated.description || '',
-          category: generated.category || 'custom',
-          propsSchema: generated.props_schema,
-          renderTemplate: generated.render_template,
-          cssStyles: generated.css_styles || '',
-          isActive: true,
-        })
-        .returning();
+    // Persist generatedProjectStructure to database
+    // Persist componentDefinitions
+    if (generatedProjectStructure.componentDefinitions && generatedProjectStructure.componentDefinitions.length > 0) {
+      try {
+        console.log('[AI] Persisting component definitions...');
+        for (const compDef of generatedProjectStructure.componentDefinitions) {
+          await db.insert(componentDefinitions).values({
+            name: compDef.name,
+            displayName: compDef.display_name,
+            description: compDef.description || '',
+            category: compDef.category || 'custom',
+            propsSchema: compDef.props_schema,
+            renderTemplate: compDef.render_template,
+            cssStyles: compDef.css_styles || '',
+            isActive: true,
+          });
+        }
+        console.log('[AI] Component definitions persisted successfully.');
+      } catch (compDefError) {
+        console.error('[AI] Error persisting component definitions:', compDefError);
+        res.status(500).json({ error: 'Failed to persist component definitions.' });
+        return;
+      }
+    }
 
-      res.json({ ok: true, component: created[0], saved: true });
+    // Persist pages
+    if (generatedProjectStructure.pages && generatedProjectStructure.pages.length > 0) {
+      try {
+        console.log('[AI] Persisting pages...');
+        for (const page of generatedProjectStructure.pages) {
+          await db.insert(pages).values({
+            projectId: projectId,
+            path: page.path,
+            layoutJson: page.layout, // Assuming layout is directly storable as JSONB
+          });
+        }
+        console.log('[AI] Pages persisted successfully.');
+      } catch (pageError) {
+        console.error('[AI] Error persisting pages:', pageError);
+        res.status(500).json({ error: 'Failed to persist pages.' });
+        return;
+      }
+    }
+
+    console.log('Generated Project Structure (from AI):', JSON.stringify(generatedProjectStructure, null, 2));
+
+    // Step 4: Scaffold the project files
+    try {
+      console.log('[AI] Initiating project scaffolding...');
+      const { projectPath } = await scaffoldProject(projectId, generatedProjectStructure);
+      console.log(`[AI] Project scaffolded to: ${projectPath}`);
+    } catch (scaffoldError) {
+      console.error('[AI] Error during project scaffolding:', scaffoldError);
+      res.status(500).json({ error: 'Failed to scaffold project files.' });
       return;
     }
 
-    res.json({ ok: true, component: generated, saved: false });
+    res.json({
+      ok: true,
+      message: 'Project generation initiated. Review console for generated structure.',
+      projectId: projectId,
+      generatedStructure: generatedProjectStructure, // Return the generated structure for inspection
+    });
+
   } catch (error) {
-    console.error('Error generating component from natural language:', error);
-    res
-      .status(500)
-      .json({ ok: false, error: 'Failed to generate component' });
+    console.error('Error generating project:', error);
+    res.status(500).json({ error: 'Failed to generate project' });
   }
 }
+

@@ -32,6 +32,7 @@ import {
   handleListProjects,
   handleListProjectPages,
   handleGetPageLayout,
+  handleRollback, // Added import
 } from '../handlers/projectHandlers.js';
 
 export function setupApiRoutes(app: Express) {
@@ -67,4 +68,5 @@ export function setupApiRoutes(app: Express) {
   app.get('/api/projects', handleListProjects);
   app.get('/api/projects/:projectId/pages', handleListProjectPages);
   app.get('/api/pages/:pageId', handleGetPageLayout);
+  app.post('/api/projects/:projectId/rollback', handleRollback); // Added route
 }

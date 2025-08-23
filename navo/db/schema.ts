@@ -70,6 +70,7 @@ export const publishDeploys = pgTable('publish_deploys', {
 	projectId: uuid('project_id').notNull(),
 	url: text('url').notNull(),
 	status: varchar('status', { length: 255 }).notNull(),
+	vercelDeploymentId: varchar('vercel_deployment_id', { length: 255 }).unique(), // Added column
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 });
 

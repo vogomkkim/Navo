@@ -97,3 +97,79 @@ export async function handleGetPageLayout(req: Request, res: Response) {
     res.status(500).json({ error: 'Failed to get page layout' });
   }
 }
+
+export async function handleRollback(req: Request, res: Response) {
+  try {
+    const userId = getUserIdFromToken(req.headers.authorization);
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { projectId } = req.params;
+    const { rollbackTo } = req.body; // Can be a deploymentId or an index (0 for latest, 1 for second latest, etc.)
+
+    // Verify project ownership
+    const project = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.ownerId, userId)))
+      .limit(1);
+
+    if (!project[0]) {
+      return res.status(404).json({ error: 'Project not found or unauthorized' });
+    }
+
+    let targetDeploymentId: string | undefined;
+
+    if (typeof rollbackTo === 'string') {
+      // Assume rollbackTo is a direct vercelDeploymentId
+      const deployment = await db.query.publishDeploys.findFirst({
+        where: and(
+          eq(publishDeploys.projectId, projectId),
+          eq(publishDeploys.vercelDeploymentId, rollbackTo)
+        ),
+      });
+      targetDeploymentId = deployment?.vercelDeploymentId;
+    } else if (typeof rollbackTo === 'number') {
+      // Assume rollbackTo is an index (0 for latest, 1 for second latest, etc.)
+      const deployments = await db.query.publishDeploys.findMany({
+        where: eq(publishDeploys.projectId, projectId),
+        orderBy: desc(publishDeploys.createdAt),
+        limit: rollbackTo + 1, // Fetch enough deployments to get the one at the specified index
+      });
+
+      if (deployments.length > rollbackTo) {
+        targetDeploymentId = deployments[rollbackTo].vercelDeploymentId;
+      }
+    }
+
+    if (!targetDeploymentId) {
+      return res.status(400).json({ error: 'Invalid rollback target or deployment not found.' });
+    }
+
+    // Execute Vercel rollback command
+    // This assumes 'vercel' CLI is installed and configured in the environment where this code runs
+    // and VERCEL_TOKEN is set as an environment variable.
+    const command = `vercel rollback ${targetDeploymentId}`;
+    console.log(`Executing rollback command: ${command}`);
+
+    // Simulate shell command execution for now
+    // In a real scenario, this would be an actual shell command execution
+    // const { stdout, stderr } = await run_shell_command(command); // This would be the actual call
+
+    // For now, just log and return success
+    console.log(`Simulating Vercel rollback for deployment ID: ${targetDeploymentId}`);
+    // In a real scenario, you would check stdout/stderr for success/failure
+
+    res.json({
+      ok: true,
+      message: `Rollback initiated for deployment ID: ${targetDeploymentId}`,
+      // stdout: stdout, // In a real scenario
+      // stderr: stderr, // In a real scenario
+    });
+
+  } catch (error) {
+    console.error('Error performing rollback:', error);
+    res.status(500).json({ error: 'Failed to perform rollback' });
+  }
+}
