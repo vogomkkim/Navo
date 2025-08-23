@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { prisma } from '../db/db.js';
+import { db } from '../db/db.js';
+import { events, suggestions as suggestionsTable, projects as projectsTable, componentDefinitions } from '../db/schema.js';
+import { and, desc, eq, sql } from 'drizzle-orm';
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -93,13 +95,11 @@ export async function handleAiCommand(
     const text = response.text();
 
     // Store the AI interaction
-    await prisma.events.create({
-      data: {
-        project_id: projectId || null,
-        user_id: userId,
-        type: 'ai_command',
-        data: { command, response: text },
-      },
+    await db.insert(events).values({
+      projectId: projectId || null,
+      userId,
+      type: 'ai_command',
+      data: { command, response: text },
     });
 
     res.json({ response: text });
@@ -199,12 +199,10 @@ export async function generateAndStoreDummySuggestion(
     console.log('[AI] AI suggestion generated:', aiSuggestion);
 
     try {
-      await prisma.suggestion.create({
-        data: {
-          projectId,
-          type: aiSuggestion.type,
-          content: JSON.stringify(aiSuggestion.content),
-        },
+      await db.insert(suggestionsTable).values({
+        projectId,
+        type: aiSuggestion.type,
+        content: aiSuggestion.content,
       });
       console.log('[AI] AI-generated suggestion stored successfully.');
     } catch (err) {
@@ -223,17 +221,17 @@ export async function handleGetSuggestions(
   try {
     const { projectId, type, limit = 10, offset = 0 } = req.query;
 
-    const suggestions = await prisma.suggestion.findMany({
-      where: {
-        projectId: (projectId as string) || undefined,
-        type: (type as string) || undefined,
-      },
-      take: Number(limit),
-      skip: Number(offset),
-      orderBy: { createdAt: 'desc' },
-    });
+    const rows = await db
+      .select()
+      .from(suggestionsTable)
+      .where(sql`${
+        projectId ? eq(suggestionsTable.projectId, projectId as string) : sql`true`
+      } AND ${type ? eq(suggestionsTable.type, type as string) : sql`true`}`)
+      .limit(Number(limit))
+      .offset(Number(offset))
+      .orderBy(desc(suggestionsTable.createdAt));
 
-    res.json({ suggestions });
+    res.json({ suggestions: rows });
   } catch (error) {
     console.error('Error fetching suggestions:', error);
     res.status(500).json({ error: 'Failed to fetch suggestions' });
@@ -245,12 +243,13 @@ export async function handleTestDbSuggestions(
   res: Response
 ): Promise<void> {
   try {
-    const suggestions = await prisma.suggestion.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-    });
+    const rows = await db
+      .select()
+      .from(suggestionsTable)
+      .limit(5)
+      .orderBy(desc(suggestionsTable.createdAt));
 
-    res.json({ suggestions });
+    res.json({ suggestions: rows });
   } catch (error) {
     console.error('Error fetching test suggestions:', error);
     res.status(500).json({ error: 'Failed to fetch test suggestions' });
@@ -264,12 +263,13 @@ export async function handleApplySuggestion(
   try {
     const { suggestionId } = req.body;
 
-    const suggestion = await prisma.suggestion.update({
-      where: { id: suggestionId },
-      data: { applied_at: new Date() },
-    });
+    const updated = await db
+      .update(suggestionsTable)
+      .set({ appliedAt: new Date() })
+      .where(eq(suggestionsTable.id, suggestionId))
+      .returning();
 
-    res.json({ suggestion });
+    res.json({ suggestion: updated[0] });
   } catch (error) {
     console.error('Error applying suggestion:', error);
     res.status(500).json({ error: 'Failed to apply suggestion' });
@@ -284,28 +284,29 @@ export async function handleSeedDummyData(
     const userId = 'dummy-user-id'; // Temporary hardcoded userId for testing
 
     // Create a test project
-    const project = await prisma.project.create({
-      data: {
+    const created = await db
+      .insert(projectsTable)
+      .values({
         name: 'Test Project',
-        owner_id: userId,
-      },
-    });
+        ownerId: userId,
+      })
+      .returning();
+
+    const project = created[0];
 
     // Create some test suggestions
-    await prisma.suggestion.createMany({
-      data: [
-        {
-          projectId: project.id,
-          type: 'layout',
-          content: { suggestion: 'Add more spacing between elements' },
-        },
-        {
-          projectId: project.id,
-          type: 'style',
-          content: { suggestion: 'Use a more vibrant color scheme' },
-        },
-      ],
-    });
+    await db.insert(suggestionsTable).values([
+      {
+        projectId: project.id,
+        type: 'layout',
+        content: { suggestion: 'Add more spacing between elements' },
+      },
+      {
+        projectId: project.id,
+        type: 'style',
+        content: { suggestion: 'Use a more vibrant color scheme' },
+      },
+    ]);
 
     res.json({ message: 'Dummy data seeded successfully', project });
   } catch (error) {
@@ -322,14 +323,15 @@ export async function handleGenerateProject(
     const { name } = req.body;
     const userId = 'dummy-user-id'; // Temporary hardcoded userId for testing
 
-    const project = await prisma.project.create({
-      data: {
+    const created = await db
+      .insert(projectsTable)
+      .values({
         name,
-        owner_id: userId,
-      },
-    });
+        ownerId: userId,
+      })
+      .returning();
 
-    res.json({ project });
+    res.json({ project: created[0] });
   } catch (error) {
     console.error('Error generating project:', error);
     res.status(500).json({ error: 'Failed to generate project' });
@@ -411,29 +413,32 @@ export async function handleGenerateComponentFromNaturalLanguage(
       let counter = 1;
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const existing = await prisma.component_definitions.findUnique({
-          where: { name: uniqueName },
-        });
-        if (!existing) break;
+        const existing = await db
+          .select()
+          .from(componentDefinitions)
+          .where(eq(componentDefinitions.name, uniqueName))
+          .limit(1);
+        if (!existing[0]) break;
         counter += 1;
         uniqueName = `${baseName}-${counter}`.slice(0, 56);
       }
       generated.name = uniqueName;
 
-      const created = await prisma.component_definitions.create({
-        data: {
+      const created = await db
+        .insert(componentDefinitions)
+        .values({
           name: generated.name,
-          display_name: generated.display_name,
+          displayName: generated.display_name,
           description: generated.description || '',
           category: generated.category || 'custom',
-          props_schema: generated.props_schema,
-          render_template: generated.render_template,
-          css_styles: generated.css_styles || '',
-          is_active: true,
-        },
-      });
+          propsSchema: generated.props_schema,
+          renderTemplate: generated.render_template,
+          cssStyles: generated.css_styles || '',
+          isActive: true,
+        })
+        .returning();
 
-      res.json({ ok: true, component: created, saved: true });
+      res.json({ ok: true, component: created[0], saved: true });
       return;
     }
 

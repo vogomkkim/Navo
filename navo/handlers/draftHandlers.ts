@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { prisma } from '../db/db.js';
 
 // Mock layout for development
 const currentMockLayout = {
