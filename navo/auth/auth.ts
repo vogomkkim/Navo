@@ -1,9 +1,9 @@
-import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
 import { db } from '../db/db.js';
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { hashPassword as hashWithScrypt, verifyPassword as verifyWithScrypt } from './password.js';
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
@@ -38,8 +38,8 @@ export async function handleRegister(
       return;
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password with scrypt
+    const hashedPassword = await hashWithScrypt(password);
 
     // Create user
     const inserted = await db
@@ -89,11 +89,23 @@ export async function handleLogin(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
+    // Check password (supports scrypt and legacy bcrypt hashes)
+    const verify = await verifyWithScrypt(password, user.password);
+    if (!verify.ok) {
       res.status(401).json({ ok: false, error: 'Invalid credentials' });
       return;
+    }
+    // If legacy bcrypt succeeded, upgrade hash in-place
+    if (verify.needsRehash && verify.newHash) {
+      try {
+        await db
+          .update(users)
+          .set({ password: verify.newHash })
+          .where(eq(users.id, user.id));
+      } catch (e) {
+        // Non-fatal; proceed with login
+        console.warn('[AUTH] Failed to upgrade password hash:', e);
+      }
     }
 
     // Generate JWT token
