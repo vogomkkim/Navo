@@ -224,8 +224,8 @@ export class TestRunnerAgent extends BaseAgent {
         return false;
       }
 
-      // null 체크 없이 속성 접근 시도
-      nonExistentElement.innerHTML = 'test';
+      // null 체크 없이 속성 접근 시도 (런타임 에러 유도)
+      (null as any).innerHTML = 'test';
       return true; // 에러 발생
     } catch (e) {
       // 에러가 발생하면 아직 해결되지 않은 것
@@ -258,9 +258,9 @@ export class TestRunnerAgent extends BaseAgent {
     try {
       // 에러 메시지에 따라 간단한 테스트 수행
       if (error.message.includes('Cannot read property')) {
-        // null/undefined 접근 테스트
-        const testObj = null;
-        testObj.property; // 에러 발생 시도
+        // null/undefined 접근 테스트 (런타임 에러 유도)
+        const testObj: any = null;
+        (testObj as any).property;
         return true;
       }
 

@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
-import { prisma } from '../db/db.js';
+import { client, db } from '../db/db.js';
+import { users, projects, suggestions } from '../db/schema.js';
+import { sql } from 'drizzle-orm';
 
 export async function handleHealthCheck(
   req: Request,
@@ -7,7 +9,7 @@ export async function handleHealthCheck(
 ): Promise<void> {
   try {
     // Test database connection
-    await prisma.$queryRaw`SELECT 1`;
+    await client`SELECT 1`;
 
     res.json({
       ok: true,
@@ -30,17 +32,23 @@ export async function handleHealthCheck(
 export async function handleDbTest(req: Request, res: Response): Promise<void> {
   try {
     // Test database operations
-    const userCount = await prisma.user.count();
-    const projectCount = await prisma.project.count();
-    const suggestionCount = await prisma.suggestion.count();
+    const [{ count: userCount }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users);
+    const [{ count: projectCount }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(projects);
+    const [{ count: suggestionCount }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(suggestions);
 
     res.json({
       ok: true,
       message: 'Database test successful',
       counts: {
-        users: userCount,
-        projects: projectCount,
-        suggestions: suggestionCount,
+        users: Number(userCount),
+        projects: Number(projectCount),
+        suggestions: Number(suggestionCount),
       },
     });
   } catch (error) {

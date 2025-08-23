@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { prisma } from '../db/db.js';
+import { db } from '../db/db.js';
+import { events } from '../db/schema.js';
 import { ErrorResolutionManager } from '../core/errorResolution.js';
 import { ErrorAnalyzerAgent } from '../agents/errorAnalyzerAgent.js';
 import { CodeFixerAgent } from '../agents/codeFixerAgent.js';
@@ -44,13 +45,11 @@ export async function handleEvents(req: Request, res: Response): Promise<void> {
     }
 
     // Store the event
-    await prisma.events.create({
-      data: {
-        project_id: projectId || null,
-        user_id: userId,
-        type,
-        data: data || {},
-      },
+    await db.insert(events).values({
+      projectId: projectId || null,
+      userId,
+      type,
+      data: data || {},
     });
 
     res.json({ success: true });
@@ -65,27 +64,25 @@ export async function handleAnalyticsEvents(
   res: Response
 ): Promise<void> {
   try {
-    const { events } = req.body;
+    const { events: payload } = req.body;
     const userId = '00000000-0000-0000-0000-000000000000'; // Temporary hardcoded UUID for testing
 
-    if (!Array.isArray(events)) {
+    if (!Array.isArray(payload)) {
       res.status(400).json({ error: 'Events array is required' });
       return;
     }
 
     // Store multiple events
-    const eventData = events.map((event) => ({
-      project_id: event.projectId || null,
-      user_id: userId,
+    const eventData = payload.map((event) => ({
+      projectId: event.projectId || null,
+      userId,
       type: event.type,
       data: event.data || {},
     }));
 
-    await prisma.events.createMany({
-      data: eventData,
-    });
+    await db.insert(events).values(eventData);
 
-    res.json({ success: true, count: events.length });
+    res.json({ success: true, count: payload.length });
   } catch (error) {
     console.error('Error storing analytics events:', error);
     res.status(500).json({ error: 'Failed to store analytics events' });
@@ -126,22 +123,20 @@ export async function handleLogError(
     });
 
     // Store error in events table
-    await prisma.events.create({
+    await db.insert(events).values({
+      projectId: null,
+      userId,
+      type: 'client_error',
       data: {
-        project_id: null,
-        user_id: userId,
-        type: 'client_error',
-        data: {
-          error_type: type,
-          message,
-          filename,
-          lineno,
-          colno,
-          stack,
-          url,
-          userAgent,
-          timestamp,
-        },
+        error_type: type,
+        message,
+        filename,
+        lineno,
+        colno,
+        stack,
+        url,
+        userAgent,
+        timestamp,
       },
     });
 
@@ -170,7 +165,6 @@ export async function handleLogError(
         timestamp: new Date(timestamp || Date.now()),
         userAgent: userAgent || 'Unknown',
         url: url || 'Unknown',
-        projectId: null,
         sessionId: `session-${Date.now()}`,
         metadata: {
           filename,
@@ -178,7 +172,7 @@ export async function handleLogError(
           colno,
           stack,
         },
-      };
+      } as const;
       console.log('✅ 에러 컨텍스트 생성 완료:', context);
 
       // 자동 에러 해결 실행

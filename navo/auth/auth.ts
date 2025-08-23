@@ -1,7 +1,9 @@
 import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
-import { prisma } from '../db/db.js';
+import { db } from '../db/db.js';
+import { users } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
@@ -24,9 +26,12 @@ export async function handleRegister(
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingRows = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    const existingUser = existingRows[0];
 
     if (existingUser) {
       res.status(400).json({ ok: false, error: 'User already exists' });
@@ -37,19 +42,21 @@ export async function handleRegister(
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
+    const inserted = await db
+      .insert(users)
+      .values({
         email,
         password: hashedPassword,
         name: name || null,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-      },
-    });
+      })
+      .returning({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        createdAt: users.createdAt,
+      });
+
+    const user = inserted[0];
 
     res.json({ ok: true, user });
   } catch (error) {
@@ -70,9 +77,12 @@ export async function handleLogin(req: Request, res: Response): Promise<void> {
     }
 
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const rows = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    const user = rows[0];
 
     if (!user || !user.password) {
       res.status(401).json({ ok: false, error: 'Invalid credentials' });

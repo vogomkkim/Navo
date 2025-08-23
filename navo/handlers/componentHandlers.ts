@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
-import { prisma } from '../db/db.js';
+import { db } from '../db/db.js';
+import { componentDefinitions } from '../db/schema.js';
+import { and, asc, desc, eq } from 'drizzle-orm';
 
 /**
  * Get all available component definitions
@@ -9,20 +11,20 @@ export async function handleGetComponentDefinitions(
   res: Response
 ): Promise<void> {
   try {
-    const components = await prisma.component_definitions.findMany({
-      where: { is_active: true },
-      select: {
-        id: true,
-        name: true,
-        display_name: true,
-        description: true,
-        category: true,
-        props_schema: true,
-        render_template: true,
-        css_styles: true,
-      },
-      orderBy: [{ category: 'asc' }, { display_name: 'asc' }],
-    });
+    const components = await db
+      .select({
+        id: componentDefinitions.id,
+        name: componentDefinitions.name,
+        display_name: componentDefinitions.displayName,
+        description: componentDefinitions.description,
+        category: componentDefinitions.category,
+        props_schema: componentDefinitions.propsSchema,
+        render_template: componentDefinitions.renderTemplate,
+        css_styles: componentDefinitions.cssStyles,
+      })
+      .from(componentDefinitions)
+      .where(eq(componentDefinitions.isActive, true))
+      .orderBy(asc(componentDefinitions.category), asc(componentDefinitions.displayName));
 
     res.json({ ok: true, components });
   } catch (error) {
@@ -43,9 +45,13 @@ export async function handleGetComponentDefinition(
   try {
     const { name } = req.params;
 
-    const component = await prisma.component_definitions.findUnique({
-      where: { name, is_active: true },
-    });
+    const rows = await db
+      .select()
+      .from(componentDefinitions)
+      .where(and(eq(componentDefinitions.name, name), eq(componentDefinitions.isActive, true)))
+      .limit(1);
+
+    const component = rows[0];
 
     if (!component) {
       res.status(404).json({ ok: false, error: 'Component not found' });
@@ -91,11 +97,13 @@ export async function handleCreateComponentDefinition(
     }
 
     // Check if component with same name already exists
-    const existingComponent = await prisma.component_definitions.findUnique({
-      where: { name },
-    });
+    const existing = await db
+      .select({ id: componentDefinitions.id })
+      .from(componentDefinitions)
+      .where(eq(componentDefinitions.name, name))
+      .limit(1);
 
-    if (existingComponent) {
+    if (existing[0]) {
       res.status(400).json({
         ok: false,
         error: 'Component with this name already exists',
@@ -104,23 +112,24 @@ export async function handleCreateComponentDefinition(
     }
 
     // Create new component definition
-    const component = await prisma.component_definitions.create({
-      data: {
+    const created = await db
+      .insert(componentDefinitions)
+      .values({
         name,
-        display_name,
+        displayName: display_name,
         description: description || '',
         category: category || 'custom',
-        props_schema: props_schema || { type: 'object', properties: {} },
-        render_template,
-        css_styles: css_styles || '',
-        is_active: true,
-      },
-    });
+        propsSchema: props_schema || { type: 'object', properties: {} },
+        renderTemplate: render_template,
+        cssStyles: css_styles || '',
+        isActive: true,
+      })
+      .returning();
 
     res.json({
       ok: true,
       message: 'Component definition created successfully',
-      component,
+      component: created[0],
     });
   } catch (error) {
     console.error('Error creating component definition:', error);
@@ -150,24 +159,25 @@ export async function handleUpdateComponentDefinition(
       is_active,
     } = req.body;
 
-    const component = await prisma.component_definitions.update({
-      where: { id },
-      data: {
-        display_name,
+    const updated = await db
+      .update(componentDefinitions)
+      .set({
+        displayName: display_name,
         description,
         category,
-        props_schema,
-        render_template,
-        css_styles,
-        is_active,
-        updated_at: new Date(),
-      },
-    });
+        propsSchema: props_schema,
+        renderTemplate: render_template,
+        cssStyles: css_styles,
+        isActive: is_active,
+        updatedAt: new Date(),
+      })
+      .where(eq(componentDefinitions.id, id))
+      .returning();
 
     res.json({
       ok: true,
       message: 'Component definition updated successfully',
-      component,
+      component: updated[0],
     });
   } catch (error) {
     console.error('Error updating component definition:', error);
@@ -188,9 +198,7 @@ export async function handleDeleteComponentDefinition(
   try {
     const { id } = req.params;
 
-    await prisma.component_definitions.delete({
-      where: { id },
-    });
+    await db.delete(componentDefinitions).where(eq(componentDefinitions.id, id));
 
     res.json({
       ok: true,
@@ -290,11 +298,37 @@ export async function handleSeedComponentDefinitions(
 
     // Upsert components (create if not exists, update if exists)
     for (const component of defaultComponents) {
-      await prisma.component_definitions.upsert({
-        where: { name: component.name },
-        update: component,
-        create: component,
-      });
+      const existing = await db
+        .select({ id: componentDefinitions.id })
+        .from(componentDefinitions)
+        .where(eq(componentDefinitions.name, component.name))
+        .limit(1);
+
+      if (existing[0]) {
+        await db
+          .update(componentDefinitions)
+          .set({
+            displayName: component.display_name,
+            description: component.description || '',
+            category: component.category || 'custom',
+            propsSchema: component.props_schema,
+            renderTemplate: component.render_template,
+            cssStyles: component.css_styles || '',
+            isActive: true,
+          })
+          .where(eq(componentDefinitions.id, existing[0].id));
+      } else {
+        await db.insert(componentDefinitions).values({
+          name: component.name,
+          displayName: component.display_name,
+          description: component.description || '',
+          category: component.category || 'custom',
+          propsSchema: component.props_schema,
+          renderTemplate: component.render_template,
+          cssStyles: component.css_styles || '',
+          isActive: true,
+        });
+      }
     }
 
     res.json({

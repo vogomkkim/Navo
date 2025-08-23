@@ -1,26 +1,27 @@
-import { PrismaClient } from '../../generated/prisma/index.js';
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import * as schema from './schema.js';
 
-// Prisma 클라이언트 인스턴스 생성
-export const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL ?? '';
 
-// 데이터베이스 연결 테스트
+export const client = postgres(connectionString, { prepare: true });
+export const db = drizzle(client, { schema });
+
 export async function testConnection(): Promise<void> {
-  try {
-    await prisma.$connect();
-    console.log('[DB] Database connection successful');
-  } catch (error) {
-    console.error('[DB] Database connection failed:', error);
-    throw error;
-  }
+	try {
+		await client`select 1`;
+		console.log('[DB] Database connection successful');
+	} catch (error) {
+		console.error('[DB] Database connection failed:', error);
+		throw error;
+	}
 }
 
-// 데이터베이스 연결 종료
 export async function disconnect(): Promise<void> {
-  await prisma.$disconnect();
-  console.log('[DB] Database connection closed');
+	await client.end({ timeout: 5 });
+	console.log('[DB] Database connection closed');
 }
 
-// 애플리케이션 종료 시 연결 정리
 process.on('beforeExit', async () => {
-  await disconnect();
+	await disconnect();
 });
