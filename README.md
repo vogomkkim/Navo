@@ -43,7 +43,7 @@ For the complete architectural vision, including frontend/mobile strategy, Go ba
 
 ## 2) MVP Scope v0.9
 
-Core features: AI-powered draft generation, visual editor with inline editing, one-click publish with rollback, and basic analytics with AI suggestions.
+Core features: AI Intent Parser for full project structure generation, AI-powered draft generation, visual editor with inline editing, one-click publish with rollback, and basic analytics with AI suggestions.
 
 **See [docs/tech/mvp-scope.md](docs/tech/mvp-scope.md) for full acceptance criteria and SLO targets.**
 
@@ -62,10 +62,13 @@ Core features: AI-powered draft generation, visual editor with inline editing, o
 
 ## 4) Roadmap (0→1)
 
-**W1**: Schema, Draft API (mock), Editor frame, events collector skeleton  
-**W2**: Text/image/style edits, Chat→diff, assets upload/gallery  
-**W3**: Publish pipeline (mock→real), analytics, suggestion type 1  
-**W4**: Stabilization, Undo/Redo/Autosave, rollback, polish
+**Phase 1 (MVP) - Completed:**
+- AI Intent Parser for full project structure generation (database schema, pages, components, API endpoints)
+- AI-powered draft generation and database integration
+- One-click publish with Vercel integration and rollback
+- Basic analytics (view/click tracking) and AI suggestions
+
+**Next: Phase 2 (Private Beta) - Code Generation and Live Preview**
 
 **See [docs/tech/roadmap.md](docs/tech/roadmap.md) for detailed deliverables and demo goals.**
 
