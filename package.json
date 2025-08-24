@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "prebuild": "npm run db:generate",
-    "build": "tsc -p .",
-    "postbuild": "copyfiles -u 2 \"navo/web/**/*\" dist/web",
+    "build": "tsc -p . && esbuild navo/web/app.ts --bundle --outfile=dist/web/app.js",
+    "postbuild": "copyfiles -u 2 \"navo/web/**/*.html\" \"navo/web/**/*.css\" dist/web",
     "demo": "npm run build && node dist/navo/demo.js",
     "start": "node dist/navo/start.js",
     "dev": "dotenv -e .env.local -e .env -- tsx watch navo/start.ts",
@@ -50,6 +50,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "drizzle-orm": "0.36.4",
+    "esbuild": "^0.25.9",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",

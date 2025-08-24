@@ -2,6 +2,7 @@ import * as express from 'express';
 import { Express } from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
+import { config } from '../config.js';
 
 // Alternative approach for __dirname in CommonJS style
 const __dirname = process.cwd();
@@ -46,8 +47,8 @@ export function setupStaticRoutes(app: Express) {
         }
         console.log('[LOG] Successfully read index.html.');
 
-        const apiUrl = process.env.API_URL || '';
-        console.log(`[LOG] Environment variable API_URL is: "${apiUrl}"`);
+        const apiUrl = config.api.baseUrl;
+        console.log(`[LOG] Configured API_BASE_URL is: "${apiUrl}"`);
 
         const modifiedHtml = htmlData.replace('__API_URL__', apiUrl);
         console.log(`[LOG] Placeholder __API_URL__ replaced with "${apiUrl}".`);

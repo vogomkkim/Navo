@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { db } from '../db/db.js';
 import { events } from '../db/schema.js';
 import { ErrorResolutionManager } from '../core/errorResolution.js';
@@ -6,6 +6,7 @@ import { ErrorAnalyzerAgent } from '../agents/errorAnalyzerAgent.js';
 import { CodeFixerAgent } from '../agents/codeFixerAgent.js';
 import { TestRunnerAgent } from '../agents/testRunnerAgent.js';
 import { RollbackAgent } from '../agents/rollbackAgent.js';
+import { AuthenticatedRequest } from '../auth/auth.js';
 
 // 에러 해결 관리자 인스턴스 (싱글톤)
 let errorResolutionManager: ErrorResolutionManager | null = null;
@@ -34,23 +35,33 @@ function initializeErrorResolutionSystem() {
   return errorResolutionManager;
 }
 
-export async function handleEvents(req: Request, res: Response): Promise<void> {
+async function storeEvents(eventsToStore: any[], userId: string) {
+  const eventData = eventsToStore.map((event) => ({
+    projectId: event.projectId || null,
+    userId,
+    type: event.type,
+    data: event.data || {},
+  }));
+
+  await db.insert(events).values(eventData);
+}
+
+export async function handleEvents(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { type, data, projectId } = req.body;
-    const userId = '00000000-0000-0000-0000-000000000000'; // Temporary hardcoded UUID for testing
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
 
     if (!type) {
       res.status(400).json({ error: 'Event type is required' });
       return;
     }
 
-    // Store the event
-    await db.insert(events).values({
-      projectId: projectId || null,
-      userId,
-      type,
-      data: data || {},
-    });
+    await storeEvents([{ type, data, projectId }], userId);
 
     res.json({ success: true });
   } catch (error) {
@@ -60,27 +71,24 @@ export async function handleEvents(req: Request, res: Response): Promise<void> {
 }
 
 export async function handleAnalyticsEvents(
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> {
   try {
     const { events: payload } = req.body;
-    const userId = '00000000-0000-0000-0000-000000000000'; // Temporary hardcoded UUID for testing
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
 
     if (!Array.isArray(payload)) {
       res.status(400).json({ error: 'Events array is required' });
       return;
     }
 
-    // Store multiple events
-    const eventData = payload.map((event) => ({
-      projectId: event.projectId || null,
-      userId,
-      type: event.type,
-      data: event.data || {},
-    }));
-
-    await db.insert(events).values(eventData);
+    await storeEvents(payload, userId);
 
     res.json({ success: true, count: payload.length });
   } catch (error) {
@@ -94,7 +102,7 @@ export async function handleAnalyticsEvents(
  * POST body: { type, message, filename, lineno, colno, stack, url, userAgent, timestamp }
  */
 export async function handleLogError(
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> {
   try {
@@ -110,7 +118,12 @@ export async function handleLogError(
       timestamp,
     } = req.body;
 
-    const userId = '00000000-0000-0000-0000-000000000000'; // Temporary hardcoded UUID for testing
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
 
     console.log('🚨 Client Error Logged:', {
       type,
@@ -122,23 +135,23 @@ export async function handleLogError(
       timestamp,
     });
 
-    // Store error in events table
-    await db.insert(events).values({
-      projectId: null,
-      userId,
-      type: 'client_error',
-      data: {
-        error_type: type,
-        message,
-        filename,
-        lineno,
-        colno,
-        stack,
-        url,
-        userAgent,
-        timestamp,
-      },
-    });
+    const errorEvent = {
+        type: 'client_error',
+        data: {
+          error_type: type,
+          message,
+          filename,
+          lineno,
+          colno,
+          stack,
+          url,
+          userAgent,
+          timestamp,
+        },
+        projectId: null, // No project context for client errors
+      };
+  
+    await storeEvents([errorEvent], userId);
 
     // 🚀 자동 에러 해결 시스템 실행!
     try {

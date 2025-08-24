@@ -1,7 +1,19 @@
 import { Request, Response } from 'express';
 import { db } from '../db/db.js';
 import { componentDefinitions } from '../db/schema.js';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { promises as fs } from 'fs';
+import path from 'path';
+
+interface ComponentDefinition {
+    name: string;
+    display_name: string;
+    description: string;
+    category: string;
+    props_schema: any;
+    render_template: string;
+    css_styles: string;
+}
 
 /**
  * Get all available component definitions
@@ -67,9 +79,6 @@ export async function handleGetComponentDefinition(
   }
 }
 
-/**
- * Seed default component definitions
- */
 /**
  * Create a new component definition
  */
@@ -218,118 +227,38 @@ export async function handleSeedComponentDefinitions(
   res: Response
 ): Promise<void> {
   try {
-    const defaultComponents = [
-      {
-        name: 'Header',
-        display_name: 'Header',
-        description: 'Page header with title',
-        category: 'basic',
-        props_schema: {
-          type: 'object',
-          properties: {
-            title: { type: 'string', title: 'Title' },
-            subtitle: { type: 'string', title: 'Subtitle' },
-            style: { type: 'object', title: 'Styles' },
-          },
-        },
-        render_template:
-          '<header class="component-header" data-id="{{id}}"><h1 data-editable="true" data-component-id="{{id}}" data-prop-name="title" style="{{style}}">{{title}}</h1></header>',
-        css_styles: '.component-header { padding: 1rem; background: #f8f9fa; }',
-      },
-      {
-        name: 'Hero',
-        display_name: 'Hero Section',
-        description: 'Hero section with headline and CTA',
-        category: 'basic',
-        props_schema: {
-          type: 'object',
-          properties: {
-            headline: { type: 'string', title: 'Headline' },
-            cta: { type: 'string', title: 'Call to Action' },
-            style: { type: 'object', title: 'Styles' },
-          },
-        },
-        render_template:
-          '<section class="component-hero" data-id="{{id}}" style="{{style}}"><h2 data-editable="true" data-component-id="{{id}}" data-prop-name="headline">{{headline}}</h2><p data-editable="true" data-component-id="{{id}}" data-prop-name="cta">{{cta}}</p></section>',
-        css_styles:
-          '.component-hero { text-align: center; padding: 3rem 1rem; }',
-      },
-      {
-        name: 'Footer',
-        display_name: 'Footer',
-        description: 'Page footer with text',
-        category: 'basic',
-        props_schema: {
-          type: 'object',
-          properties: {
-            text: { type: 'string', title: 'Footer Text' },
-            style: { type: 'object', title: 'Styles' },
-          },
-        },
-        render_template:
-          '<footer class="component-footer" data-id="{{id}}"><p data-editable="true" data-component-id="{{id}}" data-prop-name="text" style="{{style}}">{{text}}</p></footer>',
-        css_styles:
-          '.component-footer { padding: 1rem; background: #f8f9fa; text-align: center; }',
-      },
-      {
-        name: 'AuthForm',
-        display_name: 'Authentication Form',
-        description: 'Login/Register form',
-        category: 'forms',
-        props_schema: {
-          type: 'object',
-          properties: {
-            title: { type: 'string', title: 'Form Title' },
-            emailPlaceholder: { type: 'string', title: 'Email Placeholder' },
-            passwordPlaceholder: {
-              type: 'string',
-              title: 'Password Placeholder',
-            },
-            buttonText: { type: 'string', title: 'Button Text' },
-            style: { type: 'object', title: 'Styles' },
-          },
-        },
-        render_template:
-          '<div class="component-auth-form" data-id="{{id}}" style="{{style}}"><form class="auth-form"><h3 data-editable="true" data-component-id="{{id}}" data-prop-name="title">{{title}}</h3><input type="email" placeholder="{{emailPlaceholder}}" class="auth-input" /><input type="password" placeholder="{{passwordPlaceholder}}" class="auth-input" /><button type="submit" class="auth-button">{{buttonText}}</button></form></div>',
-        css_styles:
-          '.component-auth-form { max-width: 400px; margin: 0 auto; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }',
-      },
-    ];
+    const jsonPath = path.resolve(process.cwd(), 'navo/data/default-components.json');
+    const jsonData = await fs.readFile(jsonPath, 'utf-8');
+    const defaultComponents: ComponentDefinition[] = JSON.parse(jsonData);
 
-    // Upsert components (create if not exists, update if exists)
-    for (const component of defaultComponents) {
-      const existing = await db
-        .select({ id: componentDefinitions.id })
-        .from(componentDefinitions)
-        .where(eq(componentDefinitions.name, component.name))
-        .limit(1);
+    const valuesToInsert = defaultComponents.map((component: ComponentDefinition) => ({
+        name: component.name,
+        displayName: component.display_name,
+        description: component.description || '',
+        category: component.category || 'custom',
+        propsSchema: component.props_schema,
+        renderTemplate: component.render_template,
+        cssStyles: component.css_styles || '',
+        isActive: true,
+    }));
 
-      if (existing[0]) {
-        await db
-          .update(componentDefinitions)
-          .set({
-            displayName: component.display_name,
-            description: component.description || '',
-            category: component.category || 'custom',
-            propsSchema: component.props_schema,
-            renderTemplate: component.render_template,
-            cssStyles: component.css_styles || '',
-            isActive: true,
-          })
-          .where(eq(componentDefinitions.id, existing[0].id));
-      } else {
-        await db.insert(componentDefinitions).values({
-          name: component.name,
-          displayName: component.display_name,
-          description: component.description || '',
-          category: component.category || 'custom',
-          propsSchema: component.props_schema,
-          renderTemplate: component.render_template,
-          cssStyles: component.css_styles || '',
-          isActive: true,
+    // This requires a PostgreSQL database for the onConflictDoUpdate feature.
+    // This will insert new components and update existing ones based on the name.
+    await db.insert(componentDefinitions)
+        .values(valuesToInsert)
+        .onConflictDoUpdate({
+            target: componentDefinitions.name,
+            set: {
+                displayName: sql.raw(`excluded.display_name`),
+                description: sql.raw(`excluded.description`),
+                category: sql.raw(`excluded.category`),
+                propsSchema: sql.raw(`excluded.props_schema`),
+                renderTemplate: sql.raw(`excluded.render_template`),
+                cssStyles: sql.raw(`excluded.css_styles`),
+                isActive: sql.raw(`excluded.is_active`),
+                updatedAt: new Date(),
+            }
         });
-      }
-    }
 
     res.json({
       ok: true,

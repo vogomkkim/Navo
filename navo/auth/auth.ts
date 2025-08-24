@@ -4,6 +4,7 @@ import { db } from '../db/db.js';
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { hashPassword as hashWithScrypt, verifyPassword as verifyWithScrypt } from './password.js';
+import { config } from '../config.js';
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
@@ -111,7 +112,7 @@ export async function handleLogin(req: Request, res: Response): Promise<void> {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'your-secret-key',
+      config.jwt.secret,
       { expiresIn: '24h' }
     );
 
@@ -140,10 +141,11 @@ export function getUserIdFromToken(
   if (!token) return null;
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'your-secret-key'
-    ) as { userId: string; email: string };
+    const decoded = jwt.verify(token, config.jwt.secret);
+
+    if (typeof decoded === 'string' || !decoded.userId) {
+        return null;
+    }
 
     return decoded.userId;
   } catch (error) {
@@ -165,10 +167,12 @@ export async function authenticateToken(
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'your-secret-key'
-    ) as { userId: string; email: string };
+    const decoded = jwt.verify(token, config.jwt.secret);
+
+    if (typeof decoded === 'string' || !decoded.userId) {
+        res.status(403).json({ ok: false, error: 'Invalid token' });
+        return;
+    }
 
     req.userId = decoded.userId;
     next();

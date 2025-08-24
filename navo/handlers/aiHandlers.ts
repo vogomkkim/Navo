@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '../db/db.js';
-import { events, suggestions as suggestionsTable, projects as projectsTable, componentDefinitions } from '../db/schema.js';
+import { events, suggestions as suggestionsTable, projects as projectsTable, componentDefinitions, pages } from '../db/schema.js';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { scaffoldProject } from '../nodes/scaffoldProject.js'; // Added import
 
@@ -77,12 +77,12 @@ ${description}
 }
 
 export async function handleAiCommand(
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> {
   try {
     const { command, projectId } = req.body;
-    const userId = 'dummy-user-id'; // Temporary hardcoded userId for testing
+    const userId = req.userId;
 
     if (!command) {
       res.status(400).json({ error: 'Command is required' });
@@ -278,11 +278,11 @@ export async function handleApplySuggestion(
 }
 
 export async function handleSeedDummyData(
-  _req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> {
   try {
-    const userId = 'dummy-user-id'; // Temporary hardcoded userId for testing
+    const userId = req.userId;
 
     // Create a test project
     const created = await db
@@ -317,12 +317,12 @@ export async function handleSeedDummyData(
 }
 
 export async function handleGenerateProject(
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response
 ): Promise<void> {
   try {
     const { projectName, projectDescription } = req.body; // Expect project name and description
-    const userId = 'dummy-user-id'; // Temporary hardcoded userId for testing
+    const userId = req.userId;
 
     if (!projectName || !projectDescription) {
       res.status(400).json({ error: 'Project name and description are required.' });

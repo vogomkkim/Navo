@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db/db.js';
 import { getUserIdFromToken } from '../auth/auth.js';
-import { projects, pages } from '../db/schema.js';
+import { projects, pages, publishDeploys } from '../db/schema.js';
 import { and, desc, eq } from 'drizzle-orm';
 
 export async function handleListProjects(req: Request, res: Response) {

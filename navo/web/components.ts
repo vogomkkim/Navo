@@ -4,6 +4,16 @@
 // Component registry to store loaded component definitions
 let componentRegistry = new Map();
 
+// Utility function to escape HTML for safe display
+function escapeHtml(text) {
+  if (text === null || text === undefined) {
+    return '';
+  }
+  const div = document.createElement('div');
+  div.textContent = String(text);
+  return div.innerHTML;
+}
+
 /**
  * Convert style object to CSS string
  */
@@ -32,12 +42,6 @@ async function loadComponentDefinitions() {
     if (data.ok && data.components) {
       // Store components in registry
       data.components.forEach((comp) => {
-        console.log(
-          'Loading component:',
-          comp.name,
-          'template:',
-          comp.render_template
-        );
         componentRegistry.set(comp.name, comp);
       });
 
@@ -69,37 +73,8 @@ function renderComponent(component) {
     });
   }
 
-  // Fallback to hardcoded components for backward compatibility
-  switch (type) {
-    case 'Header':
-      return `<header class="component-header" data-id="${id}">
-              <h1 data-editable="true" data-component-id="${id}" data-prop-name="title" style="${styleString}">${props.title || ''}</h1>
-            </header>`;
-
-    case 'Hero':
-      return `<section class="component-hero" data-id="${id}" style="${styleString}">
-              <h2 data-editable="true" data-component-id="${id}" data-prop-name="headline">${props.headline || ''}</h2>
-              <p data-editable="true" data-component-id="${id}" data-prop-name="cta">${props.cta || ''}</p>
-            </section>`;
-
-    case 'Footer':
-      return `<footer class="component-footer" data-id="${id}">
-              <p data-editable="true" data-component-id="${id}" data-prop-name="text" style="${styleString}">${props.text || ''}</p>
-            </footer>`;
-
-    case 'AuthForm':
-      return `<div class="component-auth-form" data-id="${id}" style="${styleString}">
-              <form class="auth-form">
-                <h3 data-editable="true" data-component-id="${id}" data-prop-name="title">${props.title || 'Login'}</h3>
-                <input type="email" placeholder="${props.emailPlaceholder || 'Email'}" class="auth-input" />
-                <input type="password" placeholder="${props.passwordPlaceholder || 'Password'}" class="auth-input" />
-                <button type="submit" class="auth-button">${props.buttonText || 'Sign In'}</button>
-              </form>
-            </div>`;
-
-    default:
-      return `<div class="component-unknown" data-id="${id}"><p>Unknown component type: <strong>${type}</strong></p></div>`;
-  }
+  // If component is not in the registry, return an unknown component message.
+  return `<div class="component-unknown" data-id="${id}"><p>Unknown component type: <strong>${escapeHtml(type)}</strong></p></div>`;
 }
 
 /**
@@ -120,7 +95,7 @@ function renderFromTemplate(template, props) {
     // Convert value to string and handle undefined/null values
     const safeValue =
       value !== undefined && value !== null ? String(value) : '';
-    result = result.replace(placeholder, safeValue);
+    result = result.replace(placeholder, escapeHtml(safeValue));
   });
 
   return result;
@@ -146,4 +121,5 @@ export {
   toStyleString,
   loadComponentDefinitions,
   renderFromTemplate,
+  escapeHtml,
 };

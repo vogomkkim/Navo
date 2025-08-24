@@ -1,7 +1,15 @@
 import { Request, Response } from 'express';
 import { db } from '../db/db.js';
 import { pages } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+
+interface PageLayout {
+  components: Array<{
+    id: string;
+    type: string;
+    props: Record<string, any>;
+  }>;
+}
 
 export async function handleDraft(req: Request, res: Response): Promise<void> {
   const startTime = process.hrtime.bigint();
@@ -12,13 +20,12 @@ export async function handleDraft(req: Request, res: Response): Promise<void> {
     const pagePath = '/'; // Placeholder Page Path (e.g., homepage)
 
     const page = await db.query.pages.findFirst({
-      where: eq(pages.projectId, projectId),
-      where: eq(pages.path, pagePath),
+      where: and(eq(pages.projectId, projectId), eq(pages.path, pagePath)),
     });
 
-    let layout = {};
+    let layout: PageLayout; // Declare layout with the new interface
     if (page) {
-      layout = page.layoutJson;
+      layout = page.layoutJson as PageLayout; // Cast to PageLayout
     } else {
       // If no page found, return a default empty layout or an initial template
       layout = {
