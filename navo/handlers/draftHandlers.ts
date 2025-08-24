@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db/db.js';
 import { pages } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 export async function handleDraft(req: Request, res: Response): Promise<void> {
   const startTime = process.hrtime.bigint();
@@ -12,8 +12,7 @@ export async function handleDraft(req: Request, res: Response): Promise<void> {
     const pagePath = '/'; // Placeholder Page Path (e.g., homepage)
 
     const page = await db.query.pages.findFirst({
-      where: eq(pages.projectId, projectId),
-      where: eq(pages.path, pagePath),
+      where: and(eq(pages.projectId, projectId), eq(pages.path, pagePath)),
     });
 
     let layout = {};
