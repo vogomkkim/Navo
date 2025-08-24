@@ -49,3 +49,16 @@
 - Formalize event contracts and schemas
 
 See `README.md` and `docs/tech/architecture.md` for more.
+
+---
+
+### Relationship to the Multi-Agent System
+
+This DAG-based execution engine serves as the core **"Orchestrator Layer"** for the higher-level multi-agent system. While this document describes *how* tasks are executed, the `multi-agent-system-design-and-evaluation.md` document describes *who* (the agents) decides what tasks to run.
+
+In short:
+- **Agents** (like the Planning Agent or Execution Agent) create a plan.
+- That **plan** is represented as a DAG.
+- This **DAG runner** executes the plan.
+
+See `docs/tech/multi-agent-system-design-and-evaluation.md` for the broader context.
