@@ -3,6 +3,7 @@ import { Express } from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
 import { config } from '../config.js';
+import logger from '../core/logger.js';
 
 // Alternative approach for __dirname in CommonJS style
 const __dirname = process.cwd();
@@ -16,18 +17,18 @@ export function setupStaticRoutes(app: Express) {
     // In development mode, serve from navo/web directory
     const publicDir = path.join(__dirname, 'navo', 'web');
 
-    console.log(`[LOG] Serving static files from: ${publicDir}`);
+    logger.info('Serving static files from', { publicDir });
 
     app.use(express.static(publicDir, { index: false }));
 
     // Serve login.html specifically
     app.get('/login.html', (req, res) => {
-      console.log(`[LOG] Serving login.html`);
+      logger.info('Serving login.html');
       const loginPath = path.join(publicDir, 'login.html');
 
       fs.readFile(loginPath, 'utf8', (err, htmlData) => {
         if (err) {
-          console.error('[LOG] Error reading login.html:', err);
+          logger.error('Error reading login.html', err);
           return res.status(404).send('Not Found');
         }
         res.send(htmlData);
@@ -36,22 +37,22 @@ export function setupStaticRoutes(app: Express) {
 
     // For any other GET request, serve index.html, allowing client-side routing
     app.get('/*', (req, res) => {
-      console.log(`[LOG] Received request for: ${req.path}`);
+      logger.info('Received request', { path: req.path });
       const indexPath = path.join(publicDir, 'index.html');
-      console.log(`[LOG] Reading index.html from: ${indexPath}`);
+      logger.debug('Reading index.html', { indexPath });
 
       fs.readFile(indexPath, 'utf8', (err, htmlData) => {
         if (err) {
-          console.error('[LOG] Error reading index.html:', err);
+          logger.error('Error reading index.html', err);
           return res.status(404).send('Not Found');
         }
-        console.log('[LOG] Successfully read index.html.');
+        logger.debug('Successfully read index.html');
 
         const apiUrl = config.api.baseUrl;
-        console.log(`[LOG] Configured API_BASE_URL is: "${apiUrl}"`);
+        logger.info('Configured API_BASE_URL', { apiUrl });
 
         const modifiedHtml = htmlData.replace('__API_URL__', apiUrl);
-        console.log(`[LOG] Placeholder __API_URL__ replaced with "${apiUrl}".`);
+        logger.debug('Replaced __API_URL__ placeholder');
 
         res.send(modifiedHtml);
       });

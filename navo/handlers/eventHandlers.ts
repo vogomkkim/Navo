@@ -7,6 +7,7 @@ import { CodeFixerAgent } from '../agents/codeFixerAgent.js';
 import { TestRunnerAgent } from '../agents/testRunnerAgent.js';
 import { RollbackAgent } from '../agents/rollbackAgent.js';
 import { AuthenticatedRequest } from '../auth/auth.js';
+import logger from '../core/logger.js';
 
 // 에러 해결 관리자 인스턴스 (싱글톤)
 let errorResolutionManager: ErrorResolutionManager | null = null;
@@ -27,10 +28,8 @@ function initializeErrorResolutionSystem() {
     errorResolutionManager.registerAgent(testRunnerAgent);
     errorResolutionManager.registerAgent(rollbackAgent);
 
-    console.log('🚀 자동 에러 해결 시스템 초기화 완료');
-    console.log(
-      `📊 등록된 에이전트: ${errorResolutionManager.getStatus().registeredAgents}개`
-    );
+    logger.info('자동 에러 해결 시스템 초기화 완료');
+    logger.info('등록된 에이전트 수', { count: errorResolutionManager.getStatus().registeredAgents });
   }
   return errorResolutionManager;
 }
@@ -65,7 +64,7 @@ export async function handleEvents(req: AuthenticatedRequest, res: Response): Pr
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error storing event:', error);
+    logger.error('Error storing event', error);
     res.status(500).json({ error: 'Failed to store event' });
   }
 }
@@ -92,7 +91,7 @@ export async function handleAnalyticsEvents(
 
     res.json({ success: true, count: payload.length });
   } catch (error) {
-    console.error('Error storing analytics events:', error);
+    logger.error('Error storing analytics events', error);
     res.status(500).json({ error: 'Failed to store analytics events' });
   }
 }
@@ -125,7 +124,7 @@ export async function handleLogError(
       return;
     }
 
-    console.log('🚨 Client Error Logged:', {
+    logger.warn('Client Error Logged', {
       type,
       message,
       filename,
@@ -155,25 +154,25 @@ export async function handleLogError(
 
     // 🚀 자동 에러 해결 시스템 실행!
     try {
-      console.log('🔧 자동 에러 해결 시스템 시작...');
-      console.log('📋 에러 정보:', { message, filename, lineno, colno });
+      logger.info('자동 에러 해결 시스템 시작');
+      logger.debug('에러 정보', { message, filename, lineno, colno });
 
       // 에러 해결 시스템 초기화
-      console.log('🔄 에러 해결 시스템 초기화 중...');
+      logger.debug('에러 해결 시스템 초기화 중');
       const manager = initializeErrorResolutionSystem();
-      console.log('✅ 에러 해결 시스템 초기화 완료');
+      logger.debug('에러 해결 시스템 초기화 완료');
 
       // 에러 객체 생성
-      console.log('🔨 에러 객체 생성 중...');
+      logger.debug('에러 객체 생성 중');
       const error = new Error(message);
       (error as any).filename = filename;
       (error as any).lineno = lineno;
       (error as any).colno = colno;
       (error as any).stack = stack;
-      console.log('✅ 에러 객체 생성 완료:', error.message);
+      logger.debug('에러 객체 생성 완료', { message: error.message });
 
       // 에러 컨텍스트 생성
-      console.log('🌍 에러 컨텍스트 생성 중...');
+      logger.debug('에러 컨텍스트 생성 중');
       const context = {
         timestamp: new Date(timestamp || Date.now()),
         userAgent: userAgent || 'Unknown',
@@ -186,18 +185,17 @@ export async function handleLogError(
           stack,
         },
       } as const;
-      console.log('✅ 에러 컨텍스트 생성 완료:', context);
+      logger.debug('에러 컨텍스트 생성 완료');
 
       // 자동 에러 해결 실행
-      console.log('🚀 자동 에러 해결 실행 시작...');
+      logger.info('자동 에러 해결 실행 시작');
       const resolutionResult = await manager.resolveError(error, context);
-      console.log('✅ 자동 에러 해결 실행 완료:', resolutionResult);
+      logger.info('자동 에러 해결 실행 완료');
 
       if (resolutionResult.success) {
-        console.log('✅ 자동 에러 해결 성공!', {
+        logger.info('자동 에러 해결 성공', {
           changes: resolutionResult.changes.length,
           executionTime: resolutionResult.executionTime,
-          nextSteps: resolutionResult.nextSteps,
         });
 
         // 클라이언트에게 해결 완료 알림
@@ -209,7 +207,7 @@ export async function handleLogError(
           message: '에러가 자동으로 해결되었습니다!',
         });
       } else {
-        console.log('❌ 자동 에러 해결 실패:', resolutionResult.errorMessage);
+        logger.warn('자동 에러 해결 실패', { error: resolutionResult.errorMessage });
 
         // 클라이언트에게 해결 실패 알림
         res.json({
@@ -221,8 +219,8 @@ export async function handleLogError(
         });
       }
     } catch (resolutionError) {
-      console.error('🚨 자동 에러 해결 시스템 실행 실패:', resolutionError);
-      console.error('🚨 에러 스택:', (resolutionError as Error).stack);
+      logger.error('자동 에러 해결 시스템 실행 실패', resolutionError);
+      logger.error('에러 스택', { stack: (resolutionError as Error).stack });
 
       // 에러 해결 시스템 실패 시에도 기본 로깅은 성공
       res.json({
@@ -234,7 +232,7 @@ export async function handleLogError(
       });
     }
   } catch (error) {
-    console.error('Error logging client error:', error);
+    logger.error('Error logging client error', error);
     res.status(500).json({ error: 'Failed to log error' });
   }
 }

@@ -1,4 +1,5 @@
 import app from './server.js';
+import logger from './core/logger.js';
 import { testConnection } from './db/db.js';
 
 const port = Number(process.env.PORT) || 3000;
@@ -10,10 +11,10 @@ async function startServer() {
 
     // 서버 시작
     app.listen(port, () => {
-      console.log(`[navo] listening on port ${port}`);
+      logger.info('[navo] listening on port', { port });
     });
   } catch (error) {
-    console.error('[navo] Failed to start server:', error);
+    logger.error('[navo] Failed to start server', error);
     process.exit(1);
   }
 }

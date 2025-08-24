@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { asyncHandler } from '../middleware/errorHandler.js';
 import {
   handleEvents,
   handleLogError,
@@ -7,7 +8,7 @@ import { authenticateToken } from '../auth/auth.js';
 
 const router = Router();
 
-router.post('/', authenticateToken, handleEvents);
-router.post('/log-error', authenticateToken, handleLogError);
+router.post('/', authenticateToken, asyncHandler(handleEvents));
+router.post('/log-error', authenticateToken, asyncHandler(handleLogError));
 
 export default router;

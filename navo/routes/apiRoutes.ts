@@ -1,4 +1,5 @@
 import { Express } from 'express';
+import logger from '../core/logger.js';
 import authRoutes from './authRoutes.js';
 import componentRoutes from './componentRoutes.js';
 import projectRoutes from './projectRoutes.js';
@@ -19,4 +20,5 @@ export function setupApiRoutes(app: Express) {
   app.use('/api/ai', aiRoutes);
   app.use('/api/draft', draftRoutes);
   app.use('/health', healthRoutes);
+  logger.info('API routes initialized');
 }
