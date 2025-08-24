@@ -14,7 +14,9 @@ export const projects = pgTable('projects', {
 	name: varchar('name', { length: 255 }).notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-});
+}, (table) => ({
+	ownerIdx: index('idx_projects_owner').on(table.ownerId),
+}));
 
 export const suggestions = pgTable('suggestions', {
 	id: uuid('id').defaultRandom().primaryKey(),

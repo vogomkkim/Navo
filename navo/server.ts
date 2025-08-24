@@ -3,6 +3,8 @@ import cors from 'cors';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { setupApiRoutes } from './routes/apiRoutes.js';
 import { setupStaticRoutes } from './routes/staticRoutes.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import logger from './core/logger.js';
 
 const app = express();
 
@@ -14,6 +16,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Setup routes
 setupApiRoutes(app);
 setupStaticRoutes(app);
+
+// Error handler (must be after routes)
+app.use(errorHandler);
 
 // AI suggestion generation
 export async function generateAiSuggestion(prompt: string): Promise<string> {
@@ -30,7 +35,7 @@ export async function generateAiSuggestion(prompt: string): Promise<string> {
 
     return text;
   } catch (error) {
-    console.error('Error generating AI suggestion:', error);
+    logger.error('Error generating AI suggestion', error);
     throw error;
   }
 }
