@@ -3,6 +3,7 @@ import { checkAuth, handleLogout } from './modules/auth.js';
 import * as ui from './modules/ui.js';
 import { api } from './modules/api.js';
 import { track, setupGlobalErrorHandling } from './modules/events.js';
+import DOMPurify from 'dompurify';
 
 // --- State ---
 type Layout = { components: Array<{ id: string; type: string; props: Record<string, any> } > } | null;
@@ -24,7 +25,7 @@ async function loadInitialData() {
         await loadComponentDefinitions();
         const data = await api.getDraft();
         currentLayout = (data?.draft?.layout as any) ?? null;
-        if (ui.canvasEl) ui.canvasEl.innerHTML = renderLayout(currentLayout as any);
+        if (ui.canvasEl) ui.canvasEl.innerHTML = DOMPurify.sanitize(renderLayout(currentLayout as any));
         if (ui.infoEl) ui.infoEl.textContent = `Draft loaded in ${data.tookMs ?? 0} ms`;
         ui.setStatus('Ready');
         track({ type: 'view:page', page: 'editor' });

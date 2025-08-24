@@ -15,7 +15,7 @@ const router = Router();
 
 router.post('/command', authenticateToken, asyncHandler(handleAiCommand));
 router.get('/suggestions', authenticateToken, asyncHandler(handleGetSuggestions));
-router.get('/test-db-suggestions', asyncHandler(handleTestDbSuggestions));
+router.get('/test-db-suggestions', authenticateToken, asyncHandler(handleTestDbSuggestions));
 router.post('/apply-suggestion', authenticateToken, asyncHandler(handleApplySuggestion));
 router.post('/seed-dummy-data', authenticateToken, asyncHandler(handleSeedDummyData));
 router.post('/generate-project', authenticateToken, asyncHandler(handleGenerateProject));
