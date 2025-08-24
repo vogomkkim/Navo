@@ -6,12 +6,10 @@ import { events, suggestions as suggestionsTable, projects as projectsTable, com
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { scaffoldProject } from '../nodes/scaffoldProject.js'; // Added import
 
-import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
 
 // Initialize DOMPurify
-const window = new JSDOM('').window;
-const purify = createDOMPurify(window as unknown as any);
+const purify = createDOMPurify(); // Initialize without arguments for Node.js
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
