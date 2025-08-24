@@ -2,10 +2,10 @@ import {
   renderLayout,
   loadComponentDefinitions,
 } from './components.js';
-import { checkAuth, handleLogout } from './modules/auth.js';
-import * as ui from './modules/ui.js';
-import { api } from './modules/api.js';
-import { track, setupGlobalErrorHandling } from './modules/events.js';
+import { checkAuth, handleLogout } from './modules/auth.ts';
+import * as ui from './modules/ui.ts';
+import { api } from './modules/api.ts';
+import { track, setupGlobalErrorHandling } from './modules/events.ts';
 
 // --- State ---
 let currentLayout = null;

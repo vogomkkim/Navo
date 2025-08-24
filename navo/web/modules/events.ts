@@ -1,16 +1,21 @@
-import { api } from './api.js';
+import { api } from './api.ts'; // Update import to .ts
 
-let eventQueue = [];
-let flushTimer = null;
+interface EventData {
+  type: string;
+  [key: string]: any; // Allow any other properties
+}
 
-export function track(event) {
+let eventQueue: EventData[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function track(event: EventData): void {
   eventQueue.push({ ...event, ts: Date.now() });
   if (!flushTimer) {
     flushTimer = setTimeout(flushEvents, 2000);
   }
 }
 
-async function flushEvents() {
+async function flushEvents(): Promise<void> {
   const batch = eventQueue.splice(0, eventQueue.length);
   flushTimer = null;
   if (batch.length === 0) return;
@@ -21,8 +26,8 @@ async function flushEvents() {
   }
 }
 
-export function setupGlobalErrorHandling() {
-    window.addEventListener('error', async (event) => {
+export function setupGlobalErrorHandling(): void {
+    window.addEventListener('error', async (event: ErrorEvent) => {
         console.log('🚨 JavaScript 에러 캐치:', {
           message: event.error?.message,
           filename: event.filename,
@@ -30,7 +35,7 @@ export function setupGlobalErrorHandling() {
           colno: event.colno,
           stack: event.error?.stack
         });
-      
+
         try {
           await api.logError({
             type: 'javascript_error',
@@ -47,13 +52,13 @@ export function setupGlobalErrorHandling() {
           console.log('❌ 에러 로깅 실패:', e);
         }
       });
-      
-      window.addEventListener('unhandledrejection', async (event) => {
+
+      window.addEventListener('unhandledrejection', async (event: PromiseRejectionEvent) => {
         console.log('🚨 Promise 에러 캐치:', {
           reason: event.reason,
           promise: event.promise
         });
-      
+
         try {
             await api.logError({
                 type: 'promise_error',
