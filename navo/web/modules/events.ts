@@ -1,4 +1,4 @@
-import { api } from './api.ts'; // Update import to .ts
+import { api } from './api.js';
 
 interface EventData {
   type: string;

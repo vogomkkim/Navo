@@ -1,14 +1,12 @@
-import {
-  renderLayout,
-  loadComponentDefinitions,
-} from './components.js';
-import { checkAuth, handleLogout } from './modules/auth.ts';
-import * as ui from './modules/ui.ts';
-import { api } from './modules/api.ts';
-import { track, setupGlobalErrorHandling } from './modules/events.ts';
+import { renderLayout, loadComponentDefinitions } from './components.js';
+import { checkAuth, handleLogout } from './modules/auth.js';
+import * as ui from './modules/ui.js';
+import { api } from './modules/api.js';
+import { track, setupGlobalErrorHandling } from './modules/events.js';
 
 // --- State ---
-let currentLayout = null;
+type Layout = { components: Array<{ id: string; type: string; props: Record<string, any> } > } | null;
+let currentLayout: Layout = null;
 
 // --- Initialization ---
 function init() {
@@ -25,14 +23,14 @@ async function loadInitialData() {
     try {
         await loadComponentDefinitions();
         const data = await api.getDraft();
-        currentLayout = data?.draft?.layout;
-        ui.canvasEl.innerHTML = renderLayout(currentLayout);
-        ui.infoEl.textContent = `Draft loaded in ${data.tookMs ?? 0} ms`;
+        currentLayout = (data?.draft?.layout as any) ?? null;
+        if (ui.canvasEl) ui.canvasEl.innerHTML = renderLayout(currentLayout as any);
+        if (ui.infoEl) ui.infoEl.textContent = `Draft loaded in ${data.tookMs ?? 0} ms`;
         ui.setStatus('Ready');
         track({ type: 'view:page', page: 'editor' });
         // TODO: Re-implement suggestions, projects, and components loading
-    } catch (e) {
-        ui.setStatus(`Failed to load draft: ${e.message}`);
+    } catch (e: any) {
+        ui.setStatus(`Failed to load draft: ${e?.message || 'Unknown error'}`);
         console.error(e);
     }
 }
@@ -45,8 +43,8 @@ function addEventListeners() {
     if (ui.profileToggle && ui.profileMenu) {
         ui.profileToggle.addEventListener('click', (e) => {
           e.stopPropagation();
-          const isOpen = ui.profileMenu.classList.toggle('open');
-          ui.profileToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+          const isOpen = ui.profileMenu!.classList.toggle('open');
+          ui.profileToggle!.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
     }
 
@@ -57,14 +55,14 @@ function addEventListeners() {
         }
     });
 
-    ui.saveBtn.addEventListener('click', async () => {
+    if (ui.saveBtn) ui.saveBtn.addEventListener('click', async () => {
         ui.setStatus('Saving…');
         if (!currentLayout) {
             ui.setStatus('Save failed: No layout data');
             return;
         }
         try {
-            const data = await api.saveDraft(currentLayout);
+            const data = await api.saveDraft(currentLayout as any);
             ui.setStatus(`Saved (${data.versionId})`);
             track({ type: 'editor:save', versionId: data.versionId });
         } catch (e) {
@@ -72,24 +70,24 @@ function addEventListeners() {
         }
     });
 
-    ui.canvasEl.addEventListener('click', (ev) => {
-        const target = ev.target;
-        if (target.dataset.editable === 'true') {
-            handleTextEdit(target);
+    if (ui.canvasEl) ui.canvasEl.addEventListener('click', (ev) => {
+        const target = ev.target as HTMLElement | null;
+        if (target && (target as any).dataset?.editable === 'true') {
+            handleTextEdit(target as HTMLElement);
             return;
         }
-        const componentEl = target.closest('[data-id]');
+        const componentEl = target?.closest?.('[data-id]') as HTMLElement | null;
         if (componentEl) {
-            const componentId = componentEl.dataset.id;
-            const component = currentLayout.components.find((c) => c.id === componentId);
+            const componentId = (componentEl as any).dataset.id as string | undefined;
+            const component = currentLayout && componentId ? currentLayout.components.find((c) => c.id === componentId) : undefined;
             track({
                 type: 'click:component',
                 componentId: componentId,
                 componentType: component?.type || 'unknown',
-                target: target.tagName || 'UNKNOWN',
+                target: target?.tagName || 'UNKNOWN',
             });
         } else {
-            track({ type: 'click:canvas', target: target.tagName || 'UNKNOWN' });
+            track({ type: 'click:canvas', target: target?.tagName || 'UNKNOWN' });
         }
     });
 
@@ -111,11 +109,11 @@ function addEventListeners() {
     ui.setupMobileAccordions();
 }
 
-function handleTextEdit(element) {
+function handleTextEdit(element: HTMLElement) {
     element.style.display = 'none';
     const input = document.createElement('input');
     input.type = 'text';
-    input.value = element.textContent.trim();
+    input.value = (element.textContent || '').trim();
     input.className = 'inline-editor';
   
     const style = window.getComputedStyle(element);
@@ -130,15 +128,15 @@ function handleTextEdit(element) {
     input.style.border = '1px solid #007bff';
     input.style.outline = 'none';
 
-    element.parentNode.insertBefore(input, element.nextSibling);
+    element.parentNode?.insertBefore(input, element.nextSibling);
     input.focus();
   
     const finishEditing = () => {
       const newValue = input.value;
       element.textContent = newValue;
   
-      const componentId = element.dataset.componentId;
-      const propName = element.dataset.propName;
+      const componentId = (element as any).dataset?.componentId as string | undefined;
+      const propName = (element as any).dataset?.propName as string | undefined;
   
       if (currentLayout && componentId && propName) {
         const componentToUpdate = currentLayout.components.find(
@@ -159,7 +157,7 @@ function handleTextEdit(element) {
     };
   
     input.addEventListener('blur', finishEditing);
-    input.addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         finishEditing();
       } else if (e.key === 'Escape') {

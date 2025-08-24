@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { db } from '../db/db.js';
 import { pages, projects } from '../db/schema.js';
 import { and, eq } from 'drizzle-orm';
