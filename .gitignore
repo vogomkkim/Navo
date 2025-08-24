@@ -59,4 +59,4 @@ fix.md
 COMMIT_EDITMSG.tmp
 server-log.md
 
-/generated/prisma
+#/generated/prisma (Prisma removed)

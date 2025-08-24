@@ -1,5 +1,4 @@
 import { randomBytes, scrypt as scryptCb, timingSafeEqual } from 'crypto';
-import bcrypt from 'bcryptjs';
 
 function scryptAsync(
   password: string,
@@ -55,10 +54,6 @@ function getLnFromN(N: number): number {
   return Math.log2(N) | 0;
 }
 
-export function isBcryptHash(hash: string): boolean {
-  return typeof hash === 'string' && /^\$2[aby]\$/.test(hash);
-}
-
 export function isScryptPhc(hash: string): boolean {
   return typeof hash === 'string' && hash.startsWith('$scrypt$');
 }
@@ -92,14 +87,6 @@ export async function verifyPassword(
   if (isScryptPhc(storedHash)) {
     const result = await verifyScryptPhc(password, storedHash);
     return { ok: result, needsRehash: false };
-  }
-
-  if (isBcryptHash(storedHash)) {
-    const ok = await bcrypt.compare(password, storedHash);
-    if (!ok) return { ok: false, needsRehash: false };
-    // Upgrade path: rehash with scrypt
-    const newHash = await hashPassword(password);
-    return { ok: true, needsRehash: true, newHash };
   }
 
   // Unknown format
