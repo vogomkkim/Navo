@@ -17,11 +17,12 @@
     "format": "prettier --write .",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:pull": "drizzle-kit introspect"
-  },
-  "engines": {
-    "node": "22.x"
-  },
+          "db:pull": "drizzle-kit introspect",
+      "report:slack": "tsx navo/scripts/sendSlackChangelog.ts --limit 10"
+    },
+    "engines": {
+      "node": "22.x"
+    },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.19",

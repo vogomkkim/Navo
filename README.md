@@ -107,3 +107,20 @@ Questions/ideas: open an Issue or start an RFC under `docs/rfcs/`.
 - **MVP Scope**: [docs/tech/mvp-scope.md](docs/tech/mvp-scope.md)
 - **Development Roadmap**: [docs/tech/roadmap.md](docs/tech/roadmap.md)
 - **Contributing**: [docs/team/CONTRIBUTING.md](docs/team/CONTRIBUTING.md)
+
+---
+
+## 🔔 Slack: Recent Commits & Changelog (Korean)
+
+Send a Korean summary of recent Git commits and items from `docs/progress/CHANGELOG.md` to Slack.
+
+- Set env var: `SLACK_WEBHOOK_URL="https://hooks.slack.com/services/XXX/YYY/ZZZ"`
+- Run (dry-run if no webhook set):
+  - `npm run report:slack` (defaults: `--limit 10`)
+  - Optional: `npm run report:slack -- --limit 20 --since "2 weeks ago"`
+  - Optional: `npm run report:slack -- --changelog docs/progress/CHANGELOG.md`
+
+The message includes:
+- 최근 커밋 목록: 날짜, 해시, 제목, 작성자
+- CHANGELOG(Unreleased) 주요 변경사항 요약
+- 자동 생성 안내 문구
