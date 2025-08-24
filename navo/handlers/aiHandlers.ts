@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthenticatedRequest } from '../auth/auth.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '../db/db.js';
 import { events, suggestions as suggestionsTable, projects as projectsTable, componentDefinitions, pages } from '../db/schema.js';
@@ -6,11 +7,11 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import { scaffoldProject } from '../nodes/scaffoldProject.js'; // Added import
 
 import { JSDOM } from 'jsdom';
-import DOMPurify from 'dompurify';
+import createDOMPurify from 'dompurify';
 
 // Initialize DOMPurify
 const window = new JSDOM('').window;
-const purify = DOMPurify(window);
+const purify = createDOMPurify(window as unknown as any);
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -264,6 +265,34 @@ export async function handleGetSuggestions(
   }
 }
 
+export async function handleGenerateDummySuggestion(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    // Use latest project owned by user as target for dummy suggestion if available
+    const latestProject = await db
+      .select({ id: projectsTable.id })
+      .from(projectsTable)
+      .where(eq(projectsTable.ownerId, userId))
+      .orderBy(desc(projectsTable.createdAt))
+      .limit(1);
+
+    const projectId = latestProject[0]?.id || 'dummy-project-id';
+    await generateAndStoreDummySuggestion(projectId);
+    res.json({ ok: true, message: 'Dummy suggestion generated' });
+  } catch (error) {
+    console.error('Error generating dummy suggestion:', error);
+    res.status(500).json({ error: 'Failed to generate dummy suggestion' });
+  }
+}
+
 export async function handleTestDbSuggestions(
   _req: Request,
   res: Response
@@ -308,13 +337,17 @@ export async function handleSeedDummyData(
 ): Promise<void> {
   try {
     const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
 
     // Create a test project
     const created = await db
       .insert(projectsTable)
       .values({
         name: 'Test Project',
-        ownerId: userId,
+        ownerId: userId as string,
       })
       .returning();
 
@@ -355,11 +388,16 @@ export async function handleGenerateProject(
     }
 
     // Step 1: Create the project entry in the database
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
     const createdProject = await db
       .insert(projectsTable)
       .values({
-        name: projectName,
-        ownerId: userId,
+        name: projectName as string,
+        ownerId: userId as string,
       })
       .returning();
 

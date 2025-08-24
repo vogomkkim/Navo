@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '../db/db.js';
 import { componentDefinitions } from '../db/schema.js';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
@@ -270,5 +271,35 @@ export async function handleSeedComponentDefinitions(
     res
       .status(500)
       .json({ ok: false, error: 'Failed to seed component definitions' });
+  }
+}
+
+/**
+ * Generate a component definition from natural language using Gemini
+ */
+export async function handleGenerateComponentFromNaturalLanguage(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const { description } = req.body as { description?: string };
+    if (!description || typeof description !== 'string') {
+      res.status(400).json({ ok: false, error: 'description is required' });
+      return;
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const prompt = `Generate ONE UI component definition as strict JSON with fields: name, display_name, description, category, props_schema (JSON Schema), render_template (HTML with {{placeholders}} including data-id=\"{{id}}\"), css_styles. User description: ${description}`;
+    const result = await model.generateContent(prompt);
+    let text = result.response.text();
+    if (text.startsWith('```')) {
+      text = text.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '');
+    }
+    const generated = JSON.parse(text);
+    res.json({ ok: true, component: generated });
+  } catch (error) {
+    console.error('Error generating component from natural language:', error);
+    res.status(500).json({ ok: false, error: 'Failed to generate component' });
   }
 }

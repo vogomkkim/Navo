@@ -2,10 +2,30 @@
 // This file handles the rendering of different component types
 
 // Component registry to store loaded component definitions
-let componentRegistry = new Map();
+type ComponentDef = {
+  name: string;
+  display_name?: string;
+  description?: string;
+  category?: string;
+  props_schema?: Record<string, unknown>;
+  render_template?: string;
+  css_styles?: string;
+};
+
+type LayoutComponent = {
+  id: string;
+  type: string;
+  props: Record<string, any>;
+};
+
+type Layout = {
+  components: LayoutComponent[];
+};
+
+let componentRegistry: Map<string, ComponentDef> = new Map();
 
 // Utility function to escape HTML for safe display
-function escapeHtml(text) {
+function escapeHtml(text: unknown): string {
   if (text === null || text === undefined) {
     return '';
   }
@@ -17,7 +37,7 @@ function escapeHtml(text) {
 /**
  * Convert style object to CSS string
  */
-function toStyleString(styleObject) {
+function toStyleString(styleObject: Record<string, unknown> | undefined | null): string {
   if (!styleObject || typeof styleObject !== 'object') return '';
 
   return Object.entries(styleObject)
@@ -31,7 +51,7 @@ function toStyleString(styleObject) {
 /**
  * Load component definitions from the server
  */
-async function loadComponentDefinitions() {
+async function loadComponentDefinitions(): Promise<void> {
   try {
     const response = await fetch('/api/components');
     if (!response.ok) {
@@ -41,7 +61,7 @@ async function loadComponentDefinitions() {
     const data = await response.json();
     if (data.ok && data.components) {
       // Store components in registry
-      data.components.forEach((comp) => {
+      (data.components as ComponentDef[]).forEach((comp) => {
         componentRegistry.set(comp.name, comp);
       });
 
@@ -57,7 +77,7 @@ async function loadComponentDefinitions() {
 /**
  * Render a single component based on its type and props
  */
-function renderComponent(component) {
+function renderComponent(component: LayoutComponent): string {
   const { id, type, props } = component;
   const styleString = toStyleString(props.style);
 
@@ -80,7 +100,7 @@ function renderComponent(component) {
 /**
  * Render component from template string with variable substitution
  */
-function renderFromTemplate(template, props) {
+function renderFromTemplate(template: string, props: Record<string, unknown>): string {
   // Ensure template is a string
   if (typeof template !== 'string') {
     console.error('Template is not a string:', template);
@@ -104,7 +124,7 @@ function renderFromTemplate(template, props) {
 /**
  * Render the entire layout by rendering all components
  */
-function renderLayout(layout) {
+function renderLayout(layout: Layout | null): string {
   if (!layout || !Array.isArray(layout.components)) {
     return '<p class="error">Error: Invalid layout data received from API.</p>';
   }

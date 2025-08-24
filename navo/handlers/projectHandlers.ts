@@ -129,7 +129,7 @@ export async function handleRollback(req: Request, res: Response) {
           eq(publishDeploys.vercelDeploymentId, rollbackTo)
         ),
       });
-      targetDeploymentId = deployment?.vercelDeploymentId;
+      targetDeploymentId = deployment?.vercelDeploymentId ?? undefined;
     } else if (typeof rollbackTo === 'number') {
       // Assume rollbackTo is an index (0 for latest, 1 for second latest, etc.)
       const deployments = await db.query.publishDeploys.findMany({
@@ -139,7 +139,7 @@ export async function handleRollback(req: Request, res: Response) {
       });
 
       if (deployments.length > rollbackTo) {
-        targetDeploymentId = deployments[rollbackTo].vercelDeploymentId;
+        targetDeploymentId = deployments[rollbackTo].vercelDeploymentId ?? undefined;
       }
     }
 

@@ -1,4 +1,10 @@
-const API_BASE_URL: string = window.API_BASE_URL || '';
+declare global {
+    interface Window {
+        API_BASE_URL?: string;
+    }
+}
+
+const API_BASE_URL: string = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL : '';
 
 async function fetchApi<T>(url: string, options: RequestInit = {}): Promise<T> {
     const token = localStorage.getItem('navo_token');
