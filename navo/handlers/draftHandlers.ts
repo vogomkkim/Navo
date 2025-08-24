@@ -1,7 +1,8 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { db } from '../db/db.js';
-import { pages } from '../db/schema.js';
+import { pages, projects } from '../db/schema.js';
 import { and, eq } from 'drizzle-orm';
+import { AuthenticatedRequest } from '../auth/auth.js'; // Import AuthenticatedRequest
 
 interface PageLayout {
   components: Array<{
@@ -11,13 +12,28 @@ interface PageLayout {
   }>;
 }
 
-export async function handleDraft(req: Request, res: Response): Promise<void> {
+export async function handleDraft(req: AuthenticatedRequest, res: Response): Promise<void> {
   const startTime = process.hrtime.bigint();
   try {
-    // For now, use a hardcoded project ID and path for testing
-    // TODO: Dynamically determine projectId and path based on user context or request parameters
-    const projectId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'; // Placeholder Project ID
-    const pagePath = '/'; // Placeholder Page Path (e.g., homepage)
+    const userId = req.userId; // Get userId from the authenticated request
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized: User ID not found' });
+      return;
+    }
+
+    // Dynamically determine projectId based on userId
+    const userProject = await db.query.projects.findFirst({
+      where: eq(projects.ownerId, userId),
+    });
+
+    if (!userProject) {
+      res.status(404).json({ error: 'No project found for this user' });
+      return;
+    }
+
+    const projectId = userProject.id;
+    const pagePath = '/'; // Placeholder Page Path (e.g., homepage) - still hardcoded for now
 
     const page = await db.query.pages.findFirst({
       where: and(eq(pages.projectId, projectId), eq(pages.path, pagePath)),

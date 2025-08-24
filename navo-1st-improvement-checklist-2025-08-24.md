@@ -3,11 +3,12 @@
 작성일: 2025-08-24
 
 ## 🔴 최우선 (보안·기능 오류 방지)
-- [ ] `handleDraft` → `where` 조건 통합 (`and(eq(...), eq(...))` 사용)
+- [x] `handleDraft` → `where` 조건 통합 (`and(eq(...), eq(...))` 사용)
 - [ ] 하드코딩된 값 제거  
-  - [ ] `JWT_SECRET = 'your-secret-key'` 제거 → 환경변수 필수화  
-  - [ ] 더미 유저 ID (`0000...`) → 미들웨어에서 `userId` 주입
-- [ ] HTML 렌더링 시 `innerHTML` → XSS 방어 처리 필요  
+  - [x] `JWT_SECRET = 'your-secret-key'` 제거 → 환경변수 필수화  
+  - [x] 더미 유저 ID (`0000...`) → 미들웨어에서 `userId` 주입
+- [x] HTML 렌더링 시 `innerHTML` → XSS 방어 처리 (프론트엔드 데이터 이스케이프 완료, 템플릿/레이아웃 백엔드 검증 필요)
+- [x] 백엔드: 컴포넌트 템플릿 및 레이아웃 데이터 저장/전송 시 XSS 방어 (입력 유효성 검사 및 살균)  
 
 ---
 

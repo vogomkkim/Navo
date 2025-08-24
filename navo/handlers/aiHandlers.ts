@@ -5,6 +5,13 @@ import { events, suggestions as suggestionsTable, projects as projectsTable, com
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { scaffoldProject } from '../nodes/scaffoldProject.js'; // Added import
 
+import { JSDOM } from 'jsdom';
+import DOMPurify from 'dompurify';
+
+// Initialize DOMPurify
+const window = new JSDOM('').window;
+const purify = DOMPurify(window);
+
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -42,6 +49,24 @@ function validateGeneratedComponentDef(obj: any): {
     return { ok: false, error: 'props_schema must be an object if provided' };
   }
   return { ok: true };
+}
+
+function sanitizeLayout(layout: any): any {
+  if (!layout) return layout;
+
+  const sanitizedLayout = JSON.parse(JSON.stringify(layout)); // Deep copy
+
+  function traverse(obj: any) {
+    for (const key in obj) {
+      if (typeof obj[key] === 'string') {
+        obj[key] = purify.sanitize(obj[key]);
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        traverse(obj[key]);
+      }
+    }
+  }
+  traverse(sanitizedLayout);
+  return sanitizedLayout;
 }
 
 /**
@@ -444,8 +469,8 @@ Generate the project structure for the user's project:
             description: compDef.description || '',
             category: compDef.category || 'custom',
             propsSchema: compDef.props_schema,
-            renderTemplate: compDef.render_template,
-            cssStyles: compDef.css_styles || '',
+            renderTemplate: purify.sanitize(compDef.render_template),
+            cssStyles: compDef.css_styles ? compDef.css_styles.replace(/<script\b[^<]*(?:(?!<\/script>)[^<]*)*<\/script>/gi, '').replace(/javascript:/gi, '') : '',
             isActive: true,
           });
         }
@@ -465,7 +490,7 @@ Generate the project structure for the user's project:
           await db.insert(pages).values({
             projectId: projectId,
             path: page.path,
-            layoutJson: page.layout, // Assuming layout is directly storable as JSONB
+            layoutJson: sanitizeLayout(page.layout), // Assuming layout is directly storable as JSONB
           });
         }
         console.log('[AI] Pages persisted successfully.');
