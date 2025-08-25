@@ -13,8 +13,6 @@
 - **Publish**: (subdomain auto, success URL, and rollback last 3 builds integrated with Vercel)
 - **Analytics: track `view` and `click`**: Implemented event tracking for page views and clicks.
 
-
-
 ## SLO Targets
 
 - Editor perceived latency ≤ 200 ms

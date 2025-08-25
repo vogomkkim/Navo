@@ -93,7 +93,10 @@ export async function verifyPassword(
   return { ok: false, needsRehash: false };
 }
 
-async function verifyScryptPhc(password: string, phc: string): Promise<boolean> {
+async function verifyScryptPhc(
+  password: string,
+  phc: string
+): Promise<boolean> {
   // $scrypt$ln=..,r=..,p=..$salt$hash
   const parts = phc.split('$');
   // ['', 'scrypt', 'ln=..,r=..,p=..', 'saltB64', 'hashB64']

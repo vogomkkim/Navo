@@ -34,9 +34,20 @@ export function errorHandlingMiddleware(
   }
 
   const isError = err instanceof Error;
-  const status = (isError && (err as any).statusCode) || (isError && (err as any).status) || 500;
-  const message = status >= 500 ? 'Internal Server Error' : (isError ? err.message : 'Request failed');
+  const status =
+    (isError && (err as any).statusCode) ||
+    (isError && (err as any).status) ||
+    500;
+  const message =
+    status >= 500
+      ? 'Internal Server Error'
+      : isError
+        ? err.message
+        : 'Request failed';
 
-  logger.error('Unhandled error', isError ? { message: err.message, stack: err.stack } : { err });
+  logger.error(
+    'Unhandled error',
+    isError ? { message: err.message, stack: err.stack } : { err }
+  );
   res.status(status).json({ error: message });
 }

@@ -1,9 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import {
-  handleEvents,
-  handleLogError,
-} from '../handlers/eventHandlers.js';
+import { handleEvents, handleLogError } from '../handlers/eventHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
 const router = Router();

@@ -12,7 +12,10 @@ interface PageLayout {
   }>;
 }
 
-export async function handleDraft(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function handleDraft(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
   const startTime = process.hrtime.bigint();
   try {
     const userId = req.userId; // Get userId from the authenticated request
@@ -49,12 +52,18 @@ export async function handleDraft(req: AuthenticatedRequest, res: Response): Pro
           {
             id: 'default-c1',
             type: 'Header',
-            props: { title: 'Welcome to Navo (Default)', subtitle: 'AI-Powered Web Builder' },
+            props: {
+              title: 'Welcome to Navo (Default)',
+              subtitle: 'AI-Powered Web Builder',
+            },
           },
           {
             id: 'default-c2',
             type: 'Hero',
-            props: { headline: 'Build Amazing Websites (Default)', cta: 'Get Started' },
+            props: {
+              headline: 'Build Amazing Websites (Default)',
+              cta: 'Get Started',
+            },
           },
         ],
       };
@@ -68,7 +77,8 @@ export async function handleDraft(req: AuthenticatedRequest, res: Response): Pro
       draft: {
         id: page?.id || 'default-draft-id',
         layout: layout,
-        lastModified: page?.updatedAt?.toISOString() || new Date().toISOString(),
+        lastModified:
+          page?.updatedAt?.toISOString() || new Date().toISOString(),
       },
       tookMs: tookMs,
     });

@@ -12,7 +12,11 @@ export async function handleListProjects(req: Request, res: Response) {
     }
 
     const rows = await db
-      .select({ id: projects.id, name: projects.name, createdAt: projects.createdAt })
+      .select({
+        id: projects.id,
+        name: projects.name,
+        createdAt: projects.createdAt,
+      })
       .from(projects)
       .where(eq(projects.ownerId, userId))
       .orderBy(desc(projects.createdAt));
@@ -116,7 +120,9 @@ export async function handleRollback(req: Request, res: Response) {
       .limit(1);
 
     if (!project[0]) {
-      return res.status(404).json({ error: 'Project not found or unauthorized' });
+      return res
+        .status(404)
+        .json({ error: 'Project not found or unauthorized' });
     }
 
     let targetDeploymentId: string | undefined;
@@ -139,12 +145,15 @@ export async function handleRollback(req: Request, res: Response) {
       });
 
       if (deployments.length > rollbackTo) {
-        targetDeploymentId = deployments[rollbackTo].vercelDeploymentId ?? undefined;
+        targetDeploymentId =
+          deployments[rollbackTo].vercelDeploymentId ?? undefined;
       }
     }
 
     if (!targetDeploymentId) {
-      return res.status(400).json({ error: 'Invalid rollback target or deployment not found.' });
+      return res
+        .status(400)
+        .json({ error: 'Invalid rollback target or deployment not found.' });
     }
 
     // Execute Vercel rollback command
@@ -158,7 +167,9 @@ export async function handleRollback(req: Request, res: Response) {
     // const { stdout, stderr } = await run_shell_command(command); // This would be the actual call
 
     // For now, just log and return success
-    console.log(`Simulating Vercel rollback for deployment ID: ${targetDeploymentId}`);
+    console.log(
+      `Simulating Vercel rollback for deployment ID: ${targetDeploymentId}`
+    );
     // In a real scenario, you would check stdout/stderr for success/failure
 
     res.json({
@@ -167,7 +178,6 @@ export async function handleRollback(req: Request, res: Response) {
       // stdout: stdout, // In a real scenario
       // stderr: stderr, // In a real scenario
     });
-
   } catch (error) {
     console.error('Error performing rollback:', error);
     res.status(500).json({ error: 'Failed to perform rollback' });

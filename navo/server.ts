@@ -3,7 +3,10 @@ import cors from 'cors';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { setupApiRoutes } from './routes/apiRoutes.js';
 import { setupStaticRoutes } from './routes/staticRoutes.js';
-import { loggingMiddleware, errorHandlingMiddleware } from './middleware/loggingMiddleware.js';
+import {
+  loggingMiddleware,
+  errorHandlingMiddleware,
+} from './middleware/loggingMiddleware.js';
 import logger from './core/logger.js';
 
 const app = express();

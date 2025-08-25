@@ -7,13 +7,13 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 interface ComponentDefinition {
-    name: string;
-    display_name: string;
-    description: string;
-    category: string;
-    props_schema: any;
-    render_template: string;
-    css_styles: string;
+  name: string;
+  display_name: string;
+  description: string;
+  category: string;
+  props_schema: any;
+  render_template: string;
+  css_styles: string;
 }
 
 /**
@@ -37,7 +37,10 @@ export async function handleGetComponentDefinitions(
       })
       .from(componentDefinitions)
       .where(eq(componentDefinitions.isActive, true))
-      .orderBy(asc(componentDefinitions.category), asc(componentDefinitions.displayName));
+      .orderBy(
+        asc(componentDefinitions.category),
+        asc(componentDefinitions.displayName)
+      );
 
     res.json({ ok: true, components });
   } catch (error) {
@@ -61,7 +64,12 @@ export async function handleGetComponentDefinition(
     const rows = await db
       .select()
       .from(componentDefinitions)
-      .where(and(eq(componentDefinitions.name, name), eq(componentDefinitions.isActive, true)))
+      .where(
+        and(
+          eq(componentDefinitions.name, name),
+          eq(componentDefinitions.isActive, true)
+        )
+      )
       .limit(1);
 
     const component = rows[0];
@@ -208,7 +216,9 @@ export async function handleDeleteComponentDefinition(
   try {
     const { id } = req.params;
 
-    await db.delete(componentDefinitions).where(eq(componentDefinitions.id, id));
+    await db
+      .delete(componentDefinitions)
+      .where(eq(componentDefinitions.id, id));
 
     res.json({
       ok: true,
@@ -228,11 +238,15 @@ export async function handleSeedComponentDefinitions(
   res: Response
 ): Promise<void> {
   try {
-    const jsonPath = path.resolve(process.cwd(), 'navo/data/default-components.json');
+    const jsonPath = path.resolve(
+      process.cwd(),
+      'navo/data/default-components.json'
+    );
     const jsonData = await fs.readFile(jsonPath, 'utf-8');
     const defaultComponents: ComponentDefinition[] = JSON.parse(jsonData);
 
-    const valuesToInsert = defaultComponents.map((component: ComponentDefinition) => ({
+    const valuesToInsert = defaultComponents.map(
+      (component: ComponentDefinition) => ({
         name: component.name,
         displayName: component.display_name,
         description: component.description || '',
@@ -241,25 +255,27 @@ export async function handleSeedComponentDefinitions(
         renderTemplate: component.render_template,
         cssStyles: component.css_styles || '',
         isActive: true,
-    }));
+      })
+    );
 
     // This requires a PostgreSQL database for the onConflictDoUpdate feature.
     // This will insert new components and update existing ones based on the name.
-    await db.insert(componentDefinitions)
-        .values(valuesToInsert)
-        .onConflictDoUpdate({
-            target: componentDefinitions.name,
-            set: {
-                displayName: sql.raw(`excluded.display_name`),
-                description: sql.raw(`excluded.description`),
-                category: sql.raw(`excluded.category`),
-                propsSchema: sql.raw(`excluded.props_schema`),
-                renderTemplate: sql.raw(`excluded.render_template`),
-                cssStyles: sql.raw(`excluded.css_styles`),
-                isActive: sql.raw(`excluded.is_active`),
-                updatedAt: new Date(),
-            }
-        });
+    await db
+      .insert(componentDefinitions)
+      .values(valuesToInsert)
+      .onConflictDoUpdate({
+        target: componentDefinitions.name,
+        set: {
+          displayName: sql.raw(`excluded.display_name`),
+          description: sql.raw(`excluded.description`),
+          category: sql.raw(`excluded.category`),
+          propsSchema: sql.raw(`excluded.props_schema`),
+          renderTemplate: sql.raw(`excluded.render_template`),
+          cssStyles: sql.raw(`excluded.css_styles`),
+          isActive: sql.raw(`excluded.is_active`),
+          updatedAt: new Date(),
+        },
+      });
 
     res.json({
       ok: true,

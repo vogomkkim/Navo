@@ -21,7 +21,8 @@ export const deploySite: GraphNode = {
     }
 
     const vercelApiToken = process.env.VERCEL_API_TOKEN;
-    const vercelProjectName = process.env.VERCEL_PROJECT_NAME || 'navo-generated-site'; // Default project name
+    const vercelProjectName =
+      process.env.VERCEL_PROJECT_NAME || 'navo-generated-site'; // Default project name
 
     if (!vercelApiToken) {
       ctx.logger.error('VERCEL_API_TOKEN environment variable is not set.');
@@ -50,7 +51,7 @@ export const deploySite: GraphNode = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${vercelApiToken}`,
+          Authorization: `Bearer ${vercelApiToken}`,
         },
         body: JSON.stringify(deploymentPayload),
       });
@@ -58,12 +59,18 @@ export const deploySite: GraphNode = {
       const data = await response.json();
 
       if (!response.ok) {
-        ctx.logger.error(`Vercel deployment failed: ${data.error?.message || response.statusText}`);
-        throw new Error(`Vercel deployment failed: ${data.error?.message || response.statusText}`);
+        ctx.logger.error(
+          `Vercel deployment failed: ${data.error?.message || response.statusText}`
+        );
+        throw new Error(
+          `Vercel deployment failed: ${data.error?.message || response.statusText}`
+        );
       }
 
       const deploymentUrl = data.url;
-      ctx.logger.info(`Successfully deployed to Vercel: https://${deploymentUrl}`);
+      ctx.logger.info(
+        `Successfully deployed to Vercel: https://${deploymentUrl}`
+      );
 
       // Store deployment information in the database
       // TODO: Replace with actual projectId from context

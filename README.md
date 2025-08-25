@@ -63,6 +63,7 @@ Core features: AI Intent Parser for full project structure generation, AI-powere
 ## 4) Roadmap (0→1)
 
 **Phase 1 (MVP) - Completed:**
+
 - AI Intent Parser for full project structure generation (database schema, pages, components, API endpoints)
 - AI-powered draft generation and database integration
 - One-click publish with Vercel integration and rollback

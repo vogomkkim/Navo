@@ -29,7 +29,9 @@ function initializeErrorResolutionSystem() {
     errorResolutionManager.registerAgent(rollbackAgent);
 
     logger.info('자동 에러 해결 시스템 초기화 완료');
-    logger.info('등록된 에이전트 수', { count: errorResolutionManager.getStatus().registeredAgents });
+    logger.info('등록된 에이전트 수', {
+      count: errorResolutionManager.getStatus().registeredAgents,
+    });
   }
   return errorResolutionManager;
 }
@@ -45,7 +47,10 @@ async function storeEvents(eventsToStore: any[], userId: string) {
   await db.insert(events).values(eventData);
 }
 
-export async function handleEvents(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function handleEvents(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
   try {
     const { type, data, projectId } = req.body;
     const userId = req.userId;
@@ -135,21 +140,21 @@ export async function handleLogError(
     });
 
     const errorEvent = {
-        type: 'client_error',
-        data: {
-          error_type: type,
-          message,
-          filename,
-          lineno,
-          colno,
-          stack,
-          url,
-          userAgent,
-          timestamp,
-        },
-        projectId: null, // No project context for client errors
-      };
-  
+      type: 'client_error',
+      data: {
+        error_type: type,
+        message,
+        filename,
+        lineno,
+        colno,
+        stack,
+        url,
+        userAgent,
+        timestamp,
+      },
+      projectId: null, // No project context for client errors
+    };
+
     await storeEvents([errorEvent], userId);
 
     // 🚀 자동 에러 해결 시스템 실행!
@@ -207,7 +212,9 @@ export async function handleLogError(
           message: '에러가 자동으로 해결되었습니다!',
         });
       } else {
-        logger.warn('자동 에러 해결 실패', { error: resolutionResult.errorMessage });
+        logger.warn('자동 에러 해결 실패', {
+          error: resolutionResult.errorMessage,
+        });
 
         // 클라이언트에게 해결 실패 알림
         res.json({

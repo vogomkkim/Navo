@@ -2,7 +2,13 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../auth/auth.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '../db/db.js';
-import { events, suggestions as suggestionsTable, projects as projectsTable, componentDefinitions, pages } from '../db/schema.js';
+import {
+  events,
+  suggestions as suggestionsTable,
+  projects as projectsTable,
+  componentDefinitions,
+  pages,
+} from '../db/schema.js';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { scaffoldProject } from '../nodes/scaffoldProject.js'; // Added import
 
@@ -34,7 +40,8 @@ function validateGeneratedComponentDef(obj: any): {
   ok: boolean;
   error?: string;
 } {
-  if (!obj || typeof obj !== 'object') return { ok: false, error: 'Invalid object' };
+  if (!obj || typeof obj !== 'object')
+    return { ok: false, error: 'Invalid object' };
   const requiredStringFields = ['name', 'display_name', 'render_template'];
   for (const f of requiredStringFields) {
     if (typeof obj[f] !== 'string' || obj[f].trim() === '') {
@@ -249,9 +256,13 @@ export async function handleGetSuggestions(
     const rows = await db
       .select()
       .from(suggestionsTable)
-      .where(sql`${
-        projectId ? eq(suggestionsTable.projectId, projectId as string) : sql`true`
-      } AND ${type ? eq(suggestionsTable.type, type as string) : sql`true`}`)
+      .where(
+        sql`${
+          projectId
+            ? eq(suggestionsTable.projectId, projectId as string)
+            : sql`true`
+        } AND ${type ? eq(suggestionsTable.type, type as string) : sql`true`}`
+      )
       .limit(Number(limit))
       .offset(Number(offset))
       .orderBy(desc(suggestionsTable.createdAt));
@@ -381,7 +392,9 @@ export async function handleGenerateProject(
     const userId = req.userId;
 
     if (!projectName || !projectDescription) {
-      res.status(400).json({ error: 'Project name and description are required.' });
+      res
+        .status(400)
+        .json({ error: 'Project name and description are required.' });
       return;
     }
 
@@ -472,11 +485,21 @@ Generate the project structure for the user's project:
     let generatedProjectStructure: any;
     try {
       generatedProjectStructure = JSON.parse(text);
-      console.log('[AI] Successfully parsed generated project structure:', generatedProjectStructure);
+      console.log(
+        '[AI] Successfully parsed generated project structure:',
+        generatedProjectStructure
+      );
     } catch (parseError) {
-      console.error('[AI] Failed to parse Gemini response as JSON for project structure:', parseError);
+      console.error(
+        '[AI] Failed to parse Gemini response as JSON for project structure:',
+        parseError
+      );
       console.error('[AI] Raw Gemini response text:', text);
-      res.status(502).json({ error: 'AI model returned invalid JSON for project structure.' });
+      res
+        .status(502)
+        .json({
+          error: 'AI model returned invalid JSON for project structure.',
+        });
       return;
     }
 
@@ -488,14 +511,19 @@ Generate the project structure for the user's project:
         console.log('[AI] Database schema DDL executed successfully.');
       } catch (dbError) {
         console.error('[AI] Error executing database schema DDL:', dbError);
-        res.status(500).json({ error: 'Failed to execute database schema DDL.' });
+        res
+          .status(500)
+          .json({ error: 'Failed to execute database schema DDL.' });
         return;
       }
     }
 
     // Persist generatedProjectStructure to database
     // Persist componentDefinitions
-    if (generatedProjectStructure.componentDefinitions && generatedProjectStructure.componentDefinitions.length > 0) {
+    if (
+      generatedProjectStructure.componentDefinitions &&
+      generatedProjectStructure.componentDefinitions.length > 0
+    ) {
       try {
         console.log('[AI] Persisting component definitions...');
         for (const compDef of generatedProjectStructure.componentDefinitions) {
@@ -506,20 +534,35 @@ Generate the project structure for the user's project:
             category: compDef.category || 'custom',
             propsSchema: compDef.props_schema,
             renderTemplate: purify.sanitize(compDef.render_template),
-            cssStyles: compDef.css_styles ? compDef.css_styles.replace(/<script\b[^<]*(?:(?!<\/script>)[^<]*)*<\/script>/gi, '').replace(/javascript:/gi, '') : '',
+            cssStyles: compDef.css_styles
+              ? compDef.css_styles
+                  .replace(
+                    /<script\b[^<]*(?:(?!<\/script>)[^<]*)*<\/script>/gi,
+                    ''
+                  )
+                  .replace(/javascript:/gi, '')
+              : '',
             isActive: true,
           });
         }
         console.log('[AI] Component definitions persisted successfully.');
       } catch (compDefError) {
-        console.error('[AI] Error persisting component definitions:', compDefError);
-        res.status(500).json({ error: 'Failed to persist component definitions.' });
+        console.error(
+          '[AI] Error persisting component definitions:',
+          compDefError
+        );
+        res
+          .status(500)
+          .json({ error: 'Failed to persist component definitions.' });
         return;
       }
     }
 
     // Persist pages
-    if (generatedProjectStructure.pages && generatedProjectStructure.pages.length > 0) {
+    if (
+      generatedProjectStructure.pages &&
+      generatedProjectStructure.pages.length > 0
+    ) {
       try {
         console.log('[AI] Persisting pages...');
         for (const page of generatedProjectStructure.pages) {
@@ -537,12 +580,18 @@ Generate the project structure for the user's project:
       }
     }
 
-    console.log('Generated Project Structure (from AI):', JSON.stringify(generatedProjectStructure, null, 2));
+    console.log(
+      'Generated Project Structure (from AI):',
+      JSON.stringify(generatedProjectStructure, null, 2)
+    );
 
     // Step 4: Scaffold the project files
     try {
       console.log('[AI] Initiating project scaffolding...');
-      const { projectPath } = await scaffoldProject(projectId, generatedProjectStructure);
+      const { projectPath } = await scaffoldProject(
+        projectId,
+        generatedProjectStructure
+      );
       console.log(`[AI] Project scaffolded to: ${projectPath}`);
     } catch (scaffoldError) {
       console.error('[AI] Error during project scaffolding:', scaffoldError);
@@ -552,14 +601,13 @@ Generate the project structure for the user's project:
 
     res.json({
       ok: true,
-      message: 'Project generation initiated. Review console for generated structure.',
+      message:
+        'Project generation initiated. Review console for generated structure.',
       projectId: projectId,
       generatedStructure: generatedProjectStructure, // Return the generated structure for inspection
     });
-
   } catch (error) {
     console.error('Error generating project:', error);
     res.status(500).json({ error: 'Failed to generate project' });
   }
 }
-

@@ -133,9 +133,7 @@
         "component_definitions_name_unique": {
           "name": "component_definitions_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -333,10 +331,7 @@
         "pages_project_id_path_unique": {
           "name": "pages_project_id_path_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_id",
-            "path"
-          ]
+          "columns": ["project_id", "path"]
         }
       },
       "policies": {},
@@ -529,9 +524,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},

@@ -3,7 +3,10 @@ import { Request, Response } from 'express';
 import { db } from '../db/db.js';
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { hashPassword as hashWithScrypt, verifyPassword as verifyWithScrypt } from './password.js';
+import {
+  hashPassword as hashWithScrypt,
+  verifyPassword as verifyWithScrypt,
+} from './password.js';
 import { config } from '../config.js';
 
 export interface AuthenticatedRequest extends Request {
@@ -144,7 +147,7 @@ export function getUserIdFromToken(
     const decoded = jwt.verify(token, config.jwt.secret);
 
     if (typeof decoded === 'string' || !decoded.userId) {
-        return null;
+      return null;
     }
 
     return decoded.userId;
@@ -170,8 +173,8 @@ export async function authenticateToken(
     const decoded = jwt.verify(token, config.jwt.secret);
 
     if (typeof decoded === 'string' || !decoded.userId) {
-        res.status(403).json({ ok: false, error: 'Invalid token' });
-        return;
+      res.status(403).json({ ok: false, error: 'Invalid token' });
+      return;
     }
 
     req.userId = decoded.userId;

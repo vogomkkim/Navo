@@ -37,7 +37,9 @@ function escapeHtml(text: unknown): string {
 /**
  * Convert style object to CSS string
  */
-function toStyleString(styleObject: Record<string, unknown> | undefined | null): string {
+function toStyleString(
+  styleObject: Record<string, unknown> | undefined | null
+): string {
   if (!styleObject || typeof styleObject !== 'object') return '';
 
   return Object.entries(styleObject)
@@ -100,7 +102,10 @@ function renderComponent(component: LayoutComponent): string {
 /**
  * Render component from template string with variable substitution
  */
-function renderFromTemplate(template: string, props: Record<string, unknown>): string {
+function renderFromTemplate(
+  template: string,
+  props: Record<string, unknown>
+): string {
   // Ensure template is a string
   if (typeof template !== 'string') {
     console.error('Template is not a string:', template);
