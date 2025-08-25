@@ -22,6 +22,35 @@ export const panelOverlayEl = document.getElementById(
   'panelOverlay'
 ) as HTMLElement | null;
 
+// Mobile Chat elements
+export const mobileChatBar = document.getElementById(
+  'mobileChatBar'
+) as HTMLElement | null;
+export const mobileChatDrawer = document.getElementById(
+  'mobileChatDrawer'
+) as HTMLElement | null;
+export const mobileChatOverlay = document.getElementById(
+  'mobileChatOverlay'
+) as HTMLElement | null;
+export const chatToggleBtn = document.getElementById(
+  'chatToggleBtn'
+) as HTMLButtonElement | null;
+export const closeMobileChatBtn = document.getElementById(
+  'closeMobileChatBtn'
+) as HTMLButtonElement | null;
+export const chatInputMobile = document.getElementById(
+  'chatInputMobile'
+) as HTMLInputElement | null;
+export const chatSendBtnMobile = document.getElementById(
+  'chatSendBtnMobile'
+) as HTMLButtonElement | null;
+export const chatHistoryMobile = document.getElementById(
+  'chatHistoryMobile'
+) as HTMLElement | null;
+export const mobileChatDragHandle = document.getElementById(
+  'mobileChatDragHandle'
+) as HTMLElement | null;
+
 // Project generation elements
 export const projectDescription = document.getElementById(
   'projectDescription'
@@ -218,6 +247,96 @@ export function closeSuggestionsPanel(): void {
     suggestionsOverlay.classList.remove('active');
   }
   document.body.style.overflow = ''; // Restore scrolling
+}
+
+export function openMobileChat(): void {
+  if (mobileChatDrawer) mobileChatDrawer.classList.add('open');
+  if (mobileChatOverlay) mobileChatOverlay.classList.add('active');
+  if (chatToggleBtn) chatToggleBtn.setAttribute('aria-expanded', 'true');
+}
+
+export function closeMobileChat(): void {
+  if (mobileChatDrawer) mobileChatDrawer.classList.remove('open');
+  if (mobileChatOverlay) mobileChatOverlay.classList.remove('active');
+  if (chatToggleBtn) chatToggleBtn.setAttribute('aria-expanded', 'false');
+}
+
+export function toggleMobileChat(): void {
+  if (!mobileChatDrawer) return;
+  const isOpen = mobileChatDrawer.classList.contains('open');
+  if (isOpen) closeMobileChat();
+  else openMobileChat();
+}
+
+// --- Mobile Chat Resize Logic ---
+let mobileChatCurrentHeightPx: number | null = null;
+let mobileChatStartY = 0;
+let mobileChatStartHeight = 0;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+export function attachMobileChatResize(): void {
+  if (!mobileChatDrawer || !mobileChatDragHandle) return;
+
+  const minHeight = Math.round(window.innerHeight * 0.25);
+  const maxHeight = Math.round(window.innerHeight * 0.9);
+
+  const onStart = (clientY: number) => {
+    mobileChatStartY = clientY;
+    const styles = window.getComputedStyle(mobileChatDrawer);
+    const currentHeight = parseInt(styles.height || '0', 10);
+    mobileChatStartHeight = Number.isFinite(currentHeight)
+      ? currentHeight
+      : Math.round(window.innerHeight * 0.6);
+    mobileChatDrawer.style.transition = 'none';
+  };
+
+  const onMove = (clientY: number) => {
+    const delta = mobileChatStartY - clientY;
+    const nextHeight = clamp(mobileChatStartHeight + delta, minHeight, maxHeight);
+    mobileChatCurrentHeightPx = nextHeight;
+    mobileChatDrawer.style.height = `${nextHeight}px`;
+  };
+
+  const onEnd = () => {
+    mobileChatDrawer.style.transition = '';
+  };
+
+  // Touch events
+  mobileChatDragHandle.addEventListener(
+    'touchstart',
+    (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        onStart(e.touches[0].clientY);
+      }
+    },
+    { passive: true }
+  );
+  mobileChatDragHandle.addEventListener(
+    'touchmove',
+    (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        onMove(e.touches[0].clientY);
+      }
+    },
+    { passive: true }
+  );
+  mobileChatDragHandle.addEventListener('touchend', onEnd, { passive: true });
+
+  // Mouse events
+  mobileChatDragHandle.addEventListener('mousedown', (e: MouseEvent) => {
+    onStart(e.clientY);
+    const move = (ev: MouseEvent) => onMove(ev.clientY);
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      onEnd();
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  });
 }
 
 export function setupMobileAccordions(): void {

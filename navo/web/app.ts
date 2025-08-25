@@ -63,6 +63,7 @@ function addEventListeners() {
     if (event.key === 'Escape') {
       ui.closeSuggestionsPanel();
       ui.closeMobilePanel();
+      ui.closeMobileChat();
     }
   });
 
@@ -120,11 +121,21 @@ function addEventListeners() {
   window.addEventListener('resize', () => {
     if (!ui.isMobile()) {
       ui.closeMobilePanel();
+      ui.closeMobileChat();
     }
   });
 
   ui.initializeToggleSections();
   ui.setupMobileAccordions();
+
+  // Mobile chat drawer
+  if (ui.chatToggleBtn)
+    ui.chatToggleBtn.addEventListener('click', ui.toggleMobileChat);
+  if (ui.mobileChatOverlay)
+    ui.mobileChatOverlay.addEventListener('click', ui.closeMobileChat);
+  if (ui.closeMobileChatBtn)
+    ui.closeMobileChatBtn.addEventListener('click', ui.closeMobileChat);
+  ui.attachMobileChatResize();
 }
 
 function handleTextEdit(element: HTMLElement) {
