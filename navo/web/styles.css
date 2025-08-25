@@ -205,6 +205,19 @@ body {
   transform: translateY(0);
 }
 
+.mobile-chat-ghost {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 56px; /* align with chat bar */
+  background: transparent;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border: 2px dashed rgba(59, 130, 246, 0.8);
+  pointer-events: none;
+  z-index: 1003; /* above drawer */
+}
+
 .mobile-chat-drawer-header {
   display: flex;
   align-items: center;
