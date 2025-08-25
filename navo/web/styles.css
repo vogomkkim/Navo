@@ -213,6 +213,17 @@ body {
   border-bottom: 1px solid #e5e7eb;
 }
 
+.drag-handle {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
 #chatHistoryMobile {
   flex: 1;
   overflow-y: auto;

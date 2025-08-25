@@ -47,6 +47,9 @@ export const chatSendBtnMobile = document.getElementById(
 export const chatHistoryMobile = document.getElementById(
   'chatHistoryMobile'
 ) as HTMLElement | null;
+export const mobileChatDragHandle = document.getElementById(
+  'mobileChatDragHandle'
+) as HTMLElement | null;
 
 // Project generation elements
 export const projectDescription = document.getElementById(
@@ -263,6 +266,77 @@ export function toggleMobileChat(): void {
   const isOpen = mobileChatDrawer.classList.contains('open');
   if (isOpen) closeMobileChat();
   else openMobileChat();
+}
+
+// --- Mobile Chat Resize Logic ---
+let mobileChatCurrentHeightPx: number | null = null;
+let mobileChatStartY = 0;
+let mobileChatStartHeight = 0;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+export function attachMobileChatResize(): void {
+  if (!mobileChatDrawer || !mobileChatDragHandle) return;
+
+  const minHeight = Math.round(window.innerHeight * 0.25);
+  const maxHeight = Math.round(window.innerHeight * 0.9);
+
+  const onStart = (clientY: number) => {
+    mobileChatStartY = clientY;
+    const styles = window.getComputedStyle(mobileChatDrawer);
+    const currentHeight = parseInt(styles.height || '0', 10);
+    mobileChatStartHeight = Number.isFinite(currentHeight)
+      ? currentHeight
+      : Math.round(window.innerHeight * 0.6);
+    mobileChatDrawer.style.transition = 'none';
+  };
+
+  const onMove = (clientY: number) => {
+    const delta = mobileChatStartY - clientY;
+    const nextHeight = clamp(mobileChatStartHeight + delta, minHeight, maxHeight);
+    mobileChatCurrentHeightPx = nextHeight;
+    mobileChatDrawer.style.height = `${nextHeight}px`;
+  };
+
+  const onEnd = () => {
+    mobileChatDrawer.style.transition = '';
+  };
+
+  // Touch events
+  mobileChatDragHandle.addEventListener(
+    'touchstart',
+    (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        onStart(e.touches[0].clientY);
+      }
+    },
+    { passive: true }
+  );
+  mobileChatDragHandle.addEventListener(
+    'touchmove',
+    (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        onMove(e.touches[0].clientY);
+      }
+    },
+    { passive: true }
+  );
+  mobileChatDragHandle.addEventListener('touchend', onEnd, { passive: true });
+
+  // Mouse events
+  mobileChatDragHandle.addEventListener('mousedown', (e: MouseEvent) => {
+    onStart(e.clientY);
+    const move = (ev: MouseEvent) => onMove(ev.clientY);
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      onEnd();
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  });
 }
 
 export function setupMobileAccordions(): void {
