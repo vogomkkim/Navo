@@ -282,6 +282,7 @@ export function attachMobileChatResize(): void {
 
   const minHeight = Math.round(window.innerHeight * 0.25);
   const maxHeight = Math.round(window.innerHeight * 0.9);
+  let ghost: HTMLElement | null = null;
 
   const onStart = (clientY: number) => {
     mobileChatStartY = clientY;
@@ -291,17 +292,36 @@ export function attachMobileChatResize(): void {
       ? currentHeight
       : Math.round(window.innerHeight * 0.6);
     mobileChatDrawer.style.transition = 'none';
+
+    // Create a lightweight ghost outline to preview height during drag
+    if (!ghost) {
+      ghost = document.createElement('div');
+      ghost.className = 'mobile-chat-ghost';
+      ghost.style.height = `${mobileChatStartHeight}px`;
+      document.body.appendChild(ghost);
+    }
+    // Prevent text selection while dragging
+    document.body.style.userSelect = 'none';
   };
 
   const onMove = (clientY: number) => {
     const delta = mobileChatStartY - clientY;
     const nextHeight = clamp(mobileChatStartHeight + delta, minHeight, maxHeight);
     mobileChatCurrentHeightPx = nextHeight;
-    mobileChatDrawer.style.height = `${nextHeight}px`;
+    if (ghost) {
+      ghost.style.height = `${nextHeight}px`;
+    }
   };
 
   const onEnd = () => {
+    // Apply the final height to the real drawer, then remove the ghost
+    if (typeof mobileChatCurrentHeightPx === 'number') {
+      mobileChatDrawer.style.height = `${mobileChatCurrentHeightPx}px`;
+    }
+    if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+    ghost = null;
     mobileChatDrawer.style.transition = '';
+    document.body.style.userSelect = '';
   };
 
   // Touch events
