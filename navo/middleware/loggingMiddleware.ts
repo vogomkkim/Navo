@@ -105,7 +105,7 @@ interface ResponseMeta {
   path: string;
   statusCode: number;
   durationMs: number;
-  timestamp: string;
+  
   performance_warning?: string;
 }
 
