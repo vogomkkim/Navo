@@ -75,9 +75,11 @@ All notable changes to this project will be documented in this file.
 - `deploySite` 노드 개선: 대용량 페이로드 처리를 위한 스트리밍 방식 적용 및 URL 반환 문제 해결.
 - 서버 로깅: 서버 요청 및 핸들러 함수에 대한 상세 로깅 추가.
 - 타입 정의: `BuildPageOutput` 타입 추가로 타입 안정성 향상.
+- Build: added `build:server` script to compile TypeScript server (`tsc`).
 
 ### Changed
 
+- Build: `build` now runs `build:server` before webpack bundling.
 - **ESLint 구성 업데이트**: 코드 형식 지정 및 일관성 향상.
 - **서버 코드 리팩토링**: 더 나은 구성 및 명확성을 위해 코드 구조 개선.
 - **문서 업데이트**: 제품 비전, 로드맵, MVP 범위 문서 개선 (특히 사용자 데이터 소유권).

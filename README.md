@@ -107,3 +107,14 @@ Questions/ideas: open an Issue or start an RFC under `docs/rfcs/`.
 - **MVP Scope**: [docs/tech/mvp-scope.md](docs/tech/mvp-scope.md)
 - **Development Roadmap**: [docs/tech/roadmap.md](docs/tech/roadmap.md)
 - **Contributing**: [docs/team/CONTRIBUTING.md](docs/team/CONTRIBUTING.md)
+
+---
+
+## 8) Development
+
+- Install deps: `npm install`
+- Start dev server: `npm run dev`
+- Type-check/build server only: `npm run build:server`
+- Full production build: `npm run build` (server build + webpack bundle)
+- Run demo: `npm run demo`
+- Start compiled server: `npm start`
