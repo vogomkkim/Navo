@@ -14,7 +14,6 @@ export async function handleHealthCheck(
     res.json({
       ok: true,
       status: 'healthy',
-      timestamp: new Date().toISOString(),
       database: 'connected',
     });
   } catch (error) {
@@ -22,7 +21,6 @@ export async function handleHealthCheck(
     res.status(500).json({
       ok: false,
       status: 'unhealthy',
-      timestamp: new Date().toISOString(),
       database: 'disconnected',
       error: error instanceof Error ? error.message : 'Unknown error',
     });

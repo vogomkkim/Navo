@@ -93,23 +93,11 @@ export async function handleLogin(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Check password (supports scrypt and legacy bcrypt hashes)
+    // Check password (scrypt only)
     const verify = await verifyWithScrypt(password, user.password);
     if (!verify.ok) {
       res.status(401).json({ ok: false, error: 'Invalid credentials' });
       return;
-    }
-    // If legacy bcrypt succeeded, upgrade hash in-place
-    if (verify.needsRehash && verify.newHash) {
-      try {
-        await db
-          .update(users)
-          .set({ password: verify.newHash })
-          .where(eq(users.id, user.id));
-      } catch (e) {
-        // Non-fatal; proceed with login
-        console.warn('[AUTH] Failed to upgrade password hash:', e);
-      }
     }
 
     // Generate JWT token
@@ -173,13 +161,13 @@ export async function authenticateToken(
     const decoded = jwt.verify(token, config.jwt.secret);
 
     if (typeof decoded === 'string' || !decoded.userId) {
-      res.status(403).json({ ok: false, error: 'Invalid token' });
+      res.status(401).json({ ok: false, error: 'Invalid token' });
       return;
     }
 
     req.userId = decoded.userId;
     next();
   } catch (error) {
-    res.status(403).json({ ok: false, error: 'Invalid token' });
+    res.status(401).json({ ok: false, error: 'Invalid token' });
   }
 }

@@ -1,3 +1,5 @@
+import { handleLogout } from './auth';
+
 declare global {
   interface Window {
     API_BASE_URL?: string;
@@ -10,6 +12,7 @@ const API_BASE_URL: string =
     : '';
 
 async function fetchApi<T>(url: string, options: RequestInit = {}): Promise<T> {
+  console.log('Executing custom fetchApi...');
   const token = localStorage.getItem('navo_token');
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -24,6 +27,11 @@ async function fetchApi<T>(url: string, options: RequestInit = {}): Promise<T> {
     ...options,
     headers,
   });
+
+  if (response.status === 401) {
+    handleLogout();
+    return new Promise(() => {});
+  }
 
   if (!response.ok) {
     const errorData = await response

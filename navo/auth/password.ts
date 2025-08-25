@@ -31,13 +31,13 @@ function getEnvNumber(name: string, fallback: number): number {
 
 function getScryptParams(): ScryptParams {
   // Allow tuning via env. Prefer LN (log2(N)) if provided, else SCRYPT_N.
-  const ln = getEnvNumber('SCRYPT_LN', 15); // N = 2^15 = 32768 by default
+  const ln = getEnvNumber('SCRYPT_LN', 12); // N = 2^12 = 4096 by default (매우 낮게)
   const explicitN = getEnvNumber('SCRYPT_N', 0);
   const N = explicitN > 0 ? explicitN : 1 << ln;
-  const r = getEnvNumber('SCRYPT_R', 8);
+  const r = getEnvNumber('SCRYPT_R', 4); // 8 → 4로 줄임
   const p = getEnvNumber('SCRYPT_P', 1);
-  const keyLength = getEnvNumber('SCRYPT_KEYLEN', 64);
-  const maxmem = getEnvNumber('SCRYPT_MAXMEM', 256 * 1024 * 1024); // 256MB default
+  const keyLength = getEnvNumber('SCRYPT_KEYLEN', 16); // 32 → 16으로 줄임
+  const maxmem = getEnvNumber('SCRYPT_MAXMEM', 16 * 1024 * 1024); // 64MB → 16MB로 줄임
   return { N, r, p, keyLength, maxmem };
 }
 

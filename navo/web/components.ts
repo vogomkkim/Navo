@@ -1,5 +1,6 @@
 // Component rendering logic for user-defined components
 // This file handles the rendering of different component types
+import { api } from './modules/api';
 
 // Component registry to store loaded component definitions
 type ComponentDef = {
@@ -55,24 +56,20 @@ function toStyleString(
  */
 async function loadComponentDefinitions(): Promise<void> {
   try {
-    const response = await fetch('/api/components');
-    if (!response.ok) {
-      throw new Error(`Failed to load components: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await api.listComponents();
     if (data.ok && data.components) {
       // Store components in registry
       (data.components as ComponentDef[]).forEach((comp) => {
         componentRegistry.set(comp.name, comp);
       });
-
       console.log(`Loaded ${data.components.length} component definitions`);
     } else {
       console.error('Failed to load components:', data);
     }
   } catch (error) {
     console.error('Error loading component definitions:', error);
+    // Re-throw the error to allow the caller (app.ts) to handle it
+    throw error;
   }
 }
 
@@ -88,7 +85,7 @@ function renderComponent(component: LayoutComponent): string {
 
   if (componentDef && componentDef.render_template) {
     // Use the template from database
-    return renderFromTemplate(componentDef.render_template, {
+    return renderFromTemplate(componentDef.render_template!, {
       id,
       ...props,
       style: styleString,

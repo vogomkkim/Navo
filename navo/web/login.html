@@ -375,7 +375,7 @@
         loginBtn.textContent = 'Logging in...';
 
         try {
-          const response = await fetch('/api/login', {
+          const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -424,7 +424,7 @@
         registerBtn.textContent = 'Creating account...';
 
         try {
-          const response = await fetch('/api/register', {
+          const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
