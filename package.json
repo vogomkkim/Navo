@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "prebuild": "npm run db:generate",
-    "build": "webpack --mode production",
+    "build": "npm run build:server && webpack --mode production",
+    "build:server": "tsc -p tsconfig.json",
     "postbuild": "copyfiles -u 2 \"navo/web/**/*.html\" \"navo/web/**/*.css\" dist/web",
     "demo": "npm run build && node dist/navo/demo.js",
     "start": "node dist/navo/start.js",
