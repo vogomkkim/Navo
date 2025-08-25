@@ -22,6 +22,32 @@ export const panelOverlayEl = document.getElementById(
   'panelOverlay'
 ) as HTMLElement | null;
 
+// Mobile Chat elements
+export const mobileChatBar = document.getElementById(
+  'mobileChatBar'
+) as HTMLElement | null;
+export const mobileChatDrawer = document.getElementById(
+  'mobileChatDrawer'
+) as HTMLElement | null;
+export const mobileChatOverlay = document.getElementById(
+  'mobileChatOverlay'
+) as HTMLElement | null;
+export const chatToggleBtn = document.getElementById(
+  'chatToggleBtn'
+) as HTMLButtonElement | null;
+export const closeMobileChatBtn = document.getElementById(
+  'closeMobileChatBtn'
+) as HTMLButtonElement | null;
+export const chatInputMobile = document.getElementById(
+  'chatInputMobile'
+) as HTMLInputElement | null;
+export const chatSendBtnMobile = document.getElementById(
+  'chatSendBtnMobile'
+) as HTMLButtonElement | null;
+export const chatHistoryMobile = document.getElementById(
+  'chatHistoryMobile'
+) as HTMLElement | null;
+
 // Project generation elements
 export const projectDescription = document.getElementById(
   'projectDescription'
@@ -218,6 +244,25 @@ export function closeSuggestionsPanel(): void {
     suggestionsOverlay.classList.remove('active');
   }
   document.body.style.overflow = ''; // Restore scrolling
+}
+
+export function openMobileChat(): void {
+  if (mobileChatDrawer) mobileChatDrawer.classList.add('open');
+  if (mobileChatOverlay) mobileChatOverlay.classList.add('active');
+  if (chatToggleBtn) chatToggleBtn.setAttribute('aria-expanded', 'true');
+}
+
+export function closeMobileChat(): void {
+  if (mobileChatDrawer) mobileChatDrawer.classList.remove('open');
+  if (mobileChatOverlay) mobileChatOverlay.classList.remove('active');
+  if (chatToggleBtn) chatToggleBtn.setAttribute('aria-expanded', 'false');
+}
+
+export function toggleMobileChat(): void {
+  if (!mobileChatDrawer) return;
+  const isOpen = mobileChatDrawer.classList.contains('open');
+  if (isOpen) closeMobileChat();
+  else openMobileChat();
 }
 
 export function setupMobileAccordions(): void {

@@ -192,6 +192,21 @@
     <!-- Overlay for mobile side panel -->
     <div class="panel-overlay" id="panelOverlay"></div>
 
+    <!-- Mobile Chat Drawer & Bar -->
+    <div class="mobile-chat-overlay" id="mobileChatOverlay"></div>
+    <div class="mobile-chat-drawer" id="mobileChatDrawer" aria-hidden="true">
+      <div class="mobile-chat-drawer-header">
+        <h3>Chat</h3>
+        <button id="closeMobileChatBtn" class="close-btn" aria-label="Close chat">×</button>
+      </div>
+      <div class="chat-history" id="chatHistoryMobile"></div>
+    </div>
+    <div class="mobile-chat-bar" id="mobileChatBar">
+      <button id="chatToggleBtn" class="chat-toggle-btn" aria-controls="mobileChatDrawer" aria-expanded="false">💬</button>
+      <input type="text" id="chatInputMobile" placeholder="Message…" />
+      <button id="chatSendBtnMobile">Send</button>
+    </div>
+
     <script>
       window.API_BASE_URL = '<%= API_BASE_URL %>';
     </script>
