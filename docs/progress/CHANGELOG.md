@@ -79,6 +79,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Build tooling: migrated from esbuild to Webpack.
+- Removed jsdom and related dependencies.
+- Database: migrated from Prisma to Drizzle ORM with postgres-js client.
+- Auth: replaced bcrypt with scrypt-based hashing using Node crypto.
 - Build: `build` now runs `build:server` before webpack bundling.
 - **ESLint 구성 업데이트**: 코드 형식 지정 및 일관성 향상.
 - **서버 코드 리팩토링**: 더 나은 구성 및 명확성을 위해 코드 구조 개선.

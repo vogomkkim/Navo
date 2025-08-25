@@ -20,12 +20,19 @@ Thanks for your interest in contributing!
 - Install deps: `npm install`
 - Create `.env.local` as needed
 
+Required environment variables:
+
+- `JWT_SECRET` (required)
+- `DATABASE_URL` (required for server start)
+- `GEMINI_API_KEY` (optional; required for live AI suggestion generation)
+
 ### Scripts
 
 - Dev server: `npm run dev`
 - Type-check/build server only: `npm run build:server`
 - Full build (server + client bundle): `npm run build`
 - Start compiled server: `npm start`
+- Drizzle migrations: `npm run db:generate` / `npm run db:push` / `npm run db:pull`
 
 ## Development
 

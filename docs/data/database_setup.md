@@ -10,20 +10,19 @@ The application connects to the PostgreSQL database using a `DATABASE_URL` envir
 
 - **User, Password, Host, Port, Database Name**: These credentials are provided by your PostgreSQL hosting provider (e.g., Render for production, or your local PostgreSQL setup).
 
-## 2. SSL Configuration
+## 2. ORM and Client
 
-For production environments like Render, SSL is often required. The current `server.ts` configuration includes:
+- ORM: Drizzle ORM
+- Driver: `postgres` (postgres-js)
+- Connection: created in `navo/db/db.ts` using `DATABASE_URL`
 
-```typescript
-ssl: {
-  rejectUnauthorized: false,
-},
-```
+No Prisma client is used anymore. Password hashing uses Node's `crypto` (scrypt), not bcrypt.
 
-- `rejectUnauthorized: false`: This setting is used to allow connections to databases with self-signed or untrusted SSL certificates, which is common in some cloud environments like Render.
-- **Local Development**: For local PostgreSQL setups, you might not need SSL, or you might configure it differently. Adjust this setting as needed for your local environment.
+## 3. SSL Configuration
 
-## 3. Environment Variable Setup
+If your provider requires SSL, configure it via the connection string (e.g., `?sslmode=require`). The current `postgres-js` client is initialized simply with the URL; if you need advanced SSL settings, embed them in `DATABASE_URL`.
+
+## 4. Environment Variable Setup
 
 Ensure the `DATABASE_URL` environment variable is correctly set in each environment:
 
@@ -34,7 +33,7 @@ Ensure the `DATABASE_URL` environment variable is correctly set in each environm
   - Ensure your application loads environment variables from `.env` (e.g., using `dotenv` package).
 - **Other Environments (e.g., Work Desktop)**: Follow the best practices for setting environment variables in those specific operating systems or development setups.
 
-## 4. Node.js Version
+## 5. Node.js Version
 
 The project is configured to use Node.js version `22.x`. Ensure your development and deployment environments use a compatible version to avoid unexpected issues.
 
@@ -44,3 +43,11 @@ The project is configured to use Node.js version `22.x`. Ensure your development
 ## 5. Postgres MCP Server Setup
 
 This refers to the setup of the Postgres Multi-Cloud Proxy server, which is a separate component. Details for this setup should be documented here once finalized.
+
+---
+
+### Drizzle Migrations
+
+- Generate migrations from schema: `npm run db:generate`
+- Push migrations to DB: `npm run db:push`
+- Introspect existing DB: `npm run db:pull`

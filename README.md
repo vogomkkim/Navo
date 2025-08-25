@@ -70,7 +70,7 @@ Core features: AI Intent Parser for full project structure generation, AI-powere
 
 **Next: Phase 2 (Private Beta) - Code Generation and Live Preview**
 
-**See [docs/tech/roadmap.md](docs/tech/roadmap.md) for detailed deliverables and demo goals.**
+**See [docs/plan/roadmap.md](docs/plan/roadmap.md) for detailed deliverables and demo goals.**
 
 ---
 
