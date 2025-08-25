@@ -22,6 +22,9 @@ export class CodeFixerAgent extends BaseAgent {
   constructor() {
     super('CodeFixerAgent', 2); // Error Analyzer 다음 우선순위
 
+
+    
+
     // 백업 디렉토리 설정
     this.backupDir = path.join(process.cwd(), '.backups');
     this.ensureBackupDir();
