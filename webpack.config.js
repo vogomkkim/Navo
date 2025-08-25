@@ -1,6 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
+import webpack from 'webpack';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,14 @@ export default (env, argv) => {
         filename: 'index.html',
         inject: 'body',
         scriptLoading: 'module',
+        templateParameters: {
+          API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:3000',
+        },
+      }),
+      new webpack.DefinePlugin({
+        __API_URL__: JSON.stringify(
+          process.env.API_BASE_URL || 'http://localhost:3000'
+        ),
       }),
     ],
     devtool: isProduction ? 'source-map' : 'eval-source-map',

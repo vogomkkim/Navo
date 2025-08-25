@@ -9,7 +9,21 @@ function formatMessage(
   const base = `[${timestamp}] [${level.toUpperCase()}]`;
   try {
     const msg = typeof message === 'string' ? message : JSON.stringify(message);
-    const metaStr = meta === undefined ? '' : ` ${JSON.stringify(meta)}`;
+
+    // meta 객체를 더 자세하게 포맷팅
+    let metaStr = '';
+    if (meta !== undefined) {
+      if (typeof meta === 'object' && meta !== null) {
+        try {
+          metaStr = ` ${JSON.stringify(meta, null, 2)}`;
+        } catch {
+          metaStr = ` ${String(meta)}`;
+        }
+      } else {
+        metaStr = ` ${String(meta)}`;
+      }
+    }
+
     return `${base} ${msg}${metaStr}`;
   } catch {
     return `${base} ${String(message)}`;
