@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 // Simple logger for now
 const logger = {
@@ -40,6 +41,7 @@ export async function scaffoldProject(
             build: 'tsc',
           },
           dependencies: {
+            ...(generatedStructure.apiEndpoints && { fastify: '^5.5.0' }), // Add Fastify if API endpoints exist
             // Add common dependencies here, e.g., express, react, etc.
           },
         },
@@ -48,6 +50,19 @@ export async function scaffoldProject(
       )
     );
     logger.info('Created package.json');
+
+    // Install dependencies
+    logger.info('Installing dependencies...');
+    const npmInstallProcess = spawnSync('npm', ['install'], {
+      cwd: projectDir,
+      stdio: 'inherit', // Pipe stdio to parent process
+    });
+
+    if (npmInstallProcess.status !== 0) {
+      logger.error(`npm install failed with exit code ${npmInstallProcess.status}`);
+      throw new Error('Failed to install dependencies.');
+    }
+    logger.info('Dependencies installed successfully.');
 
     await fs.writeFile(
       path.join(projectDir, 'tsconfig.json'),
@@ -75,10 +90,38 @@ export async function scaffoldProject(
     await fs.mkdir(path.join(projectDir, 'src'), { recursive: true });
     logger.info('Created src directory');
 
-    // Placeholder for index.ts or index.js
+    let indexTsContent = 'console.log("Project scaffolded!");';
+
+    if (generatedStructure.apiEndpoints && generatedStructure.apiEndpoints.length > 0) {
+      indexTsContent = `import Fastify from 'fastify';
+
+const app = Fastify({ logger: true });
+
+app.get('/', async (request, reply) => {
+  return { hello: 'world' };
+});
+
+const start = async () => {
+  try {
+    await app.listen({ port: 3000 });
+    console.log('Fastify server listening on port 3000');
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+};
+
+start();
+`;
+      logger.info('Generated basic Fastify server in src/index.ts');
+    } else if (generatedStructure.pages && generatedStructure.pages.length > 0) {
+      // TODO: Generate basic React app structure
+      logger.info('Generated basic React app placeholder in src/index.ts');
+    }
+
     await fs.writeFile(
       path.join(projectDir, 'src', 'index.ts'),
-      'console.log("Project scaffolded!");'
+      indexTsContent
     );
     logger.info('Created src/index.ts');
 
