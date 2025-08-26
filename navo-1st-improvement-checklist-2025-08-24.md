@@ -16,7 +16,7 @@
 ## 🟠 중요 (구조 정리, 중복 제거)
 
 - [x] `renderComponent`의 `switch-case` → 컴포넌트 타입 ↔ 템플릿 매핑 방식으로 변경
-- [x] `handleEvents / handleAnalyticsEvents / handleLogError` → 공통 유틸 함수로 통합
+- [x] `handleEvents / handleAnalyticsEvents / handleLogError` → `handleUnifiedEvents`로 완전 통합 (배열 이벤트 전용)
 - [x] `handleSeedComponentDefinitions` → 하드코딩 데이터 JSON 분리 & 배치 업서트
 - [x] API 라우트 → Express `Router` 기반으로 기능별 분리 (`projects`, `auth`, `components`, …)
 - [x] 프론트엔드 `app.js` (1400줄) → 기능별 모듈/컴포넌트로 나누기
