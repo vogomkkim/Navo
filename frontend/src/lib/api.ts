@@ -83,6 +83,151 @@ interface SaveDraftResponse {
   versionId?: string;
 }
 
+// useGenerateDummySuggestion
+interface GenerateDummySuggestionResponse {
+  ok: boolean;
+  message: string;
+}
+
+// useSuggestions
+interface SuggestionsResponse {
+  suggestions: any[]; // TODO: Define a more specific type for suggestions
+}
+
+// useGenerateProject
+interface GenerateProjectPayload {
+  projectName: string;
+  projectDescription: string;
+  // Add other fields if necessary, e.g., projectFeatures, targetAudience, businessType
+}
+
+interface GenerateProjectResponse {
+  ok: boolean;
+  message: string;
+  projectId: string;
+  generatedStructure: any; // TODO: Define a more specific type
+}
+
+export function useGenerateProject(options?: UseMutationOptions<GenerateProjectResponse, Error, GenerateProjectPayload>) {
+  const { token, logout } = useAuth();
+  return useMutation<GenerateProjectResponse, Error, GenerateProjectPayload>({
+    mutationFn: async (data: GenerateProjectPayload) => {
+      try {
+        return await fetchApi<GenerateProjectResponse>('/api/generate-project', {
+          method: 'POST',
+          body: JSON.stringify(data),
+          token,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    ...options,
+  });
+}
+
+// useListProjects
+interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+interface ProjectListResponse {
+  projects: Project[];
+}
+
+export function useListProjects(options?: UseQueryOptions<ProjectListResponse, Error>) {
+  const { token, logout } = useAuth();
+  return useQuery<ProjectListResponse, Error>({
+    queryKey: ['projects'],
+    queryFn: async () => {
+      try {
+        return await fetchApi<ProjectListResponse>('/api/projects', { token });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    ...options,
+  });
+}
+
+// useGenerateComponent
+interface GenerateComponentPayload {
+  description: string;
+}
+
+interface GenerateComponentResponse {
+  ok: boolean;
+  component: any; // TODO: Define a more specific type for component
+}
+
+export function useGenerateComponent(options?: UseMutationOptions<GenerateComponentResponse, Error, GenerateComponentPayload>) {
+  const { token, logout } = useAuth();
+  return useMutation<GenerateComponentResponse, Error, GenerateComponentPayload>({
+    mutationFn: async (data: GenerateComponentPayload) => {
+      try {
+        return await fetchApi<GenerateComponentResponse>('/api/components/generate', {
+          method: 'POST',
+          body: JSON.stringify(data),
+          token,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    ...options,
+  });
+}
+
+export function useSuggestions(options?: UseQueryOptions<SuggestionsResponse, Error>) {
+  const { token, logout } = useAuth();
+  return useQuery<SuggestionsResponse, Error>({
+    queryKey: ['suggestions'],
+    queryFn: async () => {
+      try {
+        const url = `/api/suggestions?limit=3`; // Hardcoded limit for now
+        return await fetchApi<SuggestionsResponse>(url, { token });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    ...options,
+  });
+}
+
+export function useGenerateDummySuggestion(options?: UseMutationOptions<GenerateDummySuggestionResponse, Error, void>) {
+  const { token, logout } = useAuth();
+  return useMutation<GenerateDummySuggestionResponse, Error, void>({
+    mutationFn: async () => {
+      try {
+        return await fetchApi<GenerateDummySuggestionResponse>('/api/generate-dummy-suggestion', {
+          method: 'POST',
+          token,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    ...options,
+  });
+}
+
 export function useSaveDraft(options?: UseMutationOptions<SaveDraftResponse, Error, Layout>) {
   const { token, logout } = useAuth();
   return useMutation<SaveDraftResponse, Error, Layout>({
@@ -108,4 +253,118 @@ export function useSaveDraft(options?: UseMutationOptions<SaveDraftResponse, Err
 // This will be a continuous process as we migrate components that use these APIs.
 
 // For now, we'll export the base fetchApi for direct use if needed, but prefer hooks.
+// useTrackEvents
+interface EventData {
+  type: string;
+  [key: string]: any; // Allow any other properties
+}
+
+interface TrackEventsResponse {
+  success: boolean;
+  count: number;
+}
+
+export function useTrackEvents(options?: UseMutationOptions<TrackEventsResponse, Error, EventData[]>) {
+  const { token, logout } = useAuth();
+  return useMutation<TrackEventsResponse, Error, EventData[]>({
+    mutationFn: async (events: EventData[]) => {
+      try {
+        return await fetchApi<TrackEventsResponse>('/api/events', {
+          method: 'POST',
+          body: JSON.stringify({ events }),
+          token,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    ...options,
+  });
+}
+
+// useLogError
+interface LogErrorPayload {
+  type: string;
+  message: string;
+  filename?: string;
+  lineno?: number;
+  colno?: number;
+  stack?: string;
+  url?: string;
+  userAgent?: string;
+  timestamp?: string;
+  reason?: any; // For unhandled rejections
+  promise?: Promise<any>; // For unhandled rejections
+}
+
+interface LogErrorResponse {
+  success: boolean;
+  logged: boolean;
+  autoResolved?: boolean;
+  error?: string;
+  message?: string;
+  changes?: number;
+  nextSteps?: string[];
+  fallback?: string;
+}
+
+export function useLogError(options?: UseMutationOptions<LogErrorResponse, Error, LogErrorPayload>) {
+  const { token, logout } = useAuth();
+  return useMutation<LogErrorResponse, Error, LogErrorPayload>({
+    mutationFn: async (errorData: LogErrorPayload) => {
+      try {
+        return await fetchApi<LogErrorResponse>('/api/log-error', {
+          method: 'POST',
+          body: JSON.stringify(errorData),
+          token,
+        });
+      } catch (error) {
+        // Do not logout here, as logging errors should not cause a logout loop
+        console.error('Failed to send error log:', error);
+        throw error; // Re-throw to indicate mutation failure
+      }
+    },
+    ...options,
+  });
+}
+
+// useListComponents
+interface ComponentDef {
+  id: string;
+  name: string;
+  display_name?: string;
+  description?: string;
+  category?: string;
+  props_schema?: Record<string, unknown>;
+  render_template?: string;
+  css_styles?: string;
+  is_active?: boolean;
+}
+
+interface ComponentListResponse {
+  ok: boolean;
+  components: ComponentDef[];
+}
+
+export function useListComponents(options?: UseQueryOptions<ComponentListResponse, Error>) {
+  const { token, logout } = useAuth();
+  return useQuery<ComponentListResponse, Error>({
+    queryKey: ['componentDefinitions'],
+    queryFn: async () => {
+      try {
+        return await fetchApi<ComponentListResponse>('/api/components', { token });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    ...options,
+  });
+}
+
 export { fetchApi };
