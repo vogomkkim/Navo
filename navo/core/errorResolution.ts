@@ -507,6 +507,66 @@ export class ErrorResolutionManager {
       registeredAgents: this.registry.getAllAgents().length,
     };
   }
+
+  /**
+   * 사람의 피드백을 처리하고 다음 단계를 결정합니다.
+   * @param previousResult 이전 에러 해결 시도 결과
+   * @param humanInput 사람의 피드백 (예: 'approve', 'reject', 'retry', 'manual_fix')
+   * @returns 다음 에러 해결 시도 결과 또는 최종 결과
+   */
+  async processHumanFeedback(
+    previousResult: ResolutionResult,
+    humanInput: 'approve' | 'reject' | 'retry' | 'manual_fix'
+  ): Promise<ResolutionResult> {
+    this.logger.info(`[ErrorResolutionManager] Processing human feedback: ${humanInput}`, { previousResult });
+
+    switch (humanInput) {
+      case 'approve':
+        // 인간이 승인했으므로 성공으로 간주
+        return {
+          ...previousResult,
+          success: true,
+          humanInterventionRequired: false,
+          nextSteps: ['Human approved the resolution.'],
+        };
+      case 'reject':
+        // 인간이 거부했으므로 실패로 간주하고 수동 해결 필요
+        return {
+          ...previousResult,
+          success: false,
+          humanInterventionRequired: true,
+          errorMessage: 'Human rejected the proposed resolution. Manual fix required.',
+          nextSteps: ['Manual debugging is required.'],
+        };
+      case 'retry':
+        // 재시도 로직 (새로운 에러로 간주하고 resolveError 호출)
+        // 이 부분은 외부에서 resolveError를 다시 호출하도록 유도해야 함
+        return {
+          ...previousResult,
+          success: false,
+          humanInterventionRequired: false, // 재시도할 것이므로 더 이상 인간 개입 필요 없음
+          errorMessage: 'Human requested a retry.',
+          nextSteps: ['Retrying automated resolution...'],
+        };
+      case 'manual_fix':
+        // 수동 해결 필요
+        return {
+          ...previousResult,
+          success: false,
+          humanInterventionRequired: true,
+          errorMessage: 'Human decided to fix manually.',
+          nextSteps: ['Manual debugging is required.'],
+        };
+      default:
+        return {
+          ...previousResult,
+          success: false,
+          humanInterventionRequired: true,
+          errorMessage: 'Invalid human input. Manual fix required.',
+          nextSteps: ['Manual debugging is required.'],
+        };
+    }
+  }
 }
 
 // ============================================================================
@@ -554,14 +614,18 @@ export function estimateErrorSeverity(
 
   // DOM 관련 에러는 보통 중간 정도의 심각도
   if (
-    [ErrorType.NULL_REFERENCE, ErrorType.ELEMENT_NOT_FOUND].includes(errorType)
+    [ErrorType.NULL_REFERENCE, ErrorType.ELEMENT_NOT_FOUND].includes(
+      errorType
+    )
   ) {
     return ErrorSeverity.MEDIUM;
   }
 
   // 네트워크 에러는 높은 심각도
   if (
-    [ErrorType.NETWORK_ERROR, ErrorType.API_RESPONSE_ERROR].includes(errorType)
+    [ErrorType.NETWORK_ERROR, ErrorType.API_RESPONSE_ERROR].includes(
+      errorType
+    )
   ) {
     return ErrorSeverity.HIGH;
   }

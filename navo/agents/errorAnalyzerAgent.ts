@@ -52,11 +52,12 @@ export class ErrorAnalyzerAgent extends BaseAgent {
       // 분석 결과를 바탕으로 해결 방법 제시
       const solution = this.generateSolutionFromAnalysis(analysis);
 
-      this.logSuccess(context, '에러 분석 완료', {
-        errorType: analysis.errorType,
-        severity: analysis.severity,
-        solution: solution.description,
-      });
+      this.logSuccess(context, '에러 분석 완료',
+        {
+          errorType: analysis.errorType,
+          severity: analysis.severity,
+          solution: solution.description,
+        });
 
       return {
         success: true,
@@ -455,6 +456,30 @@ Instructions:
   }
 
   /**
+   * 최근 커밋 히스토리를 가져옵니다.
+   */
+  private async fetchCommitHistory(filePath?: string): Promise<string> {
+    try {
+      let command = 'git log -1 --pretty=format:"%h - %an, %ar : %s"'; // Get last commit
+      if (filePath) {
+        command += ` -- ${filePath}`;
+      }
+      const result = await default_api.run_shell_command({ command: command });
+      if (result.run_shell_command_response && result.run_shell_command_response.stdout) {
+        return `
+
+Recent Commit History:
+
+${result.run_shell_command_response.stdout}
+`;
+      }
+    } catch (e) {
+      this.logger.warn(`[ErrorAnalyzerAgent] Failed to fetch commit history: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    return '';
+  }
+
+  /**
    * 동적 컨텍스트 (코드 스니펫, 커밋 히스토리, 로그 등)를 가져옵니다.
    */
   private async fetchDynamicContext(error: Error, context: ErrorContext): Promise<string> {
@@ -479,7 +504,6 @@ Instructions:
 Relevant Code Snippet from ${filePath} (lines ${offset + 1}-${offset + linesToRead}):
 
 ${fileContent.read_file_response.output}
-
 `;
         }
       } catch (e) {
@@ -487,7 +511,12 @@ ${fileContent.read_file_response.output}
       }
     }
 
-    // TODO: Add logic for commit history and log entries
+    // Fetch commit history
+    dynamicContext += await this.fetchCommitHistory(filePath);
+
+    // Fetch log entries
+    dynamicContext += await this.fetchLogEntries(context);
+
     if (!dynamicContext) {
       dynamicContext = `
 
@@ -497,5 +526,38 @@ Dynamic Context (Placeholder):
     }
 
     return dynamicContext;
+  }
+
+  /**
+   * 관련 로그 항목을 가져옵니다.
+   */
+  private async fetchLogEntries(context: ErrorContext): Promise<string> {
+    try {
+      // Assuming projectId can be used as resource ID for logs
+      if (!context.projectId) {
+        return '';
+      }
+      const result = await default_api.list_logs({
+        resource: [context.projectId],
+        limit: 10, // Fetch last 10 log entries
+        // You might want to filter by time, level, or text based on the error
+        // startTime: new Date(context.timestamp.getTime() - 5 * 60 * 1000).toISOString(), // 5 minutes before error
+        // endTime: context.timestamp.toISOString(),
+      });
+
+      if (result.list_logs_response && result.list_logs_response.logs && result.list_logs_response.logs.length > 0) {
+        const logStrings = result.list_logs_response.logs.map(log => `[${log.timestamp}] [${log.level}] ${log.message}`);
+        return `
+
+Recent Log Entries:
+
+${logStrings.join('
+')}
+`;
+      }
+    } catch (e) {
+      this.logger.warn(`[ErrorAnalyzerAgent] Failed to fetch log entries: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    return '';
   }
 }
