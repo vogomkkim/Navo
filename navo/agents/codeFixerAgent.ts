@@ -41,12 +41,14 @@ export class CodeFixerAgent extends BaseAgent {
   async execute(
     error: Error,
     context: ErrorContext,
-    codeChanges: CodeChange[]
+    codeChanges?: CodeChange[]
   ): Promise<ResolutionResult> {
     try {
       this.logSuccess(context, '코드 수정 시작', { error: error.message });
 
-      if (codeChanges.length === 0) {
+      const plannedChanges: CodeChange[] = codeChanges ?? [];
+
+      if (plannedChanges.length === 0) {
         return {
           success: false,
           changes: [],
@@ -61,7 +63,7 @@ export class CodeFixerAgent extends BaseAgent {
       // 코드 수정 실행
       const { result: appliedChanges, executionTime } =
         await this.measureExecutionTime(() =>
-          this.applyCodeChanges(codeChanges)
+          this.applyCodeChanges(plannedChanges)
         );
 
       this.logSuccess(context, '코드 수정 완료', {

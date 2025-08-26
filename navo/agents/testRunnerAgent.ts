@@ -34,17 +34,19 @@ export class TestRunnerAgent extends BaseAgent {
   async execute(
     error: Error,
     context: ErrorContext,
-    appliedChanges: CodeChange[] // Added appliedChanges as input
+    appliedChanges?: CodeChange[] // Added appliedChanges as input
   ): Promise<ResolutionResult> {
     try {
+      const changesToTest: CodeChange[] = appliedChanges ?? [];
+
       this.logSuccess(context, '에러 해결 테스트 시작', {
         error: error.message,
-        changes: appliedChanges.length,
+        changes: changesToTest.length,
       });
 
       // Placeholder for running actual project tests
       const { result: isResolved, executionTime } = await this.measureExecutionTime(() =>
-        this.runProjectTests(appliedChanges)
+        this.runProjectTests(changesToTest)
       );
 
       if (isResolved) {
