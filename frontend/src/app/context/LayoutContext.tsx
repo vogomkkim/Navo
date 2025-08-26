@@ -32,10 +32,10 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
 
   // Initialize currentLayout when draftData is loaded
   useEffect(() => {
-    if (draftData?.draft?.layout) {
+    if (draftData?.draft?.layout && JSON.stringify(draftData.draft.layout) !== JSON.stringify(currentLayout)) {
       setCurrentLayout(draftData.draft.layout);
     }
-  }, [draftData]);
+  }, [draftData, currentLayout]);
 
   const { mutate: performSaveLayout, isPending: isSavingLayout, isError: isSaveError, error: saveError } = useSaveDraft();
 

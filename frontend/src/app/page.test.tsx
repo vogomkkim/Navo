@@ -48,7 +48,7 @@ jest.mock('@/app/context/AuthContext', () => ({
 }));
 
 describe('Home Page', () => {
-  it('renders the Navo Editor title', () => {
+  it('renders the Navo Editor title', async () => {
     const queryClient = new QueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -64,10 +64,10 @@ describe('Home Page', () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText('Navo — Editor (W1)')).toBeInTheDocument();
+    expect(await screen.findByText('Navo — Editor (W1)')).toBeInTheDocument();
   });
 
-  it('renders the Toggle Panel button', () => {
+  it('renders the Toggle Panel button', async () => {
     const queryClient = new QueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -83,10 +83,10 @@ describe('Home Page', () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByRole('button', { name: /toggle panel/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /toggle panel/i })).toBeInTheDocument();
   });
 
-  it('renders the StatusDisplay component', () => {
+  it('renders the StatusDisplay component', async () => {
     const queryClient = new QueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -102,6 +102,6 @@ describe('Home Page', () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText('Idle')).toBeInTheDocument();
+    expect(await screen.findByText('Idle')).toBeInTheDocument();
   });
 });
