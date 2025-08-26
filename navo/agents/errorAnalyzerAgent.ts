@@ -14,6 +14,11 @@ import {
   ErrorAnalysis,
 } from '../core/errorResolution.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import * as fs from 'fs/promises';
+import { exec as cpExec } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const exec = promisify(cpExec);
 
 export class ErrorAnalyzerAgent extends BaseAgent {
   private genAI: GoogleGenerativeAI;
@@ -464,13 +469,13 @@ Instructions:
       if (filePath) {
         command += ` -- ${filePath}`;
       }
-      const result = await default_api.run_shell_command({ command: command });
-      if (result.run_shell_command_response && result.run_shell_command_response.stdout) {
+      const { stdout } = await exec(command);
+      if (stdout) {
         return `
 
 Recent Commit History:
 
-${result.run_shell_command_response.stdout}
+${stdout}
 `;
       }
     } catch (e) {
@@ -492,20 +497,15 @@ ${result.run_shell_command_response.stdout}
         // Read 5 lines before and 5 lines after the error line
         const linesToRead = 11; // 5 before + 1 error line + 5 after
         const offset = Math.max(0, lineNumber - 6); // 0-based index, so lineNumber - 1 - 5
-        const fileContent = await default_api.read_file({
-          absolute_path: filePath,
-          offset: offset,
-          limit: linesToRead,
-        });
-
-        if (fileContent.read_file_response && fileContent.read_file_response.output) {
-          dynamicContext += `
+        const content = await fs.readFile(filePath, 'utf8');
+        const lines = content.split('\n');
+        const snippet = lines.slice(offset, Math.min(lines.length, offset + linesToRead)).join('\n');
+        dynamicContext += `
 
 Relevant Code Snippet from ${filePath} (lines ${offset + 1}-${offset + linesToRead}):
 
-${fileContent.read_file_response.output}
+${snippet}
 `;
-        }
       } catch (e) {
         this.logger.warn(`[ErrorAnalyzerAgent] Failed to read code snippet for ${filePath}:${lineNumber}: ${e instanceof Error ? e.message : String(e)}`);
       }
@@ -532,32 +532,7 @@ Dynamic Context (Placeholder):
    * 관련 로그 항목을 가져옵니다.
    */
   private async fetchLogEntries(context: ErrorContext): Promise<string> {
-    try {
-      // Assuming projectId can be used as resource ID for logs
-      if (!context.projectId) {
-        return '';
-      }
-      const result = await default_api.list_logs({
-        resource: [context.projectId],
-        limit: 10, // Fetch last 10 log entries
-        // You might want to filter by time, level, or text based on the error
-        // startTime: new Date(context.timestamp.getTime() - 5 * 60 * 1000).toISOString(), // 5 minutes before error
-        // endTime: context.timestamp.toISOString(),
-      });
-
-      if (result.list_logs_response && result.list_logs_response.logs && result.list_logs_response.logs.length > 0) {
-        const logStrings = result.list_logs_response.logs.map(log => `[${log.timestamp}] [${log.level}] ${log.message}`);
-        return `
-
-Recent Log Entries:
-
-${logStrings.join('
-')}
-`;
-      }
-    } catch (e) {
-      this.logger.warn(`[ErrorAnalyzerAgent] Failed to fetch log entries: ${e instanceof Error ? e.message : String(e)}`);
-    }
+    // No external log provider wired. Return empty string to keep prompt concise.
     return '';
   }
 }

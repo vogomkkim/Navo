@@ -39,12 +39,14 @@ export class RollbackAgent extends BaseAgent {
   async execute(
     error: Error,
     context: ErrorContext,
-    changesToRollback: CodeChange[] // Added changesToRollback as input
+    changesToRollback?: CodeChange[] // Added changesToRollback as input
   ): Promise<ResolutionResult> {
     try {
       this.logSuccess(context, '롤백 프로세스 시작', { error: error.message });
 
-      if (changesToRollback.length === 0) {
+      const rollbackList: CodeChange[] = changesToRollback ?? [];
+
+      if (rollbackList.length === 0) {
         return {
           success: true,
           changes: [],
@@ -59,14 +61,14 @@ export class RollbackAgent extends BaseAgent {
       // 롤백 실행
       const { result: rollbackResults, executionTime } =
         await this.measureExecutionTime(() =>
-          this.performRollback(changesToRollback)
+          this.performRollback(rollbackList)
         );
 
       const successfulRollbacks = rollbackResults.filter((r) => r.success);
       const failedRollbacks = rollbackResults.filter((r) => !r.success);
 
       this.logSuccess(context, '롤백 프로세스 완료', {
-        totalFiles: changesToRollback.length,
+        totalFiles: rollbackList.length,
         successful: successfulRollbacks.length,
         failed: failedRollbacks.length,
         executionTime,

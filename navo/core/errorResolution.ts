@@ -28,7 +28,7 @@ export interface ErrorResolutionAgent {
   /** 이 에이전트가 처리할 수 있는 에러인지 확인 */
   canHandle(error: Error): boolean;
   /** 에러 해결 실행 */
-  execute(error: Error, context: ErrorContext): Promise<ResolutionResult>;
+  execute(error: Error, context: ErrorContext, payload?: unknown): Promise<ResolutionResult>;
 }
 
 /**
@@ -182,7 +182,8 @@ export abstract class BaseAgent implements ErrorResolutionAgent {
   abstract canHandle(error: Error): boolean;
   abstract execute(
     error: Error,
-    context: ErrorContext
+    context: ErrorContext,
+    payload?: unknown
   ): Promise<ResolutionResult>;
 
   /**
@@ -244,6 +245,16 @@ export class AgentRegistry {
   constructor() {
     this.logger = new ConsoleLogger();
   }
+
+  register(agent: ErrorResolutionAgent): void {
+    this.agents.push(agent);
+    this.logger.info(`[AgentRegistry] Registered agent: ${agent.name}`);
+  }
+
+  list(): ErrorResolutionAgent[] {
+    return [...this.agents];
+  }
+}
 
 // ============================================================================
 // Logger Interface and Implementation
@@ -336,7 +347,7 @@ export class ErrorResolutionManager {
         const rollbackAgent = new RollbackAgent();
 
         // Define graph nodes
-        const nodes: AgentGraphNode[] = [
+        const nodes: GraphNode[] = [
           {
             name: 'analyzeError',
             deps: [],
@@ -504,7 +515,7 @@ export class ErrorResolutionManager {
   getStatus(): { isProcessing: boolean; registeredAgents: number } {
     return {
       isProcessing: this.isProcessing,
-      registeredAgents: this.registry.getAllAgents().length,
+      registeredAgents: this.registry.list().length,
     };
   }
 
