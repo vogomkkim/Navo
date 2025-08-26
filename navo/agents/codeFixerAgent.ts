@@ -10,7 +10,7 @@ import {
   ErrorContext,
   ResolutionResult,
   CodeChange,
-  ErrorType,
+  ErrorType, // Keep ErrorType for now, might be used in other parts of the file
 } from '../core/errorResolution.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -32,23 +32,7 @@ export class CodeFixerAgent extends BaseAgent {
    * Code Fixer는 코드 수정이 필요한 에러를 처리
    */
   canHandle(error: Error): boolean {
-    // 코드 수정이 필요한 에러 타입들
-    const fixableErrorTypes = [
-      ErrorType.NULL_REFERENCE,
-      ErrorType.ELEMENT_NOT_FOUND,
-      ErrorType.TYPE_ERROR,
-      ErrorType.VALIDATION_ERROR,
-    ];
-
-    // 에러 메시지에서 수정 가능한 패턴 확인
-    const message = error.message.toLowerCase();
-    return (
-      fixableErrorTypes.includes(this.estimateErrorType(error)) ||
-      message.includes('innerhtml') ||
-      message.includes('getelementbyid') ||
-      message.includes('cannot read') ||
-      message.includes('is not a function')
-    );
+    return true; // Orchestrator will pass relevant changes
   }
 
   /**
@@ -56,23 +40,20 @@ export class CodeFixerAgent extends BaseAgent {
    */
   async execute(
     error: Error,
-    context: ErrorContext
+    context: ErrorContext,
+    codeChanges: CodeChange[]
   ): Promise<ResolutionResult> {
     try {
       this.logSuccess(context, '코드 수정 시작', { error: error.message });
-
-      // 에러 타입에 따른 기본 수정 전략 생성
-      const codeChanges = await this.generateCodeChanges(error, context);
 
       if (codeChanges.length === 0) {
         return {
           success: false,
           changes: [],
           executionTime: 0,
-          errorMessage: '이 에러에 대한 자동 수정 방법이 없습니다.',
+          errorMessage: '제공된 코드 변경사항이 없습니다.',
           nextSteps: [
-            '수동 디버깅이 필요합니다',
-            'Error Analyzer의 제안을 확인하세요',
+            'Error Analyzer Agent에서 코드 변경사항을 생성해야 합니다.',
           ],
         };
       }
@@ -115,313 +96,6 @@ export class CodeFixerAgent extends BaseAgent {
   }
 
   /**
-   * 에러 타입에 따른 코드 변경사항 생성
-   */
-  private async generateCodeChanges(
-    error: Error,
-    context: ErrorContext
-  ): Promise<CodeChange[]> {
-    const errorType = this.estimateErrorType(error);
-    const changes: CodeChange[] = [];
-
-    try {
-      switch (errorType) {
-        case ErrorType.NULL_REFERENCE:
-          changes.push(...(await this.generateNullReferenceFixes(error)));
-          break;
-
-        case ErrorType.ELEMENT_NOT_FOUND:
-          changes.push(...(await this.generateElementNotFoundFixes(error)));
-          break;
-
-        case ErrorType.TYPE_ERROR:
-          changes.push(...(await this.generateTypeErrorFixes(error)));
-          break;
-
-        default:
-          // 기본적인 안전성 개선
-          changes.push(...(await this.generateSafetyFixes(error)));
-      }
-    } catch (e) {
-      console.warn(`[CodeFixerAgent] 코드 변경사항 생성 실패:`, e);
-    }
-
-    return changes;
-  }
-
-  /**
-   * Null Reference 에러 수정 방법 생성
-   */
-  private async generateNullReferenceFixes(
-    error: Error
-  ): Promise<CodeChange[]> {
-    const changes: CodeChange[] = [];
-
-    if (error.message.includes('innerHTML')) {
-      // innerHTML null 체크 추가
-      changes.push({
-        file: 'navo/web/app.js',
-        action: 'modify',
-        content: `// null 체크 추가
-if (element && typeof element.innerHTML !== 'undefined') {
-  element.innerHTML = content;
-} else {
-  console.warn('Element not found or innerHTML not supported:', element);
-}`,
-        reason: 'innerHTML 접근 전 null 체크가 필요합니다',
-      });
-    }
-
-    if (error.message.includes('getElementById')) {
-      // getElementById 안전한 사용법
-      changes.push({
-        file: 'navo/web/app.js',
-        action: 'modify',
-        content: `// 안전한 DOM 요소 접근
-const element = document.getElementById('elementId');
-if (!element) {
-  console.warn('Element with id "elementId" not found');
-  return;
-}`,
-        reason: 'DOM 요소 접근 전 존재 여부 확인이 필요합니다',
-      });
-    }
-
-    return changes;
-  }
-
-  /**
-   * Element Not Found 에러 수정 방법 생성
-   */
-  private async generateElementNotFoundFixes(
-    error: Error
-  ): Promise<CodeChange[]> {
-    const changes: CodeChange[] = [];
-
-    // HTML에 누락된 요소 추가
-    if (error.message.includes('componentList')) {
-      changes.push({
-        file: 'navo/web/index.html',
-        action: 'create',
-        content: `<div id="componentList" class="component-list">
-  <!-- Components will be loaded here -->
-</div>`,
-        reason: 'componentList 요소가 HTML에 정의되지 않았습니다',
-      });
-    }
-
-    // createComponentBtn 관련 요소들 자동 생성
-    if (
-      error.message.includes('createComponentBtn') ||
-      error.message.includes('addEventListener')
-    ) {
-      changes.push({
-        file: 'navo/web/index.html',
-        action: 'modify',
-        content: `
-        <!-- Component Modal -->
-        <div id="componentModal" class="modal">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h2>Create Component</h2>
-              <button id="closeComponentModal" class="close-btn">×</button>
-            </div>
-            <form id="componentForm" class="component-form">
-              <div class="form-group">
-                <label for="componentName">Name:</label>
-                <input type="text" id="componentName" name="name" required />
-              </div>
-              <div class="form-group">
-                <label for="componentDisplayName">Display Name:</label>
-                <input type="text" id="componentDisplayName" name="display_name" required />
-              </div>
-              <div class="form-group">
-                <label for="componentDescription">Description:</label>
-                <textarea id="componentDescription" name="description" rows="3"></textarea>
-              </div>
-              <div class="form-group">
-                <label for="componentCategory">Category:</label>
-                <input type="text" id="componentCategory" name="category" />
-              </div>
-              <div class="form-group">
-                <label for="componentTemplate">Template:</label>
-                <textarea id="componentTemplate" name="render_template" rows="5" required></textarea>
-              </div>
-              <div class="form-group">
-                <label for="componentCSS">CSS:</label>
-                <textarea id="componentCSS" name="css_styles" rows="5"></textarea>
-              </div>
-              <div class="form-actions">
-                <button type="button" id="previewComponentBtn">Preview</button>
-                <button type="submit">Create Component</button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <!-- Component Creation Button -->
-        <button id="createComponentBtn" class="create-component-btn">
-          🧩 Create Component
-        </button>`,
-        reason:
-          'createComponentBtn과 componentModal 요소가 HTML에 정의되지 않았습니다',
-      });
-
-      // CSS 스타일도 함께 생성
-      changes.push({
-        file: 'navo/web/styles.css',
-        action: 'modify',
-        content: `
-/* 🔧 Auto-fix applied by CodeFixerAgent: Component Modal 스타일 자동 생성 */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.5);
-}
-
-.modal.show {
-  display: block;
-}
-
-.modal-content {
-  background-color: #fefefe;
-  margin: 5% auto;
-  padding: 20px;
-  border: 1px solid #888;
-  width: 80%;
-  max-width: 600px;
-  border-radius: 8px;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #aaa;
-}
-
-.close-btn:hover {
-  color: #000;
-}
-
-.component-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.form-group label {
-  font-weight: bold;
-  color: #333;
-}
-
-.form-group input,
-.form-group textarea {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.form-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.create-component-btn {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.create-component-btn:hover {
-  background: #0056b3;
-}`,
-        reason: 'Component Modal에 필요한 CSS 스타일이 정의되지 않았습니다',
-      });
-    }
-
-    return changes;
-  }
-
-  /**
-   * Type Error 수정 방법 생성
-   */
-  private async generateTypeErrorFixes(error: Error): Promise<CodeChange[]> {
-    const changes: CodeChange[] = [];
-
-    if (error.message.includes('is not a function')) {
-      // 함수 존재 여부 확인
-      changes.push({
-        file: 'navo/web/app.js',
-        action: 'modify',
-        content: `// 함수 존재 여부 확인
-if (typeof functionName === 'function') {
-  functionName();
-} else {
-  console.warn('Function functionName is not defined');
-}`,
-        reason: '함수 호출 전 존재 여부 확인이 필요합니다',
-      });
-    }
-
-    return changes;
-  }
-
-  /**
-   * 일반적인 안전성 개선 수정
-   */
-  private async generateSafetyFixes(error: Error): Promise<CodeChange[]> {
-    const changes: CodeChange[] = [];
-
-    // 전역 에러 핸들러 강화
-    changes.push({
-      file: 'navo/web/app.js',
-      action: 'modify',
-      content: `// 안전한 함수 실행
-function safeExecute(fn, ...args) {
-  try {
-    if (typeof fn === 'function') {
-      return fn(...args);
-    }
-    return null;
-  } catch (error) {
-    console.error('Function execution failed:', error);
-    return null;
-  }
-}`,
-      reason: '함수 실행 시 안전성을 높이기 위한 헬퍼 함수가 필요합니다',
-    });
-
-    return changes;
-  }
-
-  /**
    * 코드 변경사항 적용
    */
   private async applyCodeChanges(changes: CodeChange[]): Promise<CodeChange[]> {
@@ -438,7 +112,7 @@ function safeExecute(fn, ...args) {
           });
         }
       } catch (e) {
-        console.error(`[CodeFixerAgent] 변경사항 적용 실패:`, change, e);
+      this.logger.error(`[CodeFixerAgent] 변경사항 적용 실패:`, { change: change, error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -480,17 +154,46 @@ function safeExecute(fn, ...args) {
 
       switch (change.action) {
         case 'modify':
-          // 간단한 수정: 주석 추가
-          newContent = this.addSafetyComment(originalContent, change);
+          if (change.lineNumber !== undefined && change.content !== undefined) {
+            const lines = originalContent.split('\n');
+            if (change.lineNumber < lines.length) {
+              if (change.startColumn !== undefined && change.endColumn !== undefined) {
+                // More granular replacement within a line
+                const line = lines[change.lineNumber];
+                newContent = lines.slice(0, change.lineNumber).join('\n') + '\n' +
+                             line.substring(0, change.startColumn) +
+                             change.content +
+                             line.substring(change.endColumn) + '\n' + lines.slice(change.lineNumber + 1).join('\n');
+              } else {
+                // Replace entire line
+                lines[change.lineNumber] = change.content;
+                newContent = lines.join('\n');
+              }
+            } else {
+              this.logger.warn(`[CodeFixerAgent] Line number out of bounds for modify: ${change.file}:${change.lineNumber}`);
+              return { success: false };
+            }
+          } else if (change.oldContent !== undefined && change.content !== undefined) {
+            // Find and replace specific oldContent with newContent
+            newContent = originalContent.replace(change.oldContent, change.content);
+          } else {
+            this.logger.warn(`[CodeFixerAgent] Insufficient information for modify action: ${change.file}`);
+            return { success: false };
+          }
           break;
 
         case 'replace':
-          newContent = change.content || originalContent;
+          if (change.oldContent !== undefined && change.content !== undefined) {
+            // Replace specific oldContent with newContent
+            newContent = originalContent.replace(change.oldContent, change.content);
+          } else {
+            throw new Error(`'oldContent' and 'content' are required for 'replace' action: ${change.file}`);
+          }
           break;
 
         case 'delete':
           // 파일 삭제는 안전상 수행하지 않음
-          console.warn(
+          this.logger.warn(
             `[CodeFixerAgent] 파일 삭제는 안전상 수행하지 않습니다: ${change.file}`
           );
           return { success: false };
@@ -505,17 +208,9 @@ function safeExecute(fn, ...args) {
         originalContent,
       };
     } catch (e) {
-      console.error(`[CodeFixerAgent] 변경사항 적용 실패:`, change, e);
+      this.logger.error(`[CodeFixerAgent] 변경사항 적용 실패:`, { change: change, error: e instanceof Error ? e.message : String(e) });
       return { success: false };
     }
-  }
-
-  /**
-   * 안전성 주석 추가
-   */
-  private addSafetyComment(content: string, change: CodeChange): string {
-    const comment = `\n// 🔧 Auto-fix applied by CodeFixerAgent: ${change.reason}\n`;
-    return content + comment;
   }
 
   /**
@@ -566,28 +261,7 @@ function safeExecute(fn, ...args) {
         }
       }
     } catch (e) {
-      console.warn(`[CodeFixerAgent] 백업 정리 실패:`, e);
+      this.logger.warn(`[CodeFixerAgent] 백업 정리 실패:`, { error: e instanceof Error ? e.message : String(e) });
     }
-  }
-
-  /**
-   * 에러 타입 추정 (간단한 버전)
-   */
-  private estimateErrorType(error: Error): ErrorType {
-    const message = error.message.toLowerCase();
-
-    if (message.includes('null') || message.includes('undefined')) {
-      return ErrorType.NULL_REFERENCE;
-    }
-
-    if (message.includes('element') || message.includes('dom')) {
-      return ErrorType.ELEMENT_NOT_FOUND;
-    }
-
-    if (message.includes('type') || message.includes('is not a function')) {
-      return ErrorType.TYPE_ERROR;
-    }
-
-    return ErrorType.UNKNOWN_ERROR;
   }
 }

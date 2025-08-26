@@ -30,7 +30,7 @@ export class RollbackAgent extends BaseAgent {
    * Rollback Agent는 복구가 필요한 모든 에러를 처리
    */
   canHandle(error: Error): boolean {
-    return true; // 모든 에러에 대해 롤백 가능
+    return true; // Orchestrator will pass relevant changes for rollback
   }
 
   /**
@@ -38,24 +38,19 @@ export class RollbackAgent extends BaseAgent {
    */
   async execute(
     error: Error,
-    context: ErrorContext
+    context: ErrorContext,
+    changesToRollback: CodeChange[] // Added changesToRollback as input
   ): Promise<ResolutionResult> {
     try {
       this.logSuccess(context, '롤백 프로세스 시작', { error: error.message });
 
-      // 롤백이 필요한 파일들 식별
-      const filesToRollback = await this.identifyFilesForRollback(
-        error,
-        context
-      );
-
-      if (filesToRollback.length === 0) {
+      if (changesToRollback.length === 0) {
         return {
           success: true,
           changes: [],
           executionTime: 0,
           nextSteps: [
-            '롤백이 필요한 파일이 없습니다',
+            '롤백이 필요한 변경사항이 없습니다.',
             '애플리케이션이 정상 상태입니다',
           ],
         };
@@ -64,14 +59,14 @@ export class RollbackAgent extends BaseAgent {
       // 롤백 실행
       const { result: rollbackResults, executionTime } =
         await this.measureExecutionTime(() =>
-          this.performRollback(filesToRollback)
+          this.performRollback(changesToRollback)
         );
 
       const successfulRollbacks = rollbackResults.filter((r) => r.success);
       const failedRollbacks = rollbackResults.filter((r) => !r.success);
 
       this.logSuccess(context, '롤백 프로세스 완료', {
-        totalFiles: filesToRollback.length,
+        totalFiles: changesToRollback.length,
         successful: successfulRollbacks.length,
         failed: failedRollbacks.length,
         executionTime,
@@ -124,79 +119,9 @@ export class RollbackAgent extends BaseAgent {
   }
 
   /**
-   * 롤백이 필요한 파일들 식별
-   */
-  private async identifyFilesForRollback(
-    error: Error,
-    context: ErrorContext
-  ): Promise<string[]> {
-    const filesToRollback: string[] = [];
-
-    try {
-      // 백업 디렉토리 확인
-      try {
-        await fs.access(this.backupDir);
-      } catch {
-        // 백업 디렉토리가 없으면 롤백할 파일이 없음
-        return filesToRollback;
-      }
-
-      // 백업 파일들 스캔
-      const backupFiles = await fs.readdir(this.backupDir);
-
-      // 백업 파일에서 원본 파일 경로 추출
-      for (const backupFile of backupFiles) {
-        if (backupFile.endsWith('.backup')) {
-          const originalFileName = backupFile.replace(
-            /\.backup\.\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/,
-            ''
-          );
-          const originalFilePath = path.join(process.cwd(), originalFileName);
-
-          // 원본 파일이 존재하는지 확인
-          try {
-            await fs.access(originalFilePath);
-            filesToRollback.push(originalFilePath);
-          } catch {
-            // 원본 파일이 없으면 무시
-            console.warn(
-              `[RollbackAgent] 원본 파일을 찾을 수 없음: ${originalFilePath}`
-            );
-          }
-        }
-      }
-
-      // 에러 타입에 따른 추가 파일 식별
-      if (
-        error.message.includes('innerHTML') ||
-        error.message.includes('getElementById')
-      ) {
-        const webFiles = ['navo/web/app.js', 'navo/web/index.html'];
-        for (const webFile of webFiles) {
-          const fullPath = path.resolve(webFile);
-          if (filesToRollback.includes(fullPath)) {
-            continue; // 이미 포함되어 있음
-          }
-
-          try {
-            await fs.access(fullPath);
-            filesToRollback.push(fullPath);
-          } catch {
-            // 파일이 없으면 무시
-          }
-        }
-      }
-    } catch (e) {
-      console.warn(`[RollbackAgent] 롤백 대상 파일 식별 실패:`, e);
-    }
-
-    return filesToRollback;
-  }
-
-  /**
    * 롤백 실행
    */
-  private async performRollback(filesToRollback: string[]): Promise<
+  private async performRollback(changesToRollback: CodeChange[]): Promise<
     Array<{
       success: boolean;
       filePath: string;
@@ -211,14 +136,14 @@ export class RollbackAgent extends BaseAgent {
       error?: string;
     }> = [];
 
-    for (const filePath of filesToRollback) {
+    for (const change of changesToRollback) {
       try {
-        const result = await this.rollbackSingleFile(filePath);
+        const result = await this.rollbackSingleFile(change);
         results.push(result);
       } catch (e) {
         results.push({
           success: false,
-          filePath,
+          filePath: change.file,
           error: e instanceof Error ? e.message : String(e),
         });
       }
@@ -230,29 +155,24 @@ export class RollbackAgent extends BaseAgent {
   /**
    * 단일 파일 롤백
    */
-  private async rollbackSingleFile(filePath: string): Promise<{
+  private async rollbackSingleFile(change: CodeChange): Promise<{
     success: boolean;
     filePath: string;
     backupPath?: string;
     error?: string;
   }> {
     try {
-      const fileName = path.basename(filePath);
+      const filePath = path.resolve(change.file);
 
-      // 해당 파일의 가장 최근 백업 찾기
-      const backupFiles = await this.findBackupFiles(fileName);
-
-      if (backupFiles.length === 0) {
+      if (!change.backupPath) {
         return {
           success: false,
           filePath,
-          error: '백업 파일을 찾을 수 없습니다',
+          error: '백업 경로가 CodeChange에 제공되지 않았습니다.',
         };
       }
 
-      // 가장 최근 백업 선택 (타임스탬프가 가장 늦은 것)
-      const latestBackup = backupFiles[0]; // 이미 정렬되어 있음
-      const backupPath = path.join(this.backupDir, latestBackup);
+      const backupPath = change.backupPath;
 
       // 백업 파일 내용 읽기
       const backupContent = await fs.readFile(backupPath, 'utf8');
@@ -264,44 +184,24 @@ export class RollbackAgent extends BaseAgent {
       await fs.writeFile(filePath, backupContent, 'utf8');
 
       // 롤백 히스토리 업데이트
-      this.updateRollbackHistory(filePath, latestBackup);
+      this.updateRollbackHistory(filePath, backupPath);
 
-      console.log(
-        `[RollbackAgent] 파일 롤백 완료: ${filePath} -> ${latestBackup}`
+      this.logger.info(
+        `[RollbackAgent] 파일 롤백 완료: ${filePath} <- ${backupPath}`
       );
 
       return {
         success: true,
         filePath,
-        backupPath: latestBackup,
+        backupPath,
       };
     } catch (e) {
-      console.error(`[RollbackAgent] 파일 롤백 실패: ${filePath}`, e);
+      this.logger.error(`[RollbackAgent] 파일 롤백 실패: ${change.file}`, { error: e instanceof Error ? e.message : String(e) });
       return {
         success: false,
-        filePath,
+        filePath: change.file,
         error: e instanceof Error ? e.message : String(e),
       };
-    }
-  }
-
-  /**
-   * 백업 파일들 찾기
-   */
-  private async findBackupFiles(fileName: string): Promise<string[]> {
-    try {
-      const files = await fs.readdir(this.backupDir);
-
-      // 해당 파일의 백업들만 필터링
-      const backupFiles = files
-        .filter((file) => file.startsWith(fileName + '.backup.'))
-        .sort()
-        .reverse(); // 최신 파일이 앞에 오도록 정렬
-
-      return backupFiles;
-    } catch (e) {
-      console.warn(`[RollbackAgent] 백업 파일 검색 실패:`, e);
-      return [];
     }
   }
 
@@ -321,7 +221,7 @@ export class RollbackAgent extends BaseAgent {
 
       return backupPath;
     } catch (e) {
-      console.warn(`[RollbackAgent] 현재 파일 백업 실패:`, e);
+      this.logger.warn(`[RollbackAgent] 현재 파일 백업 실패:`, { error: e instanceof Error ? e.message : String(e) });
       return '';
     }
   }

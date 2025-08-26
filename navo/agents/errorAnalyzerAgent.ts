@@ -18,6 +18,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export class ErrorAnalyzerAgent extends BaseAgent {
   private genAI: GoogleGenerativeAI;
   private model: any;
+  private analysisCache: Map<string, ErrorAnalysis> = new Map();
 
   constructor() {
     super('ErrorAnalyzerAgent', 1); // 최고 우선순위
@@ -87,7 +88,14 @@ export class ErrorAnalyzerAgent extends BaseAgent {
     error: Error,
     context: ErrorContext
   ): Promise<ErrorAnalysis> {
-    const prompt = this.buildAnalysisPrompt(error, context);
+    const cacheKey = `${error.message}-${JSON.stringify(context)}`;
+    if (this.analysisCache.has(cacheKey)) {
+      this.logger.info(`[ErrorAnalyzerAgent] Returning cached analysis for error: ${error.message}`);
+      return this.analysisCache.get(cacheKey)!;
+    }
+
+    const dynamicContext = await this.fetchDynamicContext(error, context); // Fetch dynamic context
+    const prompt = this.buildAnalysisPrompt(error, context, dynamicContext); // Pass dynamic context to prompt builder
 
     try {
       const result = await this.model.generateContent(prompt);
@@ -101,7 +109,7 @@ export class ErrorAnalyzerAgent extends BaseAgent {
       const fallbackType = this.estimateErrorType(error);
       const fallbackSeverity = this.estimateErrorSeverity(error, context);
 
-      return {
+      const finalAnalysis: ErrorAnalysis = {
         errorType: aiAnalysis.errorType || fallbackType,
         rootCause: aiAnalysis.rootCause || this.estimateRootCause(error),
         severity: aiAnalysis.severity || fallbackSeverity,
@@ -113,14 +121,17 @@ export class ErrorAnalyzerAgent extends BaseAgent {
           context: context,
         },
       };
+
+      this.analysisCache.set(cacheKey, finalAnalysis);
+      return finalAnalysis;
     } catch (aiError) {
-      console.warn(
+      this.logger.warn(
         `[ErrorAnalyzerAgent] AI 분석 실패, 대체 방법 사용:`,
-        aiError
+        { aiError: aiError instanceof Error ? aiError.message : String(aiError) }
       );
 
       // AI 분석 실패 시 기본 분석 사용
-      return {
+      const fallbackAnalysis: ErrorAnalysis = {
         errorType: this.estimateErrorType(error),
         rootCause: this.estimateRootCause(error),
         severity: this.estimateErrorSeverity(error, context),
@@ -133,55 +144,55 @@ export class ErrorAnalyzerAgent extends BaseAgent {
           context: context,
         },
       };
+      this.analysisCache.set(cacheKey, fallbackAnalysis);
+      return fallbackAnalysis;
     }
   }
 
   /**
    * AI 분석을 위한 프롬프트 생성
    */
-  private buildAnalysisPrompt(error: Error, context: ErrorContext): string {
-    return `
-당신은 JavaScript 에러 분석 전문가입니다. 다음 에러를 분석하고 구체적인 해결 방법을 제시해주세요.
+  private buildAnalysisPrompt(error: Error, context: ErrorContext, dynamicContext: string): string {
+    return `Analyze the following JavaScript error and provide a concrete solution in JSON format.
 
-## 에러 정보
-- **메시지**: ${error.message}
-- **파일**: ${(error as any).filename || 'unknown'}
-- **라인**: ${(error as any).lineno || 'unknown'}
-- **스택**: ${error.stack || 'unknown'}
+Error Details:
+- Message: ${error.message}
+- File: ${(error as any).filename || 'unknown'}
+- Line: ${(error as any).lineno || 'unknown'}
+- Stack: ${error.stack || 'unknown'}
 
-## 컨텍스트 정보
-- **URL**: ${context.url}
-- **사용자 에이전트**: ${context.userAgent}
-- **프로젝트 ID**: ${context.projectId || 'none'}
-- **발생 시간**: ${context.timestamp.toISOString()}
+Context:
+- URL: ${context.url}
+- User Agent: ${context.userAgent}
+- Project ID: ${context.projectId || 'none'}
+- Timestamp: ${context.timestamp.toISOString()}
+${dynamicContext}
 
-## 응답 형식
-다음 JSON 형식으로 응답해주세요 (한국어로):
-
+Response Format (JSON only):
 {
   "errorType": "null_reference|element_not_found|dom_manipulation|network_error|api_response_error|authentication_error|type_error|undefined_error|validation_error|infinite_loop|memory_leak|timeout_error|unknown_error",
-  "rootCause": "에러의 근본 원인을 간단명료하게 설명",
+  "rootCause": "brief explanation of root cause",
   "severity": "critical|high|medium|low",
   "solution": {
-    "description": "해결 방법에 대한 간단한 설명",
+    "description": "brief description of solution",
     "codeChanges": [
       {
-        "file": "수정할 파일 경로 (예: navo/web/app.js)",
+        "file": "path/to/file (e.g., navo/web/app.js)",
         "action": "create|modify|delete|replace",
-        "content": "새로운 코드 내용 (필요한 경우)",
-        "reason": "이 수정이 필요한 이유"
+        "content": "new code content (if applicable)",
+        "reason": "reason for change"
       }
     ],
-    "estimatedTime": "예상 소요 시간(초)",
+    "estimatedTime": "estimated time in seconds",
     "autoRecoverable": true/false
   }
 }
 
-## 주의사항
-- JSON 형식만 응답하고, 다른 설명은 포함하지 마세요
-- 에러 타입과 심각도는 제공된 옵션 중에서 선택하세요
-- 해결 방법은 구체적이고 실행 가능해야 합니다
-- 코드 변경사항은 실제 파일 경로와 일치해야 합니다
+Instructions:
+- Respond with JSON only.
+- Select errorType and severity from provided options.
+- Solution must be concrete and actionable.
+- File paths in codeChanges must be actual file paths.
 `;
   }
 
@@ -214,8 +225,8 @@ export class ErrorAnalyzerAgent extends BaseAgent {
 
       return parsed;
     } catch (parseError) {
-      console.error(`[ErrorAnalyzerAgent] AI 응답 파싱 실패:`, parseError);
-      console.error(`[ErrorAnalyzerAgent] 원본 응답:`, response);
+      this.logger.error(`[ErrorAnalyzerAgent] AI 응답 파싱 실패:`, { parseError: parseError instanceof Error ? parseError.message : String(parseError) });
+      this.logger.error(`[ErrorAnalyzerAgent] 원본 응답:`, { response: response });
       throw new Error(
         `AI 응답 파싱 실패: ${parseError instanceof Error ? parseError.message : String(parseError)}`
       );
@@ -414,11 +425,77 @@ export class ErrorAnalyzerAgent extends BaseAgent {
   }
 
   /**
+   * 에러 스택에서 파일 경로와 라인 번호를 파싱합니다.
+   */
+  private parseErrorStack(error: Error): { filePath?: string; lineNumber?: number } {
+    const stack = error.stack;
+    if (!stack) {
+      return {};
+    }
+
+    // Example stack trace line: "    at myFunction (file:///path/to/your/file.js:10:20)"
+    // or "    at /path/to/your/file.js:10:20"
+    const lineMatch = stack.match(/(?:at\s+\S+\s+\()?(?:file:\/\/\/)?([^:]+):(\d+):(?:\d+)\)?/);
+    if (lineMatch && lineMatch[1] && lineMatch[2]) {
+      return {
+        filePath: lineMatch[1],
+        lineNumber: parseInt(lineMatch[2], 10),
+      };
+    }
+    return {};
+  }
+
+  /**
    * 분석 결과를 바탕으로 해결 방법 생성
    */
   private generateSolutionFromAnalysis(
     analysis: ErrorAnalysis
   ): ErrorAnalysis['solution'] {
     return analysis.solution;
+  }
+
+  /**
+   * 동적 컨텍스트 (코드 스니펫, 커밋 히스토리, 로그 등)를 가져옵니다.
+   */
+  private async fetchDynamicContext(error: Error, context: ErrorContext): Promise<string> {
+    let dynamicContext = '';
+
+    const { filePath, lineNumber } = this.parseErrorStack(error);
+
+    if (filePath && lineNumber) {
+      try {
+        // Read 5 lines before and 5 lines after the error line
+        const linesToRead = 11; // 5 before + 1 error line + 5 after
+        const offset = Math.max(0, lineNumber - 6); // 0-based index, so lineNumber - 1 - 5
+        const fileContent = await default_api.read_file({
+          absolute_path: filePath,
+          offset: offset,
+          limit: linesToRead,
+        });
+
+        if (fileContent.read_file_response && fileContent.read_file_response.output) {
+          dynamicContext += `
+
+Relevant Code Snippet from ${filePath} (lines ${offset + 1}-${offset + linesToRead}):
+
+${fileContent.read_file_response.output}
+
+`;
+        }
+      } catch (e) {
+        this.logger.warn(`[ErrorAnalyzerAgent] Failed to read code snippet for ${filePath}:${lineNumber}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+
+    // TODO: Add logic for commit history and log entries
+    if (!dynamicContext) {
+      dynamicContext = `
+
+Dynamic Context (Placeholder):
+- No additional dynamic context fetched yet.
+`;
+    }
+
+    return dynamicContext;
   }
 }

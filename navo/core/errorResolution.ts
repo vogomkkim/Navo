@@ -5,6 +5,14 @@
  * 애플리케이션을 정상 상태로 복원합니다.
  */
 
+import { runGraph } from './runner.js';
+import { GraphNode, NodeContext } from './node.js';
+
+// Define AgentGraphNode type
+export type AgentGraphNode = GraphNode & {
+  execute: (error: Error, context: ErrorContext, outputs: Map<string, unknown>) => Promise<ResolutionResult>;
+};
+
 // ============================================================================
 // Core Interfaces
 // ============================================================================
@@ -57,6 +65,8 @@ export interface ResolutionResult {
   errorMessage?: string;
   /** 다음 단계 제안 */
   nextSteps?: string[];
+  /** 사람의 개입이 필요한지 여부 */
+  humanInterventionRequired?: boolean;
 }
 
 /**
@@ -75,6 +85,14 @@ export interface CodeChange {
   backupPath?: string;
   /** 변경 전 내용 */
   originalContent?: string;
+  /** 변경할 라인 번호 (0-based) */
+  lineNumber?: number;
+  /** 변경할 시작 컬럼 (0-based) */
+  startColumn?: number;
+  /** 변경할 끝 컬럼 (0-based) */
+  endColumn?: number;
+  /** 변경 전 코드 내용 (replace/modify 액션 시 필요) */
+  oldContent?: string;
 }
 
 // ============================================================================
@@ -152,10 +170,14 @@ export interface ErrorAnalysis {
  * 에이전트의 기본 구현 클래스
  */
 export abstract class BaseAgent implements ErrorResolutionAgent {
+  protected logger: Logger;
+
   constructor(
     public readonly name: string,
     public readonly priority: number
-  ) {}
+  ) {
+    this.logger = new ConsoleLogger();
+  }
 
   abstract canHandle(error: Error): boolean;
   abstract execute(
@@ -184,7 +206,7 @@ export abstract class BaseAgent implements ErrorResolutionAgent {
     context: ErrorContext,
     message: string
   ): void {
-    console.error(`[${this.name}] ${message}:`, {
+    this.logger.error(`[${this.name}] ${message}:`, {
       error: error.message,
       stack: error.stack,
       context,
@@ -200,7 +222,7 @@ export abstract class BaseAgent implements ErrorResolutionAgent {
     message: string,
     data?: any
   ): void {
-    console.log(`[${this.name}] ✅ ${message}:`, {
+    this.logger.info(`[${this.name}] ✅ ${message}:`, {
       context,
       data,
       timestamp: new Date().toISOString(),
@@ -217,51 +239,31 @@ export abstract class BaseAgent implements ErrorResolutionAgent {
  */
 export class AgentRegistry {
   private agents: ErrorResolutionAgent[] = [];
+  private logger: Logger;
 
-  /**
-   * 에이전트 등록
-   */
-  register(agent: ErrorResolutionAgent): void {
-    this.agents.push(agent);
-    // 우선순위에 따라 정렬 (낮은 숫자가 높은 우선순위)
-    this.agents.sort((a, b) => a.priority - b.priority);
-
-    console.log(
-      `[AgentRegistry] 에이전트 등록됨: ${agent.name} (우선순위: ${agent.priority})`
-    );
+  constructor() {
+    this.logger = new ConsoleLogger();
   }
 
-  /**
-   * 에러를 처리할 수 있는 에이전트 찾기
-   */
-  findAgentForError(error: Error): ErrorResolutionAgent | null {
-    for (const agent of this.agents) {
-      if (agent.canHandle(error)) {
-        console.log(`[AgentRegistry] 에러 처리 에이전트 찾음: ${agent.name}`);
-        return agent;
-      }
-    }
+// ============================================================================
+// Logger Interface and Implementation
+// ============================================================================
 
-    console.warn(
-      `[AgentRegistry] 에러를 처리할 수 있는 에이전트가 없음:`,
-      error.message
-    );
-    return null;
+export interface Logger {
+  info(message: string, data?: Record<string, any>): void;
+  warn(message: string, data?: Record<string, any>): void;
+  error(message: string, data?: Record<string, any>): void;
+}
+
+export class ConsoleLogger implements Logger {
+  info(message: string, data?: Record<string, any>): void {
+    console.log(JSON.stringify({ level: 'info', message, ...data }));
   }
-
-  /**
-   * 등록된 모든 에이전트 목록
-   */
-  getAllAgents(): ErrorResolutionAgent[] {
-    return [...this.agents];
+  warn(message: string, data?: Record<string, any>): void {
+    console.warn(JSON.stringify({ level: 'warn', message, ...data }));
   }
-
-  /**
-   * 에이전트 레지스트리 초기화
-   */
-  clear(): void {
-    this.agents = [];
-    console.log(`[AgentRegistry] 모든 에이전트 제거됨`);
+  error(message: string, data?: Record<string, any>): void {
+    console.error(JSON.stringify({ level: 'error', message, ...data }));
   }
 }
 
@@ -272,12 +274,19 @@ export class AgentRegistry {
 /**
  * 에러 해결 관리자 - 전체 에러 해결 프로세스를 조율
  */
+import { ErrorAnalyzerAgent } from '../agents/errorAnalyzerAgent.js';
+import { CodeFixerAgent } from '../agents/codeFixerAgent.js';
+import { TestRunnerAgent } from '../agents/testRunnerAgent.js';
+import { RollbackAgent } from '../agents/rollbackAgent.js';
+
 export class ErrorResolutionManager {
   private registry: AgentRegistry;
   private isProcessing = false;
+  private logger: Logger;
 
   constructor() {
     this.registry = new AgentRegistry();
+    this.logger = new ConsoleLogger();
   }
 
   /**
@@ -295,8 +304,9 @@ export class ErrorResolutionManager {
     context: ErrorContext
   ): Promise<ResolutionResult> {
     if (this.isProcessing) {
-      console.warn(
-        `[ErrorResolutionManager] 이미 에러 해결 중입니다. 대기 중...`
+      this.logger.warn(
+        `[ErrorResolutionManager] Already processing error. Waiting...`,
+        { error: error.message }
       );
       // 이미 처리 중이면 대기
       await this.waitForProcessing();
@@ -305,32 +315,161 @@ export class ErrorResolutionManager {
     this.isProcessing = true;
 
     try {
-      console.log(`[ErrorResolutionManager] 에러 해결 시작:`, error.message);
+      const maxRetries = 3; // Define max retries
+      let retryCount = 0;
+      let finalResolutionResult: ResolutionResult = {
+        success: false,
+        changes: [],
+        executionTime: 0,
+        errorMessage: 'Automated resolution failed after multiple retries.',
+        nextSteps: ['Manual debugging is required.'],
+        humanInterventionRequired: true,
+      };
 
-      // 적절한 에이전트 찾기
-      const agent = this.registry.findAgentForError(error);
-      if (!agent) {
-        return {
-          success: false,
-          changes: [],
-          executionTime: 0,
-          errorMessage: '에러를 처리할 수 있는 에이전트가 없습니다.',
-          nextSteps: ['수동 디버깅이 필요합니다.'],
+      while (retryCount < maxRetries) {
+        this.logger.info(`Error resolution attempt ${retryCount + 1}/${maxRetries}`, { error: error.message, attempt: retryCount + 1, maxRetries: maxRetries });
+
+        // Initialize agents (re-initialize for each retry to ensure fresh state)
+        const errorAnalyzer = new ErrorAnalyzerAgent();
+        const codeFixer = new CodeFixerAgent();
+        const testRunner = new TestRunnerAgent();
+        const rollbackAgent = new RollbackAgent();
+
+        // Define graph nodes
+        const nodes: AgentGraphNode[] = [
+          {
+            name: 'analyzeError',
+            deps: [],
+            run: async (ctx: NodeContext) => {
+              const result = await errorAnalyzer.execute(error, context);
+              if (!result.success) {
+                throw new Error(result.errorMessage || 'Error analysis failed');
+              }
+              return result;
+            },
+          },
+          {
+            name: 'fixCode',
+            deps: ['analyzeError'],
+            run: async (ctx: NodeContext) => {
+              const analysisResult = ctx.outputs.get('analyzeError') as ResolutionResult;
+              // Pass the codeChanges from analysis to the fixer
+              const result = await codeFixer.execute(error, context, analysisResult.changes);
+              if (!result.success) {
+                throw new Error(result.errorMessage || 'Code fix failed');
+              }
+              return result;
+            },
+          },
+          {
+            name: 'runTests',
+            deps: ['fixCode'],
+            run: async (ctx: NodeContext) => {
+              const fixResult = ctx.outputs.get('fixCode') as ResolutionResult;
+              // Test if the fix resolved the error
+              const result = await testRunner.execute(error, context, fixResult.changes); // Pass applied changes to test runner
+              if (!result.success) {
+                // If tests fail, we might need to trigger rollback
+                throw new Error(result.errorMessage || 'Tests failed after fix');
+              }
+              return result;
+            },
+          },
+          {
+            name: 'rollbackChanges',
+            deps: ['runTests'], // Rollback depends on test results
+            run: async (ctx: NodeContext) => {
+              const testResult = ctx.outputs.get('runTests') as ResolutionResult;
+              if (!testResult.success) { // Only rollback if tests failed
+                const fixResult = ctx.outputs.get('fixCode') as ResolutionResult;
+                // Pass the changes that were applied by the fixer to the rollback agent
+                const result = await rollbackAgent.execute(error, context, fixResult.changes);
+                if (!result.success) {
+                  throw new Error(result.errorMessage || 'Rollback failed');
+                }
+                return result;
+              }
+              return { success: true, changes: [], executionTime: 0, nextSteps: ['No rollback needed'] };
+            },
+          },
+        ];
+
+        // Prepare base context for runGraph
+        const baseCtx = {
+          logger: this.logger,
+          error: error,
+          context: context,
         };
+
+        try {
+          // Execute the graph
+          const graphOutputs = await runGraph(nodes, baseCtx);
+
+          // Determine result of this attempt
+          const currentTestResult = graphOutputs.get('runTests') as ResolutionResult;
+          const currentFixResult = graphOutputs.get('fixCode') as ResolutionResult;
+          const currentRollbackResult = graphOutputs.get('rollbackChanges') as ResolutionResult;
+
+          if (currentTestResult && currentTestResult.success) {
+            finalResolutionResult = {
+              success: true,
+              changes: currentFixResult?.changes || [],
+              executionTime: (currentFixResult?.executionTime || 0) + (currentTestResult?.executionTime || 0),
+              nextSteps: ['Error successfully resolved and verified.'],
+            };
+            break; // Exit retry loop on success
+          } else if (currentRollbackResult && currentRollbackResult.success) {
+            finalResolutionResult = {
+              success: false, // Fix failed, but rollback was successful
+              changes: currentRollbackResult?.changes || [],
+              executionTime: (currentFixResult?.executionTime || 0) + (currentTestResult?.executionTime || 0) + (currentRollbackResult?.executionTime || 0),
+              errorMessage: 'Fix failed, but changes were rolled back.',
+              nextSteps: ['Fix failed, changes rolled back. Retrying...'],
+            };
+            // Continue to next retry attempt
+          } else {
+            finalResolutionResult = {
+              success: false,
+              changes: [],
+              executionTime: (currentFixResult?.executionTime || 0) + (currentTestResult?.executionTime || 0) + (currentRollbackResult?.executionTime || 0),
+              errorMessage: 'Error resolution process failed in this attempt.',
+              nextSteps: ['Automated resolution failed. Retrying...'],
+            };
+            // Continue to next retry attempt
+          }
+        } catch (graphError) {
+          this.logger.error(`Graph execution failed in attempt ${retryCount + 1}:`, { error: graphError instanceof Error ? graphError.message : String(graphError), attempt: retryCount + 1 });
+          finalResolutionResult = {
+            success: false,
+            changes: [],
+            executionTime: 0,
+            errorMessage: `Graph execution failed: ${graphError instanceof Error ? graphError.message : String(graphError)}`,
+            nextSteps: ['Retrying...'],
+          };
+          // Continue to next retry attempt
+        }
+
+        retryCount++;
+        if (!finalResolutionResult.success && retryCount < maxRetries) {
+          // Optional: Add a delay before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+        }
       }
 
-      // 에이전트 실행
-      const result = await agent.execute(error, context);
+      if (finalResolutionResult.humanInterventionRequired) {
+        this.logger.warn(`[ErrorResolutionManager] Human intervention required. Automated resolution failed.`);
+        return finalResolutionResult;
+      }
 
-      console.log(`[ErrorResolutionManager] 에러 해결 완료:`, {
-        success: result.success,
-        executionTime: result.executionTime,
-        changes: result.changes.length,
+      this.logger.info(`Error resolution completed:`, {
+        success: finalResolutionResult.success,
+        executionTime: finalResolutionResult.executionTime,
+        changes: finalResolutionResult.changes.length,
       });
 
-      return result;
+      return finalResolutionResult;
     } catch (e) {
-      console.error(`[ErrorResolutionManager] 에러 해결 중 오류 발생:`, e);
+      this.logger.error(`Error during error resolution process:`, { error: e instanceof Error ? e.message : String(e), stack: e instanceof Error ? e.stack : 'N/A' });
 
       return {
         success: false,
@@ -338,6 +477,7 @@ export class ErrorResolutionManager {
         executionTime: 0,
         errorMessage: `에러 해결 중 오류 발생: ${e instanceof Error ? e.message : String(e)}`,
         nextSteps: ['시스템 관리자에게 문의하세요.'],
+        humanInterventionRequired: true,
       };
     } finally {
       this.isProcessing = false;
