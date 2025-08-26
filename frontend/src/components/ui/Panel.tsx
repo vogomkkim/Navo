@@ -15,10 +15,6 @@ export function Panel({ children }: PanelProps) {
 
   const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
 
-  const togglePanel = () => {
-    setIsOpen((prev) => !prev);
-  };
-
   const closeMobilePanel = () => {
     setIsOpen(false);
   };

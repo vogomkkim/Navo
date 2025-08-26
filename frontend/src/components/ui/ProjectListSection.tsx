@@ -6,6 +6,7 @@ import { useListProjects } from '@/lib/api';
 export function ProjectListSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { data, isLoading, isError, error, refetch } = useListProjects({
+    queryKey: ['projects'],
     enabled: isPanelOpen, // Only fetch when panel is open
   });
 

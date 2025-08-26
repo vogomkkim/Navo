@@ -6,6 +6,7 @@ import { useSuggestions } from '@/lib/api';
 export function SuggestionsSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { data, isLoading, isError, error, refetch } = useSuggestions({
+    queryKey: ['suggestions'],
     enabled: isPanelOpen, // Only fetch when panel is open
   });
 
