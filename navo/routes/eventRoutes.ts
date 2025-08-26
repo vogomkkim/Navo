@@ -1,11 +1,15 @@
-import { Router } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
 import { handleUnifiedEvents } from '../handlers/eventHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
-const router = Router();
+async function eventRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
+  fastify.post('/', { preHandler: [authenticateToken] }, handleUnifiedEvents);
+  fastify.post(
+    '/log-error',
+    { preHandler: [authenticateToken] },
+    handleUnifiedEvents
+  );
+}
 
-router.post('/', authenticateToken, asyncHandler(handleUnifiedEvents));
-router.post('/log-error', authenticateToken, asyncHandler(handleUnifiedEvents));
-
-export default router;
+export default fp(eventRoutes);

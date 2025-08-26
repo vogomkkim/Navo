@@ -1,8 +1,7 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../db/db.js';
 import { pages, projects } from '../db/schema.js';
 import { and, eq } from 'drizzle-orm';
-import { AuthenticatedRequest } from '../auth/auth.js'; // Import AuthenticatedRequest
 
 interface PageLayout {
   components: Array<{
@@ -13,15 +12,15 @@ interface PageLayout {
 }
 
 export async function handleDraft(
-  req: AuthenticatedRequest,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   const startTime = process.hrtime.bigint();
   try {
-    const userId = req.userId; // Get userId from the authenticated request
+    const userId = request.userId; // Get userId from the authenticated request
 
     if (!userId) {
-      res.status(401).json({ error: 'Unauthorized: User ID not found' });
+      reply.status(401).send({ error: 'Unauthorized: User ID not found' });
       return;
     }
 
@@ -31,7 +30,7 @@ export async function handleDraft(
     });
 
     if (!userProject) {
-      res.status(404).json({ error: 'No project found for this user' });
+      reply.status(404).send({ error: 'No project found for this user' });
       return;
     }
 
@@ -72,7 +71,7 @@ export async function handleDraft(
     const endTime = process.hrtime.bigint();
     const tookMs = Number(endTime - startTime) / 1_000_000; // Convert nanoseconds to milliseconds
 
-    res.json({
+    reply.send({
       ok: true,
       draft: {
         id: page?.id || 'default-draft-id',
@@ -84,16 +83,16 @@ export async function handleDraft(
     });
   } catch (error) {
     console.error('Error fetching draft:', error);
-    res.status(500).json({ error: 'Failed to fetch draft' });
+    reply.status(500).send({ error: 'Failed to fetch draft' });
   }
 }
 
-export async function handleSave(req: Request, res: Response): Promise<void> {
+export async function handleSave(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   try {
-    const { layout } = req.body;
+    const { layout } = request.body as any;
 
     if (!layout) {
-      res.status(400).json({ error: 'Layout is required' });
+      reply.status(400).send({ error: 'Layout is required' });
       return;
     }
 
@@ -101,13 +100,13 @@ export async function handleSave(req: Request, res: Response): Promise<void> {
     // TODO: Implement actual draft saving to database
     console.log('Saving draft layout:', layout);
 
-    res.json({
+    reply.send({
       ok: true,
       message: 'Draft saved successfully',
       savedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error('Error saving draft:', error);
-    res.status(500).json({ error: 'Failed to save draft' });
+    reply.status(500).send({ error: 'Failed to save draft' });
   }
 }

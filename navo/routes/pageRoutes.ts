@@ -1,10 +1,14 @@
-import { Router } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
 import { handleGetPageLayout } from '../handlers/projectHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
-const router = Router();
+async function pageRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
+  fastify.get(
+    '/:pageId',
+    { preHandler: [authenticateToken] },
+    handleGetPageLayout
+  );
+}
 
-router.get('/:pageId', authenticateToken, asyncHandler(handleGetPageLayout));
-
-export default router;
+export default fp(pageRoutes);

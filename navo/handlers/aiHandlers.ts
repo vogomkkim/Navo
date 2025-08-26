@@ -1,5 +1,4 @@
-import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../auth/auth.js';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '../db/db.js';
 import {
@@ -94,7 +93,7 @@ Required JSON shape:
   "display_name": string,         // human friendly
   "description": string,          // short description
   "category": string,             // e.g., "basic", "forms", "media"
-  "props_schema": {               // JSON Schema for props
+  "props_schema": {
     "type": "object",
     "properties": { /* keys for props used in the template */ }
   },
@@ -108,15 +107,15 @@ ${description}
 }
 
 export async function handleAiCommand(
-  req: AuthenticatedRequest,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const { command, projectId } = req.body;
-    const userId = req.userId;
+    const { command, projectId } = request.body as any;
+    const userId = request.userId;
 
     if (!command) {
-      res.status(400).json({ error: 'Command is required' });
+      reply.status(400).send({ error: 'Command is required' });
       return;
     }
 
@@ -134,10 +133,10 @@ export async function handleAiCommand(
       data: { command, response: text },
     });
 
-    res.json({ response: text });
+    reply.send({ response: text });
   } catch (error) {
     console.error('Error processing AI command:', error);
-    res.status(500).json({ error: 'Failed to process AI command' });
+    reply.status(500).send({ error: 'Failed to process AI command' });
   }
 }
 
@@ -247,18 +246,17 @@ export async function generateAndStoreDummySuggestion(
 }
 
 export async function handleGetSuggestions(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const { projectId, type, limit = 10, offset = 0 } = req.query;
+    const { projectId, type, limit = 10, offset = 0 } = request.query as any;
 
     const rows = await db
       .select()
       .from(suggestionsTable)
       .where(
-        sql`${
-          projectId
+        sql`${projectId
             ? eq(suggestionsTable.projectId, projectId as string)
             : sql`true`
         } AND ${type ? eq(suggestionsTable.type, type as string) : sql`true`}`
@@ -267,21 +265,21 @@ export async function handleGetSuggestions(
       .offset(Number(offset))
       .orderBy(desc(suggestionsTable.createdAt));
 
-    res.json({ suggestions: rows });
+    reply.send({ suggestions: rows });
   } catch (error) {
     console.error('Error fetching suggestions:', error);
-    res.status(500).json({ error: 'Failed to fetch suggestions' });
+    reply.status(500).send({ error: 'Failed to fetch suggestions' });
   }
 }
 
 export async function handleGenerateDummySuggestion(
-  req: AuthenticatedRequest,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const userId = req.userId;
+    const userId = request.userId;
     if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
+      reply.status(401).send({ error: 'Unauthorized' });
       return;
     }
 
@@ -295,16 +293,16 @@ export async function handleGenerateDummySuggestion(
 
     const projectId = latestProject[0]?.id || 'dummy-project-id';
     await generateAndStoreDummySuggestion(projectId);
-    res.json({ ok: true, message: 'Dummy suggestion generated' });
+    reply.send({ ok: true, message: 'Dummy suggestion generated' });
   } catch (error) {
     console.error('Error generating dummy suggestion:', error);
-    res.status(500).json({ error: 'Failed to generate dummy suggestion' });
+    reply.status(500).send({ error: 'Failed to generate dummy suggestion' });
   }
 }
 
 export async function handleTestDbSuggestions(
-  _req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
     const rows = await db
@@ -313,19 +311,19 @@ export async function handleTestDbSuggestions(
       .limit(5)
       .orderBy(desc(suggestionsTable.createdAt));
 
-    res.json({ suggestions: rows });
+    reply.send({ suggestions: rows });
   } catch (error) {
     console.error('Error fetching test suggestions:', error);
-    res.status(500).json({ error: 'Failed to fetch test suggestions' });
+    reply.status(500).send({ error: 'Failed to fetch test suggestions' });
   }
 }
 
 export async function handleApplySuggestion(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const { suggestionId } = req.body;
+    const { suggestionId } = request.body as any;
 
     const updated = await db
       .update(suggestionsTable)
@@ -333,21 +331,21 @@ export async function handleApplySuggestion(
       .where(eq(suggestionsTable.id, suggestionId))
       .returning();
 
-    res.json({ suggestion: updated[0] });
+    reply.send({ suggestion: updated[0] });
   } catch (error) {
     console.error('Error applying suggestion:', error);
-    res.status(500).json({ error: 'Failed to apply suggestion' });
+    reply.status(500).send({ error: 'Failed to apply suggestion' });
   }
 }
 
 export async function handleSeedDummyData(
-  req: AuthenticatedRequest,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const userId = req.userId;
+    const userId = request.userId;
     if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
+      reply.status(401).send({ error: 'Unauthorized' });
       return;
     }
 
@@ -376,31 +374,31 @@ export async function handleSeedDummyData(
       },
     ]);
 
-    res.json({ message: 'Dummy data seeded successfully', project });
+    reply.send({ message: 'Dummy data seeded successfully', project });
   } catch (error) {
     console.error('Error seeding dummy data:', error);
-    res.status(500).json({ error: 'Failed to seed dummy data' });
+    reply.status(500).send({ error: 'Failed to seed dummy data' });
   }
 }
 
 export async function handleGenerateProject(
-  req: AuthenticatedRequest,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const { projectName, projectDescription } = req.body; // Expect project name and description
-    const userId = req.userId;
+    const { projectName, projectDescription } = request.body as any; // Expect project name and description
+    const userId = request.userId;
 
     if (!projectName || !projectDescription) {
-      res
+      reply
         .status(400)
-        .json({ error: 'Project name and description are required.' });
+        .send({ error: 'Project name and description are required.' });
       return;
     }
 
     // Step 1: Create the project entry in the database
     if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
+      reply.status(401).send({ error: 'Unauthorized' });
       return;
     }
 
@@ -427,7 +425,7 @@ The output should be a single JSON object containing:
 Constraints:
 - Output ONLY pure JSON, no backticks, no explanations.
 - Ensure all generated IDs are valid UUIDs.
-- For component layouts, use existing component types if applicable (e.g., 'Header', 'Hero', 'Footer', 'AuthForm'). If a custom component is needed, define it in 'componentDefinitions'.
+- For component layouts, use existing component types if applicable (e.g., 'Header', 'Hero', 'Footer'). If a custom component is needed, define it in 'componentDefinitions'.
 - Keep the database schema simple for now.
 - Provide a basic, functional structure.
 
@@ -458,7 +456,7 @@ Example JSON structure:
       "display_name": "Custom Card",
       "description": "A customizable card component",
       "category": "basic",
-      "props_schema": {"type": "object", "properties": {"title": {"type": "string"}, "content": {"type": "string"}}},
+      "props_schema": {"type": "object", "properties": {"title": {"type": "string"}}},
       "render_template": "<div class=\"card\"><h3 data-id=\"{{id}}-title\">{{title}}</h3><p>{{content}}</p></div>",
       "css_styles": ".card { border: 1px solid #ccc; padding: 16px; }"
     }
@@ -479,7 +477,7 @@ Generate the project structure for the user's project:
 
     // Strip possible markdown fences
     if (text.startsWith('```')) {
-      text = text.replace(/^```(?:json)?\s*/i, '').replace(/\\s*```$/i, '');
+      text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     }
 
     let generatedProjectStructure: any;
@@ -495,7 +493,7 @@ Generate the project structure for the user's project:
         parseError
       );
       console.error('[AI] Raw Gemini response text:', text);
-      res.status(502).json({
+      reply.status(502).send({
         error: 'AI model returned invalid JSON for project structure.',
       });
       return;
@@ -509,9 +507,9 @@ Generate the project structure for the user's project:
         console.log('[AI] Database schema DDL executed successfully.');
       } catch (dbError) {
         console.error('[AI] Error executing database schema DDL:', dbError);
-        res
+        reply
           .status(500)
-          .json({ error: 'Failed to execute database schema DDL.' });
+          .send({ error: 'Failed to execute database schema DDL.' });
         return;
       }
     }
@@ -549,9 +547,9 @@ Generate the project structure for the user's project:
           '[AI] Error persisting component definitions:',
           compDefError
         );
-        res
+        reply
           .status(500)
-          .json({ error: 'Failed to persist component definitions.' });
+          .send({ error: 'Failed to persist component definitions.' });
         return;
       }
     }
@@ -573,7 +571,7 @@ Generate the project structure for the user's project:
         console.log('[AI] Pages persisted successfully.');
       } catch (pageError) {
         console.error('[AI] Error persisting pages:', pageError);
-        res.status(500).json({ error: 'Failed to persist pages.' });
+        reply.status(500).send({ error: 'Failed to persist pages.' });
         return;
       }
     }
@@ -593,11 +591,11 @@ Generate the project structure for the user's project:
       console.log(`[AI] Project scaffolded to: ${projectPath}`);
     } catch (scaffoldError) {
       console.error('[AI] Error during project scaffolding:', scaffoldError);
-      res.status(500).json({ error: 'Failed to scaffold project files.' });
+      reply.status(500).send({ error: 'Failed to scaffold project files.' });
       return;
     }
 
-    res.json({
+    reply.send({
       ok: true,
       message:
         'Project generation initiated. Review console for generated structure.',
@@ -606,6 +604,6 @@ Generate the project structure for the user's project:
     });
   } catch (error) {
     console.error('Error generating project:', error);
-    res.status(500).json({ error: 'Failed to generate project' });
+    reply.status(500).send({ error: 'Failed to generate project' });
   }
 }

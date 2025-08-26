@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '../db/db.js';
 import { componentDefinitions } from '../db/schema.js';
@@ -20,8 +20,8 @@ interface ComponentDefinition {
  * Get all available component definitions
  */
 export async function handleGetComponentDefinitions(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
     const components = await db
@@ -42,12 +42,12 @@ export async function handleGetComponentDefinitions(
         asc(componentDefinitions.displayName)
       );
 
-    res.json({ ok: true, components });
+    reply.send({ ok: true, components });
   } catch (error) {
     console.error('Error fetching component definitions:', error);
-    res
+    reply
       .status(500)
-      .json({ ok: false, error: 'Failed to fetch component definitions' });
+      .send({ ok: false, error: 'Failed to fetch component definitions' });
   }
 }
 
@@ -55,11 +55,11 @@ export async function handleGetComponentDefinitions(
  * Get a specific component definition by name
  */
 export async function handleGetComponentDefinition(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const { name } = req.params;
+    const { name } = request.params as { name: string };
 
     const rows = await db
       .select()
@@ -75,16 +75,16 @@ export async function handleGetComponentDefinition(
     const component = rows[0];
 
     if (!component) {
-      res.status(404).json({ ok: false, error: 'Component not found' });
+      reply.status(404).send({ ok: false, error: 'Component not found' });
       return;
     }
 
-    res.json({ ok: true, component });
+    reply.send({ ok: true, component });
   } catch (error) {
     console.error('Error fetching component definition:', error);
-    res
+    reply
       .status(500)
-      .json({ ok: false, error: 'Failed to fetch component definition' });
+      .send({ ok: false, error: 'Failed to fetch component definition' });
   }
 }
 
@@ -92,8 +92,8 @@ export async function handleGetComponentDefinition(
  * Create a new component definition
  */
 export async function handleCreateComponentDefinition(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
     const {
@@ -104,10 +104,18 @@ export async function handleCreateComponentDefinition(
       props_schema,
       render_template,
       css_styles,
-    } = req.body;
+    } = request.body as {
+      name: string;
+      display_name: string;
+      description?: string;
+      category?: string;
+      props_schema?: any;
+      render_template: string;
+      css_styles?: string;
+    };
 
     if (!name || !display_name || !render_template) {
-      res.status(400).json({
+      reply.status(400).send({
         ok: false,
         error: 'Name, display_name, and render_template are required',
       });
@@ -122,7 +130,7 @@ export async function handleCreateComponentDefinition(
       .limit(1);
 
     if (existing[0]) {
-      res.status(400).json({
+      reply.status(400).send({
         ok: false,
         error: 'Component with this name already exists',
       });
@@ -144,14 +152,14 @@ export async function handleCreateComponentDefinition(
       })
       .returning();
 
-    res.json({
+    reply.send({
       ok: true,
       message: 'Component definition created successfully',
       component: created[0],
     });
   } catch (error) {
     console.error('Error creating component definition:', error);
-    res.status(500).json({
+    reply.status(500).send({
       ok: false,
       error: 'Failed to create component definition',
     });
@@ -162,11 +170,11 @@ export async function handleCreateComponentDefinition(
  * Update an existing component definition
  */
 export async function handleUpdateComponentDefinition(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const { id } = request.params as { id: string };
     const {
       display_name,
       description,
@@ -175,7 +183,15 @@ export async function handleUpdateComponentDefinition(
       render_template,
       css_styles,
       is_active,
-    } = req.body;
+    } = request.body as {
+      display_name?: string;
+      description?: string;
+      category?: string;
+      props_schema?: any;
+      render_template?: string;
+      css_styles?: string;
+      is_active?: boolean;
+    };
 
     const updated = await db
       .update(componentDefinitions)
@@ -192,14 +208,14 @@ export async function handleUpdateComponentDefinition(
       .where(eq(componentDefinitions.id, id))
       .returning();
 
-    res.json({
+    reply.send({
       ok: true,
       message: 'Component definition updated successfully',
       component: updated[0],
     });
   } catch (error) {
     console.error('Error updating component definition:', error);
-    res.status(500).json({
+    reply.status(500).send({
       ok: false,
       error: 'Failed to update component definition',
     });
@@ -210,23 +226,23 @@ export async function handleUpdateComponentDefinition(
  * Delete a component definition
  */
 export async function handleDeleteComponentDefinition(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const { id } = request.params as { id: string };
 
     await db
       .delete(componentDefinitions)
       .where(eq(componentDefinitions.id, id));
 
-    res.json({
+    reply.send({
       ok: true,
       message: 'Component definition deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting component definition:', error);
-    res.status(500).json({
+    reply.status(500).send({
       ok: false,
       error: 'Failed to delete component definition',
     });
@@ -234,8 +250,8 @@ export async function handleDeleteComponentDefinition(
 }
 
 export async function handleSeedComponentDefinitions(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
     const jsonPath = path.resolve(
@@ -277,16 +293,16 @@ export async function handleSeedComponentDefinitions(
         },
       });
 
-    res.json({
+    reply.send({
       ok: true,
       message: `Seeded ${defaultComponents.length} component definitions`,
       components: defaultComponents.length,
     });
   } catch (error) {
     console.error('Error seeding component definitions:', error);
-    res
+    reply
       .status(500)
-      .json({ ok: false, error: 'Failed to seed component definitions' });
+      .send({ ok: false, error: 'Failed to seed component definitions' });
   }
 }
 
@@ -294,13 +310,13 @@ export async function handleSeedComponentDefinitions(
  * Generate a component definition from natural language using Gemini
  */
 export async function handleGenerateComponentFromNaturalLanguage(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const { description } = req.body as { description?: string };
+    const { description } = request.body as { description?: string };
     if (!description || typeof description !== 'string') {
-      res.status(400).json({ ok: false, error: 'description is required' });
+      reply.status(400).send({ ok: false, error: 'description is required' });
       return;
     }
 
@@ -313,9 +329,9 @@ export async function handleGenerateComponentFromNaturalLanguage(
       text = text.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '');
     }
     const generated = JSON.parse(text);
-    res.json({ ok: true, component: generated });
+    reply.send({ ok: true, component: generated });
   } catch (error) {
     console.error('Error generating component from natural language:', error);
-    res.status(500).json({ ok: false, error: 'Failed to generate component' });
+    reply.status(500).send({ ok: false, error: 'Failed to generate component' });
   }
 }

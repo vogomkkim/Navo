@@ -1,24 +1,24 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { client, db } from '../db/db.js';
 import { users, projects, suggestions } from '../db/schema.js';
 import { sql } from 'drizzle-orm';
 
 export async function handleHealthCheck(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
     // Test database connection
     await client`SELECT 1`;
 
-    res.json({
+    reply.send({
       ok: true,
       status: 'healthy',
       database: 'connected',
     });
   } catch (error) {
     console.error('Health check failed:', error);
-    res.status(500).json({
+    reply.status(500).send({
       ok: false,
       status: 'unhealthy',
       database: 'disconnected',
@@ -27,7 +27,7 @@ export async function handleHealthCheck(
   }
 }
 
-export async function handleDbTest(req: Request, res: Response): Promise<void> {
+export async function handleDbTest(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   try {
     // Test database operations
     const [{ count: userCount }] = await db
@@ -40,7 +40,7 @@ export async function handleDbTest(req: Request, res: Response): Promise<void> {
       .select({ count: sql<number>`count(*)` })
       .from(suggestions);
 
-    res.json({
+    reply.send({
       ok: true,
       message: 'Database test successful',
       counts: {
@@ -51,7 +51,7 @@ export async function handleDbTest(req: Request, res: Response): Promise<void> {
     });
   } catch (error) {
     console.error('Database test failed:', error);
-    res.status(500).json({
+    reply.status(500).send({
       ok: false,
       error: 'Database test failed',
       details: error instanceof Error ? error.message : 'Unknown error',

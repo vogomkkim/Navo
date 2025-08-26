@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
 import {
   handleListProjects,
   handleListProjectPages,
@@ -6,10 +7,18 @@ import {
 } from '../handlers/projectHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
-const router = Router();
+async function projectRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
+  fastify.get('/', { preHandler: [authenticateToken] }, handleListProjects);
+  fastify.get(
+    '/:projectId/pages',
+    { preHandler: [authenticateToken] },
+    handleListProjectPages
+  );
+  fastify.post(
+    '/:projectId/rollback',
+    { preHandler: [authenticateToken] },
+    handleRollback
+  );
+}
 
-router.get('/', authenticateToken, handleListProjects);
-router.get('/:projectId/pages', authenticateToken, handleListProjectPages);
-router.post('/:projectId/rollback', authenticateToken, handleRollback);
-
-export default router;
+export default fp(projectRoutes);

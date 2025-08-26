@@ -1,28 +1,22 @@
-import express from 'express';
-import cors from 'cors';
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
+import cors from '@fastify/cors';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { setupApiRoutes } from './routes/apiRoutes.js';
 import { setupStaticRoutes } from './routes/staticRoutes.js';
-import {
-  loggingMiddleware,
-  errorHandlingMiddleware,
-} from './middleware/loggingMiddleware.js';
+import { errorHandlingMiddleware } from './middleware/errorHandler.js';
 import logger from './core/logger.js';
 
-const app = express();
+const app = Fastify({ logger: true });
 
 // Middleware
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(loggingMiddleware);
+app.register(cors);
 
 // Setup routes
 setupApiRoutes(app);
 setupStaticRoutes(app);
 
 // Error handler (must be after routes)
-app.use(errorHandlingMiddleware);
+app.setErrorHandler(errorHandlingMiddleware);
 
 // AI suggestion generation
 export async function generateAiSuggestion(prompt: string): Promise<string> {
@@ -46,16 +40,16 @@ export async function generateAiSuggestion(prompt: string): Promise<string> {
 
 // Test endpoint for dummy suggestion
 export async function handleGenerateDummySuggestion(
-  _req: express.Request,
-  res: express.Response
+  _req: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
     const suggestion = await generateAiSuggestion(
       'Generate a simple website layout suggestion in JSON format'
     );
-    res.json({ suggestion });
+    reply.send({ suggestion });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to generate suggestion' });
+    reply.status(500).send({ error: 'Failed to generate suggestion' });
   }
 }
 

@@ -1,14 +1,14 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../db/db.js';
 import { getUserIdFromToken } from '../auth/auth.js';
 import { projects, pages, publishDeploys } from '../db/schema.js';
 import { and, desc, eq } from 'drizzle-orm';
 
-export async function handleListProjects(req: Request, res: Response) {
+export async function handleListProjects(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const userId = getUserIdFromToken(req.headers.authorization);
+    const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return reply.status(401).send({ error: 'Unauthorized' });
     }
 
     const rows = await db
@@ -21,21 +21,21 @@ export async function handleListProjects(req: Request, res: Response) {
       .where(eq(projects.ownerId, userId))
       .orderBy(desc(projects.createdAt));
 
-    res.json({ projects: rows });
+    reply.send({ projects: rows });
   } catch (error) {
     console.error('Error listing projects:', error);
-    res.status(500).json({ error: 'Failed to list projects' });
+    reply.status(500).send({ error: 'Failed to list projects' });
   }
 }
 
-export async function handleListProjectPages(req: Request, res: Response) {
+export async function handleListProjectPages(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const userId = getUserIdFromToken(req.headers.authorization);
+    const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return reply.status(401).send({ error: 'Unauthorized' });
     }
 
-    const { projectId } = req.params;
+    const { projectId } = request.params as { projectId: string };
 
     // Verify project ownership
     const project = await db
@@ -45,9 +45,9 @@ export async function handleListProjectPages(req: Request, res: Response) {
       .limit(1);
 
     if (!project[0]) {
-      return res
+      return reply
         .status(404)
-        .json({ error: 'Project not found or unauthorized' });
+        .send({ error: 'Project not found or unauthorized' });
     }
 
     const pageRows = await db
@@ -56,21 +56,21 @@ export async function handleListProjectPages(req: Request, res: Response) {
       .where(eq(pages.projectId, projectId))
       .orderBy(pages.updatedAt);
 
-    res.json({ pages: pageRows });
+    reply.send({ pages: pageRows });
   } catch (error) {
     console.error('Error listing project pages:', error);
-    res.status(500).json({ error: 'Failed to list project pages' });
+    reply.status(500).send({ error: 'Failed to list project pages' });
   }
 }
 
-export async function handleGetPageLayout(req: Request, res: Response) {
+export async function handleGetPageLayout(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const userId = getUserIdFromToken(req.headers.authorization);
+    const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return reply.status(401).send({ error: 'Unauthorized' });
     }
 
-    const { pageId } = req.params;
+    const { pageId } = request.params as { pageId: string };
 
     const page = await db
       .select({ layout_json: pages.layoutJson, projectId: pages.projectId })
@@ -79,7 +79,7 @@ export async function handleGetPageLayout(req: Request, res: Response) {
       .limit(1);
 
     if (!page[0]) {
-      return res.status(404).json({ error: 'Page not found' });
+      return reply.status(404).send({ error: 'Page not found' });
     }
 
     // Verify page ownership through project owner_id
@@ -90,27 +90,27 @@ export async function handleGetPageLayout(req: Request, res: Response) {
       .limit(1);
 
     if (!proj[0] || proj[0].ownerId !== userId) {
-      return res
+      return reply
         .status(403)
-        .json({ error: 'Forbidden: You do not own this page' });
+        .send({ error: 'Forbidden: You do not own this page' });
     }
 
-    res.json({ layout: page[0].layout_json });
+    reply.send({ layout: page[0].layout_json });
   } catch (error) {
     console.error('Error getting page layout:', error);
-    res.status(500).json({ error: 'Failed to get page layout' });
+    reply.status(500).send({ error: 'Failed to get page layout' });
   }
 }
 
-export async function handleRollback(req: Request, res: Response) {
+export async function handleRollback(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const userId = getUserIdFromToken(req.headers.authorization);
+    const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return reply.status(401).send({ error: 'Unauthorized' });
     }
 
-    const { projectId } = req.params;
-    const { rollbackTo } = req.body; // Can be a deploymentId or an index (0 for latest, 1 for second latest, etc.)
+    const { projectId } = request.params as { projectId: string };
+    const { rollbackTo } = request.body as { rollbackTo: string | number }; // Can be a deploymentId or an index (0 for latest, 1 for second latest, etc.)
 
     // Verify project ownership
     const project = await db
@@ -120,9 +120,9 @@ export async function handleRollback(req: Request, res: Response) {
       .limit(1);
 
     if (!project[0]) {
-      return res
+      return reply
         .status(404)
-        .json({ error: 'Project not found or unauthorized' });
+        .send({ error: 'Project not found or unauthorized' });
     }
 
     let targetDeploymentId: string | undefined;
@@ -151,9 +151,9 @@ export async function handleRollback(req: Request, res: Response) {
     }
 
     if (!targetDeploymentId) {
-      return res
+      return reply
         .status(400)
-        .json({ error: 'Invalid rollback target or deployment not found.' });
+        .send({ error: 'Invalid rollback target or deployment not found.' });
     }
 
     // Execute Vercel rollback command
@@ -172,7 +172,7 @@ export async function handleRollback(req: Request, res: Response) {
     );
     // In a real scenario, you would check stdout/stderr for success/failure
 
-    res.json({
+    reply.send({
       ok: true,
       message: `Rollback initiated for deployment ID: ${targetDeploymentId}`,
       // stdout: stdout, // In a real scenario
@@ -180,6 +180,6 @@ export async function handleRollback(req: Request, res: Response) {
     });
   } catch (error) {
     console.error('Error performing rollback:', error);
-    res.status(500).json({ error: 'Failed to perform rollback' });
+    reply.status(500).send({ error: 'Failed to perform rollback' });
   }
 }

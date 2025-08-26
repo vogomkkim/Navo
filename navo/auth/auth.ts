@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../db/db.js';
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -9,23 +9,25 @@ import {
 } from './password.js';
 import { config } from '../config.js';
 
-export interface AuthenticatedRequest extends Request {
-  userId?: string;
+declare module 'fastify' {
+  interface FastifyRequest {
+    userId?: string;
+  }
 }
 
 export async function handleRegister(
-  req: Request,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   console.log('[AUTH] Entering handleRegister');
 
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name } = request.body as any;
 
     if (!email || !password) {
-      res
+      reply
         .status(400)
-        .json({ ok: false, error: 'Email and password are required' });
+        .send({ ok: false, error: 'Email and password are required' });
       return;
     }
 
@@ -38,7 +40,7 @@ export async function handleRegister(
     const existingUser = existingRows[0];
 
     if (existingUser) {
-      res.status(400).json({ ok: false, error: 'User already exists' });
+      reply.status(400).send({ ok: false, error: 'User already exists' });
       return;
     }
 
@@ -62,21 +64,21 @@ export async function handleRegister(
 
     const user = inserted[0];
 
-    res.json({ ok: true, user });
+    reply.send({ ok: true, user });
   } catch (error) {
     console.error('[AUTH] Error during registration:', error);
-    res.status(500).json({ ok: false, error: 'Registration failed' });
+    reply.status(500).send({ ok: false, error: 'Registration failed' });
   }
 }
 
-export async function handleLogin(req: Request, res: Response): Promise<void> {
+export async function handleLogin(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   try {
-    const { email, password } = req.body;
+    const { email, password } = request.body as any;
 
     if (!email || !password) {
-      res
+      reply
         .status(400)
-        .json({ ok: false, error: 'Email and password are required' });
+        .send({ ok: false, error: 'Email and password are required' });
       return;
     }
 
@@ -89,14 +91,14 @@ export async function handleLogin(req: Request, res: Response): Promise<void> {
     const user = rows[0];
 
     if (!user || !user.password) {
-      res.status(401).json({ ok: false, error: 'Invalid credentials' });
+      reply.status(401).send({ ok: false, error: 'Invalid credentials' });
       return;
     }
 
     // Check password (scrypt only)
     const verify = await verifyWithScrypt(password, user.password);
     if (!verify.ok) {
-      res.status(401).json({ ok: false, error: 'Invalid credentials' });
+      reply.status(401).send({ ok: false, error: 'Invalid credentials' });
       return;
     }
 
@@ -107,7 +109,7 @@ export async function handleLogin(req: Request, res: Response): Promise<void> {
       { expiresIn: '24h' }
     );
 
-    res.json({
+    reply.send({
       ok: true,
       token,
       user: {
@@ -119,7 +121,7 @@ export async function handleLogin(req: Request, res: Response): Promise<void> {
     });
   } catch (error) {
     console.error('[AUTH] Error during login:', error);
-    res.status(500).json({ ok: false, error: 'Login failed' });
+    reply.status(500).send({ ok: false, error: 'Login failed' });
   }
 }
 
@@ -145,15 +147,14 @@ export function getUserIdFromToken(
 }
 
 export async function authenticateToken(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: () => void
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
-  const authHeader = req.headers.authorization;
+  const authHeader = request.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    res.status(401).json({ ok: false, error: 'Access token required' });
+    reply.status(401).send({ ok: false, error: 'Access token required' });
     return;
   }
 
@@ -161,13 +162,12 @@ export async function authenticateToken(
     const decoded = jwt.verify(token, config.jwt.secret);
 
     if (typeof decoded === 'string' || !decoded.userId) {
-      res.status(401).json({ ok: false, error: 'Invalid token' });
+      reply.status(401).send({ ok: false, error: 'Invalid token' });
       return;
     }
 
-    req.userId = decoded.userId;
-    next();
+    request.userId = decoded.userId;
   } catch (error) {
-    res.status(401).json({ ok: false, error: 'Invalid token' });
+    reply.status(401).send({ ok: false, error: 'Invalid token' });
   }
 }

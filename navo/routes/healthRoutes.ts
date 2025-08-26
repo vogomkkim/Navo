@@ -1,12 +1,13 @@
-import { Router } from 'express';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
 import {
   handleHealthCheck,
   handleDbTest,
 } from '../handlers/healthAndDbTestHandlers.js';
 
-const router = Router();
+async function healthRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
+  fastify.get('/', handleHealthCheck);
+  fastify.get('/db-test', handleDbTest);
+}
 
-router.get('/', handleHealthCheck);
-router.get('/db-test', handleDbTest);
-
-export default router;
+export default fp(healthRoutes);

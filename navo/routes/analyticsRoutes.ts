@@ -1,10 +1,14 @@
-import { Router } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
 import { handleUnifiedEvents } from '../handlers/eventHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
-const router = Router();
+async function analyticsRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
+  fastify.get(
+    '/events',
+    { preHandler: [authenticateToken] },
+    handleUnifiedEvents
+  );
+}
 
-router.get('/events', authenticateToken, asyncHandler(handleUnifiedEvents));
-
-export default router;
+export default fp(analyticsRoutes);

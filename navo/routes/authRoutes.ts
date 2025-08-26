@@ -1,10 +1,10 @@
-import { Router } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
 import { handleLogin, handleRegister } from '../auth/auth.js';
 
-const router = Router();
+async function authRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
+  fastify.post('/register', handleRegister);
+  fastify.post('/login', handleLogin);
+}
 
-router.post('/register', asyncHandler(handleRegister));
-router.post('/login', asyncHandler(handleLogin));
-
-export default router;
+export default fp(authRoutes);

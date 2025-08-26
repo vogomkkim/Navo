@@ -1,11 +1,11 @@
-import { Router } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
 import { handleDraft, handleSave } from '../handlers/draftHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
-const router = Router();
+async function draftRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
+  fastify.get('/', { preHandler: [authenticateToken] }, handleDraft);
+  fastify.post('/save', { preHandler: [authenticateToken] }, handleSave);
+}
 
-router.get('/', authenticateToken, asyncHandler(handleDraft));
-router.post('/save', authenticateToken, asyncHandler(handleSave));
-
-export default router;
+export default fp(draftRoutes);

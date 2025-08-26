@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from "../db/db.js";
 import { events } from "../db/schema.js";
 import { ErrorResolutionManager } from "../core/errorResolution.js";
@@ -6,7 +6,6 @@ import { ErrorAnalyzerAgent } from "../agents/errorAnalyzerAgent.js";
 import { CodeFixerAgent } from "../agents/codeFixerAgent.js";
 import { TestRunnerAgent } from "../agents/testRunnerAgent.js";
 import { RollbackAgent } from "../agents/rollbackAgent.js";
-import { AuthenticatedRequest } from "../auth/auth.js";
 import logger from "../core/logger.js";
 
 // 에러 해결 관리자 인스턴스 (싱글톤)
@@ -49,37 +48,37 @@ async function storeEvents(eventsToStore: any[], userId: string) {
 
 // 🚀 통합된 이벤트 핸들러 함수 - 배열 이벤트만 처리
 export async function handleUnifiedEvents(
-  req: AuthenticatedRequest,
-  res: Response
+  request: FastifyRequest,
+  reply: FastifyReply
 ): Promise<void> {
   try {
-    const userId = req.userId;
+    const userId = request.userId;
     if (!userId) {
-      res.status(401).json({ error: "User not authenticated" });
+      reply.status(401).send({ error: "User not authenticated" });
       return;
     }
 
-    const { events: eventsArray, ...otherFields } = req.body;
+    const { events: eventsArray, ...otherFields } = request.body as any;
 
     // 이벤트 배열 형식 처리
     if (eventsArray && Array.isArray(eventsArray)) {
       if (eventsArray.length === 0) {
-        res.status(400).json({ error: "Events array cannot be empty" });
+        reply.status(400).send({ error: "Events array cannot be empty" });
         return;
       }
 
       // 각 이벤트의 타입 검증
       for (const event of eventsArray) {
         if (!event.type) {
-          res
+          reply
             .status(400)
-            .json({ error: "Event type is required for all events" });
+            .send({ error: "Event type is required for all events" });
           return;
         }
       }
 
       await storeEvents(eventsArray, userId);
-      res.json({ success: true, count: eventsArray.length });
+      reply.send({ success: true, count: eventsArray.length });
       return;
     }
 
@@ -155,7 +154,7 @@ export async function handleUnifiedEvents(
           });
 
           // 클라이언트에게 해결 완료 알림
-          res.json({
+          reply.send({
             success: true,
             logged: true,
             autoResolved: true,
@@ -168,7 +167,7 @@ export async function handleUnifiedEvents(
           });
 
           // 클라이언트에게 해결 실패 알림
-          res.json({
+          reply.send({
             success: true,
             logged: true,
             autoResolved: false,
@@ -181,7 +180,7 @@ export async function handleUnifiedEvents(
         logger.error("에러 스택", { stack: (resolutionError as Error).stack });
 
         // 에러 해결 시스템 실패 시에도 기본 로깅은 성공
-        res.json({
+        reply.send({
           success: true,
           logged: true,
           autoResolved: false,
@@ -193,12 +192,12 @@ export async function handleUnifiedEvents(
     }
 
     // 모든 형식이 맞지 않는 경우
-    res.status(400).json({
+    reply.status(400).send({
       error:
         "Invalid event format. Expected events array or error logging fields.",
     });
   } catch (error) {
     logger.error("Error handling unified events", error);
-    res.status(500).json({ error: "Failed to process events" });
+    reply.status(500).send({ error: "Failed to process events" });
   }
 }

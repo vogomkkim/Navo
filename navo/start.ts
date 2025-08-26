@@ -11,7 +11,7 @@ async function startServer() {
     await testConnection();
 
     // 서버 시작
-    app.listen(port, () => {
+    app.listen({ port }, () => {
       logger.info(`Server started on port ${port}`);
     });
   } catch (error) {

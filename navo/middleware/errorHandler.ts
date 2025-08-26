@@ -1,24 +1,21 @@
-import { NextFunction, Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import logger from '../core/logger.js';
+import { FastifyError } from '@fastify/error';
 
-export function errorHandler(
-  err: unknown,
-  _req: Request,
-  res: Response,
-  _next: NextFunction
+export function errorHandlingMiddleware(
+  error: FastifyError,
+  _req: FastifyRequest,
+  reply: FastifyReply
 ) {
+  const status = error.statusCode || 500;
+  const message =
+    status >= 500
+      ? 'Internal Server Error'
+      : error.message || 'Request failed';
+
   logger.error(
     'Unhandled error',
-    err instanceof Error ? { message: err.message, stack: err.stack } : { err }
+    { message: error.message, stack: error.stack }
   );
-  res.status(500).json({ error: 'Internal Server Error' });
-}
-
-export function asyncHandler<
-  Req extends Request = Request,
-  Res extends Response = Response,
->(fn: (req: Req, res: Res) => Promise<unknown>) {
-  return function wrapped(req: Req, res: Res, next: NextFunction) {
-    fn(req, res).catch(next);
-  };
+  reply.status(status).send({ error: message });
 }

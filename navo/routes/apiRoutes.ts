@@ -1,4 +1,4 @@
-import { Express } from 'express';
+import { FastifyInstance } from 'fastify';
 import logger from '../core/logger.js';
 import authRoutes from './authRoutes.js';
 import componentRoutes from './componentRoutes.js';
@@ -10,15 +10,15 @@ import aiRoutes from './aiRoutes.js';
 import draftRoutes from './draftRoutes.js';
 import healthRoutes from './healthRoutes.js';
 
-export function setupApiRoutes(app: Express) {
-  app.use('/api/auth', authRoutes);
-  app.use('/api/components', componentRoutes);
-  app.use('/api/projects', projectRoutes);
-  app.use('/api/pages', pageRoutes);
-  app.use('/api/events', eventRoutes);
-  app.use('/api/analytics', analyticsRoutes);
-  app.use('/api/ai', aiRoutes);
-  app.use('/api/draft', draftRoutes);
-  app.use('/health', healthRoutes);
+export function setupApiRoutes(app: FastifyInstance) {
+  app.register(authRoutes, { prefix: '/api/auth' });
+  app.register(componentRoutes, { prefix: '/api/components' });
+  app.register(projectRoutes, { prefix: '/api/projects' });
+  app.register(pageRoutes, { prefix: '/api/pages' });
+  app.register(eventRoutes, { prefix: '/api/events' });
+  app.register(analyticsRoutes, { prefix: '/api/analytics' });
+  app.register(aiRoutes, { prefix: '/api/ai' });
+  app.register(draftRoutes, { prefix: '/api/draft' });
+  app.register(healthRoutes, { prefix: '/health' });
   logger.info('API routes initialized');
 }

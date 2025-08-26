@@ -1,5 +1,5 @@
-import { Router } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
 import {
   handleAiCommand,
   handleGetSuggestions,
@@ -11,38 +11,38 @@ import {
 } from '../handlers/aiHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
-const router = Router();
+async function aiRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
+  fastify.post('/command', { preHandler: [authenticateToken] }, handleAiCommand);
+  fastify.get(
+    '/suggestions',
+    { preHandler: [authenticateToken] },
+    handleGetSuggestions
+  );
+  fastify.get(
+    '/test-db-suggestions',
+    { preHandler: [authenticateToken] },
+    handleTestDbSuggestions
+  );
+  fastify.post(
+    '/apply-suggestion',
+    { preHandler: [authenticateToken] },
+    handleApplySuggestion
+  );
+  fastify.post(
+    '/seed-dummy-data',
+    { preHandler: [authenticateToken] },
+    handleSeedDummyData
+  );
+  fastify.post(
+    '/generate-project',
+    { preHandler: [authenticateToken] },
+    handleGenerateProject
+  );
+  fastify.post(
+    '/generate-dummy-suggestion',
+    { preHandler: [authenticateToken] },
+    handleGenerateDummySuggestion
+  );
+}
 
-router.post('/command', authenticateToken, asyncHandler(handleAiCommand));
-router.get(
-  '/suggestions',
-  authenticateToken,
-  asyncHandler(handleGetSuggestions)
-);
-router.get(
-  '/test-db-suggestions',
-  authenticateToken,
-  asyncHandler(handleTestDbSuggestions)
-);
-router.post(
-  '/apply-suggestion',
-  authenticateToken,
-  asyncHandler(handleApplySuggestion)
-);
-router.post(
-  '/seed-dummy-data',
-  authenticateToken,
-  asyncHandler(handleSeedDummyData)
-);
-router.post(
-  '/generate-project',
-  authenticateToken,
-  asyncHandler(handleGenerateProject)
-);
-router.post(
-  '/generate-dummy-suggestion',
-  authenticateToken,
-  asyncHandler(handleGenerateDummySuggestion)
-);
-
-export default router;
+export default fp(aiRoutes);

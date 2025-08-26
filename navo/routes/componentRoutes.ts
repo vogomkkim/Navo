@@ -1,5 +1,5 @@
-import { Router } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import fp from 'fastify-plugin';
 import {
   handleGetComponentDefinitions,
   handleGetComponentDefinition,
@@ -11,38 +11,38 @@ import {
 } from '../handlers/componentHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
-const router = Router();
+async function componentRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
+  fastify.get('/', { preHandler: [authenticateToken] }, handleGetComponentDefinitions);
+  fastify.get(
+    '/:name',
+    { preHandler: [authenticateToken] },
+    handleGetComponentDefinition
+  );
+  fastify.post(
+    '/seed',
+    { preHandler: [authenticateToken] },
+    handleSeedComponentDefinitions
+  );
+  fastify.post(
+    '/',
+    { preHandler: [authenticateToken] },
+    handleCreateComponentDefinition
+  );
+  fastify.post(
+    '/generate',
+    { preHandler: [authenticateToken] },
+    handleGenerateComponentFromNaturalLanguage
+  );
+  fastify.put(
+    '/:id',
+    { preHandler: [authenticateToken] },
+    handleUpdateComponentDefinition
+  );
+  fastify.delete(
+    '/:id',
+    { preHandler: [authenticateToken] },
+    handleDeleteComponentDefinition
+  );
+}
 
-router.get('/', authenticateToken, asyncHandler(handleGetComponentDefinitions));
-router.get(
-  '/:name',
-  authenticateToken,
-  asyncHandler(handleGetComponentDefinition)
-);
-router.post(
-  '/seed',
-  authenticateToken,
-  asyncHandler(handleSeedComponentDefinitions)
-);
-router.post(
-  '/',
-  authenticateToken,
-  asyncHandler(handleCreateComponentDefinition)
-);
-router.post(
-  '/generate',
-  authenticateToken,
-  asyncHandler(handleGenerateComponentFromNaturalLanguage)
-);
-router.put(
-  '/:id',
-  authenticateToken,
-  asyncHandler(handleUpdateComponentDefinition)
-);
-router.delete(
-  '/:id',
-  authenticateToken,
-  asyncHandler(handleDeleteComponentDefinition)
-);
-
-export default router;
+export default fp(componentRoutes);
