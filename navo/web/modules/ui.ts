@@ -306,7 +306,11 @@ export function attachMobileChatResize(): void {
 
   const onMove = (clientY: number) => {
     const delta = mobileChatStartY - clientY;
-    const nextHeight = clamp(mobileChatStartHeight + delta, minHeight, maxHeight);
+    const nextHeight = clamp(
+      mobileChatStartHeight + delta,
+      minHeight,
+      maxHeight
+    );
     mobileChatCurrentHeightPx = nextHeight;
     if (ghost) {
       ghost.style.height = `${nextHeight}px`;

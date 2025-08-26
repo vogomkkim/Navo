@@ -13,9 +13,9 @@
     "dev": "webpack-dev-server --mode development --config config/webpack.config.js",
     "lint": "eslint . --ext .ts --config config/eslint.config.js",
     "format": "prettier --write . --config config/.prettierrc",
-    "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
-    "db:pull": "drizzle-kit introspect"
+    "db:generate": "drizzle-kit generate --config config/drizzle.config.ts",
+    "db:push": "drizzle-kit push --config config/drizzle.config.ts",
+    "db:pull": "drizzle-kit introspect --config config/drizzle.config.ts"
   },
   "engines": {
     "node": "22.x"

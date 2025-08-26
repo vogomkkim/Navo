@@ -34,11 +34,9 @@ async function fetchApi<T>(url: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({
-        error: 'Request failed with status ' + response.status,
-      }));
+    const errorData = await response.json().catch(() => ({
+      error: 'Request failed with status ' + response.status,
+    }));
     throw new Error(errorData.error || 'API request failed');
   }
 
