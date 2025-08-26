@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import app from './server.js';
 import logger from './core/logger.js';
 import { testConnection } from './db/db.js';

@@ -495,11 +495,9 @@ Generate the project structure for the user's project:
         parseError
       );
       console.error('[AI] Raw Gemini response text:', text);
-      res
-        .status(502)
-        .json({
-          error: 'AI model returned invalid JSON for project structure.',
-        });
+      res.status(502).json({
+        error: 'AI model returned invalid JSON for project structure.',
+      });
       return;
     }
 
