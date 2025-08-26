@@ -110,7 +110,7 @@ See `README.md` for the canonical summary and goals.
 
 ## MCP Server Configuration
 
-The Model Context Protocol (MCP) server is a component designed to facilitate interaction between AI models and external data sources, such as databases. In this project, the MCP server is configured to connect to a PostgreSQL database hosted on Render.
+The Model Context Protocol (MCP) server is a component designed to facilitate interaction between AI models and external data sources, such as databases. In this project, the MCP server is configured to connect to a PostgreSQL database hosted on Render. For the overall platform deployment strategy, including Render's role, refer to the [Platform Configuration & Deployment Strategy](../../docs/plan/platform-deployment-strategy.md) document.
 
 Configuration details for the MCP server, including database connection strings, are managed within the `settings.json` file located in the project root. This file contains an `mcpServers` object where individual server configurations are defined.
 

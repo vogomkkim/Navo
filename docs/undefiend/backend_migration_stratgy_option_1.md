@@ -1,63 +1,86 @@
-짧게 결론부터.
+결론 먼저: React(Next.js) + TypeScript로 가. Svelte는 “1명+AI 에이전트 주도” 구조에서 이점이 적다. 이유와 실행안 바로 줄게.
 
-## 결론
+왜 React(Next)인가
 
-* **지금은 BFF(프론트 전용 게이트웨이) 레이어를 두는 게 맞다.**
-  초기엔 **Express/Fastify(추천)** + TypeScript로 두고, **최종적으로 Go가 안정화되면 BFF도 Go(Gin/Chi/Fiber)로 옮겨** “더블 홉”을 없애라.
-* 단, **BFF가 아무 가치(조인/캐시/권한/실험/안티-커럽션)도 안 하면 굳이 두지 마라.** 그땐 React → Go 단일 홉.
+에이전트 친화성: 공개 예제·플러그인·질문/답변이 압도적으로 많아서 AI가 정답에 가깝게 코드를 생성한다. 디버깅 시간↓.
 
-## 왜 BFF를 두나?
+부품 조달력: shadcn/ui, TanStack Query, React Hook Form, Zod 등 검증된 조합으로 “붙여서 바로 씀”.
 
-프론트엔드가 원하는 응답 형태/속도/권한을 맞추려면 프론트 전용 조합 계층이 필요함.
+리스크 분산: 인력 교체·외주·채용 때 React 경험자를 구하기가 훨씬 쉽다.
 
-* **응답 조합**: 여러 Go 서비스에서 데이터 모아 한 번에 내려줌.
-* **프론트 전용 정책**: 권한/AB 테스트/feature flag/실험 토글/서버 캐시.
-* **안티-커럽션**: Go 도메인 모델 바뀌어도 프론트 API 계약 안정화.
-* **이행 전략**: 지금 Express로 시작 → 점진적으로 Go로 교체(스트랭글러 패턴).
+백엔드 전환 내성: 지금 Node BFF → 최종 Go로 바꿔도 프론트 계약(OpenAPI)만 유지하면 프론트 수정 최소화.
 
-## 언제 굳이 안 두나?
+Svelte는 가볍고 빠르지만, 고급 라이브러리/도구의 “간극”을 사람이 메워야 하는 경우가 잦다. 에이전트가 만든 코드의 빈틈을 사람이 메꾸는 시간이 늘 수 있음.
 
-* 클라이언트가 1종(SPA 하나), API가 단순 CRUD, 실시간/저지연 최우선 → **직결**이 더 낫다.
-* 프론트 조합/캐시/실험이 전혀 필요 없고, API 계약이 장기간 안정적일 때.
+최소 스택(복붙 체크리스트)
 
-## 추천 아키텍처(현실적인 단계별)
+Frontend
 
-**1) 현재 (빠른 실행) — Node BFF**
+Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
 
-* **Fastify + TS** (Express보다 빠르고 타입 친화적)
-* **구성**
+TanStack Query + React Hook Form + Zod
 
-  * 인증: JWT(또는 Supabase 세션) 검증 미들웨어
-  * 스키마 검증: Zod/TypeBox(+AJV)
-  * 보안: helmet, rate-limit, CORS 최소화
-  * 로깅/추적: pino + request-id + OpenTelemetry 헤더 전파
-  * 캐시: Redis(핫 엔드포인트 TTL)
-  * 라우팅: `/api/*`는 BFF, 내부로는 Go 서비스 프록시/조합
-* **계약 관리**: OpenAPI 생성(자동 문서+스키마 공유)
+Auth: (현재 Supabase라면) @supabase/ssr 또는 OAuth 프록시
 
-**2) 전환기 — 스트랭글러 패턴**
+상태: 서버 캐싱 중심(TanStack), 전역 상태 최소화(Zustand 선택적)
 
-* 경로/도메인 단위로 Go 서비스가 준비될 때마다 **BFF에서 역프록시 → Go**, 기존 Node 핸들러 제거.
-* 계약(OpenAPI) 고정, 구현체만 바꾸기.
+BFF(현행)
 
-**3) 최종 — Go 중심**
+Fastify(+TypeScript) 추천(Express도 OK)
 
-* 트래픽 큰 엔드포인트부터 **Go로 BFF 자체를 대체**(Gin/Chi/Fiber).
-* 필요하면 **API Gateway(Cloudflare/Nginx/Traefik/Envoy)** 앞단에 두고, TLS/Rate-limit/WAF는 게이트웨이에 일임.
+Zod/TypeBox(+ajv)로 입출력 스키마 강제
 
-## 의사결정 체크리스트
+pino 로깅, helmet, rate-limit, CORS 최소 허용
 
-* 프론트 맞춤 **응답 조합/캐시/권한/실험** 필요? → **BFF 두자**
-* 지연에 극도로 민감하고 API 단순? → **직결**
-* 팀 역량: 지금은 JS/TS가 빠름, 최종은 Go 예정 → **Node로 시작, Go로 치환**
+Redis 캐시(핫 엔드포인트), OpenTelemetry trace 전파
 
-## 구현 팁(보안/운영)
+Core Backend(최종)
 
-* **권한 스냅샷**: BFF에서 토큰→역할/권한을 정규화하고 하위 서비스로 최소 권한 컨텍스트만 전달.
-* **에러 매핑**: 내부(Go) 에러 코드를 BFF에서 일관된 에러 스펙으로 변환(프론트 안정).
-* **관측성**: traceparent 헤더 전파, 모든 hop에 동일 trace id.
-* **계약 테스트**: OpenAPI 기반 컨슈머 테스트로 프론트-BFF 계약 고정.
+Go + Chi/Fiber/Gin 중 하나
 
----
+OpenAPI-first: 스펙 → 코드생성(ts/go 타입 동시 생성)
 
-한 줄로: **지금은 Fastify BFF로 속도·안정 챙기고, 기능/트래픽 커지면 동일 계약 유지한 채 BFF와 코어를 Go로 점진 치환.**
+DB/권한은 서비스 내부, BFF는 얇게
+
+에이전트 중심 개발 플로우(실전)
+
+스펙 먼저: OpenAPI(YAML) 작성 → openapi-typescript/oapi-codegen으로 타입 생성
+
+에이전트에 제시: “이 스펙 준수해서 Next 페이지/훅/서버액션 작성” 프롬프트
+
+계약 테스트: Prism/Mock 서버로 프론트만 먼저 통과
+
+관측성 기본값: Sentry(프론트/서버), request-id, traceparent 전파
+
+품질 가드: tsconfig "strict": true, ESLint/Biome, Playwright(핵심 플로우 3개)
+
+보안 관점(너 스타일에 맞게 깔끔하게)
+
+토큰 최소 전달: BFF에서 역할/권한 스냅샷 추출 → 다운스트림 최소 권한 컨텍스트만 전달
+
+스키마 검증: 모든 외부 입력을 Zod/ajv로 검증(프론트 폼/서버 핸들러 양쪽)
+
+시크릿 경계: 프론트 .env 공개값 최소, 서버에서만 비밀키 사용
+
+의존성 잠금: pnpm + lockfile, Renovate로 주기적 업그레이드
+
+“정말 Svelte가 나은 경우”
+
+아주 작은 위젯/임베드, 의존성 거의 없음, UX 실험 적음, 번들 크기 극한이 목표일 때.
+그 외엔 React가 총비용(TCO)이 낮다.
+
+바로 시작 템플릿
+
+Next: npx create-next-app@latest (TS, App Router)
+
+UI: shadcn/ui 설치 → 버튼/폼 컴포넌트 도입
+
+데이터: TanStack Query + React Query Devtools
+
+검증: Zod + RHF Resolver
+
+에러/로그: Sentry + pino-http(서버)
+
+계약: /spec/openapi.yaml + 코드생성 스크립트
+
+요약: 에이전트가 코딩하고 너는 오류만 수습한다는 모델에선, 생태계·문서·예제 최대치인 React(Next)가 디버깅 코스트를 가장 줄여준다. Go 전환은 OpenAPI-first로 계약 고정만 지키면 부드럽게 간다.

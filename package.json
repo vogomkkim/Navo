@@ -6,13 +6,13 @@
   "scripts": {
     "prebuild": "npm run db:generate",
     "build": "npm run build:server && npm run build:web",
-    "build:server": "tsc -p tsconfig.json",
-    "build:web": "webpack --mode production",
+    "build:server": "tsc -p config/tsconfig.json",
+    "build:web": "webpack --mode production --config config/webpack.config.js",
     "demo": "npm run build && node dist/navo/demo.js",
     "start": "node dist/navo/start.js",
-    "dev": "webpack-dev-server --mode development",
-    "lint": "eslint . --ext .ts",
-    "format": "prettier --write .",
+    "dev": "webpack-dev-server --mode development --config config/webpack.config.js",
+    "lint": "eslint . --ext .ts --config config/eslint.config.js",
+    "format": "prettier --write . --config config/.prettierrc",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit introspect"
@@ -60,8 +60,6 @@
     "postgres": "3.4.5"
   },
   "drizzle": {
-    "config": {
-      "ts": "DO_NOT_WRITE_HERE"
-    }
+    "config": "config/drizzle.config.ts"
   }
 }

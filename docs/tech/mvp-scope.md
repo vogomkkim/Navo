@@ -10,7 +10,7 @@
 - **기본 AI 제안 시스템**: AI 기반 스타일 및 복사 제안 생성 및 저장
 - **이벤트 추적**: 페이지 뷰, 클릭, 채팅 명령 등 사용자 액션 추적
 - **Draft preview (database integrated)**: Initial integration for fetching draft data from the database. Further optimization needed to consistently meet the ≤ 10s target.
-- **Publish**: (subdomain auto, success URL, and rollback last 3 builds integrated with Vercel)
+- **Publish**: (subdomain auto, success URL, and rollback last 3 builds integrated with Vercel). For detailed deployment strategy, refer to the [Platform Configuration & Deployment Strategy](../../docs/plan/platform-deployment-strategy.md) document.
 - **Analytics: track `view` and `click`**: Implemented event tracking for page views and clicks.
 
 ## SLO Targets

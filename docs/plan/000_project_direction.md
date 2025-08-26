@@ -100,8 +100,7 @@ The primary purpose is to align the team on:
   1. AI modifies project codebase.
   2. Automated commit to GitHub repository.
   3. Build pipeline triggers (GitHub Actions, Railway, Vercel, or custom runner).
-  4. Deployment to target environment (Web, Mobile app store builds, CDN).
-- **Tools:** GitHub Actions, Docker, Supabase CLI, Vercel/Railway/Fly.io for hosting.
+  4. Deployment to target environment (Web, Mobile app store builds, CDN). For detailed strategy, refer to the [Platform Configuration & Deployment Strategy](../platform-deployment-strategy.md) document.
 
 ---
 

@@ -6,11 +6,11 @@
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
-    "outDir": "dist",
-    "rootDir": ".",
+    "outDir": "../dist",
+    "rootDir": "..",
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["navo/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["../navo/**/*.ts"],
+  "exclude": ["../node_modules", "../dist"]
 }

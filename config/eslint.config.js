@@ -23,7 +23,7 @@ export default tseslint.config(
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        project: ['./tsconfig.json'],
+        project: ['../config/tsconfig.json'],
       },
     },
     rules: {
@@ -34,6 +34,6 @@ export default tseslint.config(
   },
   {
     // Ignore build output and node_modules
-    ignores: ['dist/**', 'node_modules/**'],
+    ignores: ['../dist/**', '../node_modules/**'],
   }
 );

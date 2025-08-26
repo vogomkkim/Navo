@@ -58,3 +58,4 @@ Core features: AI-powered draft generation, visual editor with inline editing, o
 
 - See `README.md` for the canonical high‑level brief.
 - Technical details in `docs/tech/architecture.md` and `docs/tech/dag-di.md`.
+- Deployment strategy in [docs/plan/platform-deployment-strategy.md](platform-deployment-strategy.md).

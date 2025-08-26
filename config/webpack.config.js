@@ -12,7 +12,7 @@ export default (env, argv) => {
 
   return {
     mode: argv.mode || 'development',
-    entry: './navo/web/app.ts',
+    entry: '../navo/web/app.ts',
     module: {
       rules: [
         {
@@ -25,24 +25,24 @@ export default (env, argv) => {
     resolve: {
       extensions: ['.ts', '.js'],
       alias: {
-        '@': path.resolve(__dirname, 'navo'),
+        '@': path.resolve(__dirname, '../navo'),
       },
     },
     output: {
       filename: isProduction ? '[name].[contenthash].js' : 'app.js',
-      path: path.resolve(__dirname, 'dist/web'),
+      path: path.resolve(__dirname, '../dist/web'),
       clean: true,
     },
     devServer: {
       static: {
-        directory: path.resolve(__dirname, 'dist/web'),
+        directory: path.resolve(__dirname, '../dist/web'),
       },
       port: 8080,
       historyApiFallback: true,
       hot: true, // 핫 리로드 활성화
       liveReload: true, // 라이브 리로드 활성화
       watchFiles: {
-        paths: ['navo/**/*'], // 전체 navo 폴더 감시 (서버 + 프론트엔드)
+        paths: ['../navo/**/*'], // 전체 navo 폴더 감시 (서버 + 프론트엔드)
         options: {
           usePolling: false, // Windows에서 더 안정적
         },
@@ -56,7 +56,7 @@ export default (env, argv) => {
     },
     plugins: [
       new HtmlWebpackPlugin({
-        template: './navo/web/index.html',
+        template: '../navo/web/index.html',
         filename: 'index.html',
         inject: 'body',
         scriptLoading: 'module',
@@ -65,12 +65,12 @@ export default (env, argv) => {
         },
       }),
       new HtmlWebpackPlugin({
-        template: './navo/web/login.html',
+        template: '../navo/web/login.html',
         filename: 'login.html',
         inject: false, // Login page has its own script
       }),
       new CopyWebpackPlugin({
-        patterns: [{ from: './navo/web/styles.css', to: 'styles.css' }],
+        patterns: [{ from: '../navo/web/styles.css', to: 'styles.css' }],
       }),
       new webpack.DefinePlugin({
         __API_URL__: JSON.stringify(
