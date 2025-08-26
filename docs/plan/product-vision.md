@@ -49,11 +49,11 @@ Make product creation conversational and visual. Users describe the goal, tweak 
 
 ## Links
 
-*   See `README.md` for the canonical high-level brief.
-*   Technical details in `docs/tech/architecture.md` and `docs/tech/dag-di.md`.
-*   Roadmap in `docs/plan/roadmap.md`.
-*   MVP scope in `docs/tech/mvp-scope.md`.
-*   Deployment strategy in [docs/plan/platform-deployment-strategy.md](platform-deployment-strategy.md).
+- See `README.md` for the canonical high-level brief.
+- Technical details in `docs/tech/architecture.md` and `docs/tech/dag-di.md`.
+- Roadmap in `docs/plan/roadmap.md`.
+- MVP scope in `docs/tech/mvp-scope.md`.
+- Deployment strategy in [docs/plan/platform-deployment-strategy.md](platform-deployment-strategy.md).
 
 ## User Data Ownership & AI Actions
 
