@@ -19,8 +19,7 @@ async function startServer() {
         logger.error("❌ 서버 시작 실패:", err);
         process.exit(1);
       }
-      logger.info(`Server started on port ${port}`);
-      logger.info("🎉 서버 시작 완료!");
+      logger.info(`🚀 서버 시작 완료! 포트: ${port}`);
     });
   } catch (error) {
     logger.error("💥 서버 시작 중 에러 발생:", error);

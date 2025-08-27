@@ -100,6 +100,34 @@ interface DraftResponse {
   tookMs: number;
 }
 
+// 멀티 에이전트 시스템 인터페이스
+interface MultiAgentRequest {
+  message: string;
+  context?: {
+    projectId?: string;
+    sessionId?: string;
+    userAgent?: string;
+    url?: string;
+  };
+}
+
+interface AgentResponse {
+  success: boolean;
+  message: string;
+  agentName: string;
+  status: "thinking" | "working" | "completed" | "error";
+  data?: any;
+  executionTime?: number;
+  nextSteps?: string[];
+}
+
+interface MultiAgentResponse {
+  success: boolean;
+  agents: AgentResponse[];
+  totalExecutionTime: number;
+  summary: string;
+}
+
 export function useDraft(options?: UseQueryOptions<DraftResponse, Error>) {
   const { token, logout } = useAuth();
   return useQuery<DraftResponse, Error>({
@@ -447,6 +475,22 @@ export function useListComponents(
         throw error;
       }
     },
+    ...options,
+  });
+}
+
+// 멀티 에이전트 시스템 API
+export function useMultiAgentSystem(
+  options?: UseMutationOptions<MultiAgentResponse, Error, MultiAgentRequest>
+) {
+  const { token } = useAuth();
+  return useMutation({
+    mutationFn: (data: MultiAgentRequest) =>
+      fetchApi<MultiAgentResponse>("/api/ai/multi-agent", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
     ...options,
   });
 }

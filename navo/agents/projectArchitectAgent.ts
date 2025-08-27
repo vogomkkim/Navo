@@ -1,7 +1,8 @@
 /**
- * Error Analyzer Agent
+ * Project Architect Agent (기존 Error Analyzer 확장)
  *
- * AI를 사용하여 에러를 분석하고 해결 방법을 제시하는 에이전트
+ * AI를 사용하여 프로젝트 요구사항을 분석하고 아키텍처를 설계하는 에이전트
+ * 에러 해결과 프로젝트 설계를 모두 지원합니다.
  */
 
 import {
@@ -12,44 +13,117 @@ import {
   ErrorType,
   ErrorSeverity,
   ErrorAnalysis,
-} from '../core/errorResolution.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import * as fs from 'fs/promises';
-import { exec as cpExec } from 'node:child_process';
-import { promisify } from 'node:util';
+} from "../core/errorResolution.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as fs from "fs/promises";
+import { exec as cpExec } from "node:child_process";
+import { promisify } from "node:util";
 
 const exec = promisify(cpExec);
 
-export class ErrorAnalyzerAgent extends BaseAgent {
+export class ProjectArchitectAgent extends BaseAgent {
   private genAI: GoogleGenerativeAI;
   private model: any;
   private analysisCache: Map<string, ErrorAnalysis> = new Map();
 
   constructor() {
-    super('ErrorAnalyzerAgent', 1); // 최고 우선순위
+    super("ProjectArchitectAgent", 1); // 최고 우선순위
 
     // Gemini API 초기화
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   }
 
   /**
-   * 이 에이전트가 처리할 수 있는 에러인지 확인
-   * ErrorAnalyzerAgent는 모든 에러를 분석할 수 있음
+   * 이 에이전트가 처리할 수 있는 요청인지 확인
+   * Project Architect Agent는 프로젝트 설계와 에러 분석을 모두 지원
    */
-  canHandle(error: Error): boolean {
-    return true; // 모든 에러를 분석할 수 있음
+  canHandle(request: any): boolean {
+    // 프로젝트 생성 요청인지 확인
+    if (
+      request &&
+      typeof request === "object" &&
+      request.name &&
+      request.description
+    ) {
+      return true; // 프로젝트 설계 요청
+    }
+
+    // 에러 객체인지 확인 (기존 호환성 유지)
+    if (request instanceof Error) {
+      return true; // 에러 분석 요청
+    }
+
+    return false;
   }
 
   /**
-   * 에러 분석 및 해결 방법 제시
+   * 프로젝트 설계 또는 에러 분석 실행
    */
-  async execute(
+  async execute(request: any, context: any): Promise<any> {
+    try {
+      // 프로젝트 설계 요청인지 확인
+      if (
+        request &&
+        typeof request === "object" &&
+        request.name &&
+        request.description
+      ) {
+        return await this.designProject(request, context);
+      }
+
+      // 에러 분석 요청인지 확인 (기존 호환성 유지)
+      if (request instanceof Error) {
+        return await this.analyzeError(request, context);
+      }
+
+      throw new Error("지원하지 않는 요청 타입입니다.");
+    } catch (e) {
+      this.logger.error("Project Architect Agent 실행 실패:", e);
+      throw e;
+    }
+  }
+
+  /**
+   * 프로젝트 설계 실행
+   */
+  private async designProject(request: any, context: any): Promise<any> {
+    try {
+      this.logger.info("🏗️ 프로젝트 아키텍처 설계 시작", { request });
+
+      // AI를 사용한 프로젝트 아키텍처 설계
+      const architecture = await this.designArchitectureWithAI(
+        request,
+        context
+      );
+
+      this.logger.info("✅ 프로젝트 아키텍처 설계 완료", { architecture });
+
+      return {
+        success: true,
+        architecture,
+        executionTime: Date.now(),
+        nextSteps: [
+          "아키텍처 설계 완료: UI/UX Designer Agent가 인터페이스를 설계합니다",
+          "Code Generator Agent가 실제 코드를 생성합니다",
+          "Development Guide Agent가 개발 가이드를 작성합니다",
+        ],
+      };
+    } catch (e) {
+      this.logger.error("프로젝트 설계 실패:", e);
+      throw e;
+    }
+  }
+
+  /**
+   * 에러 분석 실행 (기존 기능 유지)
+   */
+  private async analyzeError(
     error: Error,
     context: ErrorContext
   ): Promise<ResolutionResult> {
     try {
-      this.logSuccess(context, '에러 분석 시작', { error: error.message });
+      this.logSuccess(context, "에러 분석 시작", { error: error.message });
 
       // AI를 사용한 에러 분석
       const analysis = await this.analyzeErrorWithAI(error, context);
@@ -57,7 +131,7 @@ export class ErrorAnalyzerAgent extends BaseAgent {
       // 분석 결과를 바탕으로 해결 방법 제시
       const solution = this.generateSolutionFromAnalysis(analysis);
 
-      this.logSuccess(context, '에러 분석 완료', {
+      this.logSuccess(context, "에러 분석 완료", {
         errorType: analysis.errorType,
         severity: analysis.severity,
         solution: solution.description,
@@ -68,20 +142,70 @@ export class ErrorAnalyzerAgent extends BaseAgent {
         changes: [], // 분석 단계에서는 실제 수정을 하지 않음
         executionTime: 0, // measureExecutionTime을 사용하지 않음
         nextSteps: [
-          '분석 완료: AI가 제안한 해결 방법을 확인하세요',
-          'CodeFixerAgent가 자동으로 코드를 수정할 수 있습니다',
-          '수동 수정이 필요한 경우 상세한 가이드를 제공합니다',
+          "분석 완료: AI가 제안한 해결 방법을 확인하세요",
+          "CodeFixerAgent가 자동으로 코드를 수정할 수 있습니다",
+          "수동 수정이 필요한 경우 상세한 가이드를 제공합니다",
         ],
       };
     } catch (e) {
-      this.logError(error, context, '에러 분석 실패');
+      this.logError(error, context, "에러 분석 실패");
 
       return {
         success: false,
         changes: [],
         executionTime: 0,
         errorMessage: `에러 분석 실패: ${e instanceof Error ? e.message : String(e)}`,
-        nextSteps: ['수동 디버깅이 필요합니다', '시스템 관리자에게 문의하세요'],
+        nextSteps: ["수동 디버깅이 필요합니다", "시스템 관리자에게 문의하세요"],
+      };
+    }
+  }
+
+  /**
+   * AI를 사용하여 프로젝트 아키텍처 설계
+   */
+  private async designArchitectureWithAI(
+    request: any,
+    context: any
+  ): Promise<any> {
+    try {
+      const prompt = `
+프로젝트 요구사항을 분석하여 아키텍처를 설계해주세요:
+
+프로젝트명: ${request.name}
+설명: ${request.description}
+타입: ${request.type}
+주요 기능: ${request.features.join(", ")}
+기술 스택: ${request.technology?.join(", ") || "자동 선택"}
+복잡도: ${request.complexity || "medium"}
+
+다음 형식으로 응답해주세요:
+{
+  "technology": ["기술1", "기술2"],
+  "components": ["컴포넌트1", "컴포넌트2"],
+  "database": {"type": "데이터베이스 타입", "tables": ["테이블1", "테이블2"]},
+  "api": {"endpoints": ["엔드포인트1", "엔드포인트2"]},
+  "complexity": "복잡도 레벨"
+}
+      `;
+
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // JSON 파싱
+      const architecture = JSON.parse(text);
+
+      return architecture;
+    } catch (error) {
+      this.logger.error("AI 아키텍처 설계 실패:", error);
+
+      // 기본 아키텍처 반환
+      return {
+        technology: ["React", "Node.js", "PostgreSQL"],
+        components: ["Header", "Main", "Footer"],
+        database: { type: "PostgreSQL", tables: ["users", "projects"] },
+        api: { endpoints: ["/api/users", "/api/projects"] },
+        complexity: request.complexity || "medium",
       };
     }
   }
@@ -96,7 +220,7 @@ export class ErrorAnalyzerAgent extends BaseAgent {
     const cacheKey = `${error.message}-${JSON.stringify(context)}`;
     if (this.analysisCache.has(cacheKey)) {
       this.logger.info(
-        `[ErrorAnalyzerAgent] Returning cached analysis for error: ${error.message}`
+        `[ProjectArchitectAgent] Returning cached analysis for error: ${error.message}`
       );
       return this.analysisCache.get(cacheKey)!;
     }
@@ -167,14 +291,14 @@ export class ErrorAnalyzerAgent extends BaseAgent {
 
 Error Details:
 - Message: ${error.message}
-- File: ${(error as any).filename || 'unknown'}
-- Line: ${(error as any).lineno || 'unknown'}
-- Stack: ${error.stack || 'unknown'}
+- File: ${(error as any).filename || "unknown"}
+- Line: ${(error as any).lineno || "unknown"}
+- Stack: ${error.stack || "unknown"}
 
 Context:
 - URL: ${context.url}
 - User Agent: ${context.userAgent}
-- Project ID: ${context.projectId || 'none'}
+- Project ID: ${context.projectId || "none"}
 - Timestamp: ${context.timestamp.toISOString()}
 ${dynamicContext}
 
@@ -213,12 +337,12 @@ Instructions:
     try {
       // 마크다운 코드 블록 제거
       let cleanResponse = response;
-      if (response.includes('```json')) {
+      if (response.includes("```json")) {
         cleanResponse = response
-          .replace(/```json\s*/, '')
-          .replace(/\s*```$/, '');
-      } else if (response.includes('```')) {
-        cleanResponse = response.replace(/```\s*/, '').replace(/\s*```$/, '');
+          .replace(/```json\s*/, "")
+          .replace(/\s*```$/, "");
+      } else if (response.includes("```")) {
+        cleanResponse = response.replace(/```\s*/, "").replace(/\s*```$/, "");
       }
 
       const parsed = JSON.parse(cleanResponse);
@@ -230,7 +354,7 @@ Instructions:
         !parsed.severity ||
         !parsed.solution
       ) {
-        throw new Error('AI 응답에 필수 필드가 누락되었습니다');
+        throw new Error("AI 응답에 필수 필드가 누락되었습니다");
       }
 
       return parsed;
@@ -253,44 +377,44 @@ Instructions:
    */
   private estimateErrorType(error: Error): ErrorType {
     const message = error.message.toLowerCase();
-    const stack = error.stack?.toLowerCase() || '';
+    const stack = error.stack?.toLowerCase() || "";
 
-    if (message.includes('null') || message.includes('undefined')) {
+    if (message.includes("null") || message.includes("undefined")) {
       return ErrorType.NULL_REFERENCE;
     }
 
     if (
-      message.includes('element') ||
-      message.includes('dom') ||
-      message.includes('getelementbyid')
+      message.includes("element") ||
+      message.includes("dom") ||
+      message.includes("getelementbyid")
     ) {
       return ErrorType.ELEMENT_NOT_FOUND;
     }
 
     if (
-      message.includes('network') ||
-      message.includes('fetch') ||
-      message.includes('http')
+      message.includes("network") ||
+      message.includes("fetch") ||
+      message.includes("http")
     ) {
       return ErrorType.NETWORK_ERROR;
     }
 
     if (
-      message.includes('type') ||
-      message.includes('cannot read') ||
-      message.includes('is not a function')
+      message.includes("type") ||
+      message.includes("cannot read") ||
+      message.includes("is not a function")
     ) {
       return ErrorType.TYPE_ERROR;
     }
 
-    if (message.includes('timeout')) {
+    if (message.includes("timeout")) {
       return ErrorType.TIMEOUT_ERROR;
     }
 
     if (
-      message.includes('auth') ||
-      message.includes('unauthorized') ||
-      message.includes('forbidden')
+      message.includes("auth") ||
+      message.includes("unauthorized") ||
+      message.includes("forbidden")
     ) {
       return ErrorType.AUTHENTICATION_ERROR;
     }
@@ -346,50 +470,50 @@ Instructions:
   private estimateRootCause(error: Error): string {
     const message = error.message.toLowerCase();
 
-    if (message.includes('null') || message.includes('undefined')) {
-      return 'DOM 요소가 존재하지 않거나 초기화되지 않았습니다';
+    if (message.includes("null") || message.includes("undefined")) {
+      return "DOM 요소가 존재하지 않거나 초기화되지 않았습니다";
     }
 
-    if (message.includes('element') || message.includes('dom')) {
-      return '요청한 DOM 요소를 찾을 수 없습니다';
+    if (message.includes("element") || message.includes("dom")) {
+      return "요청한 DOM 요소를 찾을 수 없습니다";
     }
 
-    if (message.includes('network') || message.includes('fetch')) {
-      return '네트워크 연결 문제 또는 API 서버 오류가 발생했습니다';
+    if (message.includes("network") || message.includes("fetch")) {
+      return "네트워크 연결 문제 또는 API 서버 오류가 발생했습니다";
     }
 
-    if (message.includes('type') || message.includes('cannot read')) {
-      return '변수나 객체의 타입이 예상과 다르거나 정의되지 않았습니다';
+    if (message.includes("type") || message.includes("cannot read")) {
+      return "변수나 객체의 타입이 예상과 다르거나 정의되지 않았습니다";
     }
 
-    if (message.includes('timeout')) {
-      return '요청이 시간 초과되었습니다';
+    if (message.includes("timeout")) {
+      return "요청이 시간 초과되었습니다";
     }
 
-    if (message.includes('auth')) {
-      return '인증 정보가 유효하지 않거나 만료되었습니다';
+    if (message.includes("auth")) {
+      return "인증 정보가 유효하지 않거나 만료되었습니다";
     }
 
-    return '알 수 없는 오류가 발생했습니다';
+    return "알 수 없는 오류가 발생했습니다";
   }
 
   /**
    * 대체 해결 방법 생성 (AI 분석 실패 시)
    */
-  private generateFallbackSolution(error: Error): ErrorAnalysis['solution'] {
+  private generateFallbackSolution(error: Error): ErrorAnalysis["solution"] {
     const errorType = this.estimateErrorType(error);
 
     switch (errorType) {
       case ErrorType.NULL_REFERENCE:
         return {
           description:
-            'DOM 요소 존재 여부를 확인하고 안전한 접근 방법을 사용합니다',
+            "DOM 요소 존재 여부를 확인하고 안전한 접근 방법을 사용합니다",
           codeChanges: [
             {
-              file: 'navo/web/app.js',
-              action: 'modify',
-              content: '// null 체크 추가 예시',
-              reason: 'DOM 요소 접근 전 null 체크가 필요합니다',
+              file: "navo/web/app.js",
+              action: "modify",
+              content: "// null 체크 추가 예시",
+              reason: "DOM 요소 접근 전 null 체크가 필요합니다",
             },
           ],
           estimatedTime: 30,
@@ -399,13 +523,13 @@ Instructions:
       case ErrorType.ELEMENT_NOT_FOUND:
         return {
           description:
-            '요청한 DOM 요소를 찾을 수 없습니다. 요소 ID나 선택자를 확인하세요',
+            "요청한 DOM 요소를 찾을 수 없습니다. 요소 ID나 선택자를 확인하세요",
           codeChanges: [
             {
-              file: 'navo/web/index.html',
-              action: 'modify',
-              content: '<!-- 누락된 요소 추가 -->',
-              reason: 'HTML에 필요한 요소가 정의되지 않았습니다',
+              file: "navo/web/index.html",
+              action: "modify",
+              content: "<!-- 누락된 요소 추가 -->",
+              reason: "HTML에 필요한 요소가 정의되지 않았습니다",
             },
           ],
           estimatedTime: 45,
@@ -415,13 +539,13 @@ Instructions:
       case ErrorType.NETWORK_ERROR:
         return {
           description:
-            '네트워크 연결을 확인하고 API 엔드포인트 상태를 점검하세요',
+            "네트워크 연결을 확인하고 API 엔드포인트 상태를 점검하세요",
           codeChanges: [
             {
-              file: 'navo/web/app.js',
-              action: 'modify',
-              content: '// 에러 처리 및 재시도 로직 추가',
-              reason: '네트워크 오류에 대한 적절한 처리가 필요합니다',
+              file: "navo/web/app.js",
+              action: "modify",
+              content: "// 에러 처리 및 재시도 로직 추가",
+              reason: "네트워크 오류에 대한 적절한 처리가 필요합니다",
             },
           ],
           estimatedTime: 60,
@@ -431,7 +555,7 @@ Instructions:
       default:
         return {
           description:
-            '일반적인 오류입니다. 콘솔 로그를 확인하고 수동으로 디버깅하세요',
+            "일반적인 오류입니다. 콘솔 로그를 확인하고 수동으로 디버깅하세요",
           codeChanges: [],
           estimatedTime: 120,
           autoRecoverable: false,
@@ -470,7 +594,7 @@ Instructions:
    */
   private generateSolutionFromAnalysis(
     analysis: ErrorAnalysis
-  ): ErrorAnalysis['solution'] {
+  ): ErrorAnalysis["solution"] {
     return analysis.solution;
   }
 
@@ -497,7 +621,7 @@ ${stdout}
         `[ErrorAnalyzerAgent] Failed to fetch commit history: ${e instanceof Error ? e.message : String(e)}`
       );
     }
-    return '';
+    return "";
   }
 
   /**
@@ -507,7 +631,7 @@ ${stdout}
     error: Error,
     context: ErrorContext
   ): Promise<string> {
-    let dynamicContext = '';
+    let dynamicContext = "";
 
     const { filePath, lineNumber } = this.parseErrorStack(error);
 
@@ -516,11 +640,11 @@ ${stdout}
         // Read 5 lines before and 5 lines after the error line
         const linesToRead = 11; // 5 before + 1 error line + 5 after
         const offset = Math.max(0, lineNumber - 6); // 0-based index, so lineNumber - 1 - 5
-        const content = await fs.readFile(filePath, 'utf8');
-        const lines = content.split('\n');
+        const content = await fs.readFile(filePath, "utf8");
+        const lines = content.split("\n");
         const snippet = lines
           .slice(offset, Math.min(lines.length, offset + linesToRead))
-          .join('\n');
+          .join("\n");
         dynamicContext += `
 
 Relevant Code Snippet from ${filePath} (lines ${offset + 1}-${offset + linesToRead}):
@@ -556,6 +680,6 @@ Dynamic Context (Placeholder):
    */
   private async fetchLogEntries(context: ErrorContext): Promise<string> {
     // No external log provider wired. Return empty string to keep prompt concise.
-    return '';
+    return "";
   }
 }
