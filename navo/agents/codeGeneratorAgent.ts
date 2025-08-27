@@ -11,7 +11,7 @@ import {
   ResolutionResult,
   CodeChange,
   ErrorType, // Keep ErrorType for now, might be used in other parts of the file
-} from "../core/errorResolution.js";
+} from "../core/masterDeveloper.js";
 import * as fs from "fs/promises";
 import * as path from "path";
 

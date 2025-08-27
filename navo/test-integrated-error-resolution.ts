@@ -4,10 +4,8 @@
  * 모든 에이전트를 통합하여 자동 에러 해결 시스템이 제대로 작동하는지 테스트합니다.
  */
 
-import { ErrorResolutionManager } from "./core/errorResolution.js";
-import { ErrorAnalyzerAgent } from "./agents/errorAnalyzerAgent.js";
-import { CodeFixerAgent } from "./agents/codeFixerAgent.js";
-import { TestRunnerAgent } from "./agents/testRunnerAgent.js";
+import { MasterDeveloperManager } from "./core/masterDeveloper.js";
+
 import { RollbackAgent } from "./agents/rollbackAgent.js";
 
 // 테스트용 에러 생성 함수
@@ -42,20 +40,20 @@ async function testIntegratedErrorResolution() {
   console.log("🚀 통합 에러 해결 시스템 테스트 시작...\n");
 
   try {
-    // 에러 해결 관리자 생성
-    const manager = new ErrorResolutionManager();
+    // 마스터 개발자 관리자 생성
+    const manager = new MasterDeveloperManager();
 
     // 모든 에이전트 등록
     console.log("📝 에이전트 등록 중...");
 
-    const analyzerAgent = new ErrorAnalyzerAgent();
-    const codeFixerAgent = new CodeFixerAgent();
-    const testRunnerAgent = new TestRunnerAgent();
+    const projectArchitectAgent = new ProjectArchitectAgent("Project Architect", 1);
+    const codeGeneratorAgent = new CodeGeneratorAgent("Code Generator", 2);
+    const developmentGuideAgent = new DevelopmentGuideAgent("Development Guide", 3);
     const rollbackAgent = new RollbackAgent();
 
-    manager.registerAgent(analyzerAgent);
-    manager.registerAgent(codeFixerAgent);
-    manager.registerAgent(testRunnerAgent);
+    manager.registerAgent(projectArchitectAgent);
+    manager.registerAgent(codeGeneratorAgent);
+    manager.registerAgent(developmentGuideAgent);
     manager.registerAgent(rollbackAgent);
 
     console.log("✅ 모든 에이전트 등록 완료");
@@ -146,27 +144,27 @@ async function testIndividualAgents() {
   console.log("\n🔧 개별 에이전트 테스트...\n");
 
   try {
-    // Error Analyzer Agent 테스트
-    console.log("📝 Error Analyzer Agent 테스트");
-    const analyzerAgent = new ErrorAnalyzerAgent();
+    // Project Architect Agent 테스트
+    console.log("📝 Project Architect Agent 테스트");
+    const projectArchitectAgent = new ProjectArchitectAgent("Project Architect", 1);
     const testError = createTestError("null_reference");
     const testContext = createTestContext();
 
-    const analysisResult = await analyzerAgent.execute(testError, testContext);
+    const analysisResult = await projectArchitectAgent.execute(testError, testContext);
     console.log(`  - 성공: ${analysisResult.success ? "✅" : "❌"}`);
     console.log(`  - 실행 시간: ${analysisResult.executionTime}ms`);
 
-    // Code Fixer Agent 테스트
-    console.log("\n📝 Code Fixer Agent 테스트");
-    const codeFixerAgent = new CodeFixerAgent();
-    const fixResult = await codeFixerAgent.execute(testError, testContext);
+    // Code Generator Agent 테스트
+    console.log("\n📝 Code Generator Agent 테스트");
+    const codeGeneratorAgent = new CodeGeneratorAgent("Code Generator", 2);
+    const fixResult = await codeGeneratorAgent.execute(testError, testContext);
     console.log(`  - 성공: ${fixResult.success ? "✅" : "❌"}`);
     console.log(`  - 변경사항: ${fixResult.changes.length}개`);
 
-    // Test Runner Agent 테스트
-    console.log("\n📝 Test Runner Agent 테스트");
-    const testRunnerAgent = new TestRunnerAgent();
-    const testResult = await testRunnerAgent.execute(testError, testContext);
+    // Development Guide Agent 테스트
+    console.log("\n📝 Development Guide Agent 테스트");
+    const developmentGuideAgent = new DevelopmentGuideAgent("Development Guide", 3);
+    const testResult = await developmentGuideAgent.execute(testError, testContext);
     console.log(`  - 성공: ${testResult.success ? "✅" : "❌"}`);
     console.log(`  - 실행 시간: ${testResult.executionTime}ms`);
 

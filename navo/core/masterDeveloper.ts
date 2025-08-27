@@ -35,19 +35,7 @@ export interface MasterDeveloperAgent {
   execute(request: any, context: any, payload?: unknown): Promise<any>;
 }
 
-/**
- * 에러 해결 에이전트의 기본 인터페이스 (기존 호환성 유지)
- */
-export interface ErrorResolutionAgent extends MasterDeveloperAgent {
-  /** 이 에이전트가 처리할 수 있는 에러인지 확인 */
-  canHandle(error: Error): boolean;
-  /** 에러 해결 실행 */
-  execute(
-    error: Error,
-    context: ErrorContext,
-    payload?: unknown
-  ): Promise<ResolutionResult>;
-}
+
 
 /**
  * 프로젝트 생성 요청 정보
@@ -255,7 +243,7 @@ export interface ErrorAnalysis {
 /**
  * 에이전트의 기본 구현 클래스
  */
-export abstract class BaseAgent implements ErrorResolutionAgent {
+export abstract class BaseAgent implements MasterDeveloperAgent {
   protected logger: Logger;
 
   constructor(
@@ -265,12 +253,8 @@ export abstract class BaseAgent implements ErrorResolutionAgent {
     this.logger = new ConsoleLogger();
   }
 
-  abstract canHandle(error: Error): boolean;
-  abstract execute(
-    error: Error,
-    context: ErrorContext,
-    payload?: unknown
-  ): Promise<ResolutionResult>;
+  abstract canHandle(request: any): boolean;
+  abstract execute(request: any, context: any, payload?: unknown): Promise<any>;
 
   /**
    * 에이전트 실행 시간 측정
@@ -325,19 +309,19 @@ export abstract class BaseAgent implements ErrorResolutionAgent {
  * 에이전트 레지스트리 - 등록된 에이전트들을 관리
  */
 export class AgentRegistry {
-  private agents: ErrorResolutionAgent[] = [];
+  private agents: MasterDeveloperAgent[] = [];
   private logger: Logger;
 
   constructor() {
     this.logger = new ConsoleLogger();
   }
 
-  register(agent: ErrorResolutionAgent): void {
+  register(agent: MasterDeveloperAgent): void {
     this.agents.push(agent);
     this.logger.info(`[AgentRegistry] Registered agent: ${agent.name}`);
   }
 
-  list(): ErrorResolutionAgent[] {
+  list(): MasterDeveloperAgent[] {
     return [...this.agents];
   }
 }
@@ -372,7 +356,7 @@ export class ConsoleLogger implements Logger {
  * 에러 해결 관리자 - 전체 에러 해결 프로세스를 조율
  */
 
-export class ErrorResolutionManager {
+export class MasterDeveloperManager {
   private registry: AgentRegistry;
   private isProcessing = false;
   private logger: Logger;
@@ -443,10 +427,10 @@ export class ErrorResolutionManager {
         );
 
         // Initialize agents (re-initialize for each retry to ensure fresh state)
-        const errorAnalyzer = new ErrorAnalyzerAgent();
-        const codeFixer = new CodeFixerAgent();
-        const testRunner = new TestRunnerAgent();
-        const rollbackAgent = new RollbackAgent();
+        const projectArchitect = new ProjectArchitectAgent("Project Architect", 1);
+        const codeGenerator = new CodeGeneratorAgent("Code Generator", 2);
+        const developmentGuide = new DevelopmentGuideAgent("Development Guide", 3);
+        const rollbackAgent = new RollbackAgent("Rollback Agent", 4);
 
         // Define graph nodes
         const nodes: GraphNode[] = [

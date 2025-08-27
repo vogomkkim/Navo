@@ -10,7 +10,7 @@ import {
   ErrorContext,
   ResolutionResult,
   CodeChange,
-} from '../core/errorResolution.js';
+} from '../core/masterDeveloper.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 

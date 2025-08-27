@@ -4,8 +4,8 @@
  * 이 파일을 실행하여 자동 에러 해결 시스템이 제대로 작동하는지 테스트할 수 있습니다.
  */
 
-import { ErrorResolutionManager } from './core/errorResolution.js';
-import { ErrorAnalyzerAgent } from './agents/errorAnalyzerAgent.js';
+import { MasterDeveloperManager } from './core/masterDeveloper.js';
+
 
 // 테스트용 에러 생성 함수
 function createTestError(
@@ -39,12 +39,8 @@ async function testErrorResolutionSystem() {
   console.log('🚀 에러 해결 시스템 테스트 시작...\n');
 
   try {
-    // 에러 해결 관리자 생성
-    const manager = new ErrorResolutionManager();
-
-    // Error Analyzer Agent 등록
-    const analyzerAgent = new ErrorAnalyzerAgent();
-    manager.registerAgent(analyzerAgent);
+    // 마스터 개발자 관리자 생성
+    const manager = new MasterDeveloperManager();
 
     console.log('✅ 에이전트 등록 완료');
     console.log(

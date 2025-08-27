@@ -4,22 +4,11 @@
  * 프로젝트 생성 요청을 분석하고 다른 에이전트들을 조율하는 메인 에이전트
  */
 
-import { BaseAgent } from "./baseAgent.js";
+import { BaseAgent, ProjectRequest } from "../core/masterDeveloper.js";
 import { ProjectArchitectAgent } from "./projectArchitectAgent.js";
 import { UIUXDesignerAgent } from "./uiuxDesignerAgent.js";
 import { CodeGeneratorAgent } from "./codeGeneratorAgent.js";
 import { DevelopmentGuideAgent } from "./developmentGuideAgent.js";
-
-export interface ProjectRequest {
-  description: string;
-  context?: {
-    projectType?: string;
-    targetAudience?: string;
-    features?: string[];
-    technology?: string[];
-    complexity?: "simple" | "medium" | "complex";
-  };
-}
 
 export interface ProjectPlan {
   architecture: any;
@@ -47,6 +36,25 @@ export class MasterDeveloperAgent extends BaseAgent {
     this.guideAgent = new DevelopmentGuideAgent();
   }
 
+  canHandle(request: any): boolean {
+    return (
+      request &&
+      typeof request === "object" &&
+      request.name &&
+      request.description &&
+      request.type &&
+      request.features
+    );
+  }
+
+  async execute(request: any, context: any): Promise<any> {
+    if (this.canHandle(request)) {
+      return this.createProject(request);
+    } else {
+      throw new Error("MasterDeveloperAgent cannot handle this request.");
+    }
+  }
+
   /**
    * 프로젝트 생성 요청을 처리
    */
@@ -56,32 +64,31 @@ export class MasterDeveloperAgent extends BaseAgent {
 
       // 1단계: Project Architect Agent로 아키텍처 설계
       this.logger.info("🏗️ Project Architect Agent 호출 중...");
-      const architecture =
-        await this.architectAgent.designArchitecture(request);
+      const architectureResult = await this.architectAgent.execute(request, {});
+      const architecture = architectureResult.architecture; // Assuming execute returns an object with architecture
 
       // 2단계: UI/UX Designer Agent로 인터페이스 설계
       this.logger.info("🎨 UI/UX Designer Agent 호출 중...");
-      const uiDesign = await this.designerAgent.designInterface(
-        request,
-        architecture
-      );
+      const uiDesignResult = await this.designerAgent.execute(request, {}, { architecture });
+      const uiDesign = uiDesignResult.uiDesign; // Assuming execute returns an object with uiDesign
 
       // 3단계: Code Generator Agent로 코드 구조 생성
       this.logger.info("⚡ Code Generator Agent 호출 중...");
-      const codeStructure = await this.generatorAgent.generateCode(
+      const codeStructureResult = await this.generatorAgent.execute(
         request,
-        architecture,
-        uiDesign
+        {},
+        { architecture, uiDesign }
       );
+      const codeStructure = codeStructureResult.project; // Assuming execute returns an object with project
 
       // 4단계: Development Guide Agent로 개발 가이드 작성
       this.logger.info("📚 Development Guide Agent 호출 중...");
-      const developmentGuide = await this.guideAgent.createGuide(
+      const developmentGuideResult = await this.guideAgent.execute(
         request,
-        architecture,
-        uiDesign,
-        codeStructure
+        {},
+        { architecture, uiDesign, codeStructure }
       );
+      const developmentGuide = developmentGuideResult.developmentGuide; // Assuming execute returns an object with developmentGuide
 
       // 전체 프로젝트 계획 조합
       const projectPlan: ProjectPlan = {

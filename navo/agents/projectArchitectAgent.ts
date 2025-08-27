@@ -13,7 +13,7 @@ import {
   ErrorType,
   ErrorSeverity,
   ErrorAnalysis,
-} from "../core/errorResolution.js";
+} from "../core/masterDeveloper.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as fs from "fs/promises";
 import { exec as cpExec } from "node:child_process";

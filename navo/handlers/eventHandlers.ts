@@ -1,38 +1,38 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../db/db.js';
 import { events } from '../db/schema.js';
-import { ErrorResolutionManager } from '../core/errorResolution.js';
-import { ErrorAnalyzerAgent } from '../agents/errorAnalyzerAgent.js';
-import { CodeFixerAgent } from '../agents/codeFixerAgent.js';
-import { TestRunnerAgent } from '../agents/testRunnerAgent.js';
+import { MasterDeveloperManager } from '../core/masterDeveloper.js';
+import { ProjectArchitectAgent } from '../agents/projectArchitectAgent.js';
+import { CodeGeneratorAgent } from '../agents/codeGeneratorAgent.js';
+import { DevelopmentGuideAgent } from '../agents/developmentGuideAgent.js';
 import { RollbackAgent } from '../agents/rollbackAgent.js';
 import logger from '../core/logger.js';
 
-// 에러 해결 관리자 인스턴스 (싱글톤)
-let errorResolutionManager: ErrorResolutionManager | null = null;
+// 마스터 개발자 관리자 인스턴스 (싱글톤)
+let masterDeveloperManager: MasterDeveloperManager | null = null;
 
 // 에러 해결 시스템 초기화
-function initializeErrorResolutionSystem() {
-  if (!errorResolutionManager) {
-    errorResolutionManager = new ErrorResolutionManager();
+function initializeMasterDeveloperSystem() {
+  if (!masterDeveloperManager) {
+    masterDeveloperManager = new MasterDeveloperManager();
 
     // 모든 에이전트 등록
-    const analyzerAgent = new ErrorAnalyzerAgent();
-    const codeFixerAgent = new CodeFixerAgent();
-    const testRunnerAgent = new TestRunnerAgent();
+    const projectArchitectAgent = new ProjectArchitectAgent("Project Architect", 1);
+    const codeGeneratorAgent = new CodeGeneratorAgent("Code Generator", 2);
+    const developmentGuideAgent = new DevelopmentGuideAgent("Development Guide", 3);
     const rollbackAgent = new RollbackAgent();
 
-    errorResolutionManager.registerAgent(analyzerAgent);
-    errorResolutionManager.registerAgent(codeFixerAgent);
-    errorResolutionManager.registerAgent(testRunnerAgent);
-    errorResolutionManager.registerAgent(rollbackAgent);
+    masterDeveloperManager.registerAgent(projectArchitectAgent);
+    masterDeveloperManager.registerAgent(codeGeneratorAgent);
+    masterDeveloperManager.registerAgent(developmentGuideAgent);
+    masterDeveloperManager.registerAgent(rollbackAgent);
 
     logger.info('자동 에러 해결 시스템 초기화 완료');
     logger.info('등록된 에이전트 수', {
-      count: errorResolutionManager.getStatus().registeredAgents,
+      count: masterDeveloperManager.getStatus().registeredAgents,
     });
   }
-  return errorResolutionManager;
+  return masterDeveloperManager;
 }
 
 async function storeEvents(eventsToStore: any[], userId: string) {
@@ -114,7 +114,7 @@ export async function handleUnifiedEvents(
 
         // 에러 해결 시스템 초기화
         logger.debug('에러 해결 시스템 초기화 중');
-        const manager = initializeErrorResolutionSystem();
+        const manager = initializeMasterDeveloperSystem();
         logger.debug('에러 해결 시스템 초기화 완료');
 
         // 에러 객체 생성
