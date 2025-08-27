@@ -8,7 +8,11 @@ interface EditableTextProps {
   className?: string;
 }
 
-export function EditableText({ initialText, onSave, className }: EditableTextProps) {
+export function EditableText({
+  initialText,
+  onSave,
+  className,
+}: EditableTextProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(initialText);
   const inputRef = useRef<HTMLInputElement>(null);

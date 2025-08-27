@@ -28,7 +28,7 @@ function createTestContext(): any {
   return {
     timestamp: new Date(),
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:3001',
     projectId: 'test-project-123',
     sessionId: 'test-session-456',
   };

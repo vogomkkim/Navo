@@ -27,7 +27,10 @@ export async function handleHealthCheck(
   }
 }
 
-export async function handleDbTest(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+export async function handleDbTest(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
   try {
     // Test database operations
     const [{ count: userCount }] = await db

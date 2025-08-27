@@ -16,9 +16,7 @@ export function AppWrapper({ children }: AppWrapperProps) {
       <LayoutProvider>
         <ComponentDefinitionProvider>
           <EventTrackerProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
+            <AuthProvider>{children}</AuthProvider>
           </EventTrackerProvider>
         </ComponentDefinitionProvider>
       </LayoutProvider>

@@ -7,7 +7,9 @@ interface EventTrackerContextType {
   track: (event: { type: string; [key: string]: any }) => void;
 }
 
-const EventTrackerContext = createContext<EventTrackerContextType | undefined>(undefined);
+const EventTrackerContext = createContext<EventTrackerContextType | undefined>(
+  undefined
+);
 
 export function EventTrackerProvider({ children }: { children: ReactNode }) {
   const { track } = useEventTracker();
@@ -22,7 +24,9 @@ export function EventTrackerProvider({ children }: { children: ReactNode }) {
 export function useEventTrackerContext() {
   const context = useContext(EventTrackerContext);
   if (context === undefined) {
-    throw new Error('useEventTrackerContext must be used within an EventTrackerProvider');
+    throw new Error(
+      'useEventTrackerContext must be used within an EventTrackerProvider'
+    );
   }
   return context;
 }

@@ -21,11 +21,20 @@ export function Panel({ children }: PanelProps) {
 
   return (
     <>
-      <button id="togglePanelBtn" onClick={togglePanel}>Toggle Panel</button>
+      <button id="togglePanelBtn" onClick={togglePanel}>
+        Toggle Panel
+      </button>
       {isMobile() && isOpen && (
-        <div className="panel-overlay active" id="panelOverlay" onClick={closeMobilePanel}></div>
+        <div
+          className="panel-overlay active"
+          id="panelOverlay"
+          onClick={closeMobilePanel}
+        ></div>
       )}
-      <aside className={`panel ${isOpen ? 'mobile-open' : ''}`} aria-label="Side Panel">
+      <aside
+        className={`panel ${isOpen ? 'mobile-open' : ''}`}
+        aria-label="Side Panel"
+      >
         {children}
       </aside>
     </>

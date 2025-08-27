@@ -45,9 +45,10 @@ export class TestRunnerAgent extends BaseAgent {
       });
 
       // Placeholder for running actual project tests
-      const { result: isResolved, executionTime } = await this.measureExecutionTime(() =>
-        this.runProjectTests(changesToTest)
-      );
+      const { result: isResolved, executionTime } =
+        await this.measureExecutionTime(() =>
+          this.runProjectTests(changesToTest)
+        );
 
       if (isResolved) {
         this.logSuccess(context, '에러 해결 확인됨', { executionTime });
@@ -93,7 +94,9 @@ export class TestRunnerAgent extends BaseAgent {
   /**
    * 프로젝트 테스트 실행
    */
-  private async runProjectTests(appliedChanges: CodeChange[]): Promise<boolean> {
+  private async runProjectTests(
+    appliedChanges: CodeChange[]
+  ): Promise<boolean> {
     // TODO: Implement logic to run actual project tests (e.g., npm test, jest)
     // For now, return true to allow the flow to continue
     this.logger.info('[TestRunnerAgent] Running placeholder project tests...');

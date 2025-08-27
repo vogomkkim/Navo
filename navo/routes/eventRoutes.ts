@@ -1,18 +1,18 @@
-import { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { handleUnifiedEvents } from "../handlers/eventHandlers.js";
-import { authenticateToken } from "../auth/auth.js";
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import { handleUnifiedEvents } from '../handlers/eventHandlers.js';
+import { authenticateToken } from '../auth/auth.js';
 
 async function eventRoutes(
   fastify: FastifyInstance,
   options: FastifyPluginOptions
 ) {
   fastify.post(
-    "/events",
+    '/events',
     { preHandler: [authenticateToken] },
     handleUnifiedEvents
   );
   fastify.post(
-    "/events/log-error",
+    '/events/log-error',
     { preHandler: [authenticateToken] },
     handleUnifiedEvents
   );

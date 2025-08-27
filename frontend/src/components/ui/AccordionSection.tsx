@@ -15,10 +15,14 @@ export function AccordionSection({ title, children }: AccordionSectionProps) {
   };
 
   // Check if mobile (simplified for now, can use a custom hook for better responsiveness)
-  const isMobile = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+  const isMobile = () =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 768px)').matches;
 
   return (
-    <div className={`panel-section ${isMobile() && isCollapsed ? 'collapsed' : ''}`}>
+    <div
+      className={`panel-section ${isMobile() && isCollapsed ? 'collapsed' : ''}`}
+    >
       <h2 onClick={isMobile() ? toggleCollapse : undefined}>
         {title}
         {isMobile() && (

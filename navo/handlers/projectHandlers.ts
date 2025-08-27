@@ -4,7 +4,10 @@ import { getUserIdFromToken } from '../auth/auth.js';
 import { projects, pages, publishDeploys } from '../db/schema.js';
 import { and, desc, eq } from 'drizzle-orm';
 
-export async function handleListProjects(request: FastifyRequest, reply: FastifyReply) {
+export async function handleListProjects(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
   try {
     const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
@@ -28,7 +31,10 @@ export async function handleListProjects(request: FastifyRequest, reply: Fastify
   }
 }
 
-export async function handleListProjectPages(request: FastifyRequest, reply: FastifyReply) {
+export async function handleListProjectPages(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
   try {
     const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
@@ -63,7 +69,10 @@ export async function handleListProjectPages(request: FastifyRequest, reply: Fas
   }
 }
 
-export async function handleGetPageLayout(request: FastifyRequest, reply: FastifyReply) {
+export async function handleGetPageLayout(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
   try {
     const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
@@ -102,7 +111,10 @@ export async function handleGetPageLayout(request: FastifyRequest, reply: Fastif
   }
 }
 
-export async function handleRollback(request: FastifyRequest, reply: FastifyReply) {
+export async function handleRollback(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
   try {
     const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {

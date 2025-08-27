@@ -57,12 +57,11 @@ export class ErrorAnalyzerAgent extends BaseAgent {
       // 분석 결과를 바탕으로 해결 방법 제시
       const solution = this.generateSolutionFromAnalysis(analysis);
 
-      this.logSuccess(context, '에러 분석 완료',
-        {
-          errorType: analysis.errorType,
-          severity: analysis.severity,
-          solution: solution.description,
-        });
+      this.logSuccess(context, '에러 분석 완료', {
+        errorType: analysis.errorType,
+        severity: analysis.severity,
+        solution: solution.description,
+      });
 
       return {
         success: true,
@@ -96,7 +95,9 @@ export class ErrorAnalyzerAgent extends BaseAgent {
   ): Promise<ErrorAnalysis> {
     const cacheKey = `${error.message}-${JSON.stringify(context)}`;
     if (this.analysisCache.has(cacheKey)) {
-      this.logger.info(`[ErrorAnalyzerAgent] Returning cached analysis for error: ${error.message}`);
+      this.logger.info(
+        `[ErrorAnalyzerAgent] Returning cached analysis for error: ${error.message}`
+      );
       return this.analysisCache.get(cacheKey)!;
     }
 
@@ -131,10 +132,9 @@ export class ErrorAnalyzerAgent extends BaseAgent {
       this.analysisCache.set(cacheKey, finalAnalysis);
       return finalAnalysis;
     } catch (aiError) {
-      this.logger.warn(
-        `[ErrorAnalyzerAgent] AI 분석 실패, 대체 방법 사용:`,
-        { aiError: aiError instanceof Error ? aiError.message : String(aiError) }
-      );
+      this.logger.warn(`[ErrorAnalyzerAgent] AI 분석 실패, 대체 방법 사용:`, {
+        aiError: aiError instanceof Error ? aiError.message : String(aiError),
+      });
 
       // AI 분석 실패 시 기본 분석 사용
       const fallbackAnalysis: ErrorAnalysis = {
@@ -158,7 +158,11 @@ export class ErrorAnalyzerAgent extends BaseAgent {
   /**
    * AI 분석을 위한 프롬프트 생성
    */
-  private buildAnalysisPrompt(error: Error, context: ErrorContext, dynamicContext: string): string {
+  private buildAnalysisPrompt(
+    error: Error,
+    context: ErrorContext,
+    dynamicContext: string
+  ): string {
     return `Analyze the following JavaScript error and provide a concrete solution in JSON format.
 
 Error Details:
@@ -231,8 +235,13 @@ Instructions:
 
       return parsed;
     } catch (parseError) {
-      this.logger.error(`[ErrorAnalyzerAgent] AI 응답 파싱 실패:`, { parseError: parseError instanceof Error ? parseError.message : String(parseError) });
-      this.logger.error(`[ErrorAnalyzerAgent] 원본 응답:`, { response: response });
+      this.logger.error(`[ErrorAnalyzerAgent] AI 응답 파싱 실패:`, {
+        parseError:
+          parseError instanceof Error ? parseError.message : String(parseError),
+      });
+      this.logger.error(`[ErrorAnalyzerAgent] 원본 응답:`, {
+        response: response,
+      });
       throw new Error(
         `AI 응답 파싱 실패: ${parseError instanceof Error ? parseError.message : String(parseError)}`
       );
@@ -433,7 +442,10 @@ Instructions:
   /**
    * 에러 스택에서 파일 경로와 라인 번호를 파싱합니다.
    */
-  private parseErrorStack(error: Error): { filePath?: string; lineNumber?: number } {
+  private parseErrorStack(error: Error): {
+    filePath?: string;
+    lineNumber?: number;
+  } {
     const stack = error.stack;
     if (!stack) {
       return {};
@@ -441,7 +453,9 @@ Instructions:
 
     // Example stack trace line: "    at myFunction (file:///path/to/your/file.js:10:20)"
     // or "    at /path/to/your/file.js:10:20"
-    const lineMatch = stack.match(/(?:at\s+\S+\s+\()?(?:file:\/\/\/)?([^:]+):(\d+):(?:\d+)\)?/);
+    const lineMatch = stack.match(
+      /(?:at\s+\S+\s+\()?(?:file:\/\/\/)?([^:]+):(\d+):(?:\d+)\)?/
+    );
     if (lineMatch && lineMatch[1] && lineMatch[2]) {
       return {
         filePath: lineMatch[1],
@@ -479,7 +493,9 @@ ${stdout}
 `;
       }
     } catch (e) {
-      this.logger.warn(`[ErrorAnalyzerAgent] Failed to fetch commit history: ${e instanceof Error ? e.message : String(e)}`);
+      this.logger.warn(
+        `[ErrorAnalyzerAgent] Failed to fetch commit history: ${e instanceof Error ? e.message : String(e)}`
+      );
     }
     return '';
   }
@@ -487,7 +503,10 @@ ${stdout}
   /**
    * 동적 컨텍스트 (코드 스니펫, 커밋 히스토리, 로그 등)를 가져옵니다.
    */
-  private async fetchDynamicContext(error: Error, context: ErrorContext): Promise<string> {
+  private async fetchDynamicContext(
+    error: Error,
+    context: ErrorContext
+  ): Promise<string> {
     let dynamicContext = '';
 
     const { filePath, lineNumber } = this.parseErrorStack(error);
@@ -499,7 +518,9 @@ ${stdout}
         const offset = Math.max(0, lineNumber - 6); // 0-based index, so lineNumber - 1 - 5
         const content = await fs.readFile(filePath, 'utf8');
         const lines = content.split('\n');
-        const snippet = lines.slice(offset, Math.min(lines.length, offset + linesToRead)).join('\n');
+        const snippet = lines
+          .slice(offset, Math.min(lines.length, offset + linesToRead))
+          .join('\n');
         dynamicContext += `
 
 Relevant Code Snippet from ${filePath} (lines ${offset + 1}-${offset + linesToRead}):
@@ -507,7 +528,9 @@ Relevant Code Snippet from ${filePath} (lines ${offset + 1}-${offset + linesToRe
 ${snippet}
 `;
       } catch (e) {
-        this.logger.warn(`[ErrorAnalyzerAgent] Failed to read code snippet for ${filePath}:${lineNumber}: ${e instanceof Error ? e.message : String(e)}`);
+        this.logger.warn(
+          `[ErrorAnalyzerAgent] Failed to read code snippet for ${filePath}:${lineNumber}: ${e instanceof Error ? e.message : String(e)}`
+        );
       }
     }
 

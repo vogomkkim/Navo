@@ -5,7 +5,5 @@ interface InfoDisplayProps {
 }
 
 export function InfoDisplay({ infoText }: InfoDisplayProps) {
-  return (
-    <div id="info">{infoText}</div>
-  );
+  return <div id="info">{infoText}</div>;
 }

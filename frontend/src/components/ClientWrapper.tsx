@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useGlobalErrorLogger } from "@/hooks/useGlobalErrorLogger";
+import { useGlobalErrorLogger } from '@/hooks/useGlobalErrorLogger';
 
 interface ClientWrapperProps {
   children: React.ReactNode;

@@ -9,7 +9,6 @@ app.register(projectRoutes, { prefix: '/api/projects' });
 app.register(pageRoutes, { prefix: '/api/pages' });
 app.register(eventRoutes, { prefix: '/api/events' });
 
-
 각 모듈(authRoutes, eventRoutes 등) 내부에서는 상대 경로로 라우트를 정의하여, 예를 들어 eventRoutes 안에서는 fastify.post('/', ...)와 같이 /api/events/ 경로에 대응하는 핸들러를 작성했습니다. 하지만 실행 결과 Fastify가 prefix를 인식하지 못하고 모든 모듈의 경로를 루트(/)로 취급해 버렸습니다. 그 결과 서로 다른 모듈에 정의된 POST / 경로들이 충돌하여 “Method 'POST' already declared for route '/'” 같은 경로 및 메서드 중복 에러가 발생했습니다.
 
 원인
@@ -31,21 +30,20 @@ fastify.dev
 
 이 문제를 해결하려면 prefix 옵션이 제대로 적용되도록 플러그인 구조를 조정해야 합니다. 다음과 같은 두 가지 접근법을 사용할 수 있습니다:
 
-1) 라우트 모듈에서 fastify-plugin을 제거: 가장 간단한 해결책은 각 라우트 모듈(eventRoutes 등)을 일반적인 Fastify 플러그인 함수 형태로 экспорт하고, fastify-plugin으로 감싸지 않는 것입니다. 예를 들어 TypeScript/ESM 환경이라도 별도로 fp(...)로 감쌀 필요 없이, export default async function routes(fastify, opts) { ... } 형태로 두면 fastify.register 시 자동으로 새로운 스코프가 생성되고 prefix 옵션이 적용됩니다. fastify-plugin이 불필요하게 쓰인 경우 이를 제거하면 각 모듈별 prefix가 정상적으로 반영되어 중복 에러가 사라집니다.
+1. 라우트 모듈에서 fastify-plugin을 제거: 가장 간단한 해결책은 각 라우트 모듈(eventRoutes 등)을 일반적인 Fastify 플러그인 함수 형태로 экспорт하고, fastify-plugin으로 감싸지 않는 것입니다. 예를 들어 TypeScript/ESM 환경이라도 별도로 fp(...)로 감쌀 필요 없이, export default async function routes(fastify, opts) { ... } 형태로 두면 fastify.register 시 자동으로 새로운 스코프가 생성되고 prefix 옵션이 적용됩니다. fastify-plugin이 불필요하게 쓰인 경우 이를 제거하면 각 모듈별 prefix가 정상적으로 반영되어 중복 에러가 사라집니다.
 
-2) 플러그인을 다시 한 번 래핑 (workaround): 만약 fastify-plugin을 꼭 사용해야 하는 경우(예: 전역 데코레이터 등록 등으로 인해), 플러그인 안에 다시 플러그인을 등록하는 방식으로 prefix를 적용할 수 있습니다
-fastify.dev
-. Fastify 문서에서 제시한 예시를 보면, 실제 라우트 정의를 담은 모듈을 별도의 플러그인으로 감싸서 그 내부에서 prefix 옵션과 함께 등록하고 있습니다
-fastify.dev
-. 예를 들어 eventRoutes 모듈이 fastify-plugin으로 래핑되어 있다면:
+2. 플러그인을 다시 한 번 래핑 (workaround): 만약 fastify-plugin을 꼭 사용해야 하는 경우(예: 전역 데코레이터 등록 등으로 인해), 플러그인 안에 다시 플러그인을 등록하는 방식으로 prefix를 적용할 수 있습니다
+   fastify.dev
+   . Fastify 문서에서 제시한 예시를 보면, 실제 라우트 정의를 담은 모듈을 별도의 플러그인으로 감싸서 그 내부에서 prefix 옵션과 함께 등록하고 있습니다
+   fastify.dev
+   . 예를 들어 eventRoutes 모듈이 fastify-plugin으로 래핑되어 있다면:
 
 const fp = require('fastify-plugin');
 const eventRoutes = require('./eventRoutes'); // 실제 라우트 정의 플러그인
 
 module.exports = fp(async function (app, opts) {
-  app.register(eventRoutes, { prefix: '/api/events' });
+app.register(eventRoutes, { prefix: '/api/events' });
 });
-
 
 위와 같이 한 단계 더 래핑한 플러그인을 만들고 이를 fastify.register에 등록하면, 내부에서 호출된 app.register(eventRoutes, { prefix: ... })에 의해 prefix가 적용된 하위 스코프가 생성됩니다. 이 방법으로도 각 모듈의 prefix를 강제로 적용할 수 있습니다
 fastify.dev

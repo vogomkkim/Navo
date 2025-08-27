@@ -8,10 +8,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default (env, argv) => {
-  const isProduction = argv.mode === 'production';
+  const mode = argv.mode || 'development';
+  const isProduction = mode === 'production';
 
   return {
-    mode: argv.mode || 'development',
+    mode,
     entry: './navo/web/app.ts',
     module: {
       rules: [

@@ -256,7 +256,8 @@ export async function handleGetSuggestions(
       .select()
       .from(suggestionsTable)
       .where(
-        sql`${projectId
+        sql`${
+          projectId
             ? eq(suggestionsTable.projectId, projectId as string)
             : sql`true`
         } AND ${type ? eq(suggestionsTable.type, type as string) : sql`true`}`

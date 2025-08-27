@@ -9,13 +9,11 @@ export function errorHandlingMiddleware(
 ) {
   const status = error.statusCode || 500;
   const message =
-    status >= 500
-      ? 'Internal Server Error'
-      : error.message || 'Request failed';
+    status >= 500 ? 'Internal Server Error' : error.message || 'Request failed';
 
-  logger.error(
-    'Unhandled error',
-    { message: error.message, stack: error.stack }
-  );
+  logger.error('Unhandled error', {
+    message: error.message,
+    stack: error.stack,
+  });
   reply.status(status).send({ error: message });
 }

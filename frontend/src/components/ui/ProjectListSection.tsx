@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useListProjects } from '@/lib/api';
+import { useState } from "react";
+import { useListProjects } from "@/lib/api";
 
 export function ProjectListSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { data, isLoading, isError, error, refetch } = useListProjects({
-    queryKey: ['projects'],
+    queryKey: ["projects"],
     enabled: isPanelOpen, // Only fetch when panel is open
   });
 
@@ -25,24 +25,40 @@ export function ProjectListSection() {
   return (
     <>
       <div className="panel-section project-list-toggle-section">
-        <button id="toggleProjectListBtn" className="toggle-section-btn" onClick={togglePanel}>
-          📁 My Projects
+        <button
+          id="toggleProjectListBtn"
+          className="toggle-section-btn"
+          onClick={togglePanel}
+        >
+          📁 내 프로젝트
         </button>
       </div>
 
-      <div className={`project-list-panel ${isPanelOpen ? 'open' : ''}`} id="projectListPanel">
+      <div
+        className={`project-list-panel ${isPanelOpen ? "open" : ""}`}
+        id="projectListPanel"
+      >
         <div className="panel-section project-list-section">
           <div className="section-header">
-            <h2>My Projects</h2>
-            <button id="closeProjectListBtn" className="close-btn" onClick={closePanel}>×</button>
+            <h2>내 프로젝트</h2>
+            <button
+              id="closeProjectListBtn"
+              className="close-btn"
+              onClick={closePanel}
+            >
+              ×
+            </button>
           </div>
           <ul id="projectList" className="project-list">
-            {isLoading && <p>Loading projects...</p>}
-            {isError && <p>Error: {error?.message}</p>}
-            {data?.projects.length === 0 && !isLoading && <p>No projects found.</p>}
+            {isLoading && <p>프로젝트 로딩 중...</p>}
+            {isError && <p>오류: {error?.message}</p>}
+            {data?.projects.length === 0 && !isLoading && (
+              <p>프로젝트를 찾을 수 없습니다.</p>
+            )}
             {data?.projects.map((project: any) => (
               <li key={project.id}>
-                {project.name} (Created: {new Date(project.createdAt).toLocaleDateString()})
+                {project.name} (생성일:{" "}
+                {new Date(project.createdAt).toLocaleDateString()})
                 {/* TODO: Add functionality to view project pages */}
               </li>
             ))}

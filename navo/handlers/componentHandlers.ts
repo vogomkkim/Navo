@@ -332,6 +332,8 @@ export async function handleGenerateComponentFromNaturalLanguage(
     reply.send({ ok: true, component: generated });
   } catch (error) {
     console.error('Error generating component from natural language:', error);
-    reply.status(500).send({ ok: false, error: 'Failed to generate component' });
+    reply
+      .status(500)
+      .send({ ok: false, error: 'Failed to generate component' });
   }
 }

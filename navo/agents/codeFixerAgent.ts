@@ -114,7 +114,10 @@ export class CodeFixerAgent extends BaseAgent {
           });
         }
       } catch (e) {
-      this.logger.error(`[CodeFixerAgent] 변경사항 적용 실패:`, { change: change, error: e instanceof Error ? e.message : String(e) });
+        this.logger.error(`[CodeFixerAgent] 변경사항 적용 실패:`, {
+          change: change,
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
 
@@ -159,27 +162,44 @@ export class CodeFixerAgent extends BaseAgent {
           if (change.lineNumber !== undefined && change.content !== undefined) {
             const lines = originalContent.split('\n');
             if (change.lineNumber < lines.length) {
-              if (change.startColumn !== undefined && change.endColumn !== undefined) {
+              if (
+                change.startColumn !== undefined &&
+                change.endColumn !== undefined
+              ) {
                 // More granular replacement within a line
                 const line = lines[change.lineNumber];
-                newContent = lines.slice(0, change.lineNumber).join('\n') + '\n' +
-                             line.substring(0, change.startColumn) +
-                             change.content +
-                             line.substring(change.endColumn) + '\n' + lines.slice(change.lineNumber + 1).join('\n');
+                newContent =
+                  lines.slice(0, change.lineNumber).join('\n') +
+                  '\n' +
+                  line.substring(0, change.startColumn) +
+                  change.content +
+                  line.substring(change.endColumn) +
+                  '\n' +
+                  lines.slice(change.lineNumber + 1).join('\n');
               } else {
                 // Replace entire line
                 lines[change.lineNumber] = change.content;
                 newContent = lines.join('\n');
               }
             } else {
-              this.logger.warn(`[CodeFixerAgent] Line number out of bounds for modify: ${change.file}:${change.lineNumber}`);
+              this.logger.warn(
+                `[CodeFixerAgent] Line number out of bounds for modify: ${change.file}:${change.lineNumber}`
+              );
               return { success: false };
             }
-          } else if (change.oldContent !== undefined && change.content !== undefined) {
+          } else if (
+            change.oldContent !== undefined &&
+            change.content !== undefined
+          ) {
             // Find and replace specific oldContent with newContent
-            newContent = originalContent.replace(change.oldContent, change.content);
+            newContent = originalContent.replace(
+              change.oldContent,
+              change.content
+            );
           } else {
-            this.logger.warn(`[CodeFixerAgent] Insufficient information for modify action: ${change.file}`);
+            this.logger.warn(
+              `[CodeFixerAgent] Insufficient information for modify action: ${change.file}`
+            );
             return { success: false };
           }
           break;
@@ -187,9 +207,14 @@ export class CodeFixerAgent extends BaseAgent {
         case 'replace':
           if (change.oldContent !== undefined && change.content !== undefined) {
             // Replace specific oldContent with newContent
-            newContent = originalContent.replace(change.oldContent, change.content);
+            newContent = originalContent.replace(
+              change.oldContent,
+              change.content
+            );
           } else {
-            throw new Error(`'oldContent' and 'content' are required for 'replace' action: ${change.file}`);
+            throw new Error(
+              `'oldContent' and 'content' are required for 'replace' action: ${change.file}`
+            );
           }
           break;
 
@@ -210,7 +235,10 @@ export class CodeFixerAgent extends BaseAgent {
         originalContent,
       };
     } catch (e) {
-      this.logger.error(`[CodeFixerAgent] 변경사항 적용 실패:`, { change: change, error: e instanceof Error ? e.message : String(e) });
+      this.logger.error(`[CodeFixerAgent] 변경사항 적용 실패:`, {
+        change: change,
+        error: e instanceof Error ? e.message : String(e),
+      });
       return { success: false };
     }
   }
@@ -263,7 +291,9 @@ export class CodeFixerAgent extends BaseAgent {
         }
       }
     } catch (e) {
-      this.logger.warn(`[CodeFixerAgent] 백업 정리 실패:`, { error: e instanceof Error ? e.message : String(e) });
+      this.logger.warn(`[CodeFixerAgent] 백업 정리 실패:`, {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   }
 }

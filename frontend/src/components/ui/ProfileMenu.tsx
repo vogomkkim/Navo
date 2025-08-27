@@ -48,9 +48,16 @@ export function ProfileMenu() {
         onClick={handleToggle}
         ref={toggleRef}
       >
-        <span className="avatar" id="profileAvatar">👤</span>
+        <span className="avatar" id="profileAvatar">
+          👤
+        </span>
       </button>
-      <div className={`profile-menu ${isOpen ? 'open' : ''}`} id="profileMenu" role="menu" ref={menuRef}>
+      <div
+        className={`profile-menu ${isOpen ? 'open' : ''}`}
+        id="profileMenu"
+        role="menu"
+        ref={menuRef}
+      >
         <button id="logoutBtn" role="menuitem" onClick={handleLogoutClick}>
           Logout
         </button>

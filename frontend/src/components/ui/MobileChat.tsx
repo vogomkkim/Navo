@@ -62,17 +62,35 @@ export function MobileChat() {
     };
   }, []);
 
-
   return (
     <>
       {isOpen && (
-        <div className="mobile-chat-overlay active" id="mobileChatOverlay" onClick={closeChat}></div>
+        <div
+          className="mobile-chat-overlay active"
+          id="mobileChatOverlay"
+          onClick={closeChat}
+        ></div>
       )}
-      <div className={`mobile-chat-drawer ${isOpen ? 'open' : ''}`} id="mobileChatDrawer" aria-hidden={!isOpen} ref={chatDrawerRef}>
+      <div
+        className={`mobile-chat-drawer ${isOpen ? 'open' : ''}`}
+        id="mobileChatDrawer"
+        aria-hidden={!isOpen}
+        ref={chatDrawerRef}
+      >
         <div className="mobile-chat-drawer-header">
-          <div className="drag-handle" id="mobileChatDragHandle" aria-hidden="true" ref={dragHandleRef}></div>
+          <div
+            className="drag-handle"
+            id="mobileChatDragHandle"
+            aria-hidden="true"
+            ref={dragHandleRef}
+          ></div>
           <h3>Chat</h3>
-          <button id="closeMobileChatBtn" className="close-btn" aria-label="Close chat" onClick={closeChat}>
+          <button
+            id="closeMobileChatBtn"
+            className="close-btn"
+            aria-label="Close chat"
+            onClick={closeChat}
+          >
             ×
           </button>
         </div>
@@ -104,7 +122,9 @@ export function MobileChat() {
             }
           }}
         />
-        <button id="chatSendBtnMobile" onClick={handleSendChat}>Send</button>
+        <button id="chatSendBtnMobile" onClick={handleSendChat}>
+          Send
+        </button>
       </div>
     </>
   );

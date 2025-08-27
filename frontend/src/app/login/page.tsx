@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useRouter } from "next/navigation";
-import { fetchApi } from "@/lib/api";
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { fetchApi } from '@/lib/api';
 
 export default function LoginPage() {
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [message, setMessage] = useState<{
     text: string;
-    type: "error" | "success" | "";
-  }>({ text: "", type: "" });
+    type: 'error' | 'success' | '';
+  }>({ text: '', type: '' });
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Register form state
-  const [registerName, setRegisterName] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
 
   const { login, isAuthenticated } = useAuth();
@@ -28,80 +28,80 @@ export default function LoginPage() {
 
   // Add login-page class to body
   useEffect(() => {
-    document.body.classList.add("login-page");
+    document.body.classList.add('login-page');
     return () => {
-      document.body.classList.remove("login-page");
+      document.body.classList.remove('login-page');
     };
   }, []);
 
   // Check if user is already logged in
   useEffect(() => {
     if (isAuthenticated) {
-      router.push("/");
+      router.push('/');
     }
   }, [isAuthenticated, router]);
 
   // Generate random funny name
   const generateFunnyName = () => {
     const adjectives = [
-      "Cosmic",
-      "Quantum",
-      "Ninja",
-      "Cyber",
-      "Mystic",
-      "Epic",
-      "Legendary",
-      "Galactic",
-      "Stealth",
-      "Phantom",
-      "Shadow",
-      "Thunder",
-      "Lightning",
-      "Frost",
-      "Flame",
-      "Storm",
-      "Void",
-      "Echo",
-      "Pulse",
-      "Blitz",
-      "Zen",
-      "Chaos",
-      "Order",
-      "Nova",
-      "Star",
-      "Moon",
-      "Sun",
-      "Earth",
+      'Cosmic',
+      'Quantum',
+      'Ninja',
+      'Cyber',
+      'Mystic',
+      'Epic',
+      'Legendary',
+      'Galactic',
+      'Stealth',
+      'Phantom',
+      'Shadow',
+      'Thunder',
+      'Lightning',
+      'Frost',
+      'Flame',
+      'Storm',
+      'Void',
+      'Echo',
+      'Pulse',
+      'Blitz',
+      'Zen',
+      'Chaos',
+      'Order',
+      'Nova',
+      'Star',
+      'Moon',
+      'Sun',
+      'Earth',
     ];
 
     const nouns = [
-      "Penguin",
-      "Dragon",
-      "Phoenix",
-      "Wolf",
-      "Eagle",
-      "Lion",
-      "Tiger",
-      "Shark",
-      "Whale",
-      "Dolphin",
-      "Owl",
-      "Hawk",
-      "Falcon",
-      "Raven",
-      "Warrior",
-      "Mage",
-      "Archer",
-      "Knight",
-      "Wizard",
-      "Sage",
-      "Monk",
-      "Ninja",
-      "Samurai",
-      "Viking",
-      "Pirate",
-      "Explorer",
-      "Adventurer",
+      'Penguin',
+      'Dragon',
+      'Phoenix',
+      'Wolf',
+      'Eagle',
+      'Lion',
+      'Tiger',
+      'Shark',
+      'Whale',
+      'Dolphin',
+      'Owl',
+      'Hawk',
+      'Falcon',
+      'Raven',
+      'Warrior',
+      'Mage',
+      'Archer',
+      'Knight',
+      'Wizard',
+      'Sage',
+      'Monk',
+      'Ninja',
+      'Samurai',
+      'Viking',
+      'Pirate',
+      'Explorer',
+      'Adventurer',
     ];
 
     const randomAdjective =
@@ -120,51 +120,51 @@ export default function LoginPage() {
     setRegisterName(newFunnyName);
   };
 
-  const handleTabChange = (tab: "login" | "register") => {
+  const handleTabChange = (tab: 'login' | 'register') => {
     setActiveTab(tab);
-    setMessage({ text: "", type: "" });
+    setMessage({ text: '', type: '' });
     // Clear forms when switching tabs
-    if (tab === "login") {
-      setLoginEmail("");
-      setLoginPassword("");
+    if (tab === 'login') {
+      setLoginEmail('');
+      setLoginPassword('');
     } else {
       setRegisterName(generateFunnyName());
-      setRegisterEmail("");
-      setRegisterPassword("");
+      setRegisterEmail('');
+      setRegisterPassword('');
     }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoggingIn(true);
-    setMessage({ text: "", type: "" });
+    setMessage({ text: '', type: '' });
 
     try {
-      const data = await fetchApi("/api/auth/login", {
-        method: "POST",
+      const data = await fetchApi('/api/auth/login', {
+        method: 'POST',
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
 
       if (data.ok && data.token) {
         setMessage({
-          text: "Login successful! Redirecting...",
-          type: "success",
+          text: 'Login successful! Redirecting...',
+          type: 'success',
         });
 
-        console.log("🔐 로그인 성공:", { token: data.token, user: data.user });
-        console.log("🚀 리다이렉트 시작...");
+        console.log('🔐 로그인 성공:', { token: data.token, user: data.user });
+        console.log('🚀 리다이렉트 시작...');
 
         // Use the login function from AuthContext
         login(data.token, data.user);
 
-        console.log("✅ login 함수 호출 완료");
+        console.log('✅ login 함수 호출 완료');
 
         // Redirect will be handled by useEffect
       } else {
-        setMessage({ text: data.error || "Login failed", type: "error" });
+        setMessage({ text: data.error || 'Login failed', type: 'error' });
       }
     } catch (error) {
-      setMessage({ text: "Network error. Please try again.", type: "error" });
+      setMessage({ text: 'Network error. Please try again.', type: 'error' });
     } finally {
       setIsLoggingIn(false);
     }
@@ -173,7 +173,7 @@ export default function LoginPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsRegistering(true);
-    setMessage({ text: "", type: "" });
+    setMessage({ text: '', type: '' });
 
     let name = registerName.trim();
     // If name is empty, generate a random funny name
@@ -182,8 +182,8 @@ export default function LoginPage() {
     }
 
     try {
-      const data = await fetchApi("/api/auth/register", {
-        method: "POST",
+      const data = await fetchApi('/api/auth/register', {
+        method: 'POST',
         body: JSON.stringify({
           name,
           email: registerEmail,
@@ -193,20 +193,20 @@ export default function LoginPage() {
 
       if (data.ok) {
         setMessage({
-          text: "Account created successfully! You can now login.",
-          type: "success",
+          text: 'Account created successfully! You can now login.',
+          type: 'success',
         });
 
         // Switch to login tab
-        handleTabChange("login");
+        handleTabChange('login');
       } else {
         setMessage({
-          text: data.error || "Registration failed",
-          type: "error",
+          text: data.error || 'Registration failed',
+          type: 'error',
         });
       }
     } catch (error) {
-      setMessage({ text: "Network error. Please try again.", type: "error" });
+      setMessage({ text: 'Network error. Please try again.', type: 'error' });
     } finally {
       setIsRegistering(false);
     }
@@ -221,14 +221,14 @@ export default function LoginPage() {
       {/* Tab Navigation */}
       <div className="tab-nav">
         <button
-          className={`tab-btn ${activeTab === "login" ? "active" : ""}`}
-          onClick={() => handleTabChange("login")}
+          className={`tab-btn ${activeTab === 'login' ? 'active' : ''}`}
+          onClick={() => handleTabChange('login')}
         >
           Login
         </button>
         <button
-          className={`tab-btn ${activeTab === "register" ? "active" : ""}`}
-          onClick={() => handleTabChange("register")}
+          className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
+          onClick={() => handleTabChange('register')}
         >
           Register
         </button>
@@ -236,7 +236,7 @@ export default function LoginPage() {
 
       {/* Login Form */}
       <form
-        className={`form ${activeTab === "login" ? "active" : ""}`}
+        className={`form ${activeTab === 'login' ? 'active' : ''}`}
         onSubmit={handleLogin}
       >
         <div className="form-group">
@@ -262,13 +262,13 @@ export default function LoginPage() {
           />
         </div>
         <button type="submit" disabled={isLoggingIn}>
-          {isLoggingIn ? "Logging in..." : "Login"}
+          {isLoggingIn ? 'Logging in...' : 'Login'}
         </button>
       </form>
 
       {/* Register Form */}
       <form
-        className={`form ${activeTab === "register" ? "active" : ""}`}
+        className={`form ${activeTab === 'register' ? 'active' : ''}`}
         onSubmit={handleRegister}
       >
         <div className="form-group">
@@ -316,7 +316,7 @@ export default function LoginPage() {
           />
         </div>
         <button type="submit" disabled={isRegistering}>
-          {isRegistering ? "Creating account..." : "Register"}
+          {isRegistering ? 'Creating account...' : 'Register'}
         </button>
       </form>
 

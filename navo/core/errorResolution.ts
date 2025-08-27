@@ -10,7 +10,11 @@ import { GraphNode, NodeContext } from './node.js';
 
 // Define AgentGraphNode type
 export type AgentGraphNode = GraphNode & {
-  execute: (error: Error, context: ErrorContext, outputs: Map<string, unknown>) => Promise<ResolutionResult>;
+  execute: (
+    error: Error,
+    context: ErrorContext,
+    outputs: Map<string, unknown>
+  ) => Promise<ResolutionResult>;
 };
 
 // ============================================================================
@@ -28,7 +32,11 @@ export interface ErrorResolutionAgent {
   /** 이 에이전트가 처리할 수 있는 에러인지 확인 */
   canHandle(error: Error): boolean;
   /** 에러 해결 실행 */
-  execute(error: Error, context: ErrorContext, payload?: unknown): Promise<ResolutionResult>;
+  execute(
+    error: Error,
+    context: ErrorContext,
+    payload?: unknown
+  ): Promise<ResolutionResult>;
 }
 
 /**
@@ -347,7 +355,14 @@ export class ErrorResolutionManager {
       ]);
 
       while (retryCount < maxRetries) {
-        this.logger.info(`Error resolution attempt ${retryCount + 1}/${maxRetries}`, { error: error.message, attempt: retryCount + 1, maxRetries: maxRetries });
+        this.logger.info(
+          `Error resolution attempt ${retryCount + 1}/${maxRetries}`,
+          {
+            error: error.message,
+            attempt: retryCount + 1,
+            maxRetries: maxRetries,
+          }
+        );
 
         // Initialize agents (re-initialize for each retry to ensure fresh state)
         const errorAnalyzer = new ErrorAnalyzerAgent();
@@ -372,9 +387,15 @@ export class ErrorResolutionManager {
             name: 'fixCode',
             deps: ['analyzeError'],
             run: async (ctx: NodeContext) => {
-              const analysisResult = ctx.outputs.get('analyzeError') as ResolutionResult;
+              const analysisResult = ctx.outputs.get(
+                'analyzeError'
+              ) as ResolutionResult;
               // Pass the codeChanges from analysis to the fixer
-              const result = await codeFixer.execute(error, context, analysisResult.changes);
+              const result = await codeFixer.execute(
+                error,
+                context,
+                analysisResult.changes
+              );
               if (!result.success) {
                 throw new Error(result.errorMessage || 'Code fix failed');
               }
@@ -387,10 +408,16 @@ export class ErrorResolutionManager {
             run: async (ctx: NodeContext) => {
               const fixResult = ctx.outputs.get('fixCode') as ResolutionResult;
               // Test if the fix resolved the error
-              const result = await testRunner.execute(error, context, fixResult.changes); // Pass applied changes to test runner
+              const result = await testRunner.execute(
+                error,
+                context,
+                fixResult.changes
+              ); // Pass applied changes to test runner
               if (!result.success) {
                 // If tests fail, we might need to trigger rollback
-                throw new Error(result.errorMessage || 'Tests failed after fix');
+                throw new Error(
+                  result.errorMessage || 'Tests failed after fix'
+                );
               }
               return result;
             },
@@ -399,17 +426,31 @@ export class ErrorResolutionManager {
             name: 'rollbackChanges',
             deps: ['runTests'], // Rollback depends on test results
             run: async (ctx: NodeContext) => {
-              const testResult = ctx.outputs.get('runTests') as ResolutionResult;
-              if (!testResult.success) { // Only rollback if tests failed
-                const fixResult = ctx.outputs.get('fixCode') as ResolutionResult;
+              const testResult = ctx.outputs.get(
+                'runTests'
+              ) as ResolutionResult;
+              if (!testResult.success) {
+                // Only rollback if tests failed
+                const fixResult = ctx.outputs.get(
+                  'fixCode'
+                ) as ResolutionResult;
                 // Pass the changes that were applied by the fixer to the rollback agent
-                const result = await rollbackAgent.execute(error, context, fixResult.changes);
+                const result = await rollbackAgent.execute(
+                  error,
+                  context,
+                  fixResult.changes
+                );
                 if (!result.success) {
                   throw new Error(result.errorMessage || 'Rollback failed');
                 }
                 return result;
               }
-              return { success: true, changes: [], executionTime: 0, nextSteps: ['No rollback needed'] };
+              return {
+                success: true,
+                changes: [],
+                executionTime: 0,
+                nextSteps: ['No rollback needed'],
+              };
             },
           },
         ];
@@ -426,15 +467,23 @@ export class ErrorResolutionManager {
           const graphOutputs = await runGraph(nodes, baseCtx);
 
           // Determine result of this attempt
-          const currentTestResult = graphOutputs.get('runTests') as ResolutionResult;
-          const currentFixResult = graphOutputs.get('fixCode') as ResolutionResult;
-          const currentRollbackResult = graphOutputs.get('rollbackChanges') as ResolutionResult;
+          const currentTestResult = graphOutputs.get(
+            'runTests'
+          ) as ResolutionResult;
+          const currentFixResult = graphOutputs.get(
+            'fixCode'
+          ) as ResolutionResult;
+          const currentRollbackResult = graphOutputs.get(
+            'rollbackChanges'
+          ) as ResolutionResult;
 
           if (currentTestResult && currentTestResult.success) {
             finalResolutionResult = {
               success: true,
               changes: currentFixResult?.changes || [],
-              executionTime: (currentFixResult?.executionTime || 0) + (currentTestResult?.executionTime || 0),
+              executionTime:
+                (currentFixResult?.executionTime || 0) +
+                (currentTestResult?.executionTime || 0),
               nextSteps: ['Error successfully resolved and verified.'],
             };
             break; // Exit retry loop on success
@@ -442,7 +491,10 @@ export class ErrorResolutionManager {
             finalResolutionResult = {
               success: false, // Fix failed, but rollback was successful
               changes: currentRollbackResult?.changes || [],
-              executionTime: (currentFixResult?.executionTime || 0) + (currentTestResult?.executionTime || 0) + (currentRollbackResult?.executionTime || 0),
+              executionTime:
+                (currentFixResult?.executionTime || 0) +
+                (currentTestResult?.executionTime || 0) +
+                (currentRollbackResult?.executionTime || 0),
               errorMessage: 'Fix failed, but changes were rolled back.',
               nextSteps: ['Fix failed, changes rolled back. Retrying...'],
             };
@@ -451,14 +503,26 @@ export class ErrorResolutionManager {
             finalResolutionResult = {
               success: false,
               changes: [],
-              executionTime: (currentFixResult?.executionTime || 0) + (currentTestResult?.executionTime || 0) + (currentRollbackResult?.executionTime || 0),
+              executionTime:
+                (currentFixResult?.executionTime || 0) +
+                (currentTestResult?.executionTime || 0) +
+                (currentRollbackResult?.executionTime || 0),
               errorMessage: 'Error resolution process failed in this attempt.',
               nextSteps: ['Automated resolution failed. Retrying...'],
             };
             // Continue to next retry attempt
           }
         } catch (graphError) {
-          this.logger.error(`Graph execution failed in attempt ${retryCount + 1}:`, { error: graphError instanceof Error ? graphError.message : String(graphError), attempt: retryCount + 1 });
+          this.logger.error(
+            `Graph execution failed in attempt ${retryCount + 1}:`,
+            {
+              error:
+                graphError instanceof Error
+                  ? graphError.message
+                  : String(graphError),
+              attempt: retryCount + 1,
+            }
+          );
           finalResolutionResult = {
             success: false,
             changes: [],
@@ -472,12 +536,16 @@ export class ErrorResolutionManager {
         retryCount++;
         if (!finalResolutionResult.success && retryCount < maxRetries) {
           // Optional: Add a delay before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * retryCount)
+          ); // Exponential backoff
         }
       }
 
       if (finalResolutionResult.humanInterventionRequired) {
-        this.logger.warn(`[ErrorResolutionManager] Human intervention required. Automated resolution failed.`);
+        this.logger.warn(
+          `[ErrorResolutionManager] Human intervention required. Automated resolution failed.`
+        );
         return finalResolutionResult;
       }
 
@@ -489,7 +557,10 @@ export class ErrorResolutionManager {
 
       return finalResolutionResult;
     } catch (e) {
-      this.logger.error(`Error during error resolution process:`, { error: e instanceof Error ? e.message : String(e), stack: e instanceof Error ? e.stack : 'N/A' });
+      this.logger.error(`Error during error resolution process:`, {
+        error: e instanceof Error ? e.message : String(e),
+        stack: e instanceof Error ? e.stack : 'N/A',
+      });
 
       return {
         success: false,
@@ -538,7 +609,10 @@ export class ErrorResolutionManager {
     previousResult: ResolutionResult,
     humanInput: 'approve' | 'reject' | 'retry' | 'manual_fix'
   ): Promise<ResolutionResult> {
-    this.logger.info(`[ErrorResolutionManager] Processing human feedback: ${humanInput}`, { previousResult });
+    this.logger.info(
+      `[ErrorResolutionManager] Processing human feedback: ${humanInput}`,
+      { previousResult }
+    );
 
     switch (humanInput) {
       case 'approve':
@@ -555,7 +629,8 @@ export class ErrorResolutionManager {
           ...previousResult,
           success: false,
           humanInterventionRequired: true,
-          errorMessage: 'Human rejected the proposed resolution. Manual fix required.',
+          errorMessage:
+            'Human rejected the proposed resolution. Manual fix required.',
           nextSteps: ['Manual debugging is required.'],
         };
       case 'retry':
@@ -634,18 +709,14 @@ export function estimateErrorSeverity(
 
   // DOM 관련 에러는 보통 중간 정도의 심각도
   if (
-    [ErrorType.NULL_REFERENCE, ErrorType.ELEMENT_NOT_FOUND].includes(
-      errorType
-    )
+    [ErrorType.NULL_REFERENCE, ErrorType.ELEMENT_NOT_FOUND].includes(errorType)
   ) {
     return ErrorSeverity.MEDIUM;
   }
 
   // 네트워크 에러는 높은 심각도
   if (
-    [ErrorType.NETWORK_ERROR, ErrorType.API_RESPONSE_ERROR].includes(
-      errorType
-    )
+    [ErrorType.NETWORK_ERROR, ErrorType.API_RESPONSE_ERROR].includes(errorType)
   ) {
     return ErrorSeverity.HIGH;
   }

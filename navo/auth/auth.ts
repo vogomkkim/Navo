@@ -71,7 +71,10 @@ export async function handleRegister(
   }
 }
 
-export async function handleLogin(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+export async function handleLogin(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
   try {
     const { email, password } = request.body as any;
 

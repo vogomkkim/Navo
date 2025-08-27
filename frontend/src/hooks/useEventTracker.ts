@@ -33,12 +33,15 @@ export function useEventTracker() {
     });
   }, [sendEvents]);
 
-  const track = useCallback((event: EventData) => {
-    eventQueue.current.push({ ...event, ts: Date.now() });
-    if (!flushTimer.current) {
-      flushTimer.current = setTimeout(flushEvents, FLUSH_INTERVAL);
-    }
-  }, [flushEvents]);
+  const track = useCallback(
+    (event: EventData) => {
+      eventQueue.current.push({ ...event, ts: Date.now() });
+      if (!flushTimer.current) {
+        flushTimer.current = setTimeout(flushEvents, FLUSH_INTERVAL);
+      }
+    },
+    [flushEvents]
+  );
 
   // Clear any pending timer on unmount
   useEffect(() => {

@@ -17,8 +17,16 @@ interface LayoutRendererProps {
 }
 
 export function LayoutRenderer({ layout }: LayoutRendererProps) {
-  if (!layout || !Array.isArray(layout.components) || layout.components.length === 0) {
-    return <p className="error">Error: Invalid layout data received from API or no components to render.</p>;
+  if (
+    !layout ||
+    !Array.isArray(layout.components) ||
+    layout.components.length === 0
+  ) {
+    return (
+      <p className="error">
+        Error: Invalid layout data received from API or no components to render.
+      </p>
+    );
   }
 
   return (

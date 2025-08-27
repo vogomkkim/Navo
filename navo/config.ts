@@ -10,7 +10,7 @@ if (!jwtSecret) {
 
 export const config = {
   isProduction: process.env.NODE_ENV === 'production',
-  port: process.env.PORT || 3001,
+  port: process.env.PORT || 8080,
   api: {
     baseUrl: process.env.API_BASE_URL || '',
   },

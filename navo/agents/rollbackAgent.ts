@@ -198,7 +198,9 @@ export class RollbackAgent extends BaseAgent {
         backupPath,
       };
     } catch (e) {
-      this.logger.error(`[RollbackAgent] 파일 롤백 실패: ${change.file}`, { error: e instanceof Error ? e.message : String(e) });
+      this.logger.error(`[RollbackAgent] 파일 롤백 실패: ${change.file}`, {
+        error: e instanceof Error ? e.message : String(e),
+      });
       return {
         success: false,
         filePath: change.file,
@@ -223,7 +225,9 @@ export class RollbackAgent extends BaseAgent {
 
       return backupPath;
     } catch (e) {
-      this.logger.warn(`[RollbackAgent] 현재 파일 백업 실패:`, { error: e instanceof Error ? e.message : String(e) });
+      this.logger.warn(`[RollbackAgent] 현재 파일 백업 실패:`, {
+        error: e instanceof Error ? e.message : String(e),
+      });
       return '';
     }
   }

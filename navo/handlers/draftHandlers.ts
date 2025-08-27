@@ -87,7 +87,10 @@ export async function handleDraft(
   }
 }
 
-export async function handleSave(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+export async function handleSave(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
   try {
     const { layout } = request.body as any;
 

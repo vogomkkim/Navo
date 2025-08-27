@@ -1,27 +1,27 @@
-import { FastifyInstance, FastifyPluginOptions } from "fastify";
+import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import {
   handleListProjects,
   handleListProjectPages,
   handleRollback,
-} from "../handlers/projectHandlers.js";
-import { authenticateToken } from "../auth/auth.js";
+} from '../handlers/projectHandlers.js';
+import { authenticateToken } from '../auth/auth.js';
 
 async function projectRoutes(
   fastify: FastifyInstance,
   options: FastifyPluginOptions
 ) {
   fastify.get(
-    "/projects",
+    '/projects',
     { preHandler: [authenticateToken] },
     handleListProjects
   );
   fastify.get(
-    "/projects/:projectId/pages",
+    '/projects/:projectId/pages',
     { preHandler: [authenticateToken] },
     handleListProjectPages
   );
   fastify.post(
-    "/projects/:projectId/rollback",
+    '/projects/:projectId/rollback',
     { preHandler: [authenticateToken] },
     handleRollback
   );

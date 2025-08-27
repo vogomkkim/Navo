@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   createContext,
@@ -6,7 +6,7 @@ import {
   useState,
   ReactNode,
   useCallback,
-} from "react";
+} from 'react';
 
 interface LayoutComponent {
   id: string;
@@ -72,7 +72,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
 export function useLayoutContext() {
   const context = useContext(LayoutContext);
   if (context === undefined) {
-    throw new Error("useLayoutContext must be used within a LayoutProvider");
+    throw new Error('useLayoutContext must be used within a LayoutProvider');
   }
   return context;
 }

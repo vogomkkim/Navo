@@ -83,7 +83,9 @@ describe('Home Page', () => {
       </QueryClientProvider>
     );
 
-    expect(await screen.findByRole('button', { name: /toggle panel/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /toggle panel/i })
+    ).toBeInTheDocument();
   });
 
   it('renders the StatusDisplay component', async () => {

@@ -1,12 +1,12 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { db } from "../db/db.js";
-import { events } from "../db/schema.js";
-import { ErrorResolutionManager } from "../core/errorResolution.js";
-import { ErrorAnalyzerAgent } from "../agents/errorAnalyzerAgent.js";
-import { CodeFixerAgent } from "../agents/codeFixerAgent.js";
-import { TestRunnerAgent } from "../agents/testRunnerAgent.js";
-import { RollbackAgent } from "../agents/rollbackAgent.js";
-import logger from "../core/logger.js";
+import { db } from '../db/db.js';
+import { events } from '../db/schema.js';
+import { ErrorResolutionManager } from '../core/errorResolution.js';
+import { ErrorAnalyzerAgent } from '../agents/errorAnalyzerAgent.js';
+import { CodeFixerAgent } from '../agents/codeFixerAgent.js';
+import { TestRunnerAgent } from '../agents/testRunnerAgent.js';
+import { RollbackAgent } from '../agents/rollbackAgent.js';
+import logger from '../core/logger.js';
 
 // 에러 해결 관리자 인스턴스 (싱글톤)
 let errorResolutionManager: ErrorResolutionManager | null = null;
@@ -27,8 +27,8 @@ function initializeErrorResolutionSystem() {
     errorResolutionManager.registerAgent(testRunnerAgent);
     errorResolutionManager.registerAgent(rollbackAgent);
 
-    logger.info("자동 에러 해결 시스템 초기화 완료");
-    logger.info("등록된 에이전트 수", {
+    logger.info('자동 에러 해결 시스템 초기화 완료');
+    logger.info('등록된 에이전트 수', {
       count: errorResolutionManager.getStatus().registeredAgents,
     });
   }
@@ -54,7 +54,7 @@ export async function handleUnifiedEvents(
   try {
     const userId = request.userId;
     if (!userId) {
-      reply.status(401).send({ error: "User not authenticated" });
+      reply.status(401).send({ error: 'User not authenticated' });
       return;
     }
 
@@ -63,7 +63,7 @@ export async function handleUnifiedEvents(
     // 이벤트 배열 형식 처리
     if (eventsArray && Array.isArray(eventsArray)) {
       if (eventsArray.length === 0) {
-        reply.status(400).send({ error: "Events array cannot be empty" });
+        reply.status(400).send({ error: 'Events array cannot be empty' });
         return;
       }
 
@@ -72,7 +72,7 @@ export async function handleUnifiedEvents(
         if (!event.type) {
           reply
             .status(400)
-            .send({ error: "Event type is required for all events" });
+            .send({ error: 'Event type is required for all events' });
           return;
         }
       }
@@ -85,9 +85,9 @@ export async function handleUnifiedEvents(
     // 클라이언트 에러 로깅 처리
     if (otherFields.message || otherFields.filename || otherFields.stack) {
       const errorEvent = {
-        type: "client_error",
+        type: 'client_error',
         data: {
-          error_type: otherFields.type || "unknown",
+          error_type: otherFields.type || 'unknown',
           message: otherFields.message,
           filename: otherFields.filename,
           lineno: otherFields.lineno,
@@ -104,8 +104,8 @@ export async function handleUnifiedEvents(
 
       // 🚀 자동 에러 해결 시스템 실행!
       try {
-        logger.info("자동 에러 해결 시스템 시작");
-        logger.debug("에러 정보", {
+        logger.info('자동 에러 해결 시스템 시작');
+        logger.debug('에러 정보', {
           message: otherFields.message,
           filename: otherFields.filename,
           lineno: otherFields.lineno,
@@ -113,25 +113,25 @@ export async function handleUnifiedEvents(
         });
 
         // 에러 해결 시스템 초기화
-        logger.debug("에러 해결 시스템 초기화 중");
+        logger.debug('에러 해결 시스템 초기화 중');
         const manager = initializeErrorResolutionSystem();
-        logger.debug("에러 해결 시스템 초기화 완료");
+        logger.debug('에러 해결 시스템 초기화 완료');
 
         // 에러 객체 생성
-        logger.debug("에러 객체 생성 중");
+        logger.debug('에러 객체 생성 중');
         const error = new Error(otherFields.message);
         (error as any).filename = otherFields.filename;
         (error as any).lineno = otherFields.lineno;
         (error as any).colno = otherFields.colno;
         (error as any).stack = otherFields.stack;
-        logger.debug("에러 객체 생성 완료", { message: error.message });
+        logger.debug('에러 객체 생성 완료', { message: error.message });
 
         // 에러 컨텍스트 생성
-        logger.debug("에러 컨텍스트 생성 중");
+        logger.debug('에러 컨텍스트 생성 중');
         const context = {
           timestamp: new Date(otherFields.timestamp || Date.now()),
-          userAgent: otherFields.userAgent || "Unknown",
-          url: otherFields.url || "Unknown",
+          userAgent: otherFields.userAgent || 'Unknown',
+          url: otherFields.url || 'Unknown',
           sessionId: `session-${Date.now()}`,
           metadata: {
             filename: otherFields.filename,
@@ -140,15 +140,15 @@ export async function handleUnifiedEvents(
             stack: otherFields.stack,
           },
         } as const;
-        logger.debug("에러 컨텍스트 생성 완료");
+        logger.debug('에러 컨텍스트 생성 완료');
 
         // 자동 에러 해결 실행
-        logger.info("자동 에러 해결 실행 시작");
+        logger.info('자동 에러 해결 실행 시작');
         const resolutionResult = await manager.resolveError(error, context);
-        logger.info("자동 에러 해결 실행 완료");
+        logger.info('자동 에러 해결 실행 완료');
 
         if (resolutionResult.success) {
-          logger.info("자동 에러 해결 성공", {
+          logger.info('자동 에러 해결 성공', {
             changes: resolutionResult.changes.length,
             executionTime: resolutionResult.executionTime,
           });
@@ -159,10 +159,10 @@ export async function handleUnifiedEvents(
             logged: true,
             autoResolved: true,
             changes: resolutionResult.changes.length,
-            message: "에러가 자동으로 해결되었습니다!",
+            message: '에러가 자동으로 해결되었습니다!',
           });
         } else {
-          logger.warn("자동 에러 해결 실패", {
+          logger.warn('자동 에러 해결 실패', {
             error: resolutionResult.errorMessage,
           });
 
@@ -176,16 +176,16 @@ export async function handleUnifiedEvents(
           });
         }
       } catch (resolutionError) {
-        logger.error("자동 에러 해결 시스템 실행 실패", resolutionError);
-        logger.error("에러 스택", { stack: (resolutionError as Error).stack });
+        logger.error('자동 에러 해결 시스템 실행 실패', resolutionError);
+        logger.error('에러 스택', { stack: (resolutionError as Error).stack });
 
         // 에러 해결 시스템 실패 시에도 기본 로깅은 성공
         reply.send({
           success: true,
           logged: true,
           autoResolved: false,
-          error: "자동 에러 해결 시스템 실행 실패",
-          fallback: "에러는 로깅되었지만 자동 해결은 실패했습니다",
+          error: '자동 에러 해결 시스템 실행 실패',
+          fallback: '에러는 로깅되었지만 자동 해결은 실패했습니다',
         });
       }
       return;
@@ -194,10 +194,10 @@ export async function handleUnifiedEvents(
     // 모든 형식이 맞지 않는 경우
     reply.status(400).send({
       error:
-        "Invalid event format. Expected events array or error logging fields.",
+        'Invalid event format. Expected events array or error logging fields.',
     });
   } catch (error) {
-    logger.error("Error handling unified events", error);
-    reply.status(500).send({ error: "Failed to process events" });
+    logger.error('Error handling unified events', error);
+    reply.status(500).send({ error: 'Failed to process events' });
   }
 }
