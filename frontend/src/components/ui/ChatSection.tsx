@@ -31,7 +31,7 @@ export function ChatSection() {
   const [inputMessage, setInputMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { saveDraft } = useSaveDraft();
+  const { mutate: saveDraft } = useSaveDraft();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -282,8 +282,8 @@ export function ChatSection() {
           </button>
         </div>
         <div className="input-hint">
-          💡 예시: "경매 사이트 만들고 싶어요", "블로그 플랫폼 개발하고 싶어요",
-          "쇼핑몰 앱 만들고 싶어요"
+          💡 예시: &ldquo;경매 사이트 만들고 싶어요&rdquo;, &ldquo;블로그 플랫폼 개발하고 싶어요&rdquo;,
+          &ldquo;쇼핑몰 앱 만들고 싶어요&rdquo;
         </div>
       </div>
     </div>

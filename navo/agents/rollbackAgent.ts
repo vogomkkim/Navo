@@ -6,7 +6,7 @@
 
 import {
   BaseAgent,
-  ErrorResolutionAgent,
+  MasterDeveloperAgent,
   ErrorContext,
   ResolutionResult,
   CodeChange,

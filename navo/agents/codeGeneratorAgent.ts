@@ -6,7 +6,7 @@
 
 import {
   BaseAgent,
-  ErrorResolutionAgent,
+  MasterDeveloperAgent,
   ErrorContext,
   ResolutionResult,
   CodeChange,
@@ -71,7 +71,7 @@ export class CodeGeneratorAgent extends BaseAgent {
 
       throw new Error("지원하지 않는 요청 타입입니다.");
     } catch (e) {
-      this.logger.error("Code Generator Agent 실행 실패:", e);
+      this.logger.error("Code Generator Agent 실행 실패:", { error: e });
       throw e;
     }
   }
@@ -125,7 +125,7 @@ export class CodeGeneratorAgent extends BaseAgent {
         ],
       };
     } catch (e) {
-      this.logger.error("프로젝트 생성 실패:", e);
+      this.logger.error("프로젝트 생성 실패:", { error: e });
       throw e;
     }
   }
@@ -426,7 +426,7 @@ export class CodeGeneratorAgent extends BaseAgent {
       this.logger.info(`프로젝트 구조 생성 완료: ${files.length}개 파일`);
       return { files, structure };
     } catch (error) {
-      this.logger.error("프로젝트 구조 생성 실패:", error);
+      this.logger.error("프로젝트 구조 생성 실패:", { error });
       throw error;
     }
   }
@@ -469,7 +469,7 @@ export class CodeGeneratorAgent extends BaseAgent {
 ${request.description}
 
 ## 주요 기능
-${request.features.map((feature) => `- ${feature}`).join("\n")}
+${request.features.map((feature: string) => `- ${feature}`).join("\n")}
 
 ## 기술 스택
 ${architecture.technology?.join(", ") || "기본 기술 스택"}
@@ -481,7 +481,7 @@ npm start
 \`\`\`
 
 ## 프로젝트 구조
-${architecture.components?.map((component) => `- ${component}`).join("\n") || "기본 구조"}
+${architecture.components?.map((component: string) => `- ${component}`).join("\n") || "기본 구조"}
 
 ## 개발 가이드
 이 프로젝트는 Navo AI가 자동으로 생성했습니다.
@@ -512,7 +512,7 @@ root.render(
 console.log("🚀 ${request.name} 프로젝트가 시작되었습니다!");
 
 // 주요 기능들
-${request.features.map((feature) => `// - ${feature}`).join("\n")}
+${request.features.map((feature: string) => `// - ${feature}`).join("\n")}
 
 // 애플리케이션 초기화
 function initializeApp() {
@@ -585,7 +585,7 @@ export default function HomePage() {
         <div className="features">
           <h2>주요 기능</h2>
           <ul>
-            ${request.features.map((feature) => `<li key="${feature}">${feature}</li>`).join("\n            ")}
+            ${request.features.map((feature: string) => `<li key="${feature}">${feature}</li>`).join("\n            ")}
           </ul>
         </div>
       </main>

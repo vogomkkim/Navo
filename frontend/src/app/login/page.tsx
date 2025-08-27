@@ -140,7 +140,7 @@ export default function LoginPage() {
     setMessage({ text: '', type: '' });
 
     try {
-      const data = await fetchApi('/api/auth/login', {
+      const data = await fetchApi<{ ok: boolean; token?: string; user?: any; error?: string }>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
@@ -182,7 +182,7 @@ export default function LoginPage() {
     }
 
     try {
-      const data = await fetchApi('/api/auth/register', {
+      const data = await fetchApi<{ ok: boolean; error?: string }>('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({
           name,

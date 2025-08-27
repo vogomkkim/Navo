@@ -37,6 +37,7 @@ export function ComponentDefinitionProvider({
   // 인증된 사용자만 API 호출
   const { data, isLoading, isError, error } = useListComponents({
     enabled: isAuthenticated, // 인증된 경우에만 쿼리 실행
+    queryKey: ["componentDefinitions", isAuthenticated], // queryKey 추가
   });
 
   const componentRegistry = new Map<string, ComponentDef>();

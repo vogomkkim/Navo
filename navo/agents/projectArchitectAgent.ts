@@ -7,7 +7,7 @@
 
 import {
   BaseAgent,
-  ErrorResolutionAgent,
+  MasterDeveloperAgent,
   ErrorContext,
   ResolutionResult,
   ErrorType,
@@ -79,7 +79,7 @@ export class ProjectArchitectAgent extends BaseAgent {
 
       throw new Error("지원하지 않는 요청 타입입니다.");
     } catch (e) {
-      this.logger.error("Project Architect Agent 실행 실패:", e);
+      this.logger.error("Project Architect Agent 실행 실패:", { error: e });
       throw e;
     }
   }
@@ -110,7 +110,7 @@ export class ProjectArchitectAgent extends BaseAgent {
         ],
       };
     } catch (e) {
-      this.logger.error("프로젝트 설계 실패:", e);
+      this.logger.error("프로젝트 설계 실패:", { error: e });
       throw e;
     }
   }
@@ -197,7 +197,7 @@ export class ProjectArchitectAgent extends BaseAgent {
 
       return architecture;
     } catch (error) {
-      this.logger.error("AI 아키텍처 설계 실패:", error);
+      this.logger.error("AI 아키텍처 설계 실패:", { error });
 
       // 기본 아키텍처 반환
       return {

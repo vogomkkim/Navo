@@ -17,9 +17,9 @@ function initializeMasterDeveloperSystem() {
     masterDeveloperManager = new MasterDeveloperManager();
 
     // 모든 에이전트 등록
-    const projectArchitectAgent = new ProjectArchitectAgent("Project Architect", 1);
-    const codeGeneratorAgent = new CodeGeneratorAgent("Code Generator", 2);
-    const developmentGuideAgent = new DevelopmentGuideAgent("Development Guide", 3);
+    const projectArchitectAgent = new ProjectArchitectAgent();
+    const codeGeneratorAgent = new CodeGeneratorAgent();
+    const developmentGuideAgent = new DevelopmentGuideAgent();
     const rollbackAgent = new RollbackAgent();
 
     masterDeveloperManager.registerAgent(projectArchitectAgent);

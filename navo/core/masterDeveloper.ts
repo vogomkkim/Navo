@@ -369,7 +369,7 @@ export class MasterDeveloperManager {
   /**
    * 에이전트 등록
    */
-  registerAgent(agent: ErrorResolutionAgent): void {
+  registerAgent(agent: MasterDeveloperAgent): void {
     this.registry.register(agent);
   }
 
@@ -427,10 +427,10 @@ export class MasterDeveloperManager {
         );
 
         // Initialize agents (re-initialize for each retry to ensure fresh state)
-        const projectArchitect = new ProjectArchitectAgent("Project Architect", 1);
-        const codeGenerator = new CodeGeneratorAgent("Code Generator", 2);
-        const developmentGuide = new DevelopmentGuideAgent("Development Guide", 3);
-        const rollbackAgent = new RollbackAgent("Rollback Agent", 4);
+        const projectArchitect = new ProjectArchitectAgent();
+        const codeGenerator = new CodeGeneratorAgent();
+        const developmentGuide = new DevelopmentGuideAgent();
+        const rollbackAgent = new RollbackAgent();
 
         // Define graph nodes
         const nodes: GraphNode[] = [

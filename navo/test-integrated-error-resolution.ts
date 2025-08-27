@@ -6,6 +6,9 @@
 
 import { MasterDeveloperManager } from "./core/masterDeveloper.js";
 
+import { ProjectArchitectAgent } from "./agents/projectArchitectAgent.js";
+import { CodeGeneratorAgent } from "./agents/codeGeneratorAgent.js";
+import { DevelopmentGuideAgent } from "./agents/developmentGuideAgent.js";
 import { RollbackAgent } from "./agents/rollbackAgent.js";
 
 // 테스트용 에러 생성 함수
@@ -46,9 +49,9 @@ async function testIntegratedErrorResolution() {
     // 모든 에이전트 등록
     console.log("📝 에이전트 등록 중...");
 
-    const projectArchitectAgent = new ProjectArchitectAgent("Project Architect", 1);
-    const codeGeneratorAgent = new CodeGeneratorAgent("Code Generator", 2);
-    const developmentGuideAgent = new DevelopmentGuideAgent("Development Guide", 3);
+    const projectArchitectAgent = new ProjectArchitectAgent();
+    const codeGeneratorAgent = new CodeGeneratorAgent();
+    const developmentGuideAgent = new DevelopmentGuideAgent();
     const rollbackAgent = new RollbackAgent();
 
     manager.registerAgent(projectArchitectAgent);
@@ -146,7 +149,7 @@ async function testIndividualAgents() {
   try {
     // Project Architect Agent 테스트
     console.log("📝 Project Architect Agent 테스트");
-    const projectArchitectAgent = new ProjectArchitectAgent("Project Architect", 1);
+    const projectArchitectAgent = new ProjectArchitectAgent();
     const testError = createTestError("null_reference");
     const testContext = createTestContext();
 
@@ -156,14 +159,14 @@ async function testIndividualAgents() {
 
     // Code Generator Agent 테스트
     console.log("\n📝 Code Generator Agent 테스트");
-    const codeGeneratorAgent = new CodeGeneratorAgent("Code Generator", 2);
+    const codeGeneratorAgent = new CodeGeneratorAgent();
     const fixResult = await codeGeneratorAgent.execute(testError, testContext);
     console.log(`  - 성공: ${fixResult.success ? "✅" : "❌"}`);
     console.log(`  - 변경사항: ${fixResult.changes.length}개`);
 
     // Development Guide Agent 테스트
     console.log("\n📝 Development Guide Agent 테스트");
-    const developmentGuideAgent = new DevelopmentGuideAgent("Development Guide", 3);
+    const developmentGuideAgent = new DevelopmentGuideAgent();
     const testResult = await developmentGuideAgent.execute(testError, testContext);
     console.log(`  - 성공: ${testResult.success ? "✅" : "❌"}`);
     console.log(`  - 실행 시간: ${testResult.executionTime}ms`);
