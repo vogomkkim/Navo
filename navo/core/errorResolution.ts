@@ -285,10 +285,6 @@ export class ConsoleLogger implements Logger {
 /**
  * 에러 해결 관리자 - 전체 에러 해결 프로세스를 조율
  */
-import { ErrorAnalyzerAgent } from '../agents/errorAnalyzerAgent.js';
-import { CodeFixerAgent } from '../agents/codeFixerAgent.js';
-import { TestRunnerAgent } from '../agents/testRunnerAgent.js';
-import { RollbackAgent } from '../agents/rollbackAgent.js';
 
 export class ErrorResolutionManager {
   private registry: AgentRegistry;
@@ -336,6 +332,19 @@ export class ErrorResolutionManager {
         nextSteps: ['Manual debugging is required.'],
         humanInterventionRequired: true,
       };
+
+      // Lazy-load agents here to avoid circular dependency with BaseAgent
+      const [
+        { ErrorAnalyzerAgent },
+        { CodeFixerAgent },
+        { TestRunnerAgent },
+        { RollbackAgent },
+      ] = await Promise.all([
+        import('../agents/errorAnalyzerAgent.js'),
+        import('../agents/codeFixerAgent.js'),
+        import('../agents/testRunnerAgent.js'),
+        import('../agents/rollbackAgent.js'),
+      ]);
 
       while (retryCount < maxRetries) {
         this.logger.info(`Error resolution attempt ${retryCount + 1}/${maxRetries}`, { error: error.message, attempt: retryCount + 1, maxRetries: maxRetries });
