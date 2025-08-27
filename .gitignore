@@ -62,3 +62,5 @@ server-log.md
 # Generated files
 generated/
 #/generated/prisma (Prisma removed)
+
+/*.txt
