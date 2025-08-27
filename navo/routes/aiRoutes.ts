@@ -1,5 +1,4 @@
-import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import fp from 'fastify-plugin';
+import { FastifyInstance, FastifyPluginOptions } from "fastify";
 import {
   handleAiCommand,
   handleGetSuggestions,
@@ -8,41 +7,48 @@ import {
   handleSeedDummyData,
   handleGenerateProject,
   handleGenerateDummySuggestion,
-} from '../handlers/aiHandlers.js';
-import { authenticateToken } from '../auth/auth.js';
+} from "../handlers/aiHandlers.js";
+import { authenticateToken } from "../auth/auth.js";
 
-async function aiRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
-  fastify.post('/command', { preHandler: [authenticateToken] }, handleAiCommand);
+async function aiRoutes(
+  fastify: FastifyInstance,
+  options: FastifyPluginOptions
+) {
+  fastify.post(
+    "/ai/command",
+    { preHandler: [authenticateToken] },
+    handleAiCommand
+  );
   fastify.get(
-    '/suggestions',
+    "/ai/suggestions",
     { preHandler: [authenticateToken] },
     handleGetSuggestions
   );
   fastify.get(
-    '/test-db-suggestions',
+    "/ai/test-db-suggestions",
     { preHandler: [authenticateToken] },
     handleTestDbSuggestions
   );
   fastify.post(
-    '/apply-suggestion',
+    "/ai/apply-suggestion",
     { preHandler: [authenticateToken] },
     handleApplySuggestion
   );
   fastify.post(
-    '/seed-dummy-data',
+    "/ai/seed-dummy-data",
     { preHandler: [authenticateToken] },
     handleSeedDummyData
   );
   fastify.post(
-    '/generate-project',
+    "/ai/generate-project",
     { preHandler: [authenticateToken] },
     handleGenerateProject
   );
   fastify.post(
-    '/generate-dummy-suggestion',
+    "/ai/generate-dummy-suggestion",
     { preHandler: [authenticateToken] },
     handleGenerateDummySuggestion
   );
 }
 
-export default fp(aiRoutes);
+export default aiRoutes;

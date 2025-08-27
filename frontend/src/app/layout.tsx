@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "./context/AuthContext";
+import { EventTrackerProvider } from "./context/EventTrackerContext";
+import { ComponentDefinitionProvider } from "./context/ComponentDefinitionContext";
+import { LayoutProvider } from "./context/LayoutContext";
+import { QueryClientWrapper } from "@/components/QueryClientWrapper";
 
 export const metadata: Metadata = {
   title: "Navo - AI-Powered Website Builder",
@@ -14,7 +19,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
+        <QueryClientWrapper>
+          <AuthProvider>
+            <EventTrackerProvider>
+              <ComponentDefinitionProvider>
+                <LayoutProvider>{children}</LayoutProvider>
+              </ComponentDefinitionProvider>
+            </EventTrackerProvider>
+          </AuthProvider>
+        </QueryClientWrapper>
       </body>
     </html>
   );

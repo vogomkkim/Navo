@@ -1,24 +1,30 @@
-import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import fp from 'fastify-plugin';
+import { FastifyInstance, FastifyPluginOptions } from "fastify";
 import {
   handleListProjects,
   handleListProjectPages,
   handleRollback,
-} from '../handlers/projectHandlers.js';
-import { authenticateToken } from '../auth/auth.js';
+} from "../handlers/projectHandlers.js";
+import { authenticateToken } from "../auth/auth.js";
 
-async function projectRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
-  fastify.get('/', { preHandler: [authenticateToken] }, handleListProjects);
+async function projectRoutes(
+  fastify: FastifyInstance,
+  options: FastifyPluginOptions
+) {
   fastify.get(
-    '/:projectId/pages',
+    "/projects",
+    { preHandler: [authenticateToken] },
+    handleListProjects
+  );
+  fastify.get(
+    "/projects/:projectId/pages",
     { preHandler: [authenticateToken] },
     handleListProjectPages
   );
   fastify.post(
-    '/:projectId/rollback',
+    "/projects/:projectId/rollback",
     { preHandler: [authenticateToken] },
     handleRollback
   );
 }
 
-export default fp(projectRoutes);
+export default projectRoutes;

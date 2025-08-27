@@ -15,9 +15,22 @@ import { MobileChat } from "@/components/ui/MobileChat";
 import { AccordionSection } from "@/components/ui/AccordionSection";
 import { LayoutRenderer } from "@/components/LayoutRenderer";
 import { useDraft } from "@/lib/api";
-import { AppWrapper } from "@/components/AppWrapper";
+import { useAuth } from "@/app/context/AuthContext";
+import { useLayoutContext } from "@/app/context/LayoutContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function HomeContent() {
+  const { isAuthenticated, token } = useAuth();
+  const { setCurrentLayout } = useLayoutContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, token, router]);
+
   const {
     data: dataDraft,
     isLoading: isLoadingDraft,
@@ -25,8 +38,20 @@ export default function HomeContent() {
     error: errorDraft,
   } = useDraft();
 
+  // draft 데이터를 LayoutContext에 설정
+  useEffect(() => {
+    if (dataDraft?.draft?.layout) {
+      setCurrentLayout(dataDraft.draft.layout);
+    }
+  }, [dataDraft, setCurrentLayout]);
+
+  // 인증되지 않은 경우 로딩 표시
+  if (!isAuthenticated || !token) {
+    return <div>Redirecting to login...</div>;
+  }
+
   return (
-    <AppWrapper>
+    <>
       <header className="topbar">
         <h1>Navo — Editor (W1)</h1>
         <div className="topbar-actions">
@@ -75,6 +100,6 @@ export default function HomeContent() {
         </Panel>
       </main>
       <MobileChat />
-    </AppWrapper>
+    </>
   );
 }

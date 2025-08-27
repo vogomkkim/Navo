@@ -1,5 +1,4 @@
-import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import fp from 'fastify-plugin';
+import { FastifyInstance, FastifyPluginOptions } from "fastify";
 import {
   handleGetComponentDefinitions,
   handleGetComponentDefinition,
@@ -8,41 +7,48 @@ import {
   handleUpdateComponentDefinition,
   handleDeleteComponentDefinition,
   handleGenerateComponentFromNaturalLanguage,
-} from '../handlers/componentHandlers.js';
-import { authenticateToken } from '../auth/auth.js';
+} from "../handlers/componentHandlers.js";
+import { authenticateToken } from "../auth/auth.js";
 
-async function componentRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
-  fastify.get('/', { preHandler: [authenticateToken] }, handleGetComponentDefinitions);
+async function componentRoutes(
+  fastify: FastifyInstance,
+  options: FastifyPluginOptions
+) {
   fastify.get(
-    '/:name',
+    "/components",
+    { preHandler: [authenticateToken] },
+    handleGetComponentDefinitions
+  );
+  fastify.get(
+    "/components/:name",
     { preHandler: [authenticateToken] },
     handleGetComponentDefinition
   );
   fastify.post(
-    '/seed',
+    "/components/seed",
     { preHandler: [authenticateToken] },
     handleSeedComponentDefinitions
   );
   fastify.post(
-    '/',
+    "/components",
     { preHandler: [authenticateToken] },
     handleCreateComponentDefinition
   );
   fastify.post(
-    '/generate',
+    "/components/generate",
     { preHandler: [authenticateToken] },
     handleGenerateComponentFromNaturalLanguage
   );
   fastify.put(
-    '/:id',
+    "/components/:id",
     { preHandler: [authenticateToken] },
     handleUpdateComponentDefinition
   );
   fastify.delete(
-    '/:id',
+    "/components/:id",
     { preHandler: [authenticateToken] },
     handleDeleteComponentDefinition
   );
 }
 
-export default fp(componentRoutes);
+export default componentRoutes;

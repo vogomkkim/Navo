@@ -12,6 +12,7 @@ export function setupStaticRoutes(app: FastifyInstance) {
   app.register(fastifyStatic, {
     root: buildDir,
     prefix: '/',
+    wildcard: false,
   });
 
   // For any other GET request, serve the index.html file.

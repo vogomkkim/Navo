@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { createContext, useContext, ReactNode, useEffect } from 'react';
-import { useListComponents } from '@/lib/api';
+import { createContext, useContext, ReactNode, useEffect } from "react";
+import { useListComponents } from "@/lib/api";
+import { useAuth } from "./AuthContext";
 
 interface ComponentDef {
   id: string;
@@ -22,23 +23,44 @@ interface ComponentDefinitionContextType {
   error: Error | null;
 }
 
-const ComponentDefinitionContext = createContext<ComponentDefinitionContextType | undefined>(undefined);
+const ComponentDefinitionContext = createContext<
+  ComponentDefinitionContextType | undefined
+>(undefined);
 
-export function ComponentDefinitionProvider({ children }: { children: ReactNode }) {
-  const { data, isLoading, isError, error } = useListComponents();
+export function ComponentDefinitionProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const { isAuthenticated } = useAuth();
+
+  // 인증된 사용자만 API 호출
+  const { data, isLoading, isError, error } = useListComponents({
+    enabled: isAuthenticated, // 인증된 경우에만 쿼리 실행
+  });
+
   const componentRegistry = new Map<string, ComponentDef>();
 
   useEffect(() => {
-    if (data?.components) {
+    if (isAuthenticated && data?.components) {
       data.components.forEach((comp) => {
         componentRegistry.set(comp.name, comp);
       });
-      console.log(`Loaded ${data.components.length} component definitions into registry.`);
+      console.log(
+        `Loaded ${data.components.length} component definitions into registry.`
+      );
     }
-  }, [data]);
+  }, [data, isAuthenticated]);
 
   return (
-    <ComponentDefinitionContext.Provider value={{ componentRegistry, isLoading, isError, error }}>
+    <ComponentDefinitionContext.Provider
+      value={{
+        componentRegistry,
+        isLoading: isAuthenticated ? isLoading : false,
+        isError: isAuthenticated ? isError : false,
+        error: isAuthenticated ? error : null,
+      }}
+    >
       {children}
     </ComponentDefinitionContext.Provider>
   );
@@ -47,7 +69,9 @@ export function ComponentDefinitionProvider({ children }: { children: ReactNode 
 export function useComponentDefinitions() {
   const context = useContext(ComponentDefinitionContext);
   if (context === undefined) {
-    throw new Error('useComponentDefinitions must be used within a ComponentDefinitionProvider');
+    throw new Error(
+      "useComponentDefinitions must be used within a ComponentDefinitionProvider"
+    );
   }
   return context;
 }
