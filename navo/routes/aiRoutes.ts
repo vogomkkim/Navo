@@ -7,6 +7,7 @@ import {
   handleSeedDummyData,
   handleGenerateProject,
   handleGenerateDummySuggestion,
+  handleMultiAgentChat,
 } from '../handlers/aiHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
@@ -48,6 +49,11 @@ async function aiRoutes(
     '/ai/generate-dummy-suggestion',
     { preHandler: [authenticateToken] },
     handleGenerateDummySuggestion
+  );
+  fastify.post(
+    '/ai/multi-agent',
+    { preHandler: [authenticateToken] },
+    handleMultiAgentChat
   );
 }
 

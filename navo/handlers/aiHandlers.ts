@@ -10,6 +10,8 @@ import {
 } from '../db/schema.js';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { scaffoldProject } from '../nodes/scaffoldProject.js'; // Added import
+import { MasterDeveloperAgent } from '../agents/masterDeveloperAgent.js';
+import { ProjectRequest } from '../core/masterDeveloper.js';
 
 import createDOMPurify from 'dompurify';
 
@@ -387,224 +389,163 @@ export async function handleGenerateProject(
   reply: FastifyReply
 ): Promise<void> {
   try {
-    const { projectName, projectDescription } = request.body as any; // Expect project name and description
+    const { projectName } = request.body as any;
     const userId = request.userId;
-
-    if (!projectName || !projectDescription) {
-      reply
-        .status(400)
-        .send({ error: 'Project name and description are required.' });
-      return;
-    }
-
-    // Step 1: Create the project entry in the database
     if (!userId) {
       reply.status(401).send({ error: 'Unauthorized' });
       return;
     }
-
-    const createdProject = await db
+    if (!projectName) {
+      reply.status(400).send({ error: 'Project name is required.' });
+      return;
+    }
+    const created = await db
       .insert(projectsTable)
-      .values({
-        name: projectName as string,
-        ownerId: userId as string,
-      })
+      .values({ name: projectName as string, ownerId: userId as string })
       .returning();
-
-    const projectId = createdProject[0].id;
-
-    // Step 2: Use Gemini AI to generate the project structure
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }); // Using a suitable model
-
-    const prompt = `You are an AI assistant that generates a complete web project structure based on a user's natural language description.
-The output should be a single JSON object containing:
-- databaseSchema: SQL DDL for PostgreSQL (e.g., CREATE TABLE statements)
-- pages: An array of page definitions, each with a path and an initial layout (array of component references).
-- componentDefinitions: An array of custom component definitions (name, display_name, render_template, css_styles, props_schema).
-- apiEndpoints: An array of API endpoint definitions (method, path, description).
-
-Constraints:
-- Output ONLY pure JSON, no backticks, no explanations.
-- Ensure all generated IDs are valid UUIDs.
-- For component layouts, use existing component types if applicable (e.g., 'Header', 'Hero', 'Footer'). If a custom component is needed, define it in 'componentDefinitions'.
-- Keep the database schema simple for now.
-- Provide a basic, functional structure.
-
-User's Project Name: ${projectName}
-User's Project Description: ${projectDescription}
-
-Example JSON structure:
-{
-  "databaseSchema": "CREATE TABLE users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name VARCHAR(255) NOT NULL, email VARCHAR(255) UNIQUE NOT NULL);",
-  "pages": [
-    {
-      "path": "/",
-      "layout": [
-        {"id": "home-header", "type": "Header", "props": {"title": "Welcome", "subtitle": "Our Homepage"}},
-        {"id": "home-hero", "type": "Hero", "props": {"headline": "Build Your Dream", "cta": "Learn More"}}
-      ]
-    },
-    {
-      "path": "/about",
-      "layout": [
-        {"id": "about-header", "type": "Header", "props": {"title": "About Us", "subtitle": "Our Story"}}
-      ]
-    }
-  ],
-  "componentDefinitions": [
-    {
-      "name": "CustomCard",
-      "display_name": "Custom Card",
-      "description": "A customizable card component",
-      "category": "basic",
-      "props_schema": {"type": "object", "properties": {"title": {"type": "string"}}},
-      "render_template": "<div class=\"card\"><h3 data-id=\"{{id}}-title\">{{title}}</h3><p>{{content}}</p></div>",
-      "css_styles": ".card { border: 1px solid #ccc; padding: 16px; }"
-    }
-  ],
-  "apiEndpoints": [
-    {"method": "GET", "path": "/api/users", "description": "Get all users"},
-    {"method": "POST", "path": "/api/users", "description": "Create a new user"}
-  ]
-}
-
-Generate the project structure for the user's project:
-`;
-
-    console.log('[AI] Sending project generation prompt to Gemini...');
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    let text = response.text();
-
-    // Strip possible markdown fences
-    if (text.startsWith('```')) {
-      text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-    }
-
-    let generatedProjectStructure: any;
-    try {
-      generatedProjectStructure = JSON.parse(text);
-      console.log(
-        '[AI] Successfully parsed generated project structure:',
-        generatedProjectStructure
-      );
-    } catch (parseError) {
-      console.error(
-        '[AI] Failed to parse Gemini response as JSON for project structure:',
-        parseError
-      );
-      console.error('[AI] Raw Gemini response text:', text);
-      reply.status(502).send({
-        error: 'AI model returned invalid JSON for project structure.',
-      });
-      return;
-    }
-
-    // Step 3: Execute databaseSchema DDL
-    if (generatedProjectStructure.databaseSchema) {
-      try {
-        console.log('[AI] Executing database schema DDL...');
-        await db.execute(sql.raw(generatedProjectStructure.databaseSchema));
-        console.log('[AI] Database schema DDL executed successfully.');
-      } catch (dbError) {
-        console.error('[AI] Error executing database schema DDL:', dbError);
-        reply
-          .status(500)
-          .send({ error: 'Failed to execute database schema DDL.' });
-        return;
-      }
-    }
-
-    // Persist generatedProjectStructure to database
-    // Persist componentDefinitions
-    if (
-      generatedProjectStructure.componentDefinitions &&
-      generatedProjectStructure.componentDefinitions.length > 0
-    ) {
-      try {
-        console.log('[AI] Persisting component definitions...');
-        for (const compDef of generatedProjectStructure.componentDefinitions) {
-          await db.insert(componentDefinitions).values({
-            name: compDef.name,
-            displayName: compDef.display_name,
-            description: compDef.description || '',
-            category: compDef.category || 'custom',
-            propsSchema: compDef.props_schema,
-            renderTemplate: purify.sanitize(compDef.render_template),
-            cssStyles: compDef.css_styles
-              ? compDef.css_styles
-                  .replace(
-                    /<script\b[^<]*(?:(?!<\/script>)[^<]*)*<\/script>/gi,
-                    ''
-                  )
-                  .replace(/javascript:/gi, '')
-              : '',
-            isActive: true,
-          });
-        }
-        console.log('[AI] Component definitions persisted successfully.');
-      } catch (compDefError) {
-        console.error(
-          '[AI] Error persisting component definitions:',
-          compDefError
-        );
-        reply
-          .status(500)
-          .send({ error: 'Failed to persist component definitions.' });
-        return;
-      }
-    }
-
-    // Persist pages
-    if (
-      generatedProjectStructure.pages &&
-      generatedProjectStructure.pages.length > 0
-    ) {
-      try {
-        console.log('[AI] Persisting pages...');
-        for (const page of generatedProjectStructure.pages) {
-          await db.insert(pages).values({
-            projectId: projectId,
-            path: page.path,
-            layoutJson: sanitizeLayout(page.layout), // Assuming layout is directly storable as JSONB
-          });
-        }
-        console.log('[AI] Pages persisted successfully.');
-      } catch (pageError) {
-        console.error('[AI] Error persisting pages:', pageError);
-        reply.status(500).send({ error: 'Failed to persist pages.' });
-        return;
-      }
-    }
-
-    console.log(
-      'Generated Project Structure (from AI):',
-      JSON.stringify(generatedProjectStructure, null, 2)
-    );
-
-    // Step 4: Scaffold the project files
-    try {
-      console.log('[AI] Initiating project scaffolding...');
-      const { projectPath } = await scaffoldProject(
-        projectId,
-        generatedProjectStructure
-      );
-      console.log(`[AI] Project scaffolded to: ${projectPath}`);
-    } catch (scaffoldError) {
-      console.error('[AI] Error during project scaffolding:', scaffoldError);
-      reply.status(500).send({ error: 'Failed to scaffold project files.' });
-      return;
-    }
-
     reply.send({
       ok: true,
-      message:
-        'Project generation initiated. Review console for generated structure.',
-      projectId: projectId,
-      generatedStructure: generatedProjectStructure, // Return the generated structure for inspection
+      message: 'Project created.',
+      projectId: created[0].id,
+      generatedStructure: null,
     });
   } catch (error) {
     console.error('Error generating project:', error);
     reply.status(500).send({ error: 'Failed to generate project' });
   }
 }
+
+/**
+ * Multi-agent chat entrypoint: takes a natural language chat message,
+ * converts it into a ProjectRequest, orchestrates MasterDeveloperAgent,
+ * and returns a structured multi-agent response for the chat UI.
+ */
+export async function handleMultiAgentChat(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  try {
+    const userId = request.userId;
+    if (!userId) {
+      reply.status(401).send({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { message, context } = request.body as {
+      message?: string;
+      context?: {
+        projectId?: string;
+        sessionId?: string;
+        userAgent?: string;
+        url?: string;
+      };
+    };
+
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      reply.status(400).send({ error: 'Message is required' });
+      return;
+    }
+
+    // Convert chat message to a coarse ProjectRequest
+    const req: ProjectRequest = buildProjectRequestFromMessage(message);
+
+    const agent = new MasterDeveloperAgent();
+    const start = Date.now();
+    const plan = await agent.execute(req, context || {});
+    const totalExecutionTime = Date.now() - start;
+
+    const agents = [
+      {
+        success: true,
+        message: '프로젝트 요구사항 분석 및 아키텍처 설계를 완료했습니다.',
+        agentName: 'Project Architect Agent',
+        status: 'completed' as const,
+        data: plan.architecture,
+      },
+      {
+        success: true,
+        message: 'UI/UX 인터페이스 설계를 완료했습니다.',
+        agentName: 'UI/UX Designer Agent',
+        status: 'completed' as const,
+        data: plan.uiDesign,
+      },
+      {
+        success: true,
+        message: '프로젝트 코드 구조 생성을 완료했습니다.',
+        agentName: 'Code Generator Agent',
+        status: 'completed' as const,
+        data: plan.codeStructure,
+      },
+      {
+        success: true,
+        message: '개발 가이드 작성을 완료했습니다.',
+        agentName: 'Development Guide Agent',
+        status: 'completed' as const,
+        data: plan.developmentGuide,
+      },
+    ];
+
+    reply.send({
+      success: true,
+      agents,
+      totalExecutionTime,
+      summary: 'Master Developer 프로세스가 성공적으로 완료되었습니다.',
+    });
+  } catch (error) {
+    console.error('Error handling multi-agent chat:', error);
+    reply.status(500).send({
+      success: false,
+      agents: [
+        {
+          success: false,
+          message: '처리 중 오류가 발생했습니다.',
+          agentName: 'Master Developer',
+          status: 'error',
+        },
+      ],
+      totalExecutionTime: 0,
+      summary: '프로세스 처리 실패',
+    });
+  }
+}
+
+function buildProjectRequestFromMessage(message: string): ProjectRequest {
+  const lower = message.toLowerCase();
+  let type: ProjectRequest['type'] = 'web';
+  if (lower.includes('mobile') || lower.includes('앱')) type = 'mobile';
+  if (lower.includes('api')) type = 'api';
+  if (lower.includes('fullstack') || lower.includes('풀스택')) type = 'fullstack';
+
+  const features: string[] = [];
+  if (/(login|로그인)/i.test(message)) features.push('authentication');
+  if (/(payment|결제)/i.test(message)) features.push('payment');
+  if (/(realtime|실시간)/i.test(message)) features.push('realtime');
+  if (/(chat|채팅)/i.test(message)) features.push('chat');
+  if (/(blog|블로그)/i.test(message)) features.push('blog');
+  if (/(auction|경매)/i.test(message)) features.push('auction');
+
+  const name = deriveProjectName(message);
+
+  return {
+    name,
+    description: message.trim(),
+    type,
+    features: features.length > 0 ? features : ['core'],
+    technology: undefined,
+    complexity: 'medium',
+    estimatedTime: undefined,
+  };
+}
+
+function deriveProjectName(message: string): string {
+  const words = message
+    .replace(/[\n\r]/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 4)
+    .map((w) => w.replace(/[^\p{L}\p{N}_-]/gu, ''));
+  const base = words.join('-') || 'my-project';
+  return base.length > 48 ? base.slice(0, 48) : base;
+}
+
+// End of helpers
