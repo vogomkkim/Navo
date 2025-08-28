@@ -9,13 +9,47 @@ The project has been successfully migrated from a webpack-based frontend to a mo
 - ✨ **Modern Development Experience** with React 19 and Next.js 15
 - 🔒 **Full Type Safety** with TypeScript
 - ⚡ **Optimized Performance** with Next.js App Router
-- 🎨 **Beautiful UI** with Tailwind CSS
+- 🎨 **Beautiful UI** with **Tailwind CSS v4.0** (Latest!)
 - 🔄 **Real-time Updates** with React Query
+
+## 🎨 **Tailwind CSS v4.0 (중요!)**
+
+### **⚠️ 주의사항**
+
+이 프로젝트는 **Tailwind CSS v4.0**을 사용합니다. v3와는 완전히 다른 설정 방식입니다!
+
+### **🔧 v4 설정 방법**
+
+```bash
+# 1. 설치 (v4 전용 패키지)
+npm install -D tailwindcss@next @tailwindcss/postcss
+
+# 2. PostCSS 설정 (postcss.config.mjs)
+export default {
+  plugins: ["@tailwindcss/postcss"],
+};
+
+# 3. CSS에서 가져오기 (globals.css)
+@import "tailwindcss";
+```
+
+### **❌ v4에서 사용하지 않는 것들**
+
+- `tailwind.config.js` - 불필요 (zero configuration)
+- `@tailwind base; @tailwind components; @tailwind utilities;` - v3 문법
+- `npx tailwindcss init` - 작동 안 함 (bin 파일 없음)
+
+### **✅ v4의 장점**
+
+- **Zero configuration** - 설정 파일 불필요
+- **자동 컨텐츠 감지** - `content` 배열 설정 불필요
+- **빠른 빌드** - v3 대비 5.6배 빠름
+- **CSS-first 방식** - 설정을 CSS에서 직접 관리
 
 ## 🏗️ Architecture
 
 - **Backend**: Fastify + TypeScript + Drizzle ORM
-- **Frontend**: React 19 + Next.js 15 + TypeScript + Tailwind CSS
+- **Frontend**: React 19 + Next.js 15 + TypeScript + **Tailwind CSS v4.0**
 - **Database**: PostgreSQL with Drizzle ORM
 - **AI Integration**: Google Gemini AI for content generation
 - **Authentication**: JWT-based authentication system
@@ -138,6 +172,7 @@ navo/
 │   │   ├── context/         # React contexts
 │   │   ├── hooks/           # Custom hooks
 │   │   └── lib/             # Utilities and API
+│   ├── postcss.config.mjs   # Tailwind CSS v4 PostCSS 설정
 │   └── package.json
 ├── navo/                     # Backend source code
 │   ├── agents/              # AI agents
@@ -159,57 +194,69 @@ navo/
 
 ```env
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/navo
-
-# AI Integration
-GEMINI_API_KEY=your_gemini_api_key
+DATABASE_URL=postgresql://username:password@localhost:5432/navo
 
 # Server
-PORT=3000
-NODE_ENV=development
+PORT=3001
+HOST=0.0.0.0
+
+# AI Integration
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Frontend
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
 ```
 
-### Database Schema
+### Tailwind CSS v4 Configuration
 
-The database schema is managed through Drizzle ORM with automatic migrations. See `config/drizzle.config.ts` for configuration.
+**중요**: 이 프로젝트는 Tailwind CSS v4.0을 사용합니다.
 
-## 🧪 Testing
+- **설정 파일 불필요**: `tailwind.config.js` 없음
+- **PostCSS 설정**: `postcss.config.mjs`에서 `@tailwindcss/postcss` 사용
+- **CSS 가져오기**: `@import "tailwindcss"` 단일 라인
 
-```bash
-# Run frontend tests
-npm run test
+## 🎯 Key Features
 
-# Run backend tests (if available)
-npm run test:server
-```
+- **AI-Powered Project Generation**: Generate complete projects using AI agents
+- **Multi-Agent Workflow**: Strategic planning, development, QA, and DevOps
+- **Modern Tech Stack**: React 19, Next.js 15, TypeScript, Tailwind CSS v4
+- **Real-time AI Chat**: Interactive project planning and development
+- **Database Integration**: PostgreSQL with Drizzle ORM
+- **Authentication System**: JWT-based user management
 
-## 📖 Documentation
+## 🚨 Troubleshooting
 
-- [React Frontend Migration Guide](docs/progress/react-frontend-migration-complete.md)
-- [Architecture Overview](docs/tech/architecture.md)
-- [API Documentation](docs/api/README.md)
-- [Development Guide](docs/development/README.md)
+### Tailwind CSS v4 Issues
+
+- **"Cannot apply unknown utility class"**: 커스텀 클래스는 CSS에서 직접 정의
+- **"Module not found: tailwindcss/preflight"**: v4에서는 `@import "tailwindcss"` 사용
+- **빌드 오류**: `@tailwindcss/postcss` 패키지가 설치되어 있는지 확인
+
+### Common Issues
+
+- **Port conflicts**: Ensure ports 3001 (backend) and 3000 (frontend) are available
+- **Database connection**: Check PostgreSQL service and connection string
+- **API errors**: Verify Gemini API key and environment variables
+
+## 📚 Documentation
+
+- [Frontend README](frontend/README.md) - Detailed frontend setup and usage
+- [API Documentation](docs/api.md) - Backend API endpoints
+- [AI Agent System](docs/ai-project-orchestrator-agent.md) - AI workflow details
+- [Tailwind CSS v4 Guide](https://tailwindcss.com/blog/tailwindcss-v4) - Official v4 documentation
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Test thoroughly
 5. Submit a pull request
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
-
-For support and questions:
-
-- Create an issue in the repository
-- Check the documentation in the `docs/` folder
-- Review the migration guide for frontend development
-
 ---
 
-**Navo** - Building the future of web development, one AI-powered component at a time. 🚀
+**Navo** - Building the future of web development with AI! 🚀✨

@@ -1,87 +1,169 @@
-# Product Vision — Navo
+# Product Vision — AI Project Orchestrator Agent
 
-## Problem
+## 🚨 핵심 문제
 
-Non‑developers need to turn ideas into working experiences quickly, without learning stacks, frameworks, or deployment. Traditional no‑code tools still require time‑consuming setup and complex choices.
+**현재 상황**: 사용자들이 AI 도구를 사용해도 "에이 이게 뭐야?"라는 실망감을 느끼고 있음
+**근본 원인**: 단순한 AI 응답이 아닌, **프로젝트를 총괄하는 만능 에이전트**가 필요함
 
-## Vision
+## 🎯 혁신적 비전
 
-Make product creation conversational and visual. Users describe the goal, tweak what they see, and ship in minutes. Navo handles generation, composition, and deployment behind the scenes.
+**"AI Project Orchestrator Agent"** - 기획자이자 PM이자 개발자이자 QA이자 엔지니어인 **만능 에이전트**
 
-## Value Proposition
+사용자가 자연어로 요청하면, AI가 프로젝트의 모든 측면을 총괄하여 **"와, 정말 잘 만들어졌어!"**라는 감탄을 이끌어내는 결과물을 생성합니다.
 
-- Speed: AI draft in ~10 seconds; one‑click publish in ~60 seconds
-- Simplicity: zero‑code defaults with optional dev mode later
-- Safety: isolated steps with rollback and clear diffs
-- Learning Loop: analytics → AI suggestions → one‑click apply
+## 🧠 AI Agent의 5가지 핵심 역할
 
-## Target Users
+### 1. **Strategic Planner (기획자)**
 
-- SMB owners and creators
-- Non‑technical founders testing ideas
-- Marketing teams running rapid experiments
+- 비즈니스 목표와 사용자 니즈 심층 분석
+- 시장 경쟁력 분석 및 차별화 전략 수립
+- ROI 예측 및 성공 지표 정의
+- 프로젝트 범위 및 우선순위 설정
 
-## Differentiators
+### 2. **Project Manager (PM)**
 
-- DI + DAG orchestration that parallelizes work safely and observably
-- Standard renderer for consistent previews and edits
-- Built‑in analytics and suggestions to improve outcomes
+- 프로젝트 일정 및 마일스톤 관리
+- 리소스 할당 및 위험 요소 대응
+- 이해관계자 커뮤니케이션 조율
+- 품질 기준 및 검증 프로세스 관리
 
-## Success Metrics (MVP)
+### 3. **Full-Stack Developer (개발자)**
 
-- TTV(draft) P95 ≤ 10 s
-- Editor perceived latency ≤ 200 ms
-- Average publish duration ≤ 60 s
-- Availability ≥ 99.5%
-- Daily suggestions surfaced with ≥ 20% apply rate
+- 최적의 기술 스택 선택 및 아키텍처 설계
+- 고품질 코드 생성 및 코드 리뷰
+- 성능 최적화 및 보안 강화
+- 테스트 코드 작성 및 품질 보증
 
-## Out of Scope (MVP)
+### 4. **Quality Assurance Engineer (QA)**
 
-- Exposing infra or tech choices to end users
-- Deep plugin ecosystems or marketplace
-- Heavy customization that breaks the standardized renderer
+- 사용자 시나리오 기반 테스트 계획 수립
+- 자동화된 테스트 케이스 생성 및 실행
+- 성능, 보안, 접근성 종합 검증
+- 사용자 경험 품질 평가 및 개선 제안
 
-## Principles
+### 5. **DevOps Engineer (엔지니어)**
 
-- Zero‑code first; dev‑mode optional
-- Minutes to live
-- Always improving
+- 확장 가능한 시스템 아키텍처 설계
+- CI/CD 파이프라인 설계 및 자동화
+- 인프라 최적화 및 모니터링 시스템 구축
+- 운영 환경 안정성 및 장애 대응 체계 구축
 
-## Links
+## 💎 핵심 가치 제안
 
-- See `README.md` for the canonical high-level brief.
-- Technical details in `docs/tech/architecture.md` and `docs/tech/dag-di.md`.
-- Roadmap in `docs/plan/roadmap.md`.
-- MVP scope in `docs/tech/mvp-scope.md`.
-- Deployment strategy in [docs/plan/platform-deployment-strategy.md](platform-deployment-strategy.md).
+### 🚀 **Speed & Quality**
 
-## User Data Ownership & AI Actions
+- AI 기반 프로젝트 생성: **10초 내 초안 완성**
+- 품질 검증 및 최적화: **60초 내 배포 준비**
+- **품질과 속도의 완벽한 조화**
 
-A core aspect of our vision is empowering end-users with full ownership and control over their data, even when AI actions are involved. This means:
+### 🎯 **Intelligence & Precision**
 
-### Key Concepts & Challenges:
+- 사용자 의도 정확한 파악
+- 컨텍스트 기반 지능적 의사결정
+- 지속적 학습 및 개선
 
-- **Data Segregation (Multi-tenancy):** Each user's data must be securely isolated. This can be achieved through isolated databases, separate database schemas per user, or robust row-level security within a shared database. The choice impacts complexity and scalability.
-- **Authentication & Authorization:** A strong system is required to verify user identity and control their access to only their own data and permitted actions.
-- **Privacy & Compliance:** Adherence to data protection regulations (e.g., GDPR, CCPA) is paramount, including consent, data minimization, and the right to data export/deletion.
-- **AI Interaction with User Data:** AI actions must operate strictly within the boundaries of a user's data, respecting privacy and permissions. This implies careful design of AI prompts and data access patterns.
+### 🔒 **Reliability & Trust**
 
-### Required Resources & Components:
+- 자동화된 품질 보증
+- 실시간 모니터링 및 피드백
+- 사용자 데이터 보안 및 프라이버시
 
-To support this vision, we will need:
+## 🎨 사용자 경험 설계
 
-- **Backend Services:**
-  - **User Management System:** For user lifecycle (registration, login, profile).
-  - **API Gateway:** Secure entry point for all client requests.
-  - **Core Application Logic:** Services implementing platform features, interacting with user-specific data.
-  - **AI Service Integration:** Secure APIs for interacting with AI models (like Gemini), ensuring data isolation during processing.
-- **Data Storage:**
-  - **Database System:** A scalable database (e.g., PostgreSQL) configured for multi-tenancy (e.g., using separate schemas or row-level security).
-  - **File Storage:** For user-uploaded assets (e.g., cloud storage like S3).
-- **Frontend Application:** User interface for data management and AI-driven interactions.
-- **Infrastructure & Operations:**
-  - **Cloud Provider:** For hosting and scaling (e.g., Render, AWS, GCP).
-  - **Compute Resources:** Servers (VMs, containers, serverless) for backend services.
-  - **Networking:** Load balancers, firewalls for secure and performant access.
-  - **Monitoring & Logging:** For system health, performance, and security.
-  - **CI/CD Pipeline:** For automated deployments.
+### **Phase 1: 프로젝트 요청 및 분석**
+
+```
+사용자: "전자상거래 웹사이트를 만들어줘"
+AI Agent: "어떤 제품을 판매하실 계획인가요? 타겟 고객층은? 예산은?"
+→ 요구사항 심층 분석 및 프로젝트 범위 정의
+```
+
+### **Phase 2: 전략 수립 및 계획**
+
+```
+AI Agent: "React + Node.js + PostgreSQL 스택을 추천합니다. 이유는..."
+→ 기술 스택 선택 근거 및 아키텍처 설계 제시
+```
+
+### **Phase 3: 개발 및 구현**
+
+```
+AI Agent: "프론트엔드 컴포넌트 생성 중... API 설계 완료... 데이터베이스 스키마 생성..."
+→ 실시간 진행 상황 시각화 및 품질 검증
+```
+
+### **Phase 4: 배포 및 최적화**
+
+```
+AI Agent: "성능 테스트 완료. SEO 최적화 적용. 보안 검증 완료. 배포 준비 완료!"
+→ 완벽한 품질의 프로젝트 제공
+```
+
+## 📊 성공 지표 (KPI)
+
+### **사용자 만족도**
+
+- **프로젝트 완성도**: 95% 이상
+- **사용자 만족도**: 4.5/5.0 이상
+- **재사용률**: 80% 이상
+
+### **기술적 성과**
+
+- **개발 시간 단축**: 기존 대비 70% 단축
+- **코드 품질**: 테스트 커버리지 90% 이상
+- **성능**: 페이지 로딩 시간 2초 이하
+
+### **비즈니스 임팩트**
+
+- **고객 이탈률**: 5% 이하
+- **추천률**: 90% 이상
+- **수익성**: 월 구독률 85% 이상
+
+## 🚫 기존 솔루션과의 차별점
+
+### ❌ **기존 AI 도구들**
+
+- 단순한 코드 생성
+- 품질 보증 부재
+- 사용자 경험 일관성 부족
+- 지속적 개선 부재
+
+### ✅ **Navo AI Project Orchestrator Agent**
+
+- **전 과정 품질 보증**
+- **지능적 의사결정 및 최적화**
+- **사용자 경험 완벽 최적화**
+- **지속적 학습 및 개선**
+
+## 🔮 미래 비전
+
+### **1년 내 목표**
+
+- 완전 자동화된 프로젝트 생성
+- AI Agent 간 협업 시스템
+- 크로스 플랫폼 지원 확대
+
+### **3년 내 목표**
+
+- AI Agent 생태계 구축
+- 기업용 엔터프라이즈 솔루션
+- 글로벌 시장 진출
+
+### **5년 내 목표**
+
+- AI Agent 표준 플랫폼
+- 개발자 생태계 혁신
+- 기술 민주화 실현
+
+## 🎯 핵심 원칙
+
+1. **"잘" 만들어진 프로젝트**: 사용자 감탄을 이끌어내는 품질
+2. **전 과정 품질 보증**: 기획부터 배포까지 모든 단계 검증
+3. **지속적 개선**: 사용자 피드백 기반 AI 모델 업데이트
+4. **사용자 중심**: 기술이 아닌 결과물에 집중
+
+---
+
+**최종 목표**: 사용자가 "와, 정말 잘 만들어졌어!"라고 감탄하는 프로젝트를 생성하는 AI Agent
+**핵심 가치**: 단순한 채팅이 아닌, 프로젝트를 총괄하는 만능 에이전트
+**성과 지표**: 고객 이탈률 최소화, 사용자 만족도 극대화
