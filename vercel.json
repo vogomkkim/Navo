@@ -1,7 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:react",
-  "outputDirectory": "frontend/out",
+  "buildCommand": "npm run build",
+  "outputDirectory": "out",
   "installCommand": "npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "rootDirectory": "frontend"
 }

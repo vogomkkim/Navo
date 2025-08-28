@@ -4,63 +4,53 @@ import path from "path";
 const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
-  ...(isDev ? {} : { output: "export" }),
+  // 환경별 설정 분기
+  ...(isDev
+    ? {
+        // 🚀 개발 환경: 일반 Next.js 앱
+        // output: "export" 없음 - 정적 파일 경로 정상
+
+        // 타입 체크 최적화
+        typescript: {
+          ignoreBuildErrors: false,
+        },
+      }
+    : {
+        // 📦 배포 환경: 정적 사이트 생성 (SSG)
+        output: "export",
+        trailingSlash: true,
+        images: {
+          unoptimized: true,
+        },
+      }),
+
+  // Turbopack 설정 (Next.js 13+ 최신 방식)
+  ...(isDev && {
+    turbopack: {
+      rules: {
+        "*.css": {
+          loaders: ["css-loader"],
+          as: "*.css",
+        },
+      },
+    },
+  }),
 
   experimental: {
-    // Disable prerendering for pages that use client-side hooks
     ...(isDev
-      ? {}
+      ? {
+          // 개발 환경 실험적 기능 (turbo 제거됨)
+        }
       : {
           workerThreads: false,
           cpus: 1,
         }),
     optimizeCss: false,
-    reactCompiler: true,
-  },
-  // Disable static generation to avoid server-side rendering issues
-  trailingSlash: false,
-  outputFileTracingRoot: path.join(__dirname, "../../"),
-
-  // Vercel 배포를 위한 설정
-  distDir: isDev ? ".next" : "out",
-
-  // CORS 헤더 설정
-  async headers() {
-    return [
-      {
-        source: "/api/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          {
-            key: "Access-Control-Allow-Methods",
-            value: "GET, POST, PUT, DELETE, OPTIONS",
-          },
-          {
-            key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization",
-          },
-        ],
-      },
-    ];
+    // reactCompiler는 안정성을 위해 주석 처리
+    // reactCompiler: true,
   },
 
-  // 리다이렉트 설정 - /api가 아닌 경로는 모두 차단
-  async redirects() {
-    return [
-      {
-        source: "/:path*",
-        destination: "/404",
-        permanent: false,
-        has: [
-          {
-            type: "header",
-            key: "x-api-request",
-            value: "(?!true)",
-          },
-        ],
-      },
-    ];
-  },
+  outputFileTracingRoot: path.join(__dirname, ".."),
 };
 
 export default nextConfig;

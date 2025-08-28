@@ -18,12 +18,13 @@ import { useDraft } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLayoutContext } from "@/app/context/LayoutContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function HomeContent() {
   const { isAuthenticated, token } = useAuth();
   const { setCurrentLayout } = useLayoutContext();
   const router = useRouter();
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
@@ -34,25 +35,33 @@ export default function HomeContent() {
   // Panel Tab 기능
   useEffect(() => {
     const handleTabClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.classList.contains("panel-tab")) {
-        const tabName = target.getAttribute("data-tab");
-        if (tabName) {
-          // 모든 탭 비활성화
-          document.querySelectorAll(".panel-tab").forEach((tab) => {
-            tab.classList.remove("active");
-          });
-          document.querySelectorAll(".panel-tab-content").forEach((content) => {
-            content.classList.remove("active");
-          });
+      try {
+        const target = event.target as HTMLElement;
+        if (target && target.classList.contains("panel-tab")) {
+          const tabName = target.getAttribute("data-tab");
+          if (tabName) {
+            // 모든 탭 비활성화
+            document.querySelectorAll(".panel-tab").forEach((tab) => {
+              tab.classList.remove("active");
+            });
+            document
+              .querySelectorAll(".panel-tab-content")
+              .forEach((content) => {
+                content.classList.remove("active");
+              });
 
-          // 선택된 탭 활성화
-          target.classList.add("active");
-          const content = document.querySelector(`[data-tab="${tabName}"]`);
-          if (content) {
-            content.classList.add("active");
+            // 선택된 탭 활성화
+            target.classList.add("active");
+            const content = document.querySelector(
+              `.panel-tab-content[data-tab="${tabName}"]`
+            );
+            if (content) {
+              content.classList.add("active");
+            }
           }
         }
+      } catch (error) {
+        console.error("Tab click handler error:", error);
       }
     };
 
@@ -115,34 +124,46 @@ export default function HomeContent() {
         </section>
       </main>
 
-      {/* Floating Action Panel */}
-      <div className="floating-panel">
-        <div className="panel-tabs">
-          <button className="panel-tab active" data-tab="actions">
-            작업
-          </button>
-          <button className="panel-tab" data-tab="suggestions">
-            AI
-          </button>
-          <button className="panel-tab" data-tab="tools">
-            도구
-          </button>
-        </div>
+      {/* Right Side Panel */}
+      <div className={`side-panel ${isPanelOpen ? "open" : ""}`}>
+        <button
+          className="panel-toggle-btn"
+          onClick={() => setIsPanelOpen(!isPanelOpen)}
+          aria-label={isPanelOpen ? "패널 닫기" : "패널 열기"}
+        >
+          {isPanelOpen ? "×" : "☰"}
+        </button>
 
         <div className="panel-content">
+          <div className="panel-header">
+            <h3>작업 도구</h3>
+          </div>
+
+          <div className="panel-tabs">
+            <button className="panel-tab active" data-tab="actions">
+              작업
+            </button>
+            <button className="panel-tab" data-tab="suggestions">
+              AI
+            </button>
+            <button className="panel-tab" data-tab="tools">
+              도구
+            </button>
+          </div>
+
           <div className="panel-tab-content active" data-tab="actions">
-            <h3>빠른 작업</h3>
+            <h4>빠른 작업</h4>
             <SaveButton currentLayout={null} />
             <GenerateDummySuggestionButton />
           </div>
 
           <div className="panel-tab-content" data-tab="suggestions">
-            <h3>AI 제안</h3>
+            <h4>AI 제안</h4>
             <SuggestionsSection />
           </div>
 
           <div className="panel-tab-content" data-tab="tools">
-            <h3>프로젝트 도구</h3>
+            <h4>프로젝트 도구</h4>
             <ProjectGenerationSection />
             <ProjectListSection />
             <ComponentBuilderSection />

@@ -1,13 +1,31 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
+import { geminiClient } from "@/lib/gemini";
 
 export function MobileChat() {
   const [isOpen, setIsOpen] = useState(false);
-  const [chatInput, setChatInput] = useState('');
-  const [chatHistory, setChatHistory] = useState<string[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState<
+    Array<{
+      id: string;
+      type: "user" | "ai";
+      message: string;
+      timestamp: Date;
+    }>
+  >([
+    {
+      id: "welcome",
+      type: "ai",
+      message:
+        "안녕하세요! 모바일에서도 AI와 대화할 수 있습니다. 무엇을 도와드릴까요?",
+      timestamp: new Date(),
+    },
+  ]);
+  const [isProcessing, setIsProcessing] = useState(false);
   const chatDrawerRef = useRef<HTMLDivElement>(null);
   const dragHandleRef = useRef<HTMLDivElement>(null);
+  const chatHistoryRef = useRef<HTMLDivElement>(null);
 
   const toggleChat = () => {
     setIsOpen((prev) => !prev);
@@ -17,15 +35,59 @@ export function MobileChat() {
     setIsOpen(false);
   };
 
-  const handleSendChat = () => {
-    if (chatInput.trim()) {
-      setChatHistory((prev) => [...prev, chatInput]);
-      setChatInput('');
-      // TODO: Integrate with AI command API
+  const handleSendChat = async () => {
+    if (chatInput.trim() && !isProcessing) {
+      const userMessage = {
+        id: Date.now().toString(),
+        type: "user" as const,
+        message: chatInput,
+        timestamp: new Date(),
+      };
+
+      setChatHistory((prev) => [...prev, userMessage]);
+      setChatInput("");
+      setIsProcessing(true);
+
+      try {
+        // AI 응답 생성 (실제 API 연동)
+        const aiResponse = {
+          id: (Date.now() + 1).toString(),
+          type: "ai" as const,
+          message: `"${chatInput}"에 대한 답변을 생성 중입니다...`,
+          timestamp: new Date(),
+        };
+
+        setChatHistory((prev) => [...prev, aiResponse]);
+
+        // 실제 AI API 호출 (간단한 시뮬레이션)
+        setTimeout(() => {
+          setChatHistory((prev) =>
+            prev.map((msg) =>
+              msg.id === aiResponse.id
+                ? {
+                    ...msg,
+                    message: `"${chatInput}"에 대한 AI 답변입니다. 더 자세한 정보가 필요하시면 말씀해 주세요.`,
+                  }
+                : msg
+            )
+          );
+          setIsProcessing(false);
+        }, 2000);
+      } catch (error) {
+        console.error("AI chat error:", error);
+        setIsProcessing(false);
+      }
     }
   };
 
-  // Mobile chat resize logic (simplified for now, full implementation would be more complex)
+  // 채팅 히스토리 자동 스크롤
+  useEffect(() => {
+    if (chatHistoryRef.current) {
+      chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
+    }
+  }, [chatHistory]);
+
+  // Mobile chat resize logic
   useEffect(() => {
     const chatDrawer = chatDrawerRef.current;
     const dragHandle = dragHandleRef.current;
@@ -38,27 +100,28 @@ export function MobileChat() {
     const onTouchStart = (e: TouchEvent) => {
       startY = e.touches[0].clientY;
       startHeight = chatDrawer.offsetHeight;
-      chatDrawer.style.transition = 'none'; // Disable transition during drag
+      chatDrawer.style.transition = "none";
     };
 
     const onTouchMove = (e: TouchEvent) => {
       const deltaY = startY - e.touches[0].clientY;
-      const newHeight = Math.max(startHeight + deltaY, 100); // Minimum height
-      chatDrawer.style.height = `${newHeight}px`;
+      const newHeight = Math.max(startHeight + deltaY, 200); // 최소 높이 증가
+      const maxHeight = window.innerHeight * 0.8; // 최대 높이 제한
+      chatDrawer.style.height = `${Math.min(newHeight, maxHeight)}px`;
     };
 
     const onTouchEnd = () => {
-      chatDrawer.style.transition = ''; // Re-enable transition
+      chatDrawer.style.transition = "";
     };
 
-    dragHandle.addEventListener('touchstart', onTouchStart);
-    dragHandle.addEventListener('touchmove', onTouchMove);
-    dragHandle.addEventListener('touchend', onTouchEnd);
+    dragHandle.addEventListener("touchstart", onTouchStart);
+    dragHandle.addEventListener("touchmove", onTouchMove);
+    dragHandle.addEventListener("touchend", onTouchEnd);
 
     return () => {
-      dragHandle.removeEventListener('touchstart', onTouchStart);
-      dragHandle.removeEventListener('touchmove', onTouchMove);
-      dragHandle.removeEventListener('touchend', onTouchEnd);
+      dragHandle.removeEventListener("touchstart", onTouchStart);
+      dragHandle.removeEventListener("touchmove", onTouchMove);
+      dragHandle.removeEventListener("touchend", onTouchEnd);
     };
   }, []);
 
@@ -72,7 +135,7 @@ export function MobileChat() {
         ></div>
       )}
       <div
-        className={`mobile-chat-drawer ${isOpen ? 'open' : ''}`}
+        className={`mobile-chat-drawer ${isOpen ? "open" : ""}`}
         id="mobileChatDrawer"
         aria-hidden={!isOpen}
         ref={chatDrawerRef}
@@ -84,7 +147,7 @@ export function MobileChat() {
             aria-hidden="true"
             ref={dragHandleRef}
           ></div>
-          <h3>Chat</h3>
+          <h3>AI 채팅</h3>
           <button
             id="closeMobileChatBtn"
             className="close-btn"
@@ -94,10 +157,38 @@ export function MobileChat() {
             ×
           </button>
         </div>
-        <div className="chat-history" id="chatHistoryMobile">
-          {chatHistory.map((message, index) => (
-            <p key={index}>{message}</p>
+        <div
+          className="chat-history"
+          id="chatHistoryMobile"
+          ref={chatHistoryRef}
+        >
+          {chatHistory.map((message) => (
+            <div
+              key={message.id}
+              className={`chat-message ${message.type === "user" ? "user" : "ai"}`}
+            >
+              <div className="message-content">
+                <p>{message.message}</p>
+                <span className="message-time">
+                  {message.timestamp.toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            </div>
           ))}
+          {isProcessing && (
+            <div className="chat-message ai">
+              <div className="message-content">
+                <div className="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="mobile-chat-bar" id="mobileChatBar">
@@ -113,17 +204,22 @@ export function MobileChat() {
         <input
           type="text"
           id="chatInputMobile"
-          placeholder="Message…"
+          placeholder="AI와 대화해보세요..."
           value={chatInput}
           onChange={(e) => setChatInput(e.target.value)}
           onKeyPress={(e) => {
-            if (e.key === 'Enter') {
+            if (e.key === "Enter") {
               handleSendChat();
             }
           }}
+          disabled={isProcessing}
         />
-        <button id="chatSendBtnMobile" onClick={handleSendChat}>
-          Send
+        <button
+          id="chatSendBtnMobile"
+          onClick={handleSendChat}
+          disabled={isProcessing || !chatInput.trim()}
+        >
+          {isProcessing ? "전송 중..." : "전송"}
         </button>
       </div>
     </>

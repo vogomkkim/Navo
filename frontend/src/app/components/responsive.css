@@ -1,0 +1,196 @@
+/*
+ * 📱 반응형 디자인 유틸리티
+ *
+ * Tailwind CSS v4 호환 - @apply 대신 일반 CSS 속성 사용
+ * 모바일, 태블릿, 데스크톱 반응형 스타일을 포함합니다.
+ */
+
+@layer utilities {
+  /* 모바일 최적화 (max-width: 768px) */
+  @media (max-width: 768px) {
+    .workflow-steps {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .workflow-step {
+      width: 100%;
+    }
+
+    .step-title {
+      font-size: 0.875rem;
+    }
+
+    .chat-message {
+      margin-bottom: 1rem;
+    }
+
+    .message-content {
+      max-width: 90%;
+    }
+
+    .input-container {
+      flex-direction: column;
+    }
+
+    .send-button {
+      width: 100%;
+    }
+  }
+
+  /* 태블릿 최적화 (max-width: 1024px) */
+  @media (max-width: 1024px) {
+    .chat-container {
+      max-width: 64rem;
+    }
+
+    .workflow-progress {
+      padding: 1.5rem;
+    }
+
+    .workflow-progress h3 {
+      font-size: 1.25rem;
+    }
+  }
+
+  /* 작은 모바일 (max-width: 480px) */
+  @media (max-width: 480px) {
+    .chat-container {
+      padding: 0.25rem;
+    }
+
+    .workflow-progress {
+      padding: 0.5rem;
+    }
+
+    .workflow-progress h3 {
+      font-size: 1.125rem;
+    }
+
+    .step-title {
+      font-size: 0.75rem;
+    }
+
+    .message-avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: 1.125rem;
+    }
+
+    .message-content {
+      padding: 0.5rem;
+    }
+
+    .chat-input-area {
+      padding: 0.5rem;
+    }
+
+    .input-container textarea {
+      padding: 0.5rem;
+      min-height: 2rem;
+    }
+
+    .send-button {
+      padding: 0.5rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  /* 큰 화면 (min-width: 1440px) */
+  @media (min-width: 1440px) {
+    .chat-container {
+      max-width: 80rem;
+    }
+
+    .workflow-progress {
+      padding: 1rem;
+    }
+
+    .workflow-progress h3 {
+      font-size: 1.875rem;
+    }
+
+    .step-number {
+      width: 3rem;
+      height: 3rem;
+      font-size: 1.5rem;
+    }
+
+    .step-title {
+      font-size: 1rem;
+    }
+
+    .message-avatar {
+      width: 3.5rem;
+      height: 3.5rem;
+      font-size: 1.875rem;
+    }
+
+    .message-content {
+      padding: 0.75rem;
+    }
+
+    .chat-input-area {
+      padding: 1rem;
+    }
+
+    .input-container textarea {
+      padding: 0.75rem;
+      min-height: 2rem;
+    }
+
+    .send-button {
+      padding: 0.75rem;
+      font-size: 1.25rem;
+    }
+  }
+
+  /* 인쇄 최적화 */
+  @media print {
+    .workflow-progress {
+      background-color: white;
+      color: black;
+      box-shadow: none;
+    }
+
+    .chat-input-area {
+      display: none;
+    }
+
+    .send-button {
+      display: none;
+    }
+  }
+
+  /* 다크 모드 지원 (선택적) */
+  @media (prefers-color-scheme: dark) {
+    .chat-messages {
+      background-color: rgb(17 24 39);
+      border-color: rgb(55 65 81);
+    }
+
+    .message-content {
+      background-color: rgb(31 41 55);
+      border-color: rgb(75 85 99);
+      color: rgb(243 244 246);
+    }
+
+    .message-sender {
+      color: rgb(229 231 235);
+    }
+
+    .message-text {
+      color: rgb(243 244 246);
+    }
+
+    .chat-input-area {
+      background-color: rgb(17 24 39);
+    }
+
+    .input-container textarea {
+      background-color: rgb(31 41 55);
+      border-color: rgb(75 85 99);
+      color: rgb(243 244 246);
+    }
+  }
+}

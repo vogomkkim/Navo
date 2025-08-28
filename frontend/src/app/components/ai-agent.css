@@ -1,0 +1,303 @@
+/*
+ * 🤖 AI Project Orchestrator Agent 스타일
+ *
+ * Tailwind CSS v4 호환 - @apply 대신 일반 CSS 속성 사용
+ * AI Agent의 모든 UI 컴포넌트 스타일을 포함합니다.
+ */
+
+@layer components {
+  /* AI 채팅 인터페이스 */
+  .chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* 워크플로우 진행 상황 */
+  .workflow-progress {
+    background: linear-gradient(to right, rgb(59 130 246), rgb(147 51 234));
+    color: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  }
+
+  .workflow-progress h3 {
+    margin: 0;
+    margin-bottom: 1.25rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .workflow-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .workflow-step {
+    flex: 1;
+    text-align: center;
+    padding: 1rem;
+    background-color: rgb(255 255 255 / 0.1);
+    border-radius: 0.75rem;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .workflow-step.active {
+    background-color: rgb(255 255 255 / 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  }
+
+  .workflow-step.completed {
+    background-color: rgb(34 197 94 / 0.3);
+  }
+
+  .step-number {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: rgb(255 255 255 / 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+    font-size: 1.25rem;
+  }
+
+  .step-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .step-status {
+    font-size: 1.5rem;
+  }
+
+  /* 채팅 메시지 */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background-color: rgb(249 250 251);
+  }
+
+  .chat-message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .chat-message.user {
+    flex-direction: row-reverse;
+  }
+
+  .message-content {
+    flex: 1;
+    max-width: 100%;
+  }
+
+  .message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .message-sender {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgb(17 24 39);
+  }
+
+  .chat-message.user .message-sender {
+    color: rgb(59 130 246);
+  }
+
+  .message-time {
+    font-size: 0.75rem;
+    color: rgb(107 114 128);
+  }
+
+  .message-text {
+    background-color: white;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    color: rgb(17 24 39);
+    line-height: 1.5;
+    word-wrap: break-word;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .chat-message.user .message-text {
+    background-color: rgb(59 130 246);
+    color: white;
+  }
+
+  /* 채팅 플레이스홀더 */
+  .chat-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: rgb(107 114 128);
+  }
+
+  .placeholder-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .chat-placeholder h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: rgb(17 24 39);
+  }
+
+  .chat-placeholder p {
+    margin: 0 0 1.5rem 0;
+    font-size: 1rem;
+    color: rgb(107 114 128);
+  }
+
+  .placeholder-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .placeholder-examples span {
+    padding: 0.5rem 1rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(229 231 235);
+    color: rgb(75 85 99);
+  }
+
+  /* 채팅 입력 영역 */
+  .chat-input-area {
+    padding: 1.5rem;
+    border-top: 1px solid rgb(229 231 235);
+    background-color: white;
+    flex-shrink: 0; /* 하단에 고정 */
+  }
+
+  .input-container {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    align-items: flex-end;
+    max-width: 64rem;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+
+  .input-container textarea {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border: 1px solid rgb(229 231 235);
+    border-radius: 1.5rem;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: none;
+    min-height: 4rem;
+    max-height: 16rem;
+    outline: none;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    line-height: 1.5;
+  }
+
+  .input-container textarea:focus {
+    border-color: rgb(59 130 246);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  }
+
+  .input-container textarea:disabled {
+    background-color: rgb(249 250 251);
+    color: rgb(107 114 128);
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .send-button {
+    padding: 1rem;
+    background-color: rgb(59 130 246);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 4rem;
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .send-button:hover:not(:disabled) {
+    background-color: rgb(29 78 216);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(29, 78, 216, 0.2);
+  }
+
+  .send-button:disabled {
+    background-color: rgb(156 163 175);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .send-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .loading-spinner {
+    font-size: 1.25rem;
+    line-height: 1;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .input-hint {
+    font-size: 0.75rem;
+    color: rgb(107 114 128);
+    line-height: 1.4;
+    text-align: center;
+    max-width: 48rem;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0.8;
+  }
+}
