@@ -4,6 +4,7 @@ import logger from "./core/logger.js";
 import { testConnection } from "./db/db.js";
 
 const port = Number(process.env.PORT) || 3001;
+const host = process.env.HOST || "0.0.0.0";
 
 async function startServer() {
   try {
@@ -14,12 +15,12 @@ async function startServer() {
     await testConnection();
     logger.info("✅ 데이터베이스 연결 성공");
 
-    app.listen({ port, host: '0.0.0.0' }, (err) => {
+    app.listen({ port, host }, (err) => {
       if (err) {
         logger.error("❌ 서버 시작 실패:", err);
         process.exit(1);
       }
-      logger.info(`🚀 서버 시작 완료! 포트: ${port}, 호스트: 0.0.0.0`);
+      logger.info(`🚀 서버 시작 완료! 포트: ${port}, 호스트: ${host}`);
     });
   } catch (error) {
     logger.error("💥 서버 시작 중 에러 발생:", error);
