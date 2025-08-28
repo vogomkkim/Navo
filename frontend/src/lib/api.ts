@@ -7,8 +7,14 @@ import {
 import { useAuth } from "@/app/context/AuthContext"; // Assuming @/app/context/AuthContext is the correct alias
 
 // Define a base URL for your API. This should be configured via environment variables in Next.js
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001"; // Changed to backend port
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+if (!API_BASE_URL) {
+  throw new Error(
+    "NEXT_PUBLIC_API_BASE_URL environment variable is required. " +
+      "Please set it in your Vercel environment variables or local .env.local file."
+  );
+}
 
 interface FetchApiOptions extends RequestInit {
   token?: string | null;
