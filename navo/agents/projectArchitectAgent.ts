@@ -261,15 +261,17 @@ export class ProjectArchitectAgent extends BaseAgent {
         const architecture = JSON.parse(cleanResponse);
         return architecture;
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         this.logger.error("AI 아키텍처 설계 실패: JSON 파싱 오류", {
-          error,
+          error: errorMessage,
           rawResponse: cleanResponse,
         });
-        throw new Error(`AI 아키텍처 설계 실패: ${error.message}`);
+        throw new Error(`AI 아키텍처 설계 실패: ${errorMessage}`);
       }
     } catch (error) {
-      this.logger.error("AI 아키텍처 설계 실패:", { error });
-      throw new Error(`AI 아키텍처 설계 실패: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error("AI 아키텍처 설계 실패:", { error: errorMessage });
+      throw new Error(`AI 아키텍처 설계 실패: ${errorMessage}`);
     }
   }
 

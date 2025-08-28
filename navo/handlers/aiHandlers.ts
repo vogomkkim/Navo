@@ -568,7 +568,6 @@ export async function handleVirtualPreview(
 
     const previewAgent = new VirtualPreviewGeneratorAgent();
     const htmlContent = await previewAgent.execute({
-      type: 'generate_preview',
       draftId,
       filePath: `/${filePath}`,
     });
