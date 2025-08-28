@@ -3,10 +3,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/web",
   "installCommand": "npm install",
-  "framework": null,
-  "functions": {
-    "dist/navo/**/*.js": {
-      "runtime": "nodejs22.x"
-    }
-  }
+  "framework": null
 }
