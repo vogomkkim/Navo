@@ -169,44 +169,107 @@ export class ProjectArchitectAgent extends BaseAgent {
   ): Promise<any> {
     try {
       const prompt = `
-프로젝트 요구사항을 분석하여 아키텍처를 설계해주세요:
+당신은 세계 최고의 소프트웨어 아키텍트입니다. 당신의 임무는 사용자의 요구사항에 따라 완전한 프로젝트 구조를 설계하고, 이를 단 하나의 깔끔한 JSON 객체로 출력하는 것입니다. 이 JSON은 프로젝트의 전체 파일 시스템을 가상으로 표현합니다.
 
-프로젝트명: ${request.name}
-설명: ${request.description}
-타입: ${request.type}
-주요 기능: ${request.features.join(", ")}
-기술 스택: ${request.technology?.join(", ") || "자동 선택"}
-복잡도: ${request.complexity || "medium"}
+**프로젝트 요구사항:**
+- **프로젝트명:** ${request.name}
+- **설명:** ${request.description}
+- **프로젝트 타입:** ${request.type}
+- **주요 기능:** ${request.features.join(", ")}
+- **복잡도:** ${request.complexity || "medium"}
 
-다음 형식으로 응답해주세요:
+**기술 제약 조건:**
+- **프론트엔드:** React와 JSX를 사용하세요. 모든 컴포넌트는 함수형 컴포넌트여야 합니다.
+- **백엔드:** Supabase Edge Functions를 사용하세요.
+- **데이터베이스:** PostgreSQL을 사용하세요.
+- **스타일링:** 표준 CSS 파일을 사용하세요.
+
+**JSON 출력 지침:**
+- JSON의 루트는 "project"라는 단일 키를 가진 객체여야 합니다.
+- "project" 객체는 "name"과 "file_structure" 객체를 포함해야 합니다.
+- "file_structure"는 노드의 재귀적인 구조여야 합니다.
+- 각 노드는 "type"('folder' 또는 'file')을 가져야 합니다.
+- 각 노드는 "name"을 가져야 합니다.
+- 폴더는 다른 노드를 포함하는 "children" 배열을 가져야 합니다.
+- 파일은 해당 파일의 완전하고 잘 서식된 소스 코드를 포함하는 "content" 문자열을 가져야 합니다.
+- \`package.json\`, 빌드 구성, 기본 \`index.html\`, 페이지용 React 컴포넌트, 예제 Supabase 함수 등 필요한 모든 파일을 생성하세요.
+
+**JSON 구조 예시:**
+\`\`\`json
 {
-  "technology": ["기술1", "기술2"],
-  "components": ["컴포넌트1", "컴포넌트2"],
-  "database": {"type": "데이터베이스 타입", "tables": ["테이블1", "테이블2"]},
-  "api": {"endpoints": ["엔드포인트1", "엔드포인트2"]},
-  "complexity": "복잡도 레벨"
+  "project": {
+    "name": "예제프로젝트",
+    "file_structure": {
+      "type": "folder",
+      "name": "root",
+      "children": [
+        {
+          "type": "folder",
+          "name": "src",
+          "children": [
+            {
+              "type": "file",
+              "name": "index.js",
+              "content": "import React from 'react';\\nimport ReactDOM from 'react-dom';\\nimport App from './App.js';\\n\\nReactDOM.render(<App />, document.getElementById('root'));"
+            },
+            {
+              "type": "file",
+              "name": "App.js",
+              "content": "import React from 'react';\\nimport HomePage from './pages/HomePage.js';\\n\\nfunction App() {\\n  return (\\n    <div className=\\"App\\">\\n      <HomePage />\\n    </div>\\n  );\\n}\\n\\nexport default App;"
+            },
+            {
+              "type": "folder",
+              "name": "pages",
+              "children": [
+                {
+                  "type": "file",
+                  "name": "HomePage.js",
+                  "content": "import React from 'react';\\n\\nfunction HomePage() {\\n  return <h1>홈페이지에 오신 것을 환영합니다</h1>;\\n}\\n\\nexport default HomePage;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "file",
+          "name": "package.json",
+          "content": "{\\n  \\"name\\": \\"example-project\\",\\n  \\"version\\": \\"1.0.0\\",\\n  \\"dependencies\\": {\\n    \\"react\\": \\"^18.0.0\\",\\n    \\"react-dom\\": \\"^18.0.0\\"\\n  }\\n}"
+        }
+      ]
+    }
+  }
 }
+\`\`\`
+
+이제 사용자의 프로젝트 요구사항에 따라 완전한 JSON 객체를 생성하세요.
       `;
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
 
-      // JSON 파싱
-      const architecture = JSON.parse(text);
+      // 마크다운 코드 블록 제거
+      let cleanResponse = text;
+      if (text.includes("```json")) {
+        cleanResponse = text.replace(/```json\s*/, "").replace(/\s*```$/, "");
+      } else if (text.includes("```")) {
+        cleanResponse = text.replace(/```\s*/, "").replace(/\s*```$/, "");
+      }
 
-      return architecture;
+      try {
+        // JSON 파싱
+        const architecture = JSON.parse(cleanResponse);
+        return architecture;
+      } catch (error) {
+        this.logger.error("AI 아키텍처 설계 실패: JSON 파싱 오류", {
+          error,
+          rawResponse: cleanResponse,
+        });
+        throw new Error(`AI 아키텍처 설계 실패: ${error.message}`);
+      }
     } catch (error) {
       this.logger.error("AI 아키텍처 설계 실패:", { error });
-
-      // 기본 아키텍처 반환
-      return {
-        technology: ["React", "Node.js", "PostgreSQL"],
-        components: ["Header", "Main", "Footer"],
-        database: { type: "PostgreSQL", tables: ["users", "projects"] },
-        api: { endpoints: ["/api/users", "/api/projects"] },
-        complexity: request.complexity || "medium",
-      };
+      throw new Error(`AI 아키텍처 설계 실패: ${error.message}`);
     }
   }
 

@@ -6,15 +6,14 @@
 
 import { BaseAgent, ProjectRequest } from "../core/masterDeveloper.js";
 import { ProjectArchitectAgent } from "./projectArchitectAgent.js";
-import { UIUXDesignerAgent } from "./uiuxDesignerAgent.js";
-import { CodeGeneratorAgent } from "./codeGeneratorAgent.js";
-import { DevelopmentGuideAgent } from "./developmentGuideAgent.js";
+import { ProjectDatabaseManagerAgent } from "./projectDatabaseManagerAgent.js";
 
 export interface ProjectPlan {
-  architecture: any;
-  uiDesign: any;
-  codeStructure: any;
-  developmentGuide: any;
+  project: {
+    name: string;
+    file_structure: any;
+  };
+  draftId: string; // Add draftId to the return plan
   estimatedTime: string;
   difficulty: string;
   nextSteps: string[];
@@ -22,18 +21,13 @@ export interface ProjectPlan {
 
 export class MasterDeveloperAgent extends BaseAgent {
   private architectAgent: ProjectArchitectAgent;
-  private designerAgent: UIUXDesignerAgent;
-  private generatorAgent: CodeGeneratorAgent;
-  private guideAgent: DevelopmentGuideAgent;
+  private dbManager: ProjectDatabaseManagerAgent;
 
   constructor() {
     super("MasterDeveloperAgent", 0); // 최고 우선순위
 
-    // 하위 에이전트들 초기화
     this.architectAgent = new ProjectArchitectAgent();
-    this.designerAgent = new UIUXDesignerAgent();
-    this.generatorAgent = new CodeGeneratorAgent();
-    this.guideAgent = new DevelopmentGuideAgent();
+    this.dbManager = new ProjectDatabaseManagerAgent(); // Initialize the DB manager
   }
 
   canHandle(request: any): boolean {
@@ -62,47 +56,41 @@ export class MasterDeveloperAgent extends BaseAgent {
     try {
       this.logger.info("🚀 Master Developer 프로젝트 생성 시작", { request });
 
-      // 1단계: Project Architect Agent로 아키텍처 설계
+      // Project Architect Agent로 완전한 프로젝트 구조 생성
       this.logger.info("🏗️ Project Architect Agent 호출 중...");
-      const architectureResult = await this.architectAgent.execute(request, {});
-      const architecture = architectureResult.architecture; // Assuming execute returns an object with architecture
+      const projectResult = await this.architectAgent.execute(request, {});
 
-      // 2단계: UI/UX Designer Agent로 인터페이스 설계
-      this.logger.info("🎨 UI/UX Designer Agent 호출 중...");
-      const uiDesignResult = await this.designerAgent.execute(request, {}, { architecture });
-      const uiDesign = uiDesignResult.uiDesign; // Assuming execute returns an object with uiDesign
+      // Project Architect Agent가 반환하는 구조에서 project 객체 추출
+      const project =
+        projectResult.architecture?.project || projectResult.project;
 
-      // 3단계: Code Generator Agent로 코드 구조 생성
-      this.logger.info("⚡ Code Generator Agent 호출 중...");
-      const codeStructureResult = await this.generatorAgent.execute(
-        request,
-        {},
-        { architecture, uiDesign }
+      if (!project || !project.file_structure) {
+        throw new Error(
+          "Project Architect Agent가 올바른 프로젝트 구조를 반환하지 않았습니다."
+        );
+      }
+
+      // 생성된 프로젝트 구조를 데이터베이스에 초안으로 저장
+      // 참고: 실제 projectId는 컨텍스트에서 가져와야 합니다. 여기서는 임시 ID를 사용합니다.
+      const tempProjectId = "_temp_project_id_"; // This should be replaced with actual project ID logic
+      const draft = await this.dbManager.saveDraft(
+        tempProjectId,
+        `Initial draft for ${project.name}`,
+        project
       );
-      const codeStructure = codeStructureResult.project; // Assuming execute returns an object with project
 
-      // 4단계: Development Guide Agent로 개발 가이드 작성
-      this.logger.info("📚 Development Guide Agent 호출 중...");
-      const developmentGuideResult = await this.guideAgent.execute(
-        request,
-        {},
-        { architecture, uiDesign, codeStructure }
-      );
-      const developmentGuide = developmentGuideResult.developmentGuide; // Assuming execute returns an object with developmentGuide
-
-      // 전체 프로젝트 계획 조합
+      // 프로젝트 계획 조합
       const projectPlan: ProjectPlan = {
-        architecture,
-        uiDesign,
-        codeStructure,
-        developmentGuide,
-        estimatedTime: this.calculateEstimatedTime(architecture, codeStructure),
-        difficulty: this.assessDifficulty(architecture, codeStructure),
-        nextSteps: this.generateNextSteps(developmentGuide),
+        project,
+        draftId: draft.id, // Return the draftId
+        estimatedTime: this.calculateEstimatedTime(project),
+        difficulty: this.assessDifficulty(project),
+        nextSteps: this.generateNextSteps(draft.id),
       };
 
       this.logger.info("✅ Master Developer 프로젝트 생성 완료", {
-        projectPlan,
+        projectName: project.name,
+        fileCount: this.countFiles(project.file_structure),
       });
 
       return projectPlan;
@@ -115,18 +103,34 @@ export class MasterDeveloperAgent extends BaseAgent {
   }
 
   /**
+   * 파일 수 계산 헬퍼 메서드
+   */
+  private countFiles(fileStructure: any): number {
+    let count = 0;
+
+    function traverse(node: any): void {
+      if (node.type === "file") {
+        count++;
+      } else if (node.type === "folder" && node.children) {
+        node.children.forEach((child: any) => traverse(child));
+      }
+    }
+
+    traverse(fileStructure);
+    return count;
+  }
+
+  /**
    * 예상 개발 시간 계산
    */
-  private calculateEstimatedTime(
-    architecture: any,
-    codeStructure: any
-  ): string {
-    // 실제로는 아키텍처와 코드 구조를 분석하여 계산
-    const baseTime = 40; // 기본 40시간
-    const complexityMultiplier = architecture.complexity === "complex" ? 2 : 1;
-    const estimatedHours = baseTime * complexityMultiplier;
+  private calculateEstimatedTime(project: any): string {
+    // 파일 수와 복잡도를 기반으로 시간 계산
+    const fileCount = this.countFiles(project.file_structure);
+    const baseTime = 20; // 기본 20시간
+    const fileMultiplier = Math.max(1, fileCount / 10); // 파일 수에 따른 배수
+    const estimatedHours = Math.ceil(baseTime * fileMultiplier);
 
-    if (estimatedHours < 80)
+    if (estimatedHours < 40)
       return `${estimatedHours}시간 (약 ${Math.ceil(estimatedHours / 8)}일)`;
     return `${estimatedHours}시간 (약 ${Math.ceil(estimatedHours / 8)}일)`;
   }
@@ -134,22 +138,24 @@ export class MasterDeveloperAgent extends BaseAgent {
   /**
    * 프로젝트 난이도 평가
    */
-  private assessDifficulty(architecture: any, codeStructure: any): string {
-    if (architecture.complexity === "complex") return "고급";
-    if (architecture.complexity === "medium") return "중급";
+  private assessDifficulty(project: any): string {
+    const fileCount = this.countFiles(project.file_structure);
+
+    if (fileCount > 20) return "고급";
+    if (fileCount > 10) return "중급";
     return "초급";
   }
 
   /**
    * 다음 단계 생성
    */
-  private generateNextSteps(developmentGuide: any): string[] {
+  private generateNextSteps(draftId: string): string[] {
     return [
-      "프로젝트 파일 생성 및 초기 설정",
-      "개발 환경 구성",
-      "첫 번째 기능 구현",
-      "테스트 및 디버깅",
-      "배포 준비",
+      `프로젝트 초안이 데이터베이스에 저장되었습니다 (Draft ID: ${draftId}).`,
+      `미리보기 URL: /api/preview/${draftId}/src/index.html`,
+      "가상 프로젝트 구조를 기반으로 실제 파일 생성",
+      "package.json의 의존성 설치",
+      "개발 서버 실행 및 테스트",
     ];
   }
 }

@@ -549,3 +549,34 @@ function deriveProjectName(message: string): string {
 }
 
 // End of helpers
+
+import { VirtualPreviewGeneratorAgent } from '../agents/virtualPreviewGeneratorAgent.js';
+
+// ... (keep all existing code)
+
+export async function handleVirtualPreview(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  try {
+    const { draftId, '*': filePath } = request.params as { draftId: string; '*': string };
+
+    if (!draftId || !filePath) {
+      reply.status(400).send({ error: 'draftId and filePath are required.' });
+      return;
+    }
+
+    const previewAgent = new VirtualPreviewGeneratorAgent();
+    const htmlContent = await previewAgent.execute({
+      type: 'generate_preview',
+      draftId,
+      filePath: `/${filePath}`,
+    });
+
+    reply.type('text/html').send(htmlContent);
+  } catch (error) {
+    console.error('Error generating virtual preview:', error);
+    reply.status(500).send({ error: 'Failed to generate virtual preview' });
+  }
+}
+

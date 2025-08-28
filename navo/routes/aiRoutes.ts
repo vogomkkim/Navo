@@ -55,6 +55,11 @@ async function aiRoutes(
     { preHandler: [authenticateToken] },
     handleMultiAgentChat
   );
+
+  fastify.get(
+    '/preview/:draftId/*',
+    handleVirtualPreview
+  );
 }
 
 export default aiRoutes;
