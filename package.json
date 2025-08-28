@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "prebuild": "npm run db:generate",
-    "build": "npm run build:server",
+    "build": "npm run build:full",
     "build:server": "tsc -p config/tsconfig.json",
     "build:react": "cross-env-shell \"cd frontend && npm run build\"",
-    "build:full": "npm run build:server && npm run build:react",
+    "build:full": "npm run build:server && npm run build:react && npm run copy:frontend",
+    "copy:frontend": "copyfiles -u 1 \"frontend/out/**/*\" dist/web",
     "demo": "npm run build && node dist/navo/demo.js",
     "start": "node dist/navo/start.js",
     "dev:server": "cross-env PORT=3001 tsx navo/start.ts",

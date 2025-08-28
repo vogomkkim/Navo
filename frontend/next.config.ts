@@ -4,7 +4,7 @@ import path from "path";
 const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
-  ...(isDev ? {} : { output: "standalone" }),
+  ...(isDev ? {} : { output: "export" }),
 
   experimental: {
     // Disable prerendering for pages that use client-side hooks
@@ -20,6 +20,9 @@ const nextConfig: NextConfig = {
   // Disable static generation to avoid server-side rendering issues
   trailingSlash: false,
   outputFileTracingRoot: path.join(__dirname, "../../"),
+
+  // Vercel 배포를 위한 설정
+  distDir: isDev ? ".next" : "out",
 
   // CORS 헤더 설정
   async headers() {
