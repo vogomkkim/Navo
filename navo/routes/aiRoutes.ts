@@ -8,6 +8,7 @@ import {
   handleGenerateProject,
   handleGenerateDummySuggestion,
   handleMultiAgentChat,
+  handleVirtualPreview,
 } from '../handlers/aiHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
