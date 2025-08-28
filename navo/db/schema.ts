@@ -145,3 +145,17 @@ export const componentDefinitions = pgTable('component_definitions', {
     .defaultNow()
     .notNull(),
 });
+
+// Drafts table for saving virtual project states/snapshots
+export const drafts = pgTable('drafts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  data: jsonb('data').notNull().default({}),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+    .defaultNow()
+    .notNull(),
+});

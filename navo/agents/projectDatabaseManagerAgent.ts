@@ -2,7 +2,7 @@ import { db } from '../db/db.js';
 import { drafts } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { BaseAgent } from '../core/masterDeveloper.js';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 
 export class ProjectDatabaseManagerAgent extends BaseAgent {
   constructor() {
