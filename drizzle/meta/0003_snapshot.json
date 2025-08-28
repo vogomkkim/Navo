@@ -1,5 +1,5 @@
 {
-  "id": "389d0cd2-f053-4e85-ba10-6358825f725e",
+  "id": "8257487b-eb6f-453f-a054-5652ff32dafd",
   "prevId": "332605a1-5394-4216-842c-fb62775a914a",
   "version": "7",
   "dialect": "postgresql",
@@ -255,7 +255,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_drafts_project": {
+          "name": "idx_drafts_project",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},

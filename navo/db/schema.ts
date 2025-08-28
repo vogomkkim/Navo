@@ -128,6 +128,25 @@ export const publishDeploys = pgTable('publish_deploys', {
     .notNull(),
 });
 
+export const drafts = pgTable(
+  'drafts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id').notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    data: jsonb('data').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    projectIdx: index('idx_drafts_project').on(table.projectId),
+  })
+);
+
 export const componentDefinitions = pgTable('component_definitions', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: varchar('name', { length: 255 }).notNull().unique(),
