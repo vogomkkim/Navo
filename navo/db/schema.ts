@@ -28,6 +28,8 @@ export const projects = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     ownerId: uuid("owner_id").notNull(),
     name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    requirements: text("requirements"), // 사용자 요구사항 저장
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .defaultNow()
       .notNull(),

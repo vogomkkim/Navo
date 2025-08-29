@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
         typescript: {
           ignoreBuildErrors: false,
         },
+
+
       }
     : {
         // 📦 배포 환경: 정적 사이트 생성 (SSG)

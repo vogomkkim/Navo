@@ -14,7 +14,7 @@ import { ComponentBuilderSection } from "@/components/ui/ComponentBuilderSection
 import { MobileChat } from "@/components/ui/MobileChat";
 import { AccordionSection } from "@/components/ui/AccordionSection";
 import { LayoutRenderer } from "@/components/LayoutRenderer";
-import { useListProjects, usePageLayout } from "@/lib/api";
+import { useListProjects, usePageLayout, fetchApi } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLayoutContext } from "@/app/context/LayoutContext";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,21 @@ export default function HomeContent() {
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [incompleteProject, setIncompleteProject] = useState<any>(null);
+  const [showMessage, setShowMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  // 메시지 표시 함수들
+  const showSuccessMessage = (text: string) => {
+    setShowMessage({ type: "success", text });
+    setTimeout(() => setShowMessage(null), 3000);
+  };
+
+  const showErrorMessage = (text: string) => {
+    setShowMessage({ type: "error", text });
+    setTimeout(() => setShowMessage(null), 5000);
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
@@ -121,9 +136,20 @@ export default function HomeContent() {
 
     try {
       if (option === "continue") {
-        // 이어서 완성하기: AI가 기존 상태 파악 후 필요한 페이지/컴포넌트 생성
+        // 이어서 완성하기: 기존 요구사항으로 AI가 프로젝트 완성
         console.log("이어서 완성하기:", incompleteProject.name);
-        // TODO: AI 생성 API 호출
+
+        const result = await fetchApi("/api/ai/recover-project", {
+          method: "POST",
+          token,
+          body: JSON.stringify({
+            projectId: incompleteProject.id,
+            action: "continue",
+          }),
+        });
+
+        console.log("프로젝트 복구 완료:", result);
+        showSuccessMessage("프로젝트가 성공적으로 완성되었습니다!");
       } else if (option === "restart") {
         // 새로 시작하기: 기존 내용 삭제 후 새로 생성
         console.log("새로 시작하기:", incompleteProject.name);
@@ -134,6 +160,7 @@ export default function HomeContent() {
       setIncompleteProject(null);
     } catch (error) {
       console.error("복구 프로세스 오류:", error);
+      showErrorMessage("프로젝트 복구 중 오류가 발생했습니다.");
     }
   };
 
@@ -384,6 +411,19 @@ export default function HomeContent() {
         </div>
       </div>
       <MobileChat />
+
+      {/* 메시지 표시 */}
+      {showMessage && (
+        <div
+          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+            showMessage.type === "success"
+              ? "bg-green-500 text-white"
+              : "bg-red-500 text-white"
+          }`}
+        >
+          {showMessage.text}
+        </div>
+      )}
 
       {/* 프로젝트 복구 모달 */}
       {showRecoveryModal && incompleteProject && (

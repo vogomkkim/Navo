@@ -4,7 +4,7 @@ import { db } from "../db/db.js";
 import {
   events,
   suggestions,
-  projects as projectsTable,
+  projects,
   componentDefinitions,
   pages,
 } from "../db/schema.js";
@@ -291,10 +291,10 @@ export async function handleGenerateDummySuggestion(
 
     // Use latest project owned by user as target for dummy suggestion if available
     const latestProject = await db
-      .select({ id: projectsTable.id })
-      .from(projectsTable)
-      .where(eq(projectsTable.ownerId, userId))
-      .orderBy(desc(projectsTable.createdAt))
+      .select({ id: projects.id })
+      .from(projects)
+      .where(eq(projects.ownerId, userId))
+      .orderBy(desc(projects.createdAt))
       .limit(1);
 
     const projectId = latestProject[0]?.id || "dummy-project-id";
@@ -357,7 +357,7 @@ export async function handleSeedDummyData(
 
     // Create a test project
     const created = await db
-      .insert(projectsTable)
+      .insert(projects)
       .values({
         name: "Test Project",
         ownerId: userId as string,
@@ -403,7 +403,7 @@ export async function handleGenerateProject(
       return;
     }
     const created = await db
-      .insert(projectsTable)
+      .insert(projects)
       .values({ name: projectName as string, ownerId: userId as string })
       .returning();
     reply.send({
@@ -593,4 +593,304 @@ export async function handleVirtualPreview(
     console.error("Error generating virtual preview:", error);
     reply.status(500).send({ error: "Failed to generate virtual preview" });
   }
+}
+
+// 프로젝트 복구 핸들러
+export async function handleProjectRecovery(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  try {
+    const { projectId, action } = request.body as any;
+
+    if (action === "continue") {
+      // 프로젝트 정보 조회
+      const project = await db.query.projects.findFirst({
+        where: eq(projects.id, projectId),
+      });
+
+      if (!project) {
+        reply.status(404).send({ error: "Project not found" });
+        return;
+      }
+
+      // 프로젝트 요구사항 분석 (requirements 컬럼이 없을 수 있음)
+      const requirements = project.description || project.name;
+
+      // AI를 사용하여 프로젝트 완성
+      console.log("프로젝트 복구 시작:", { projectId, requirements });
+
+      const generatedContent = await generateProjectContent(requirements);
+      console.log("생성된 콘텐츠:", generatedContent);
+
+      // 생성된 내용을 데이터베이스에 저장
+      console.log("페이지 저장 시작...");
+      const savedPages = await saveGeneratedPages(
+        projectId,
+        generatedContent.pages
+      );
+      console.log("저장된 페이지:", savedPages);
+
+      console.log("컴포넌트 저장 시작...");
+      const savedComponents = await saveGeneratedComponents(
+        projectId,
+        generatedContent.components
+      );
+      console.log("저장된 컴포넌트:", savedComponents);
+
+      reply.send({
+        success: true,
+        message: "프로젝트 복구 완료",
+        generated: {
+          pages: savedPages,
+          components: savedComponents,
+        },
+      });
+    } else {
+      reply.status(400).send({ error: "Invalid action" });
+    }
+  } catch (error) {
+    console.error("Error in project recovery:", error);
+    reply.status(500).send({ error: "프로젝트 복구 실패" });
+  }
+}
+
+// AI를 사용하여 프로젝트 콘텐츠 생성
+async function generateProjectContent(requirements: string) {
+  console.log("generateProjectContent 호출됨:", requirements);
+
+  // 실제 AI 생성 로직 (현재는 기본 템플릿 반환)
+  const projectType = determineProjectType(requirements);
+  console.log("프로젝트 타입 결정:", projectType);
+
+  const pages = generateDefaultPages(projectType);
+  const components = generateDefaultComponents(projectType);
+
+  console.log("생성된 페이지:", pages);
+  console.log("생성된 컴포넌트:", components);
+
+  return {
+    pages,
+    components,
+  };
+}
+
+// 프로젝트 타입 결정
+function determineProjectType(requirements: string): string {
+  const lower = requirements.toLowerCase();
+  if (
+    lower.includes("인스타그램") ||
+    lower.includes("instagram") ||
+    lower.includes("소셜")
+  )
+    return "social";
+  if (
+    lower.includes("쇼핑") ||
+    lower.includes("ecommerce") ||
+    lower.includes("상점")
+  )
+    return "ecommerce";
+  if (lower.includes("블로그") || lower.includes("blog")) return "blog";
+  if (lower.includes("포트폴리오") || lower.includes("portfolio"))
+    return "portfolio";
+  return "general";
+}
+
+// 기본 페이지 생성
+function generateDefaultPages(projectType: string) {
+  const basePages = [
+    {
+      path: "/",
+      name: "메인 페이지",
+      layoutJson: {
+        components: [
+          { type: "header", props: { title: "메인 페이지" } },
+          { type: "content", props: { text: "환영합니다!" } },
+        ],
+      },
+    },
+  ];
+
+  switch (projectType) {
+    case "social":
+      basePages.push({
+        path: "/profile",
+        name: "프로필",
+        layoutJson: {
+          components: [
+            { type: "header", props: { title: "프로필" } },
+            { type: "profile", props: { name: "사용자" } },
+          ],
+        },
+      });
+      break;
+    case "ecommerce":
+      basePages.push({
+        path: "/products",
+        name: "상품 목록",
+        layoutJson: {
+          components: [
+            { type: "header", props: { title: "상품" } },
+            { type: "product-grid", props: { items: [] } },
+          ],
+        },
+      });
+      break;
+  }
+
+  return basePages;
+}
+
+// 기본 컴포넌트 생성
+function generateDefaultComponents(projectType: string) {
+  return [
+    {
+      type: "header",
+      displayName: "헤더",
+      category: "layout",
+      propsSchema: { title: { type: "string" } },
+      renderTemplate: "<header><h1>{{title}}</h1></header>",
+      cssStyles: "header { padding: 1rem; background: #f8f9fa; }",
+    },
+    {
+      type: "content",
+      displayName: "콘텐츠",
+      category: "content",
+      propsSchema: { text: { type: "string" } },
+      renderTemplate: "<div class='content'>{{text}}</div>",
+      cssStyles: ".content { padding: 2rem; }",
+    },
+  ];
+}
+
+// 생성된 페이지를 데이터베이스에 저장
+async function saveGeneratedPages(projectId: string, pageData: any[]) {
+  const savedPages = [];
+
+  for (const page of pageData) {
+    const savedPage = await db
+      .insert(pages)
+      .values({
+        projectId,
+        path: page.path,
+        name: page.name,
+        layoutJson: page.layoutJson,
+      })
+      .returning();
+
+    savedPages.push(savedPage[0]);
+  }
+
+  return savedPages;
+}
+
+// 생성된 컴포넌트를 데이터베이스에 저장
+async function saveGeneratedComponents(
+  projectId: string,
+  componentData: any[]
+) {
+  const savedComponents = [];
+
+  for (const component of componentData) {
+    const savedComponent = await db
+      .insert(componentDefinitions)
+      .values({
+        projectId,
+        name: component.type,
+        displayName: component.displayName,
+        category: component.category,
+        propsSchema: component.propsSchema,
+        renderTemplate: component.renderTemplate,
+        cssStyles: component.cssStyles,
+      })
+      .returning();
+
+    savedComponents.push(savedComponent[0]);
+  }
+
+  return savedComponents;
+}
+
+// 프로젝트 구조 가져오기
+export async function getProjectStructure(projectId: string) {
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+  });
+
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
+  const projectPages = await db.query.pages.findMany({
+    where: eq(pages.projectId, projectId),
+  });
+
+  const projectComponents = await db.query.componentDefinitions.findMany({
+    where: eq(componentDefinitions.projectId, projectId),
+  });
+
+  return {
+    project,
+    pages: projectPages,
+    components: projectComponents,
+  };
+}
+
+// 프로젝트를 HTML로 렌더링
+export async function renderProjectToHTML(projectData: any) {
+  const { project, pages, components } = projectData;
+
+  // 기본 HTML 템플릿
+  let html = `
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${project.name}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .header { background: #f8f9fa; padding: 1rem; text-align: center; }
+        .content { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+        .footer { background: #333; color: white; padding: 1rem; text-align: center; }
+        .component { margin: 1rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+`;
+
+  // 각 페이지 렌더링
+  for (const page of pages) {
+    html += `<div class="page" data-path="${page.path}">`;
+    html += `<h1>${page.name}</h1>`;
+
+    if (page.layoutJson && page.layoutJson.components) {
+      for (const comp of page.layoutJson.components) {
+        const componentDef = components.find((c) => c.name === comp.type);
+        if (componentDef) {
+          html += `<div class="component ${comp.type}">`;
+          // 컴포넌트 렌더링
+          let componentHtml = componentDef.renderTemplate;
+          if (comp.props) {
+            for (const [key, value] of Object.entries(comp.props)) {
+              componentHtml = componentHtml.replace(
+                `{{${key}}}`,
+                String(value)
+              );
+            }
+          }
+          html += componentHtml;
+          html += `</div>`;
+        }
+      }
+    }
+
+    html += `</div>`;
+  }
+
+  html += `
+</body>
+</html>`;
+
+  return html;
 }

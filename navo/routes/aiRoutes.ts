@@ -1,7 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { authenticateToken } from "../auth/auth.js";
-import { handleMultiAgentChat } from "../handlers/aiHandlers.js";
-import { handleVirtualPreview } from "../handlers/aiHandlers.js";
+import {
+  handleMultiAgentChat,
+  handleVirtualPreview,
+  handleProjectRecovery,
+  getProjectStructure,
+  renderProjectToHTML,
+} from "../handlers/aiHandlers.js";
 
 export default async function aiRoutes(fastify: FastifyInstance) {
   // AI 멀티 에이전트 채팅
@@ -31,4 +36,33 @@ export default async function aiRoutes(fastify: FastifyInstance) {
     { preHandler: [authenticateToken] },
     handleVirtualPreview
   );
+
+  // 프로젝트 복구 (이어서 완성하기)
+  fastify.post(
+    "/ai/recover-project",
+    { preHandler: [authenticateToken] },
+    handleProjectRecovery
+  );
+
+  // 동적 사이트 렌더링 (인증 없이 접근 가능)
+  fastify.get("/site/:projectId", async (request, reply) => {
+    try {
+      const { projectId } = request.params as any;
+
+      // 프로젝트 구조 가져오기
+      const project = await getProjectStructure(projectId);
+      if (!project) {
+        reply.status(404).send("Project not found");
+        return;
+      }
+
+      // HTML 렌더링
+      const html = await renderProjectToHTML(project);
+
+      reply.type("text/html").send(html);
+    } catch (error) {
+      console.error("Error rendering site:", error);
+      reply.status(500).send("Internal server error");
+    }
+  });
 }
