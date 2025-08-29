@@ -7,7 +7,7 @@
     "prebuild": "npm run db:generate",
     "build": "tsc -p config/tsconfig.json",
     "start": "node dist/navo/start.js",
-    "dev": "tsx navo/start.ts",
+    "dev": "nodemon",
     "dev:build": "npm run build && npm start",
     "lint": "eslint . --ext .ts --config config/eslint.config.js",
     "format": "prettier --write . --config config/.prettierrc",
@@ -36,7 +36,7 @@
     "npm-run-all": "^4.1.5",
     "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
-    "tsx": "^4.19.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.40.0"
   },

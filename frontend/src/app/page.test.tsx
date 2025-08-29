@@ -1,14 +1,14 @@
-import { render, screen } from '@testing-library/react';
-import Home from './page';
-import { AuthProvider } from '@/app/context/AuthContext';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { EventTrackerProvider } from '@/app/context/EventTrackerContext';
-import { ComponentDefinitionProvider } from '@/app/context/ComponentDefinitionContext';
-import { LayoutProvider } from '@/app/context/LayoutContext';
+import { render, screen } from "@testing-library/react";
+import Home from "./page";
+import { AuthProvider } from "@/app/context/AuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { EventTrackerProvider } from "@/app/context/EventTrackerContext";
+import { ComponentDefinitionProvider } from "@/app/context/ComponentDefinitionContext";
+import { LayoutProvider } from "@/app/context/LayoutContext";
 
 // Mock the useDraft hook to avoid actual API calls during tests
-jest.mock('@/lib/api', () => ({
-  ...jest.requireActual('@/lib/api'), // Import and retain default behavior
+jest.mock("@/lib/api", () => ({
+  ...jest.requireActual("@/lib/api"), // Import and retain default behavior
   useDraft: jest.fn(() => ({
     data: { draft: { layout: { components: [] } } },
     isLoading: false,
@@ -18,7 +18,7 @@ jest.mock('@/lib/api', () => ({
 }));
 
 // Mock next/navigation for useRouter
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
     replace: jest.fn(),
@@ -36,19 +36,19 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock the useAuth hook to avoid actual localStorage access and redirects
-jest.mock('@/app/context/AuthContext', () => ({
-  ...jest.requireActual('@/app/context/AuthContext'),
+jest.mock("@/app/context/AuthContext", () => ({
+  ...jest.requireActual("@/app/context/AuthContext"),
   useAuth: jest.fn(() => ({
     isAuthenticated: true,
-    user: { id: 'test-user', email: 'test@example.com', name: 'Test User' },
-    token: 'test-token',
+    user: { id: "test-user", email: "test@example.com", name: "Test User" },
+    token: "test-token",
     login: jest.fn(),
     logout: jest.fn(),
   })),
 }));
 
-describe('Home Page', () => {
-  it('renders the Navo Editor title', async () => {
+describe("Home Page", () => {
+  it("renders the Navo Editor title", async () => {
     const queryClient = new QueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -64,10 +64,10 @@ describe('Home Page', () => {
       </QueryClientProvider>
     );
 
-    expect(await screen.findByText('Navo — Editor (W1)')).toBeInTheDocument();
+    expect(await screen.findByText("Navo — Editor (W1)")).toBeInTheDocument();
   });
 
-  it('renders the Toggle Panel button', async () => {
+  it("renders the Toggle Panel button", async () => {
     const queryClient = new QueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -84,11 +84,11 @@ describe('Home Page', () => {
     );
 
     expect(
-      await screen.findByRole('button', { name: /toggle panel/i })
+      await screen.findByRole("button", { name: /toggle panel/i })
     ).toBeInTheDocument();
   });
 
-  it('renders the StatusDisplay component', async () => {
+  it("renders the StatusDisplay component", async () => {
     const queryClient = new QueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -104,6 +104,6 @@ describe('Home Page', () => {
       </QueryClientProvider>
     );
 
-    expect(await screen.findByText('Idle')).toBeInTheDocument();
+    expect(await screen.findByText("대기중")).toBeInTheDocument();
   });
 });

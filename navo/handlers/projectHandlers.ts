@@ -1,8 +1,8 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
-import { db } from '../db/db.js';
-import { getUserIdFromToken } from '../auth/auth.js';
-import { projects, pages, publishDeploys } from '../db/schema.js';
-import { and, desc, eq } from 'drizzle-orm';
+import { FastifyRequest, FastifyReply } from "fastify";
+import { db } from "../db/db.js";
+import { getUserIdFromToken } from "../auth/auth.js";
+import { projects, pages, publishDeploys } from "../db/schema.js";
+import { and, desc, eq } from "drizzle-orm";
 
 export async function handleListProjects(
   request: FastifyRequest,
@@ -11,7 +11,7 @@ export async function handleListProjects(
   try {
     const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
-      return reply.status(401).send({ error: 'Unauthorized' });
+      return reply.status(401).send({ error: "Unauthorized" });
     }
 
     const rows = await db
@@ -22,12 +22,12 @@ export async function handleListProjects(
       })
       .from(projects)
       .where(eq(projects.ownerId, userId))
-      .orderBy(desc(projects.createdAt));
+      .orderBy(projects.name);
 
     reply.send({ projects: rows });
   } catch (error) {
-    console.error('Error listing projects:', error);
-    reply.status(500).send({ error: 'Failed to list projects' });
+    console.error("Error listing projects:", error);
+    reply.status(500).send({ error: "Failed to list projects" });
   }
 }
 
@@ -38,7 +38,7 @@ export async function handleListProjectPages(
   try {
     const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
-      return reply.status(401).send({ error: 'Unauthorized' });
+      return reply.status(401).send({ error: "Unauthorized" });
     }
 
     const { projectId } = request.params as { projectId: string };
@@ -53,19 +53,19 @@ export async function handleListProjectPages(
     if (!project[0]) {
       return reply
         .status(404)
-        .send({ error: 'Project not found or unauthorized' });
+        .send({ error: "Project not found or unauthorized" });
     }
 
     const pageRows = await db
       .select({ id: pages.id, path: pages.path, updated_at: pages.updatedAt })
       .from(pages)
       .where(eq(pages.projectId, projectId))
-      .orderBy(pages.updatedAt);
+      .orderBy(pages.path);
 
     reply.send({ pages: pageRows });
   } catch (error) {
-    console.error('Error listing project pages:', error);
-    reply.status(500).send({ error: 'Failed to list project pages' });
+    console.error("Error listing project pages:", error);
+    reply.status(500).send({ error: "Failed to list project pages" });
   }
 }
 
@@ -76,7 +76,7 @@ export async function handleGetPageLayout(
   try {
     const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
-      return reply.status(401).send({ error: 'Unauthorized' });
+      return reply.status(401).send({ error: "Unauthorized" });
     }
 
     const { pageId } = request.params as { pageId: string };
@@ -88,7 +88,7 @@ export async function handleGetPageLayout(
       .limit(1);
 
     if (!page[0]) {
-      return reply.status(404).send({ error: 'Page not found' });
+      return reply.status(404).send({ error: "Page not found" });
     }
 
     // Verify page ownership through project owner_id
@@ -101,13 +101,13 @@ export async function handleGetPageLayout(
     if (!proj[0] || proj[0].ownerId !== userId) {
       return reply
         .status(403)
-        .send({ error: 'Forbidden: You do not own this page' });
+        .send({ error: "Forbidden: You do not own this page" });
     }
 
     reply.send({ layout: page[0].layout_json });
   } catch (error) {
-    console.error('Error getting page layout:', error);
-    reply.status(500).send({ error: 'Failed to get page layout' });
+    console.error("Error getting page layout:", error);
+    reply.status(500).send({ error: "Failed to get page layout" });
   }
 }
 
@@ -118,7 +118,7 @@ export async function handleRollback(
   try {
     const userId = getUserIdFromToken(request.headers.authorization);
     if (!userId) {
-      return reply.status(401).send({ error: 'Unauthorized' });
+      return reply.status(401).send({ error: "Unauthorized" });
     }
 
     const { projectId } = request.params as { projectId: string };
@@ -134,12 +134,12 @@ export async function handleRollback(
     if (!project[0]) {
       return reply
         .status(404)
-        .send({ error: 'Project not found or unauthorized' });
+        .send({ error: "Project not found or unauthorized" });
     }
 
     let targetDeploymentId: string | undefined;
 
-    if (typeof rollbackTo === 'string') {
+    if (typeof rollbackTo === "string") {
       // Assume rollbackTo is a direct vercelDeploymentId
       const deployment = await db.query.publishDeploys.findFirst({
         where: and(
@@ -148,7 +148,7 @@ export async function handleRollback(
         ),
       });
       targetDeploymentId = deployment?.vercelDeploymentId ?? undefined;
-    } else if (typeof rollbackTo === 'number') {
+    } else if (typeof rollbackTo === "number") {
       // Assume rollbackTo is an index (0 for latest, 1 for second latest, etc.)
       const deployments = await db.query.publishDeploys.findMany({
         where: eq(publishDeploys.projectId, projectId),
@@ -165,7 +165,7 @@ export async function handleRollback(
     if (!targetDeploymentId) {
       return reply
         .status(400)
-        .send({ error: 'Invalid rollback target or deployment not found.' });
+        .send({ error: "Invalid rollback target or deployment not found." });
     }
 
     // Execute Vercel rollback command
@@ -191,7 +191,7 @@ export async function handleRollback(
       // stderr: stderr, // In a real scenario
     });
   } catch (error) {
-    console.error('Error performing rollback:', error);
-    reply.status(500).send({ error: 'Failed to perform rollback' });
+    console.error("Error performing rollback:", error);
+    reply.status(500).send({ error: "Failed to perform rollback" });
   }
 }

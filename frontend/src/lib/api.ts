@@ -134,14 +134,29 @@ interface MultiAgentResponse {
   summary: string;
 }
 
-export function useDraft(options?: UseQueryOptions<DraftResponse, Error>) {
+export function useDraft(
+  projectId?: string,
+  options?: UseQueryOptions<DraftResponse, Error>
+) {
   const { token, logout } = useAuth();
 
   // Check for a draft ID in the global window object (for preview mode)
-  const previewDraftId = typeof window !== 'undefined' ? (window as any).NAVO_PREVIEW_DRAFT_ID : undefined;
+  const previewDraftId =
+    typeof window !== "undefined"
+      ? (window as any).NAVO_PREVIEW_DRAFT_ID
+      : undefined;
 
-  const queryKey = previewDraftId ? ["draft", previewDraftId] : ["draft"];
-  const apiUrl = previewDraftId ? `/api/draft/${previewDraftId}` : "/api/draft";
+  const queryKey = projectId
+    ? ["draft", projectId]
+    : previewDraftId
+      ? ["draft", previewDraftId]
+      : ["draft"];
+
+  const apiUrl = projectId
+    ? `/api/draft/project/${projectId}`
+    : previewDraftId
+      ? `/api/draft/${previewDraftId}`
+      : "/api/draft";
 
   return useQuery<DraftResponse, Error>({
     queryKey,
@@ -155,6 +170,7 @@ export function useDraft(options?: UseQueryOptions<DraftResponse, Error>) {
         throw error;
       }
     },
+    enabled: !!token, // 토큰이 있을 때만 쿼리 실행
     ...options,
   });
 }
@@ -488,6 +504,41 @@ export function useListComponents(
         throw error;
       }
     },
+    ...options,
+  });
+}
+
+// usePageLayout - 페이지 레이아웃 데이터를 페치하는 훅
+interface PageLayoutResponse {
+  layout: {
+    components: Array<{
+      id: string;
+      type: string;
+      props: Record<string, any>;
+    }>;
+  };
+}
+
+export function usePageLayout(
+  pageId: string,
+  options?: UseQueryOptions<PageLayoutResponse, Error>
+) {
+  const { token, logout } = useAuth();
+  return useQuery<PageLayoutResponse, Error>({
+    queryKey: ["pageLayout", pageId],
+    queryFn: async () => {
+      try {
+        return await fetchApi<PageLayoutResponse>(`/api/pages/${pageId}`, {
+          token,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === "Unauthorized") {
+          logout();
+        }
+        throw error;
+      }
+    },
+    enabled: !!pageId, // pageId가 존재할 때만 쿼리 실행
     ...options,
   });
 }

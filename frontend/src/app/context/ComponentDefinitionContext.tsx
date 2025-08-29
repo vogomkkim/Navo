@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { createContext, useContext, ReactNode, useEffect } from 'react';
-import { useListComponents } from '@/lib/api';
-import { useAuth } from './AuthContext';
+import { createContext, useContext, ReactNode, useEffect } from "react";
+import { useListComponents } from "@/lib/api";
+import { useAuth } from "./AuthContext";
 
 interface ComponentDef {
   id: string;
@@ -26,6 +26,8 @@ interface ComponentDefinitionContextType {
 const ComponentDefinitionContext = createContext<
   ComponentDefinitionContextType | undefined
 >(undefined);
+
+export { ComponentDefinitionContext };
 
 export function ComponentDefinitionProvider({
   children,
@@ -71,7 +73,7 @@ export function useComponentDefinitions() {
   const context = useContext(ComponentDefinitionContext);
   if (context === undefined) {
     throw new Error(
-      'useComponentDefinitions must be used within a ComponentDefinitionProvider'
+      "useComponentDefinitions must be used within a ComponentDefinitionProvider"
     );
   }
   return context;

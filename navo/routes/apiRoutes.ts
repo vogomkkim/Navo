@@ -1,27 +1,38 @@
-import { FastifyInstance } from 'fastify';
-import logger from '../core/logger.js';
-import aiRoutes from './aiRoutes.js';
-import analyticsRoutes from './analyticsRoutes.js';
-import authRoutes from './authRoutes.js';
-import componentRoutes from './componentRoutes.js';
-import draftRoutes from './draftRoutes.js';
-import eventRoutes from './eventRoutes.js';
-import healthRoutes from './healthRoutes.js';
-import pageRoutes from './pageRoutes.js';
-import projectRoutes from './projectRoutes.js';
+import { FastifyInstance } from "fastify";
+import { authenticateToken } from "../middleware/auth.js";
+import aiRoutes from "./aiRoutes.js";
+import authRoutes from "./authRoutes.js";
+import projectRoutes from "./projectRoutes.js";
+import pageRoutes from "./pageRoutes.js";
+import componentRoutes from "./componentRoutes.js";
 
-export function setupApiRoutes(app: FastifyInstance) {
-  // Health routes (no authentication required)
-  app.register(healthRoutes);
+export default async function apiRoutes(app: FastifyInstance) {
+  console.log("🚀 API 라우트 등록 시작...");
 
-  // API routes (with authentication)
-  app.register(aiRoutes, { prefix: '/api' });
-  app.register(analyticsRoutes, { prefix: '/api' });
-  app.register(authRoutes, { prefix: '/api' });
-  app.register(componentRoutes, { prefix: '/api' });
-  app.register(draftRoutes, { prefix: '/api' });
-  app.register(eventRoutes, { prefix: '/api' });
-  app.register(pageRoutes, { prefix: '/api' });
-  app.register(projectRoutes, { prefix: '/api' });
-  logger.info('API routes initialized');
+  // AI 관련 라우트
+  console.log("🤖 AI 라우트 등록 중...");
+  app.register(aiRoutes, { prefix: "/api" });
+  console.log("✅ AI 라우트 등록 완료");
+
+  // 인증 관련 라우트
+  console.log("🔐 인증 라우트 등록 중...");
+  app.register(authRoutes, { prefix: "/api" });
+  console.log("✅ 인증 라우트 등록 완료");
+
+  // 프로젝트 관련 라우트
+  console.log("📁 프로젝트 라우트 등록 중...");
+  app.register(projectRoutes, { prefix: "/api" });
+  console.log("✅ 프로젝트 라우트 등록 완료");
+
+  // 페이지 관련 라우트
+  console.log("📄 페이지 라우트 등록 중...");
+  app.register(pageRoutes, { prefix: "/api" });
+  console.log("✅ 페이지 라우트 등록 완료");
+
+  // 컴포넌트 관련 라우트
+  console.log("🧩 컴포넌트 라우트 등록 중...");
+  app.register(componentRoutes, { prefix: "/api" });
+  console.log("✅ 컴포넌트 라우트 등록 완료");
+
+  console.log("🎉 모든 API 라우트 등록 완료!");
 }

@@ -35,7 +35,7 @@ export interface Component {
 export interface Asset {
   id: ID;
   projectId: ID;
-  kind: 'image' | 'file' | 'font' | 'other';
+  kind: "image" | "file" | "font" | "other";
   url: string;
   createdAt: string;
 }
@@ -52,7 +52,7 @@ export interface Event {
 export interface Suggestion {
   id: ID;
   projectId: ID;
-  type: 'style' | 'copy';
+  type: "style" | "copy";
   content: Record<string, unknown>;
   createdAt: string;
   appliedAt?: string;
@@ -62,7 +62,7 @@ export interface PublishDeploy {
   id: ID;
   projectId: ID;
   url: string;
-  status: 'success' | 'failed';
+  status: "success" | "failed";
   createdAt: string;
 }
 
@@ -94,12 +94,12 @@ export interface FooterProps {
 // It's the core of our type-safe rendering strategy.
 
 export type PageComponent =
-  | { id: ID; type: 'Header'; props: HeaderProps }
-  | { id: ID; type: 'Hero'; props: HeroProps }
-  | { id: ID; type: 'Footer'; props: FooterProps };
+  | { id: ID; type: "Header"; props: HeaderProps }
+  | { id: ID; type: "Hero"; props: HeroProps }
+  | { id: ID; type: "Footer"; props: FooterProps };
 
 // -- Page Layout Definition --
-// This defines the overall shape of the data our API will return for a page draft.
+// This defines the overall shape of the data our API will return for a page.
 
 export interface PageLayout {
   components: PageComponent[];
@@ -126,7 +126,7 @@ export interface TableSchema {
 
 export interface ColumnSchema {
   name: string;
-  type: 'text' | 'integer' | 'boolean' | 'timestamp' | 'json' | 'uuid';
+  type: "text" | "integer" | "boolean" | "timestamp" | "json" | "uuid";
   nullable: boolean;
   primaryKey?: boolean;
   foreignKey?: string;
@@ -136,7 +136,7 @@ export interface ColumnSchema {
 export interface Relationship {
   from: string;
   to: string;
-  type: 'one-to-many' | 'many-to-many' | 'one-to-one';
+  type: "one-to-many" | "many-to-many" | "one-to-one";
   foreignKey: string;
 }
 
@@ -153,7 +153,7 @@ export interface PageDefinition {
   name: string;
   path: string;
   components: PageComponent[];
-  layout: 'single-column' | 'two-column' | 'grid' | 'dashboard';
+  layout: "single-column" | "two-column" | "grid" | "dashboard";
 }
 
 export interface ComponentDefinition {
@@ -165,7 +165,7 @@ export interface ComponentDefinition {
 
 export interface APIEndpoint {
   path: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: "GET" | "POST" | "PUT" | "DELETE";
   description: string;
   requestBody?: Record<string, any>;
   response?: Record<string, any>;

@@ -1,82 +1,58 @@
-import { FastifyInstance, FastifyPluginOptions, FastifyReply, FastifyRequest } from 'fastify';
-import {
-  handleAiCommand,
-  handleGetSuggestions,
-  handleTestDbSuggestions,
-  handleApplySuggestion,
-  handleSeedDummyData,
-  handleGenerateProject,
-  handleGenerateDummySuggestion,
-  handleMultiAgentChat,
-  handleVirtualPreview,
-} from '../handlers/aiHandlers.js';
-import { authenticateToken } from '../auth/auth.js';
-import { db } from '../db/db.js';
-import { drafts } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { FastifyInstance } from "fastify";
+import { authenticateToken } from "../middleware/auth.js";
+import { handleMultiAgentChat } from "../handlers/aiHandlers.js";
+import { handleVirtualPreview } from "../handlers/aiHandlers.js";
+import { db } from "../db/db.js";
+import { pages } from "../db/schema.js";
+import { eq } from "drizzle-orm";
 
-async function aiRoutes(
-  fastify: FastifyInstance,
-  options: FastifyPluginOptions
-) {
+export default async function aiRoutes(fastify: FastifyInstance) {
+  // AI 멀티 에이전트 채팅
   fastify.post(
-    '/ai/command',
-    { preHandler: [authenticateToken] },
-    handleAiCommand
-  );
-  fastify.get(
-    '/ai/suggestions',
-    { preHandler: [authenticateToken] },
-    handleGetSuggestions
-  );
-  fastify.get(
-    '/ai/test-db-suggestions',
-    { preHandler: [authenticateToken] },
-    handleTestDbSuggestions
-  );
-  fastify.post(
-    '/ai/apply-suggestion',
-    { preHandler: [authenticateToken] },
-    handleApplySuggestion
-  );
-  fastify.post(
-    '/ai/seed-dummy-data',
-    { preHandler: [authenticateToken] },
-    handleSeedDummyData
-  );
-  fastify.post(
-    '/ai/generate-project',
-    { preHandler: [authenticateToken] },
-    handleGenerateProject
-  );
-  fastify.post(
-    '/ai/generate-dummy-suggestion',
-    { preHandler: [authenticateToken] },
-    handleGenerateDummySuggestion
-  );
-  fastify.post(
-    '/ai/multi-agent',
+    "/ai/chat",
     { preHandler: [authenticateToken] },
     handleMultiAgentChat
   );
 
-  fastify.get(
-    '/preview/:draftId/*',
-    async (request: FastifyRequest, reply: FastifyReply) => {
+  // AI 제안 생성
+  fastify.post(
+    "/ai/suggest",
+    { preHandler: [authenticateToken] },
+    async (request, reply) => {
       try {
-        const draftId = (request.params as any).draftId as string;
-        const result = await db.select().from(drafts).where(eq(drafts.id, draftId));
-        if (result.length === 0) {
-          reply.status(404).send('Draft not found');
-          return;
-        }
-        const draft = result[0];
-        reply.type('application/json').send(draft.data);
-      } catch (err) {
-        reply.status(500).send({ error: 'Failed to render virtual preview' });
+        // TODO: Implement AI suggestion generation
+        reply.send({ message: "AI suggestion endpoint" });
+      } catch (error) {
+        reply.status(500).send({ error: "AI suggestion failed" });
       }
     }
   );
-}
 
-export default aiRoutes;
+  // 가상 프로젝트 미리보기
+  fastify.get(
+    "/preview/:pageId/*",
+    { preHandler: [authenticateToken] },
+    async (request, reply) => {
+      try {
+        const pageId = (request.params as any).pageId as string;
+        const result = await db
+          .select()
+          .from(pages)
+          .where(eq(pages.id, pageId));
+
+        if (result.length === 0) {
+          reply.status(404).send("Page not found");
+          return;
+        }
+
+        const page = result[0];
+        reply.type("application/json").send(page.layoutJson);
+      } catch (error) {
+        reply.status(500).send({ error: "Failed to fetch page" });
+      }
+    }
+  );
+
+  // 가상 파일 미리보기
+  fastify.get("/preview/:pageId/*", handleVirtualPreview);
+}

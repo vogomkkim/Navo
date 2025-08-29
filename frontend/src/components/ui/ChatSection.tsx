@@ -2,6 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useMultiAgentSystem } from "@/lib/api";
+import { ChatPlaceholder } from "./ChatPlaceholder";
+import { useInputHistory } from "@/hooks/useInputHistory";
+import { useQueryClient } from "@tanstack/react-query"; // React Query 클라이언트 추가
 
 // AI Agent 역할 정의
 type AgentRole =
@@ -54,15 +57,19 @@ const WORKFLOW_STEPS: AgentRole[] = [
 
 export function ChatSection() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [inputMessage, setInputMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentWorkflowStep, setCurrentWorkflowStep] = useState(0);
   const [projectContext, setProjectContext] = useState<any>({});
   const [currentStepName, setCurrentStepName] = useState<string>("");
 
+  // 방향키 히스토리 훅 사용
+  const { inputValue, setInputValue, handleKeyDown, addToHistory } =
+    useInputHistory();
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const multiAgent = useMultiAgentSystem({});
+  const queryClient = useQueryClient(); // React Query 클라이언트 인스턴스 생성
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,7 +91,7 @@ export function ChatSection() {
   // 입력창 내용 변경 시 자동 높이 조정
   useEffect(() => {
     autoResize();
-  }, [inputMessage]);
+  }, [inputValue]);
 
   // 현재 단계 이름 업데이트
   useEffect(() => {
@@ -150,6 +157,9 @@ export function ChatSection() {
         };
 
         setChatHistory((prev: ChatMessage[]) => [...prev, completionMessage]);
+
+        // 프로젝트 생성 성공 시 React Query 캐시 무효화
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
       } else {
         throw new Error("백엔드 API 호출 실패");
       }
@@ -187,19 +197,22 @@ export function ChatSection() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isProcessing) return;
+    if (!inputValue.trim() || isProcessing) return;
+
+    // 메시지 히스토리에 추가
+    addToHistory(inputValue);
 
     const userMessage: UserMessage = {
       id: Date.now().toString(),
-      message: inputMessage,
+      message: inputValue,
       timestamp: new Date(),
     };
 
     setChatHistory((prev: ChatMessage[]) => [...prev, userMessage]);
-    setInputMessage("");
+    setInputValue("");
 
     // AI Agent 워크플로우 시작
-    await executeAIAgentWorkflow(inputMessage);
+    await executeAIAgentWorkflow(inputValue);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -214,40 +227,12 @@ export function ChatSection() {
       {/* 채팅 메시지 영역 */}
       <div className="chat-messages">
         {chatHistory.length === 0 ? (
-          <div className="chat-placeholder">
-            <div className="placeholder-icon">💬</div>
-            <h3>AI와 대화를 시작해보세요</h3>
-            <p>어떤 프로젝트를 만들고 싶으신가요?</p>
-            <div className="placeholder-examples">
-              <button
-                className="example-button"
-                onClick={() => {
-                  setInputMessage("전자상거래 웹사이트 만들어줘");
-                  setTimeout(() => handleSendMessage(), 100);
-                }}
-              >
-                • 전자상거래 웹사이트
-              </button>
-              <button
-                className="example-button"
-                onClick={() => {
-                  setInputMessage("블로그 플랫폼 만들어줘");
-                  setTimeout(() => handleSendMessage(), 100);
-                }}
-              >
-                • 블로그 플랫폼
-              </button>
-              <button
-                className="example-button"
-                onClick={() => {
-                  setInputMessage("경매 사이트 만들어줘");
-                  setTimeout(() => handleSendMessage(), 100);
-                }}
-              >
-                • 경매 사이트
-              </button>
-            </div>
-          </div>
+          <ChatPlaceholder
+            onExampleClick={(message) => {
+              setInputValue(message);
+              setTimeout(() => handleSendMessage(), 100);
+            }}
+          />
         ) : (
           chatHistory.map((message) => (
             <div
@@ -286,16 +271,17 @@ export function ChatSection() {
         <div className="input-container">
           <textarea
             ref={textareaRef}
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="메시지를 입력하세요..."
+            onKeyDown={handleKeyDown}
+            placeholder="메시지를 입력하세요... (↑↓ 방향키로 이전 메시지 탐색)"
             disabled={isProcessing}
             rows={2}
           />
           <button
             onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isProcessing}
+            disabled={!inputValue.trim() || isProcessing}
             className="send-button"
             title={
               isProcessing

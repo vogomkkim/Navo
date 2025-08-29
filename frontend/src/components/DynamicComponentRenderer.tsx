@@ -41,33 +41,93 @@ export function DynamicComponentRenderer({
   const componentDef = componentRegistry.get(component.type);
 
   if (!componentDef) {
+    // 폴백 렌더링: 정의되지 않은 컴포넌트를 기본 UI로 표시
     return (
-      <div className="component-unknown" data-id={component.id}>
-        <h3>컴포넌트를 찾을 수 없습니다</h3>
-        <p>
-          <strong>요청된 타입:</strong> {component.type}
-        </p>
-        <p>
-          <strong>사용 가능한 타입:</strong>{" "}
-          {Array.from(componentRegistry.keys()).join(", ") || "없음"}
-        </p>
-        <p>
-          <strong>컴포넌트 ID:</strong> {component.id}
-        </p>
-        <details>
-          <summary>컴포넌트 속성 보기</summary>
-          <pre>{JSON.stringify(component.props, null, 2)}</pre>
-        </details>
-        <div className="component-debug-info">
-          <p>
-            <strong>디버그 정보:</strong>
-          </p>
-          <ul>
-            <li>컴포넌트 레지스트리 크기: {componentRegistry.size}</li>
-            <li>로딩 상태: {isLoading ? "로딩 중" : "완료"}</li>
-            <li>에러 상태: {isError ? "에러 발생" : "정상"}</li>
-            {error && <li>에러 메시지: {error.message}</li>}
-          </ul>
+      <div className="component-fallback" data-id={component.id}>
+        <div className="fallback-header">
+          <h3 className="text-lg font-medium text-gray-900">
+            {component.props.title ||
+              component.props.headline ||
+              component.type}
+          </h3>
+          {component.props.subtitle && (
+            <p className="text-sm text-gray-600 mt-1">
+              {component.props.subtitle}
+            </p>
+          )}
+        </div>
+
+        <div className="fallback-content">
+          {component.props.message && (
+            <p className="text-gray-700 mb-3">{component.props.message}</p>
+          )}
+
+          {component.props.content && (
+            <div className="text-gray-600">{component.props.content}</div>
+          )}
+
+          {component.props.cta && (
+            <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+              {component.props.cta}
+            </button>
+          )}
+        </div>
+
+        <div className="fallback-info text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded">
+          <span>📝 {component.type} 컴포넌트 (폴백 모드)</span>
+
+          {/* 디버깅 정보 */}
+          <details className="mt-2">
+            <summary className="cursor-pointer">🔍 컴포넌트 디버깅</summary>
+            <div className="mt-2 text-left">
+              <p>
+                <strong>컴포넌트 타입:</strong> {component.type}
+              </p>
+              <p>
+                <strong>컴포넌트 ID:</strong> {component.id}
+              </p>
+
+              <div className="flex items-center gap-2 mt-2">
+                <p>
+                  <strong>Props:</strong>
+                </p>
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(
+                      JSON.stringify(component.props, null, 2)
+                    )
+                  }
+                  className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs"
+                  title="Props 복사하기"
+                >
+                  📋
+                </button>
+              </div>
+              <pre className="text-xs bg-white p-2 rounded border mt-1 overflow-auto max-h-32">
+                {JSON.stringify(component.props, null, 2)}
+              </pre>
+
+              <div className="flex items-center gap-2 mt-2">
+                <p>
+                  <strong>사용 가능한 컴포넌트:</strong>
+                </p>
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(
+                      Array.from(componentRegistry.keys()).join(", ") || "없음"
+                    )
+                  }
+                  className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs"
+                  title="컴포넌트 목록 복사하기"
+                >
+                  📋
+                </button>
+              </div>
+              <p className="text-xs">
+                {Array.from(componentRegistry.keys()).join(", ") || "없음"}
+              </p>
+            </div>
+          </details>
         </div>
       </div>
     );
@@ -79,10 +139,20 @@ export function DynamicComponentRenderer({
 
   Object.entries(allProps).forEach(([key, value]) => {
     const placeholder = new RegExp(`{{${key}}}`, "g");
-    // Basic HTML escaping for values
-    const safeValue =
-      value !== undefined && value !== null ? String(value) : "";
-    renderedHtml = renderedHtml.replace(placeholder, escapeHtml(safeValue));
+    // HTML 문자열인지 확인 (features 같은 경우)
+    if (
+      typeof value === "string" &&
+      value.includes("<") &&
+      value.includes(">")
+    ) {
+      // HTML 문자열인 경우 이스케이프하지 않음
+      renderedHtml = renderedHtml.replace(placeholder, value);
+    } else {
+      // 일반 텍스트인 경우 이스케이프
+      const safeValue =
+        value !== undefined && value !== null ? String(value) : "";
+      renderedHtml = renderedHtml.replace(placeholder, escapeHtml(safeValue));
+    }
   });
 
   // Utility function to escape HTML for safe display (copied from navo/web/components.ts)

@@ -61,21 +61,27 @@ export const assets = pgTable("assets", {
     .notNull(),
 });
 
-export const components = pgTable(
-  "components",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    pageId: uuid("page_id").notNull(),
-    type: varchar("type", { length: 255 }).notNull(),
-    props: jsonb("props").notNull().default({}),
-    orderIndex: integer("order_index").notNull().default(0),
-  },
-  (table) => ({
-    pageOrderIdx: index("idx_components_page_order").on(
-      table.pageId,
-      table.orderIndex
-    ),
-  })
+export const components = pgTable("components", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pageId: uuid("page_id")
+    .notNull()
+    .references(() => pages.id, { onDelete: "cascade" }),
+  componentDefinitionId: uuid("component_definition_id")
+    .notNull()
+    .references(() => componentDefinitions.id, { onDelete: "cascade" }),
+  props: jsonb("props").notNull().default({}),
+  order: integer("order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// 인덱스
+export const componentDefIdx = index("idx_components_page").on(
+  components.pageId
 );
 
 export const events = pgTable(
@@ -99,9 +105,14 @@ export const pages = pgTable(
   "pages",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    projectId: uuid("project_id").notNull(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     path: text("path").notNull(),
-    layoutJson: jsonb("layout_json").notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    layoutJson: jsonb("layout_json").notNull().default({}),
+    isPublished: boolean("is_published").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .defaultNow()
       .notNull(),
@@ -114,6 +125,7 @@ export const pages = pgTable(
       table.projectId,
       table.path
     ),
+    projectIdx: index("idx_pages_project").on(table.projectId),
   })
 );
 
@@ -128,13 +140,21 @@ export const publishDeploys = pgTable("publish_deploys", {
     .notNull(),
 });
 
-export const drafts = pgTable(
-  "drafts",
+export const componentDefinitions = pgTable(
+  "component_definitions",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    projectId: uuid("project_id").notNull(),
-    name: varchar("name", { length: 255 }).notNull(),
-    data: jsonb("data").notNull(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(), // 프로젝트 내에서 유니크
+    displayName: varchar("display_name", { length: 255 }).notNull(),
+    description: text("description"),
+    category: varchar("category", { length: 255 }).notNull().default("basic"),
+    propsSchema: jsonb("props_schema").notNull().default({}),
+    renderTemplate: text("render_template").notNull(),
+    cssStyles: text("css_styles"),
+    isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .defaultNow()
       .notNull(),
@@ -143,24 +163,10 @@ export const drafts = pgTable(
       .notNull(),
   },
   (table) => ({
-    projectIdx: index("idx_drafts_project").on(table.projectId),
+    projectNameUnique: unique("component_definitions_project_name_unique").on(
+      table.projectId,
+      table.name
+    ),
+    projectIdx: index("idx_component_definitions_project").on(table.projectId),
   })
 );
-
-export const componentDefinitions = pgTable("component_definitions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull().unique(),
-  displayName: varchar("display_name", { length: 255 }).notNull(),
-  description: text("description"),
-  category: varchar("category", { length: 255 }).notNull().default("basic"),
-  propsSchema: jsonb("props_schema").notNull().default({}),
-  renderTemplate: text("render_template").notNull(),
-  cssStyles: text("css_styles"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
-    .defaultNow()
-    .notNull(),
-});

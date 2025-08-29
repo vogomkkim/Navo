@@ -5,28 +5,19 @@
  * 에러 해결과 프로젝트 설계를 모두 지원합니다.
  */
 
-import {
-  BaseAgent,
-  MasterDeveloperAgent,
-} from "../core/masterDeveloper.js";
+import { BaseAgent, ProjectRequest } from "../core/masterDeveloper.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import * as fs from "fs/promises";
-import { exec as cpExec } from "node:child_process";
-import { promisify } from "node:util";
-
-const exec = promisify(cpExec);
+import { refineJsonResponse } from "../utils/jsonRefiner.js";
 
 export class ProjectArchitectAgent extends BaseAgent {
-  private genAI: GoogleGenerativeAI;
   private model: any;
-  
 
   constructor() {
     super("ProjectArchitectAgent", 1); // 최고 우선순위
 
     // Gemini API 초기화
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   }
 
   /**
@@ -77,10 +68,7 @@ export class ProjectArchitectAgent extends BaseAgent {
       this.logger.info("🏗️ 프로젝트 아키텍처 설계 시작", { request });
 
       // AI를 사용한 프로젝트 아키텍처 설계
-      const architecture = await this.designArchitectureWithAI(
-        request,
-        context
-      );
+      const architecture = await this.designArchitectureWithAI(request);
 
       this.logger.info("✅ 프로젝트 아키텍처 설계 완료", { architecture });
 
@@ -100,133 +88,334 @@ export class ProjectArchitectAgent extends BaseAgent {
     }
   }
 
-  
-
   /**
    * AI를 사용하여 프로젝트 아키텍처 설계
    */
   private async designArchitectureWithAI(
-    request: any,
-    context: any
+    request: ProjectRequest
   ): Promise<any> {
     try {
-      const prompt = `
-당신은 세계 최고의 소프트웨어 아키텍트입니다. 당신의 임무는 사용자의 요구사항에 따라 완전한 프로젝트 구조를 설계하고, 이를 단 하나의 깔끔한 JSON 객체로 출력하는 것입니다. 이 JSON은 프로젝트의 전체 파일 시스템을 가상으로 표현합니다.
+      this.logger.info("🏗️ AI 아키텍처 설계 시작 (단계별 처리)", { request });
 
-**프로젝트 요구사항:**
-- **프로젝트명:** ${request.name}
-- **설명:** ${request.description}
-- **프로젝트 타입:** ${request.type}
-- **주요 기능:** ${request.features.join(", ")}
-- **복잡도:** ${request.complexity || "medium"}
+      // 1단계: 프로젝트 기본 정보 생성
+      this.logger.info("📝 1단계: 프로젝트 기본 정보 생성 중...");
+      const projectBasic = await this.createProjectBasic(request);
 
-**기술 제약 조건:**
-- **프론트엔드:** React와 JSX를 사용하세요. 모든 컴포넌트는 함수형 컴포넌트여야 합니다.
-- **백엔드:** Supabase Edge Functions를 사용하세요.
-- **데이터베이스:** PostgreSQL을 사용하세요.
-- **스타일링:** 표준 CSS 파일을 사용하세요.
+      // 2단계: 페이지 구조 설계
+      this.logger.info("📄 2단계: 페이지 구조 설계 중...");
+      const pageStructure = await this.createPageStructure(
+        request,
+        projectBasic
+      );
 
-**JSON 출력 지침:**
-- JSON의 루트는 "project"라는 단일 키를 가진 객체여야 합니다.
-- "project" 객체는 "name"과 "file_structure" 객체를 포함해야 합니다.
-- "file_structure"는 노드의 재귀적인 구조여야 합니다.
-- 각 노드는 "type"('folder' 또는 'file')을 가져야 합니다.
-- 각 노드는 "name"을 가져야 합니다.
-- 폴더는 다른 노드를 포함하는 "children" 배열을 가져야 합니다.
-- 파일은 해당 파일의 완전하고 잘 서식된 소스 코드를 포함하는 "content" 문자열을 가져야 합니다.
-- 
-package.json
-, 빌드 구성, 기본 
-index.html
-, 페이지용 React 컴포넌트, 예제 Supabase 함수 등 필요한 모든 파일을 생성하세요.
+      // 3단계: 컴포넌트 정의
+      this.logger.info("🧩 3단계: 컴포넌트 정의 중...");
+      const components = await this.createComponents(request, pageStructure);
 
-**JSON 구조 예시:**
-\n\
-{
-  "project": {
-    "name": "예제프로젝트",
-    "file_structure": {
-      "type": "folder",
-      "name": "src",
-      "children": [
-        {
-          "type": "folder",
-          "name": "src",
-          "children": [
-            {
-              "type": "file",
-              "name": "index.js",
-              "content": "import React from 'react';\nimport ReactDOM from 'react-dom';\nimport App from './App.js';\n\nReactDOM.render(<App />, document.getElementById('root'));"
-            },
-            {
-              "type": "file",
-              "name": "App.js",
-              "content": "import React from 'react';\nimport HomePage from './pages/HomePage.js';\n\nfunction App() {\n  return (\n    <div className=\"App\">
-      <HomePage />
-    </div>
-  );
-}
+      // 4단계: 최종 프로젝트 구조 조합
+      this.logger.info("🔗 4단계: 최종 구조 조합 중...");
+      const finalArchitecture = this.combineArchitecture(
+        projectBasic,
+        pageStructure,
+        components
+      );
 
-export default App;"
-            },
-            {
-              "type": "folder",
-              "name": "pages",
-              "children": [
-                {
-                  "type": "file",
-                  "name": "HomePage.js",
-                  "content": "import React from 'react';\n\nfunction HomePage() {\n  return <h1>홈페이지에 오신 것을 환영합니다</h1>;
-}
+      // 생성된 구조 검증
+      this.validateProjectStructure(finalArchitecture);
 
-export default HomePage;"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "file",
-          "name": "package.json",
-          "content": "{\n  \"name\": \"example-project\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"react\": \"^18.0.0\",\n    \"react-dom\": \"^18.0.0\"\n  }\n}"
-        }
-      ]
-    }
-  }
-}
-\
+      this.logger.info("✅ AI 아키텍처 설계 완료 (단계별 처리)", {
+        totalFiles: this.countFiles(finalArchitecture.project.file_structure),
+        steps: ["프로젝트 기본", "페이지 구조", "컴포넌트", "최종 조합"],
+      });
 
-이제 사용자의 프로젝트 요구사항에 따라 완전한 JSON 객체를 생성하세요.
-      `;
-
-      const result = await this.model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
-
-      // 마크다운 코드 블록 제거
-      let cleanResponse = text;
-      if (text.includes("```json")) {
-        cleanResponse = text.replace(/```json\s*/, "").replace(/\s*```$/, "");
-      } else if (text.includes("```")) {
-        cleanResponse = text.replace(/```\s*/, "").replace(/\s*```$/, "");
-      }
-
-      try {
-        // JSON 파싱
-        const architecture = JSON.parse(cleanResponse);
-        return architecture;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        this.logger.error("AI 아키텍처 설계 실패: JSON 파싱 오류", {
-          error: errorMessage,
-          rawResponse: cleanResponse,
-        });
-        throw new Error(`AI 아키텍처 설계 실패: ${errorMessage}`);
-      }
+      return finalArchitecture;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error("AI 아키텍처 설계 실패:", { error: errorMessage });
       throw new Error(`AI 아키텍처 설계 실패: ${errorMessage}`);
     }
+  }
+
+  // 1단계: 프로젝트 기본 정보 생성
+  private async createProjectBasic(request: ProjectRequest): Promise<any> {
+    const prompt = `다음 프로젝트의 기본 정보를 생성하세요:
+
+프로젝트: ${request.name}
+설명: ${request.description}
+타입: ${request.type}
+
+**요구사항:**
+1. 프로젝트명은 영어로 된 간결하고 기억하기 쉬운 이름으로 생성
+2. 설명은 구체적이고 명확하게 작성
+3. 타입은 적절한 카테고리로 분류
+
+**응답 형식 (JSON만):**
+{
+  "project": {
+    "name": "QuizMaster",
+    "description": "AI 기반 퀴즈 학습 플랫폼으로, 사용자가 퀴즈를 만들고 공유하며 학습할 수 있습니다.",
+    "type": "web-application"
+  }
+}
+
+**주의사항:**
+- 프로젝트 기본 정보만 반환
+- 파일 구조는 포함하지 않음
+- JSON 형식만 응답
+- 프로젝트명은 영어로, 브랜딩 가능한 이름으로`;
+
+    const result = await this.model.generateContent(prompt);
+    const text = result.response.text();
+
+    try {
+      const refinedJson = await refineJsonResponse(text);
+      return JSON.parse(refinedJson);
+    } catch (error) {
+      this.logger.warn("⚠️ 1단계 실패, 기본값 사용", { error });
+      return {
+        project: {
+          name: this.generateDefaultProjectName(request.name),
+          description:
+            request.description || `AI가 생성한 ${request.name} 프로젝트`,
+          type: request.type || "web-application",
+        },
+      };
+    }
+  }
+
+  // 기본 프로젝트명 생성 헬퍼 메서드
+  private generateDefaultProjectName(requestName: string): string {
+    const nameMap: { [key: string]: string } = {
+      퀴즐렛: "QuizMaster",
+      퀴즈: "QuizHub",
+      학습: "LearnFlow",
+      교육: "EduTech",
+      커머스: "ShopSmart",
+      쇼핑: "BuyEasy",
+      블로그: "BlogSpace",
+      소셜: "SocialConnect",
+      게임: "GameZone",
+      엔터테인먼트: "EntertainHub",
+    };
+
+    for (const [korean, english] of Object.entries(nameMap)) {
+      if (requestName.includes(korean)) {
+        return english;
+      }
+    }
+
+    // 기본 영어 이름 생성
+    const cleanName = requestName.replace(/[^a-zA-Z0-9가-힣]/g, "");
+    if (cleanName.length > 0) {
+      return (
+        cleanName.charAt(0).toUpperCase() +
+        cleanName.slice(1).toLowerCase() +
+        "App"
+      );
+    }
+
+    return "SmartApp";
+  }
+
+  // 2단계: 페이지 구조 설계
+  private async createPageStructure(
+    request: ProjectRequest,
+    projectBasic: any
+  ): Promise<any> {
+    const prompt = `다음 프로젝트의 페이지 구조만 생성하세요:
+
+프로젝트: ${projectBasic.project.name}
+설명: ${projectBasic.project.description}
+
+**응답 형식 (JSON만):**
+{
+  "pages": [
+    {
+      "name": "페이지명",
+      "path": "경로",
+      "description": "페이지 설명",
+      "type": "페이지 타입"
+    }
+  ]
+}
+
+**주의사항:**
+- 페이지 목록만 반환 (최대 5개)
+- 각 페이지의 기본 정보만
+- JSON 형식만 응답`;
+
+    const result = await this.model.generateContent(prompt);
+    const text = result.response.text();
+
+    try {
+      const refinedJson = await refineJsonResponse(text);
+      return JSON.parse(refinedJson);
+    } catch (error) {
+      this.logger.warn("⚠️ 2단계 실패, 기본 페이지 사용", { error });
+      return {
+        pages: [
+          {
+            name: "Home",
+            path: "/",
+            description: "메인 페이지",
+            type: "page",
+          },
+          {
+            name: "Login",
+            path: "/login",
+            description: "로그인 페이지",
+            type: "auth",
+          },
+        ],
+      };
+    }
+  }
+
+  // 3단계: 컴포넌트 정의
+  private async createComponents(
+    request: ProjectRequest,
+    pageStructure: any
+  ): Promise<any> {
+    const prompt = `다음 프로젝트의 기본 컴포넌트만 생성하세요:
+
+프로젝트: ${request.name}
+페이지: ${pageStructure.pages.map((p: any) => p.name).join(", ")}
+
+**응답 형식 (JSON만):**
+{
+  "components": [
+    {
+      "name": "컴포넌트명",
+      "type": "컴포넌트 타입",
+      "description": "컴포넌트 설명",
+      "props": ["prop1", "prop2"]
+    }
+  ]
+}
+
+**주의사항:**
+- 기본 컴포넌트만 반환 (최대 5개)
+- 각 컴포넌트의 기본 정보만
+- JSON 형식만 응답`;
+
+    const result = await this.model.generateContent(prompt);
+    const text = result.response.text();
+
+    try {
+      const refinedJson = await refineJsonResponse(text);
+      return JSON.parse(refinedJson);
+    } catch (error) {
+      this.logger.warn("⚠️ 3단계 실패, 기본 컴포넌트 사용", { error });
+      return {
+        components: [
+          {
+            name: "Header",
+            type: "layout",
+            description: "페이지 헤더",
+            props: ["title", "navigation"],
+          },
+          {
+            name: "Button",
+            type: "ui",
+            description: "기본 버튼",
+            props: ["text", "onClick", "variant"],
+          },
+        ],
+      };
+    }
+  }
+
+  // 4단계: 최종 구조 조합
+  private combineArchitecture(
+    projectBasic: any,
+    pageStructure: any,
+    components: any
+  ): any {
+    // 간단한 파일 구조 생성
+    const fileStructure = {
+      type: "folder",
+      name: projectBasic.project.name,
+      children: [
+        {
+          type: "file",
+          name: "package.json",
+          content: JSON.stringify(
+            {
+              name: projectBasic.project.name,
+              version: "1.0.0",
+              description: projectBasic.project.description,
+              main: "index.js",
+              scripts: { start: "node index.js" },
+            },
+            null,
+            2
+          ),
+        },
+        {
+          type: "file",
+          name: "README.md",
+          content: `# ${projectBasic.project.name}\n\n${projectBasic.project.description}\n\n## 페이지\n${pageStructure.pages.map((p: any) => `- ${p.name}: ${p.description}`).join("\n")}\n\n## 컴포넌트\n${components.components.map((c: any) => `- ${c.name}: ${c.description}`).join("\n")}`,
+        },
+      ],
+    };
+
+    return {
+      project: {
+        ...projectBasic.project,
+        file_structure: fileStructure,
+        pages: pageStructure.pages,
+        components: components.components,
+      },
+    };
+  }
+
+  // 프로젝트 구조 검증
+  private validateProjectStructure(architecture: any): void {
+    if (
+      !architecture ||
+      !architecture.project ||
+      !architecture.project.file_structure
+    ) {
+      throw new Error("생성된 프로젝트 구조가 올바르지 않습니다.");
+    }
+
+    const fileStructure = architecture.project.file_structure;
+    if (
+      fileStructure.type !== "folder" ||
+      fileStructure.name !== architecture.project.name
+    ) {
+      throw new Error(
+        "프로젝트 루트 폴더의 이름이 프로젝트 이름과 일치하지 않습니다."
+      );
+    }
+
+    if (!fileStructure.children || !Array.isArray(fileStructure.children)) {
+      throw new Error(
+        "프로젝트 루트 폴더에 파일 또는 폴더 목록이 포함되지 않았습니다."
+      );
+    }
+
+    // 파일 개수 확인
+    const totalFiles = this.countFiles(fileStructure);
+    if (totalFiles === 0) {
+      throw new Error("생성된 프로젝트에 파일이 하나도 없습니다.");
+    }
+  }
+
+  // 파일 개수 세기
+  private countFiles(node: any): number {
+    let count = 0;
+    if (node.type === "file") {
+      count++;
+    } else if (node.type === "folder") {
+      if (node.children) {
+        count += node.children.length;
+        for (const child of node.children) {
+          count += this.countFiles(child);
+        }
+      }
+    }
+    return count;
   }
 }
