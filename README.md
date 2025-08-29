@@ -4,7 +4,7 @@ A modern, AI-powered website building platform that combines the power of artifi
 
 ## 🚀 **NEW: React Frontend Migration Complete!**
 
-The project has been successfully migrated from a webpack-based frontend to a modern **React/Next.js** architecture, providing:
+The project has been successfully migrated to a modern **React/Next.js** architecture, providing:
 
 - ✨ **Modern Development Experience** with React 19 and Next.js 15
 - 🔒 **Full Type Safety** with TypeScript
@@ -111,13 +111,13 @@ export default {
 npm run build:server      # Build TypeScript server only
 npm run build:react       # Build React frontend only
 npm run build:full        # Build both server and React frontend
-npm run build             # Legacy webpack build (deprecated)
+npm run build             # Build TypeScript backend
 ```
 
 ### Development Commands
 
 ```bash
-npm run dev               # Legacy webpack dev server
+npm run dev               # Start backend dev server
 npm run dev:react         # Next.js development server (recommended)
 npm start                 # Start production server
 ```
@@ -128,37 +128,6 @@ npm start                 # Start production server
 npm run db:generate       # Generate database migrations
 npm run db:push           # Push schema changes to database
 npm run db:pull           # Introspect database schema
-```
-
-### Other Commands
-
-```bash
-npm run test              # Run React frontend tests
-npm run lint              # ESLint code checking
-npm run format            # Prettier code formatting
-npm run demo              # Run demo application
-```
-
-## 🌐 Development Workflow
-
-### Frontend Development (Recommended)
-
-```bash
-# Terminal 1: Start React dev server
-npm run dev:react
-
-# Terminal 2: Start backend server
-npm start
-```
-
-### Full Stack Development
-
-```bash
-# Build everything
-npm run build:full
-
-# Start production server
-npm start
 ```
 
 ## 🏛️ Project Structure
@@ -203,9 +172,16 @@ HOST=0.0.0.0
 # AI Integration
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# Frontend
+# Frontend (Client-side accessible)
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+
+# Backend (Server-side only)
+API_BASE_URL=http://localhost:3001
 ```
+
+**중요**: API URL 환경 변수 사용 가이드라인
+- **Frontend**: `NEXT_PUBLIC_API_BASE_URL` 사용 (클라이언트에서 접근 가능)
+- **Backend**: `API_BASE_URL` 사용 (서버에서만 접근)
 
 ### Tailwind CSS v4 Configuration
 

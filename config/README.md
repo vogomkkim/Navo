@@ -8,7 +8,6 @@
 
 #### 빌드 및 개발 도구
 
-- **`webpack.config.js`** - Webpack 번들러 설정
 - **`tsconfig.json`** - TypeScript 컴파일러 설정
 - **`eslint.config.js`** - ESLint 린터 설정
 - **`.prettierrc`** - Prettier 코드 포맷터 설정
@@ -35,8 +34,8 @@
 # TypeScript 컴파일
 npm run build:server
 
-# Webpack 빌드
-npm run build:web
+# TypeScript 컴파일
+npm run build
 
 # 개발 서버 실행
 npm run dev

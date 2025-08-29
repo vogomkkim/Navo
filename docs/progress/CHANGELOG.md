@@ -126,8 +126,8 @@ All notable changes to this project will be documented in this file.
   - scrypt 파라미터 최적화 (메모리 사용량 감소)
   - 로그 레벨별 제어 시스템 구현
 
-- **개발 환경 개선**: Webpack 핫 리로드 및 API 경로 수정
-  - Webpack 설정으로 프론트엔드 핫 리로드 구현
+- **개발 환경 개선**: Next.js 개발 서버 및 API 경로 수정
+  - Next.js 설정으로 프론트엔드 핫 리로드 구현
   - 프론트엔드 API 경로 `/api/auth/*`로 수정
   - 404/500 에러 해결
 

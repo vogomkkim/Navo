@@ -31,12 +31,10 @@
     "@types/react-dom": "^19",
     "@types/testing-library__jest-dom": "^5.14.9",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
-    "css-loader": "^7.1.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.0",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
-    "style-loader": "^4.0.0",
     "tailwindcss": "^4.1.12",
     "typescript": "^5"
   },
