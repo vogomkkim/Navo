@@ -136,11 +136,18 @@ interface MultiAgentResponse {
 
 export function useDraft(options?: UseQueryOptions<DraftResponse, Error>) {
   const { token, logout } = useAuth();
+
+  // Check for a draft ID in the global window object (for preview mode)
+  const previewDraftId = typeof window !== 'undefined' ? (window as any).NAVO_PREVIEW_DRAFT_ID : undefined;
+
+  const queryKey = previewDraftId ? ["draft", previewDraftId] : ["draft"];
+  const apiUrl = previewDraftId ? `/api/draft/${previewDraftId}` : "/api/draft";
+
   return useQuery<DraftResponse, Error>({
-    queryKey: ["draft"],
+    queryKey,
     queryFn: async () => {
       try {
-        return await fetchApi<DraftResponse>("/api/draft", { token });
+        return await fetchApi<DraftResponse>(apiUrl, { token });
       } catch (error) {
         if (error instanceof Error && error.message === "Unauthorized") {
           logout(); // Log out if unauthorized

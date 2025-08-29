@@ -113,3 +113,40 @@ export async function handleSave(
     reply.status(500).send({ error: 'Failed to save draft' });
   }
 }
+
+export async function handleGetSpecificDraft(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  const startTime = process.hrtime.bigint();
+  try {
+    const { draftId } = request.params as { draftId: string };
+
+    const page = await db.query.pages.findFirst({
+      where: eq(pages.id, draftId),
+    });
+
+    if (!page) {
+      reply.status(404).send({ error: 'Draft not found' });
+      return;
+    }
+
+    const layout: PageLayout = page.layoutJson as PageLayout;
+
+    const endTime = process.hrtime.bigint();
+    const tookMs = Number(endTime - startTime) / 1_000_000; // Convert nanoseconds to milliseconds
+
+    reply.send({
+      ok: true,
+      draft: {
+        id: page.id,
+        layout: layout,
+        lastModified: page.updatedAt?.toISOString() || new Date().toISOString(),
+      },
+      tookMs: tookMs,
+    });
+  } catch (error) {
+    console.error('Error fetching specific draft:', error);
+    reply.status(500).send({ error: 'Failed to fetch specific draft' });
+  }
+}

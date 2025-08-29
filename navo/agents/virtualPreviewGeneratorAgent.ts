@@ -52,34 +52,45 @@ export class VirtualPreviewGeneratorAgent extends BaseAgent {
       return `<pre><code>${escape(requestedFile.content)}</code></pre>`;
     }
 
-    // For index.html, try to assemble a self-contained preview
-    if (request.filePath.endsWith('index.html')) {
-      let htmlContent = requestedFile.content;
-
-      // Inject CSS
-      const cssLinks = [...htmlContent.matchAll(/<link.*?href="(.*?\.css)".*?>/g)];
-      for (const match of cssLinks) {
-        const cssPath = match[1];
-        const cssFile = findFileInStructure(projectStructure, cssPath);
-        if (cssFile) {
-          htmlContent = htmlContent.replace(match[0], `<style>${cssFile.content}</style>`);
-        }
-      }
-
-      // Inject JS
-      const scriptSrcs = [...htmlContent.matchAll(/<script.*?src="(.*?\.js)".*?>/g)];
-      for (const match of scriptSrcs) {
-        const jsPath = match[1];
-        const jsFile = findFileInStructure(projectStructure, jsPath);
-        if (jsFile) {
-          // NOTE: This is a simplified approach. It doesn't handle module imports.
-          // For a true preview, a bundler like esbuild-wasm would be needed.
-          htmlContent = htmlContent.replace(match[0], `<script>${jsFile.content}</script>`);
-        }
-      }
-      
-      return htmlContent;
+    // If the request is for the main HTML file, generate a host page for the React app
+    if (request.filePath.endsWith('index.html') || request.filePath === '/') {
+      const previewHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navo Project Preview</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #root { width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        // Pass the draftId to the frontend application
+        window.NAVO_PREVIEW_DRAFT_ID = "${request.draftId}";
+        // Load the main React application bundle
+        // Assuming the React app is served from the root path of the preview server
+        const script = document.createElement('script');
+        script.src = '/static/js/bundle.js'; // Adjust this path if your React app bundle is elsewhere
+        script.onload = () => {
+            // Once the React app is loaded, it should pick up window.NAVO_PREVIEW_DRAFT_ID
+            // and render the project using DynamicComponentRenderer
+            console.log('Navo React app bundle loaded.');
+        };
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>
+`;
+      return previewHtml;
     }
+
+    // For other files, just return their content (e.g., images, other assets)
+    // This part might need more sophisticated MIME type handling in a real scenario
+    return requestedFile.content;
 
     return requestedFile.content;
   }
