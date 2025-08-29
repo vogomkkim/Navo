@@ -8,7 +8,7 @@ Navo helps users go from idea to live product in minutes. The journey contains f
 - Pick a starter template
 - Example verbs: "plan", "choose", "brand"
 
-## 2) AI Draft
+## 2) AI Project Generation
 
 - Generate initial layout, copy, and images in ~10 seconds
 - Show a preview with sections and placeholder content

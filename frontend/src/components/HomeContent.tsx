@@ -14,7 +14,7 @@ import { ComponentBuilderSection } from "@/components/ui/ComponentBuilderSection
 import { MobileChat } from "@/components/ui/MobileChat";
 import { AccordionSection } from "@/components/ui/AccordionSection";
 import { LayoutRenderer } from "@/components/LayoutRenderer";
-import { useDraft, useListProjects, usePageLayout } from "@/lib/api";
+import { useListProjects, usePageLayout } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLayoutContext } from "@/app/context/LayoutContext";
 import { useRouter } from "next/navigation";
@@ -79,13 +79,6 @@ export default function HomeContent() {
     return () => document.removeEventListener("click", handleTabClick);
   }, []);
 
-  const {
-    data: dataDraft,
-    isLoading: isLoadingDraft,
-    isError: isErrorDraft,
-    error: errorDraft,
-  } = useDraft(selectedProjectId);
-
   // 선택된 페이지의 레이아웃 로딩
   const {
     data: pageLayoutData,
@@ -101,13 +94,6 @@ export default function HomeContent() {
   const handlePageSelect = (pageId: string) => {
     setSelectedPageId(pageId);
   };
-
-  // draft 데이터를 LayoutContext에 설정
-  useEffect(() => {
-    if (dataDraft?.draft?.layout) {
-      setCurrentLayout(dataDraft.draft.layout);
-    }
-  }, [dataDraft, setCurrentLayout]);
 
   // 인증되지 않은 경우 로딩 표시
   if (!isAuthenticated || !token) {
@@ -203,95 +189,81 @@ export default function HomeContent() {
               {/* 프로젝트 정보 및 라우트 목록 */}
               <div className="mb-4">
                 <h2 className="text-lg font-medium mb-2">
-                  📁 {dataDraft?.draft?.project?.name || "프로젝트"}
+                  📁{" "}
+                  {projectsData?.projects?.find(
+                    (p) => p.id === selectedProjectId
+                  )?.name || "프로젝트"}
                 </h2>
 
                 {/* 라우트 목록 */}
-                <div className="mb-4 relative">
-                  <details className="border border-gray-200 rounded">
-                    <summary className="px-3 py-2 cursor-pointer hover:bg-gray-50 select-none">
-                      🚀 라우트 ({dataDraft?.draft?.project?.pages?.length || 0}
-                      개) ▼
-                    </summary>
-                    <div className="absolute top-full left-0 right-0 z-10 p-3 bg-gray-50 border border-gray-200 rounded-b shadow-lg">
-                      <div className="flex flex-wrap gap-2">
-                        {dataDraft?.draft?.project?.pages?.map((page) => (
-                          <button
-                            key={page.id}
-                            onClick={() => handlePageSelect(page.id)}
-                            className={`text-sm px-2 py-1 rounded border transition-colors ${
-                              selectedPageId === page.id
-                                ? "bg-blue-500 text-white border-blue-500"
-                                : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-300"
-                            }`}
-                          >
-                            {page.path}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </details>
-
-                  {/* 선택된 페이지 표시 */}
-                  {selectedPageId && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      📄 현재 페이지:{" "}
-                      {
-                        dataDraft?.draft?.project?.pages?.find(
-                          (p) => p.id === selectedPageId
-                        )?.path
-                      }
-                    </div>
-                  )}
-
-                  {/* 디버깅 정보 */}
-                  {selectedPageId && (
-                    <details className="mt-2 text-xs">
-                      <summary className="cursor-pointer text-gray-500">
-                        🐛 디버깅 정보
+                {selectedProjectId && (
+                  <div className="mb-4 relative">
+                    <details className="border border-gray-200 rounded">
+                      <summary className="px-3 py-2 cursor-pointer hover:bg-gray-50 select-none">
+                        🚀 라우트 ({pageLayoutData?.pages?.length || 0}개) ▼
                       </summary>
-                      <div className="mt-2 p-2 bg-gray-100 rounded text-left">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-medium">
-                            페이지 레이아웃 데이터:
-                          </h4>
-                          <button
-                            onClick={() =>
-                              navigator.clipboard.writeText(
-                                JSON.stringify(pageLayoutData, null, 2)
-                              )
-                            }
-                            className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="복사하기"
-                          >
-                            📋
-                          </button>
+                      <div className="absolute top-full left-0 right-0 z-10 p-3 bg-gray-50 border border-gray-200 rounded-b shadow-lg">
+                        <div className="flex flex-wrap gap-2">
+                          {pageLayoutData?.pages?.map((page: any) => (
+                            <button
+                              key={page.id}
+                              onClick={() => handlePageSelect(page.id)}
+                              className={`text-sm px-2 py-1 rounded border transition-colors ${
+                                selectedPageId === page.id
+                                  ? "bg-blue-500 text-white border-blue-500"
+                                  : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-300"
+                              }`}
+                            >
+                              {page.path}
+                            </button>
+                          ))}
                         </div>
-                        <pre className="text-xs overflow-auto max-h-40">
-                          {JSON.stringify(pageLayoutData, null, 2)}
-                        </pre>
-
-                        <div className="flex items-center gap-2 mb-2 mt-3">
-                          <h4 className="font-medium">프로젝트 데이터:</h4>
-                          <button
-                            onClick={() =>
-                              navigator.clipboard.writeText(
-                                JSON.stringify(dataDraft, null, 2)
-                              )
-                            }
-                            className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="복사하기"
-                          >
-                            📋
-                          </button>
-                        </div>
-                        <pre className="text-xs overflow-auto max-h-40">
-                          {JSON.stringify(dataDraft, null, 2)}
-                        </pre>
                       </div>
                     </details>
-                  )}
-                </div>
+
+                    {/* 선택된 페이지 표시 */}
+                    {selectedPageId && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        📄 현재 페이지:{" "}
+                        {
+                          pageLayoutData?.pages?.find(
+                            (p: any) => p.id === selectedPageId
+                          )?.path
+                        }
+                      </div>
+                    )}
+
+                    {/* 디버깅 정보 */}
+                    {selectedPageId && (
+                      <details className="mt-2 text-xs">
+                        <summary className="cursor-pointer text-gray-500">
+                          🐛 디버깅 정보
+                        </summary>
+                        <div className="mt-2 p-2 bg-gray-100 rounded text-left">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium">
+                              페이지 레이아웃 데이터:
+                            </h4>
+                            <button
+                              onClick={() =>
+                                navigator.clipboard.writeText(
+                                  JSON.stringify(pageLayoutData, null, 2)
+                                )
+                              }
+                              className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="복사하기"
+                            >
+                              📋
+                            </button>
+                          </div>
+                          <pre className="text-xs overflow-auto max-h-40">
+                            {JSON.stringify(pageLayoutData, null, 2)}
+                          </pre>
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* 미리보기 */}
@@ -309,18 +281,14 @@ export default function HomeContent() {
                 ) : (
                   <LayoutRenderer layout={pageLayoutData?.layout || null} />
                 )
-              ) : // 프로젝트 기본 레이아웃 표시
-              isLoadingDraft ? (
-                <div className="loading-state">
-                  <div className="loading-spinner"></div>
-                  <p>프로젝트 미리보기 로딩 중...</p>
-                </div>
-              ) : isErrorDraft ? (
-                <div className="error-state">
-                  <p>미리보기 로딩 오류: {errorDraft?.message}</p>
-                </div>
               ) : (
-                <LayoutRenderer layout={dataDraft?.draft?.layout || null} />
+                <div className="preview-placeholder">
+                  <div className="preview-header">
+                    <div className="preview-icon">📄</div>
+                    <h2>페이지를 선택하세요</h2>
+                    <p>프로젝트에서 페이지를 선택하면 미리보기가 표시됩니다.</p>
+                  </div>
+                </div>
               )}
             </>
           )}

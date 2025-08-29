@@ -9,12 +9,12 @@
 
 **Phase 1 — MVP (4주)**
 
-- **W1**: DB 스키마 초안, Draft API(Mock), 에디터 프레임(Canavs/Panel/Save), 이벤트 수집기 스켈레톤 ✅
+- **W1**: DB 스키마 초안, Project API(Mock), 에디터 프레임(Canavs/Panel/Save), 이벤트 수집기 스켈레톤 ✅
   - Define schemas for core objects
-  - Draft API (mock)
+  - Project API (mock)
   - Editor frame: canvas, panel, save plumbing
   - Events collector skeleton
-  - Demo: show draft preview stub in ~10 s
+  - Demo: show project preview stub in ~10 s
 - **W2**: 텍스트/이미지/스타일 편집, Chat→Diff(3~5 규칙), 에셋 업로드 & 갤러리 ✅
   - Text/image/style edits
   - Chat → diff with 3–5 safe rules
@@ -106,7 +106,7 @@
 
 **주요 기술 마일스톤**
 
-- **S1**: Draft API (Mock → 실 서비스 연결) ✅
+- **S1**: Project API (Mock → 실 서비스 연결) ✅
 - **S2**: 에디터 핵심 기능 (텍스트/이미지/스타일) ✅
 - **S3**: Chat→Diff 엔진 ✅
 - **S4**: **AI Intent Parser** ✅ - 사용자 요청을 분석하여 완전한 프로젝트 구조 생성 및 영속화

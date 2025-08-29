@@ -1,4 +1,4 @@
--- Navo Schema Draft (W1)
+-- Navo Schema (Agile)
 -- Postgres-compatible DDL
 
 CREATE TABLE users (

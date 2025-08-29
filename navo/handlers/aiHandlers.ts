@@ -572,19 +572,19 @@ export async function handleVirtualPreview(
   reply: FastifyReply
 ): Promise<void> {
   try {
-    const { draftId, "*": filePath } = request.params as {
-      draftId: string;
+    const { pageId, "*": filePath } = request.params as {
+      pageId: string;
       "*": string;
     };
 
-    if (!draftId || !filePath) {
-      reply.status(400).send({ error: "draftId and filePath are required." });
+    if (!pageId || !filePath) {
+      reply.status(400).send({ error: "pageId and filePath are required." });
       return;
     }
 
     const previewAgent = new VirtualPreviewGeneratorAgent();
     const htmlContent = await previewAgent.execute({
-      pageId: draftId,
+      pageId: pageId,
       filePath: `/${filePath}`,
     });
 

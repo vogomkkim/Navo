@@ -6,11 +6,17 @@ import { EventTrackerProvider } from "@/app/context/EventTrackerContext";
 import { ComponentDefinitionProvider } from "@/app/context/ComponentDefinitionContext";
 import { LayoutProvider } from "@/app/context/LayoutContext";
 
-// Mock the useDraft hook to avoid actual API calls during tests
+// Mock the API hooks to avoid actual API calls during tests
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"), // Import and retain default behavior
-  useDraft: jest.fn(() => ({
-    data: { draft: { layout: { components: [] } } },
+  useListProjects: jest.fn(() => ({
+    data: { projects: [] },
+    isLoading: false,
+    isError: false,
+    error: null,
+  })),
+  usePageLayout: jest.fn(() => ({
+    data: { layout: { components: [] } },
     isLoading: false,
     isError: false,
     error: null,

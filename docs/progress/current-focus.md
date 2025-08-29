@@ -9,7 +9,7 @@
 **📍 W1 완료**
 
 - [v] DB 스키마 초안 및 테이블 정의 - `schema.sql` 검토 및 `architecture.md`에 설계 근거 기록 완료
-- [v] Draft API(Mock 응답) 구현 - `server.ts`가 타입이 정의된 JSON 목업을 반환하도록 수정 완료
+- [v] Project API(Mock 응답) 구현 - `server.ts`가 타입이 정의된 JSON 목업을 반환하도록 수정 완료
 - [v] 에디터 프레임(Canvas/Panel, 저장 기능) - Mock API 데이터를 받아 Canvas에 렌더링하고, 저장 로직을 JSON으로 보내도록 구현 완료
 - [v] 이벤트 수집기 스켈레톤 - 클라이언트/서버 이벤트 수집 로직 확인 및 개선 완료
 

@@ -38,7 +38,7 @@ The migration from the old webpack-based frontend to a modern React/Next.js fron
 
 ### 5. **API Integration** ✅
 
-- **React Query Hooks**: useDraft, useSaveDraft, useListProjects, etc.
+- **React Query Hooks**: useListProjects, usePageLayout, etc.
 - **Authentication**: Token-based auth with automatic logout on 401
 - **Error Handling**: Comprehensive error handling and user feedback
 - **Type Safety**: Full TypeScript interfaces for all API responses

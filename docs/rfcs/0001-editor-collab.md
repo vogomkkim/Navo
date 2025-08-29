@@ -1,6 +1,6 @@
 # RFC 0001 — Editor Collaboration
 
-- Status: Draft
+- Status: In Progress
 - Date: YYYY‑MM‑DD
 - Authors: TBD
 

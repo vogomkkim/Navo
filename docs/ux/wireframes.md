@@ -7,9 +7,9 @@ Describe the essential elements and actions for five MVP screens.
 - Purpose and target audience inputs
 - Brand cues: logo upload, color pick, tone
 - Template selection grid with short descriptions
-- Continue button leading to draft generation
+- Continue button leading to project generation
 
-## Draft Preview
+## Project Preview
 
 - Auto‑generated layout with sections
 - Placeholder copy and generated images

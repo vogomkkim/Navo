@@ -30,14 +30,14 @@ Navo is a zero‑code AI web/app builder that helps non‑developers turn ideas 
 ## UX Flow
 
 1. Onboarding: capture purpose, target audience, and brand; choose a template.
-2. AI Draft: generate initial layout, copy, and images in ~10 seconds.
+2. AI Project Generation: generate initial layout, copy, and images in ~10 seconds.
 3. Visual Editor: click‑to‑edit text and images; adjust styles; move/add/remove sections; chat edits with visible diffs.
 4. Publish: one‑click to a subdomain with SSL and CDN; rollback recent builds.
 5. Analytics: track views and clicks; surface daily suggestions to improve copy or style.
 
 ## MVP Scope (v0.9)
 
-Core features: AI-powered draft generation, visual editor with inline editing, one-click publish with rollback, and basic analytics with AI suggestions.
+Core features: AI-powered project generation, visual editor with inline editing, one-click publish with rollback, and basic analytics with AI suggestions.
 
 **See [docs/tech/mvp-scope.md](../tech/mvp-scope.md) for full acceptance criteria and SLO targets.**
 

@@ -91,19 +91,9 @@ async function fetchApi<T>(
 
 // --- React Query Hooks for API Calls ---
 
-// Example: useDraft
+// Layout interface for components
 interface Layout {
   components: any[]; // Define a more specific type if available
-}
-
-interface DraftResponse {
-  ok: boolean;
-  draft: {
-    id: string;
-    layout: Layout;
-    lastModified: string;
-  };
-  tookMs: number;
 }
 
 // 멀티 에이전트 시스템 인터페이스
@@ -132,55 +122,6 @@ interface MultiAgentResponse {
   agents: AgentResponse[];
   totalExecutionTime: number;
   summary: string;
-}
-
-export function useDraft(
-  projectId?: string,
-  options?: UseQueryOptions<DraftResponse, Error>
-) {
-  const { token, logout } = useAuth();
-
-  // Check for a draft ID in the global window object (for preview mode)
-  const previewDraftId =
-    typeof window !== "undefined"
-      ? (window as any).NAVO_PREVIEW_DRAFT_ID
-      : undefined;
-
-  const queryKey = projectId
-    ? ["draft", projectId]
-    : previewDraftId
-      ? ["draft", previewDraftId]
-      : ["draft"];
-
-  const apiUrl = projectId
-    ? `/api/draft/project/${projectId}`
-    : previewDraftId
-      ? `/api/draft/${previewDraftId}`
-      : "/api/draft";
-
-  return useQuery<DraftResponse, Error>({
-    queryKey,
-    queryFn: async () => {
-      try {
-        return await fetchApi<DraftResponse>(apiUrl, { token });
-      } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
-          logout(); // Log out if unauthorized
-        }
-        throw error;
-      }
-    },
-    enabled: !!token, // 토큰이 있을 때만 쿼리 실행
-    ...options,
-  });
-}
-
-// Example: useSaveDraft
-interface SaveDraftResponse {
-  ok: boolean;
-  message: string;
-  savedAt: string;
-  versionId?: string;
 }
 
 // useGenerateDummySuggestion
@@ -351,29 +292,6 @@ export function useGenerateDummySuggestion(
       } catch (error) {
         if (error instanceof Error && error.message === "Unauthorized") {
           logout();
-        }
-        throw error;
-      }
-    },
-    ...options,
-  });
-}
-
-export function useSaveDraft(
-  options?: UseMutationOptions<SaveDraftResponse, Error, Layout>
-) {
-  const { token, logout } = useAuth();
-  return useMutation<SaveDraftResponse, Error, Layout>({
-    mutationFn: async (layout: Layout) => {
-      try {
-        return await fetchApi<SaveDraftResponse>("/api/draft/save", {
-          method: "POST",
-          body: JSON.stringify({ layout }),
-          token,
-        });
-      } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
-          logout(); // Log out if unauthorized
         }
         throw error;
       }

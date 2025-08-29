@@ -1,9 +1,9 @@
 # Navo Project Direction
 
-**Document Version:** 1.0  
-**Created:** 2025-08-14  
-**Author:** vogo & ChatGPT (GPT-5)  
-**Status:** Draft – Initial Project Direction
+**Document Version:** 1.0
+**Created:** 2025-08-14
+**Author:** vogo & ChatGPT (GPT-5)
+**Status:** In Progress – Initial Project Direction
 
 ---
 
@@ -108,7 +108,7 @@ The primary purpose is to align the team on:
 
 This architecture and strategy integrate into **Phase 1 (MVP)** starting from Week 1:
 
-- W1: Define DB schema, mock Draft API, setup editor frame, and event collector skeleton.
+- W1: Define DB schema, mock Project API, setup editor frame, and event collector skeleton.
 - Future phases adapt to the chosen frontend/mobile strategy and Go backend.
 
 ---

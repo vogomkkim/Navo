@@ -50,7 +50,7 @@ model component_definitions {
 
 ## Flow
 
-1. User completes onboarding and requests a draft.
+1. User completes onboarding and requests a project.
 2. Orchestrator executes generation nodes (copy, image) in parallel.
 3. Build node composes a page or layout JSON.
 4. Deploy node builds and publishes to CDN, returning a public URL.
@@ -102,7 +102,7 @@ Database size is managed through two key strategies:
 
 ## Performance Goals
 
-- Draft generation perceived in ~10 s (with mocks early on)
+- Project generation perceived in ~10 s (with mocks early on)
 - Editor interactions ≤ 200 ms
 - Publish ≤ 60 s average
 

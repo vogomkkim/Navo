@@ -20,7 +20,7 @@
 4. Store outputs for downstream nodes.
 5. Log durations and outcomes; surface progress to the UI.
 
-## Example 1: Draft Generation
+## Example 1: Project Generation
 
 - Nodes: `writeCopy`, `generateImage`, `buildPage`
 - `writeCopy` and `generateImage` run in parallel.
