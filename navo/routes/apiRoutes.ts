@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { authenticateToken } from "../middleware/auth.js";
+import { authenticateToken } from "../auth/auth.js";
 import aiRoutes from "./aiRoutes.js";
 import authRoutes from "./authRoutes.js";
 import projectRoutes from "./projectRoutes.js";

@@ -35,6 +35,8 @@ export default function HomeContent() {
     null
   );
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [incompleteProject, setIncompleteProject] = useState<any>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
@@ -95,6 +97,46 @@ export default function HomeContent() {
     setSelectedPageId(pageId);
   };
 
+  // 프로젝트 선택 핸들러
+  const handleProjectSelect = (projectId: string) => {
+    setSelectedProjectId(projectId);
+
+    // 프로젝트가 미완성인지 확인
+    const project = projectsData?.projects?.find((p) => p.id === projectId);
+    if (project) {
+      // 페이지나 컴포넌트가 없는지 확인 (간단한 체크)
+      const hasContent =
+        pageLayoutData?.layout && Object.keys(pageLayoutData.layout).length > 0;
+
+      if (!hasContent) {
+        setIncompleteProject(project);
+        setShowRecoveryModal(true);
+      }
+    }
+  };
+
+  // 복구 옵션 핸들러
+  const handleRecoveryOption = async (option: "continue" | "restart") => {
+    if (!incompleteProject) return;
+
+    try {
+      if (option === "continue") {
+        // 이어서 완성하기: AI가 기존 상태 파악 후 필요한 페이지/컴포넌트 생성
+        console.log("이어서 완성하기:", incompleteProject.name);
+        // TODO: AI 생성 API 호출
+      } else if (option === "restart") {
+        // 새로 시작하기: 기존 내용 삭제 후 새로 생성
+        console.log("새로 시작하기:", incompleteProject.name);
+        // TODO: 기존 데이터 정리 후 AI 생성 API 호출
+      }
+
+      setShowRecoveryModal(false);
+      setIncompleteProject(null);
+    } catch (error) {
+      console.error("복구 프로세스 오류:", error);
+    }
+  };
+
   // 인증되지 않은 경우 로딩 표시
   if (!isAuthenticated || !token) {
     return <div>로그인 페이지로 이동 중...</div>;
@@ -109,7 +151,7 @@ export default function HomeContent() {
           {/* 프로젝트 선택기 */}
           <Select.Root
             value={selectedProjectId || ""}
-            onValueChange={setSelectedProjectId}
+            onValueChange={handleProjectSelect}
           >
             <Select.Trigger className="inline-flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-w-[200px]">
               <Select.Value placeholder="프로젝트 선택" />
@@ -342,6 +384,67 @@ export default function HomeContent() {
         </div>
       </div>
       <MobileChat />
+
+      {/* 프로젝트 복구 모달 */}
+      {showRecoveryModal && incompleteProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-4">⚠️</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                미완성 프로젝트 감지
+              </h3>
+              <p className="text-gray-600">
+                프로젝트 <strong>&ldquo;{incompleteProject.name}&rdquo;</strong>
+                이(가) 아직 완성되지 않았습니다.
+              </p>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-1">
+                  이어서 완성하기
+                </h4>
+                <p className="text-sm text-blue-700">
+                  기존 내용을 유지하고 AI가 필요한 페이지와 컴포넌트를 추가로
+                  생성합니다.
+                </p>
+              </div>
+
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <h4 className="font-medium text-orange-900 mb-1">
+                  새로 시작하기
+                </h4>
+                <p className="text-sm text-orange-700">
+                  기존 내용을 모두 삭제하고 완전히 새로 생성합니다.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => handleRecoveryOption("continue")}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                이어서 완성하기
+              </button>
+              <button
+                onClick={() => handleRecoveryOption("restart")}
+                className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                새로 시작하기
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowRecoveryModal(false)}
+              className="w-full mt-3 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

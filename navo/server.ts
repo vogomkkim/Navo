@@ -1,7 +1,7 @@
 import Fastify, { FastifyRequest, FastifyReply } from "fastify";
 import cors from "@fastify/cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { setupApiRoutes } from "./routes/apiRoutes.js";
+import apiRoutes from "./routes/apiRoutes.js";
 import { setupStaticRoutes } from "./routes/staticRoutes.js";
 import { errorHandlingMiddleware } from "./middleware/errorHandler.js";
 import logger from "./core/logger.js";
@@ -13,7 +13,7 @@ app.register(cors);
 
 // Setup routes
 console.log("🚀 서버 시작 - 라우트 설정 중...");
-setupApiRoutes(app);
+app.register(apiRoutes);
 console.log("✅ API 라우트 설정 완료");
 // setupStaticRoutes(app); // 정적 파일 서빙 비활성화
 
