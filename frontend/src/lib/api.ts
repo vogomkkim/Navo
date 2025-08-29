@@ -468,7 +468,7 @@ export function useMultiAgentSystem(
   const { token } = useAuth();
   return useMutation({
     mutationFn: (data: MultiAgentRequest) =>
-      fetchApi<MultiAgentResponse>("/api/ai/multi-agent", {
+      fetchApi<MultiAgentResponse>("/api/ai/chat", {
         method: "POST",
         body: JSON.stringify(data),
         token,

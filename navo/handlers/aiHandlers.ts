@@ -3,10 +3,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "../db/db.js";
 import {
   events,
-  suggestions,
   projects,
   componentDefinitions,
   pages,
+  components,
 } from "../db/schema.js";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { scaffoldProject } from "../nodes/scaffoldProject.js"; // Added import
@@ -213,186 +213,24 @@ Your suggestion:
   }
 }
 
-export async function generateAndStoreDummySuggestion(
-  projectId: string
-): Promise<void> {
-  console.log("[AI] Entering generateAndStoreDummySuggestion");
-  try {
-    // Fetch the current layout from the pages API to pass to the AI
-    console.log("[AI] Fetching current layout from /api/pages");
-    const pagesRes = await fetch(
-      `http://localhost:${process.env.PORT}/api/pages`
-    );
-    const pagesData = await pagesRes.json();
-    const currentLayout = pagesData?.pages?.[0]?.layoutJson;
 
-    if (!currentLayout) {
-      console.error("[AI] Could not fetch current layout for AI suggestion.");
-      return;
-    }
-    console.log("[AI] Successfully fetched current layout.");
 
-    console.log("[AI] Generating AI suggestion...");
-    const aiSuggestion = await generateAiSuggestion(currentLayout);
-    console.log("[AI] AI suggestion generated:", aiSuggestion);
 
-    try {
-      await db.insert(suggestions).values({
-        projectId,
-        type: aiSuggestion.type,
-        content: aiSuggestion.content,
-      });
-      console.log("[AI] AI-generated suggestion stored successfully.");
-    } catch (err) {
-      console.error("[AI] Error storing AI-generated suggestion:", err);
-    }
-  } catch (err: any) {
-    console.error("[AI] Error in generateAndStoreDummySuggestion:", err);
-  }
-  console.log("[AI] Exiting generateAndStoreDummySuggestion");
-}
 
-export async function handleGetSuggestions(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
-  try {
-    const { projectId, type, limit = 10, offset = 0 } = request.query as any;
 
-    const rows = await db
-      .select()
-      .from(suggestions)
-      .where(
-        sql`${
-          projectId ? eq(suggestions.projectId, projectId as string) : sql`true`
-        } AND ${type ? eq(suggestions.type, type as string) : sql`true`}`
-      )
-      .limit(Number(limit))
-      .offset(Number(offset))
-      .orderBy(desc(suggestions.createdAt));
 
-    reply.send({ suggestions: rows });
-  } catch (error) {
-    console.error("Error fetching suggestions:", error);
-    reply.status(500).send({ error: "Failed to fetch suggestions" });
-  }
-}
 
-export async function handleGenerateDummySuggestion(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
-  try {
-    const userId = request.userId;
-    if (!userId) {
-      reply.status(401).send({ error: "Unauthorized" });
-      return;
-    }
 
-    // Use latest project owned by user as target for dummy suggestion if available
-    const latestProject = await db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(eq(projects.ownerId, userId))
-      .orderBy(desc(projects.createdAt))
-      .limit(1);
 
-    const projectId = latestProject[0]?.id || "dummy-project-id";
-    await generateAndStoreDummySuggestion(projectId);
-    reply.send({ ok: true, message: "Dummy suggestion generated" });
-  } catch (error) {
-    console.error("Error generating dummy suggestion:", error);
-    reply.status(500).send({ error: "Failed to generate dummy suggestion" });
-  }
-}
 
-export async function handleTestDbSuggestions(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
-  try {
-    const rows = await db
-      .select()
-      .from(suggestions)
-      .limit(5)
-      .orderBy(desc(suggestions.createdAt));
 
-    reply.send({ suggestions: rows });
-  } catch (error) {
-    console.error("Error fetching test suggestions:", error);
-    reply.status(500).send({ error: "Failed to fetch test suggestions" });
-  }
-}
-
-export async function handleApplySuggestion(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
-  try {
-    const { suggestionId } = request.body as any;
-
-    const updated = await db
-      .update(suggestions)
-      .set({ appliedAt: new Date() })
-      .where(eq(suggestions.id, suggestionId))
-      .returning();
-
-    reply.send({ suggestion: updated[0] });
-  } catch (error) {
-    console.error("Error applying suggestion:", error);
-    reply.status(500).send({ error: "Failed to apply suggestion" });
-  }
-}
-
-export async function handleSeedDummyData(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
-  try {
-    const userId = request.userId;
-    if (!userId) {
-      reply.status(401).send({ error: "Unauthorized" });
-      return;
-    }
-
-    // Create a test project
-    const created = await db
-      .insert(projects)
-      .values({
-        name: "Test Project",
-        ownerId: userId as string,
-      })
-      .returning();
-
-    const project = created[0];
-
-    // Create some test suggestions
-    await db.insert(suggestions).values([
-      {
-        projectId: project.id,
-        type: "layout",
-        content: { suggestion: "Add more spacing between elements" },
-      },
-      {
-        projectId: project.id,
-        type: "style",
-        content: { suggestion: "Use a more vibrant color scheme" },
-      },
-    ]);
-
-    reply.send({ message: "Dummy data seeded successfully", project });
-  } catch (error) {
-    console.error("Error seeding dummy data:", error);
-    reply.status(500).send({ error: "Failed to seed dummy data" });
-  }
-}
 
 export async function handleGenerateProject(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
   try {
-    const { projectName } = request.body as any;
+    const { projectName, projectDescription, requirements } = request.body as any;
     const userId = request.userId;
     if (!userId) {
       reply.status(401).send({ error: "Unauthorized" });
@@ -402,15 +240,53 @@ export async function handleGenerateProject(
       reply.status(400).send({ error: "Project name is required." });
       return;
     }
+
+    // requirements가 있으면 저장, 없으면 projectDescription 사용
+    const projectRequirements = requirements || projectDescription || projectName;
+
     const created = await db
       .insert(projects)
-      .values({ name: projectName as string, ownerId: userId as string })
+      .values({
+        name: projectName as string,
+        ownerId: userId as string,
+        description: projectDescription || projectName,
+        requirements: projectRequirements
+      })
       .returning();
+
+    const projectId = created[0].id;
+
+    // AI를 사용하여 프로젝트 콘텐츠 생성
+    console.log("프로젝트 생성 시 AI 콘텐츠 생성 시작...");
+    const generatedContent = await generateProjectContent(projectRequirements);
+    console.log("생성된 콘텐츠:", generatedContent);
+
+    // 생성된 내용을 데이터베이스에 저장 (트랜잭션으로 안전하게 처리)
+    console.log("페이지 및 컴포넌트 저장 시작...");
+
+    const result = await db.transaction(async (tx) => {
+      // 새 데이터 생성
+      const savedPages = await saveGeneratedPagesWithTx(tx, projectId, generatedContent.pages);
+      const savedComponentDefinitions = await saveGeneratedComponentsWithTx(tx, projectId, generatedContent.components);
+
+      // pages에 components 인스턴스 배치
+      const savedComponents = await savePageComponentsWithTx(tx, savedPages, savedComponentDefinitions);
+
+      return { savedPages, savedComponents, savedComponentDefinitions };
+    });
+
+    console.log("저장된 페이지:", result.savedPages);
+    console.log("저장된 컴포넌트:", result.savedComponents);
+
     reply.send({
       ok: true,
-      message: "Project created.",
-      projectId: created[0].id,
-      generatedStructure: null,
+      message: "Project created with AI-generated content.",
+      projectId: projectId,
+      generatedStructure: {
+        pages: result.savedPages,
+        componentDefinitions: result.savedComponentDefinitions,
+        components: result.savedComponents,
+      },
     });
   } catch (error) {
     console.error("Error generating project:", error);
@@ -468,42 +344,43 @@ export async function handleMultiAgentChat(
     const plan = await agent.execute(req, enhancedContext);
     const totalExecutionTime = Date.now() - start;
 
-    const agents = [
+    // 동적으로 에이전트 결과 생성
+    const agentResults = [
       {
-        success: true,
-        message: "프로젝트 요구사항 분석 및 아키텍처 설계를 완료했습니다.",
-        agentName: "Project Architect Agent",
-        status: "completed" as const,
+        name: "Project Architect Agent",
         data: plan.architecture,
+        action: "프로젝트 요구사항 분석 및",
       },
       {
-        success: true,
-        message: "UI/UX 인터페이스 설계를 완료했습니다.",
-        agentName: "UI/UX Designer Agent",
-        status: "completed" as const,
+        name: "UI/UX Designer Agent",
         data: plan.uiDesign,
+        action: "UI/UX",
       },
       {
-        success: true,
-        message: "프로젝트 코드 구조 생성을 완료했습니다.",
-        agentName: "Code Generator Agent",
-        status: "completed" as const,
+        name: "Code Generator Agent",
         data: plan.codeStructure,
+        action: "프로젝트 코드 구조",
       },
       {
-        success: true,
-        message: "개발 가이드 작성을 완료했습니다.",
-        agentName: "Development Guide Agent",
-        status: "completed" as const,
+        name: "Development Guide Agent",
         data: plan.developmentGuide,
+        action: "개발 가이드",
       },
     ];
+
+    const agents = agentResults.map(result => ({
+      success: true,
+      message: generateAgentSuccessMessage(result.name, result.action),
+      agentName: result.name,
+      status: "completed" as const,
+      data: result.data,
+    }));
 
     reply.send({
       success: true,
       agents,
       totalExecutionTime,
-      summary: "Master Developer 프로세스가 성공적으로 완료되었습니다.",
+      summary: generateSummaryMessage(agents.length, agents.length),
     });
   } catch (error) {
     console.error("Error handling multi-agent chat:", error);
@@ -512,13 +389,13 @@ export async function handleMultiAgentChat(
       agents: [
         {
           success: false,
-          message: "처리 중 오류가 발생했습니다.",
+          message: generateErrorMessage("Master Developer", error),
           agentName: "Master Developer",
           status: "error",
         },
       ],
       totalExecutionTime: 0,
-      summary: "프로세스 처리 실패",
+      summary: generateSummaryMessage(1, 0),
     });
   }
 }
@@ -614,8 +491,8 @@ export async function handleProjectRecovery(
         return;
       }
 
-      // 프로젝트 요구사항 분석 (requirements 컬럼이 없을 수 있음)
-      const requirements = project.description || project.name;
+      // 프로젝트 요구사항 분석 (requirements 컬럼 우선 사용)
+      const requirements = project.requirements || project.description || project.name;
 
       // AI를 사용하여 프로젝트 완성
       console.log("프로젝트 복구 시작:", { projectId, requirements });
@@ -631,11 +508,14 @@ export async function handleProjectRecovery(
         await tx.delete(pages).where(eq(pages.projectId, projectId));
         await tx.delete(componentDefinitions).where(eq(componentDefinitions.projectId, projectId));
 
-        // 새 데이터 생성
+                // 새 데이터 생성
         const savedPages = await saveGeneratedPagesWithTx(tx, projectId, generatedContent.pages);
-        const savedComponents = await saveGeneratedComponentsWithTx(tx, projectId, generatedContent.components);
+        const savedComponentDefinitions = await saveGeneratedComponentsWithTx(tx, projectId, generatedContent.components);
 
-        return { savedPages, savedComponents };
+        // pages에 components 인스턴스 배치
+        const savedComponents = await savePageComponentsWithTx(tx, savedPages, savedComponentDefinitions);
+
+        return { savedPages, savedComponents, savedComponentDefinitions };
       });
 
       console.log("저장된 페이지:", result.savedPages);
@@ -646,6 +526,7 @@ export async function handleProjectRecovery(
         message: "프로젝트 복구 완료",
         generated: {
           pages: result.savedPages,
+          componentDefinitions: result.savedComponentDefinitions,
           components: result.savedComponents,
         },
       });
@@ -662,20 +543,72 @@ export async function handleProjectRecovery(
 async function generateProjectContent(requirements: string) {
   console.log("generateProjectContent 호출됨:", requirements);
 
-  // 실제 AI 생성 로직 (현재는 기본 템플릿 반환)
-  const projectType = determineProjectType(requirements);
-  console.log("프로젝트 타입 결정:", projectType);
+  try {
+    // Gemini AI를 사용하여 실제 요구사항에 맞는 프로젝트 생성
+    const prompt = `사용자 요구사항: "${requirements}"
 
-  const pages = generateDefaultPages(projectType);
-  const components = generateDefaultComponents(projectType);
+이 요구사항에 맞는 웹사이트를 생성해주세요. 다음을 포함해야 합니다:
 
-  console.log("생성된 페이지:", pages);
-  console.log("생성된 컴포넌트:", components);
+1. 페이지 구조 (경로, 이름, 설명)
+2. 컴포넌트 정의 (타입, props, 렌더링 템플릿, CSS)
+3. 실제 기능이 동작하는 코드
 
-  return {
-    pages,
-    components,
-  };
+JSON 형태로 응답해주세요. 다음과 같은 구조로:
+
+{
+  "pages": [
+    {
+      "path": "/",
+      "name": "페이지 이름",
+      "layoutJson": {
+        "components": [
+          { "type": "컴포넌트타입", "props": { "propName": "값" } }
+        ]
+      }
+    }
+  ],
+  "components": [
+    {
+      "type": "컴포넌트타입",
+      "displayName": "표시 이름",
+      "category": "카테고리",
+      "propsSchema": { "propName": { "type": "string" } },
+      "renderTemplate": "<div>{{propName}}</div>",
+      "cssStyles": "CSS 스타일"
+    }
+  ]
+}`;
+
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const response = await model.generateContent(prompt);
+    const result = await response.response.text();
+
+    console.log("AI 응답:", result);
+
+    // JSON 파싱 및 검증
+    const parsedResult = JSON.parse(result);
+
+    // 기본값으로 fallback
+    if (!parsedResult.pages || !parsedResult.components) {
+      console.log("AI 응답이 올바르지 않아 기본 템플릿 사용");
+      const projectType = determineProjectType(requirements);
+      const pages = generateDefaultPages(projectType);
+      const components = generateDefaultComponents(projectType);
+      return { pages, components };
+    }
+
+    return parsedResult;
+
+  } catch (error) {
+    console.error("AI 생성 실패, 기본 템플릿 사용:", error);
+
+    // AI 실패 시 기본 템플릿 사용
+    const projectType = determineProjectType(requirements);
+    const pages = generateDefaultPages(projectType);
+    const components = generateDefaultComponents(projectType);
+
+    return { pages, components };
+  }
 }
 
 // 프로젝트 타입 결정
@@ -722,7 +655,7 @@ function generateDefaultPages(projectType: string) {
         layoutJson: {
           components: [
             { type: "header", props: { title: "프로필" } },
-            { type: "profile", props: { name: "사용자" } },
+            { type: "profile", props: { title: "사용자" } },
           ],
         },
       });
@@ -734,7 +667,7 @@ function generateDefaultPages(projectType: string) {
         layoutJson: {
           components: [
             { type: "header", props: { title: "상품" } },
-            { type: "product-grid", props: { items: [] } },
+            { type: "product-grid", props: { title: "상품 목록" } },
           ],
         },
       });
@@ -869,6 +802,42 @@ async function saveGeneratedComponentsWithTx(
   return savedComponents;
 }
 
+// 트랜잭션 내에서 페이지에 컴포넌트 인스턴스 배치 (새로 추가)
+async function savePageComponentsWithTx(
+  tx: any,
+  savedPages: any[],
+  savedComponentDefinitions: any[]
+) {
+  const savedComponents = [];
+
+  for (const page of savedPages) {
+    if (page.layoutJson && page.layoutJson.components) {
+      for (let i = 0; i < page.layoutJson.components.length; i++) {
+        const pageComponent = page.layoutJson.components[i];
+        const componentDef = savedComponentDefinitions.find(
+          (def) => def.name === pageComponent.type
+        );
+
+        if (componentDef) {
+          const savedComponent = await tx
+            .insert(components)
+            .values({
+              pageId: page.id,
+              componentDefinitionId: componentDef.id,
+              props: pageComponent.props || {},
+              order: i,
+            })
+            .returning();
+
+          savedComponents.push(savedComponent[0]);
+        }
+      }
+    }
+  }
+
+  return savedComponents;
+}
+
 // 프로젝트 구조 가져오기
 export async function getProjectStructure(projectId: string) {
   const project = await db.query.projects.findFirst({
@@ -951,4 +920,46 @@ export async function renderProjectToHTML(projectData: any) {
 </html>`;
 
   return html;
+}
+
+// 메시지 템플릿 함수들
+function generateAgentSuccessMessage(agentName: string, action: string): string {
+  const messages = {
+    "Project Architect Agent": `${action} 아키텍처 설계를 완료했습니다.`,
+    "UI/UX Designer Agent": `${action} UI/UX 인터페이스 설계를 완료했습니다.`,
+    "Code Generator Agent": `${action} 코드 구조 생성을 완료했습니다.`,
+    "Development Guide Agent": `${action} 개발 가이드를 작성했습니다.`,
+    "Database Manager Agent": `${action} 데이터베이스 설계를 완료했습니다.`,
+  };
+
+  return messages[agentName as keyof typeof messages] || `${action} 작업을 완료했습니다.`;
+}
+
+function generateSummaryMessage(agentCount: number, successCount: number): string {
+  if (successCount === agentCount) {
+    return `모든 에이전트(${agentCount}개)가 성공적으로 작업을 완료했습니다.`;
+  } else if (successCount > 0) {
+    return `${successCount}/${agentCount} 에이전트가 성공적으로 작업을 완료했습니다.`;
+  } else {
+    return "에이전트 작업 중 문제가 발생했습니다.";
+  }
+}
+
+function generateErrorMessage(agentName: string, error?: any): string {
+  const baseMessages = {
+    "Master Developer": "Master Developer 처리 중 오류가 발생했습니다.",
+    "Project Architect Agent": "아키텍처 설계 중 오류가 발생했습니다.",
+    "UI/UX Designer Agent": "UI/UX 설계 중 오류가 발생했습니다.",
+    "Code Generator Agent": "코드 생성 중 오류가 발생했습니다.",
+    "Development Guide Agent": "개발 가이드 작성 중 오류가 발생했습니다.",
+    "Database Manager Agent": "데이터베이스 설계 중 오류가 발생했습니다.",
+  };
+
+  const baseMessage = baseMessages[agentName as keyof typeof baseMessages] || "처리 중 오류가 발생했습니다.";
+
+  if (error?.message) {
+    return `${baseMessage} (${error.message})`;
+  }
+
+  return baseMessage;
 }
