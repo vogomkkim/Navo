@@ -623,27 +623,30 @@ export async function handleProjectRecovery(
       const generatedContent = await generateProjectContent(requirements);
       console.log("생성된 콘텐츠:", generatedContent);
 
-      // 생성된 내용을 데이터베이스에 저장
-      console.log("페이지 저장 시작...");
-      const savedPages = await saveGeneratedPages(
-        projectId,
-        generatedContent.pages
-      );
-      console.log("저장된 페이지:", savedPages);
-
-      console.log("컴포넌트 저장 시작...");
-      const savedComponents = await saveGeneratedComponents(
-        projectId,
-        generatedContent.components
-      );
-      console.log("저장된 컴포넌트:", savedComponents);
+      // 생성된 내용을 데이터베이스에 저장 (트랜잭션으로 안전하게 처리)
+      console.log("페이지 및 컴포넌트 저장 시작...");
+      
+      const result = await db.transaction(async (tx) => {
+        // 기존 데이터 삭제
+        await tx.delete(pages).where(eq(pages.projectId, projectId));
+        await tx.delete(componentDefinitions).where(eq(componentDefinitions.projectId, projectId));
+        
+        // 새 데이터 생성
+        const savedPages = await saveGeneratedPagesWithTx(tx, projectId, generatedContent.pages);
+        const savedComponents = await saveGeneratedComponentsWithTx(tx, projectId, generatedContent.components);
+        
+        return { savedPages, savedComponents };
+      });
+      
+      console.log("저장된 페이지:", result.savedPages);
+      console.log("저장된 컴포넌트:", result.savedComponents);
 
       reply.send({
         success: true,
         message: "프로젝트 복구 완료",
         generated: {
-          pages: savedPages,
-          components: savedComponents,
+          pages: result.savedPages,
+          components: result.savedComponents,
         },
       });
     } else {
@@ -763,9 +766,12 @@ function generateDefaultComponents(projectType: string) {
   ];
 }
 
-// 생성된 페이지를 데이터베이스에 저장
+// 생성된 페이지를 데이터베이스에 저장 (트랜잭션 없음 - 기존 호환성용)
 async function saveGeneratedPages(projectId: string, pageData: any[]) {
   const savedPages = [];
+
+  // 기존 페이지 데이터 삭제 (프로젝트 복구 시)
+  await db.delete(pages).where(eq(pages.projectId, projectId));
 
   for (const page of pageData) {
     const savedPage = await db
@@ -784,15 +790,67 @@ async function saveGeneratedPages(projectId: string, pageData: any[]) {
   return savedPages;
 }
 
-// 생성된 컴포넌트를 데이터베이스에 저장
+// 트랜잭션 내에서 페이지 저장 (새로 추가)
+async function saveGeneratedPagesWithTx(tx: any, projectId: string, pageData: any[]) {
+  const savedPages = [];
+
+  for (const page of pageData) {
+    const savedPage = await tx
+      .insert(pages)
+      .values({
+        projectId,
+        path: page.path,
+        name: page.name,
+        layoutJson: page.layoutJson,
+      })
+      .returning();
+
+    savedPages.push(savedPage[0]);
+  }
+
+  return savedPages;
+}
+
+// 생성된 컴포넌트를 데이터베이스에 저장 (트랜잭션 없음 - 기존 호환성용)
 async function saveGeneratedComponents(
   projectId: string,
   componentData: any[]
 ) {
   const savedComponents = [];
 
+  // 기존 컴포넌트 데이터 삭제 (프로젝트 복구 시)
+  await db.delete(componentDefinitions).where(eq(componentDefinitions.projectId, projectId));
+
   for (const component of componentData) {
     const savedComponent = await db
+      .insert(componentDefinitions)
+      .values({
+        projectId,
+        name: component.type,
+        displayName: component.displayName,
+        category: component.category,
+        propsSchema: component.propsSchema,
+        renderTemplate: component.renderTemplate,
+        cssStyles: component.cssStyles,
+      })
+      .returning();
+
+    savedComponents.push(savedComponent[0]);
+  }
+
+  return savedComponents;
+}
+
+// 트랜잭션 내에서 컴포넌트 저장 (새로 추가)
+async function saveGeneratedComponentsWithTx(
+  tx: any,
+  projectId: string,
+  componentData: any[]
+) {
+  const savedComponents = [];
+
+  for (const component of componentData) {
+    const savedComponent = await tx
       .insert(componentDefinitions)
       .values({
         projectId,
