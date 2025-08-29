@@ -625,19 +625,19 @@ export async function handleProjectRecovery(
 
       // 생성된 내용을 데이터베이스에 저장 (트랜잭션으로 안전하게 처리)
       console.log("페이지 및 컴포넌트 저장 시작...");
-      
+
       const result = await db.transaction(async (tx) => {
         // 기존 데이터 삭제
         await tx.delete(pages).where(eq(pages.projectId, projectId));
         await tx.delete(componentDefinitions).where(eq(componentDefinitions.projectId, projectId));
-        
+
         // 새 데이터 생성
         const savedPages = await saveGeneratedPagesWithTx(tx, projectId, generatedContent.pages);
         const savedComponents = await saveGeneratedComponentsWithTx(tx, projectId, generatedContent.components);
-        
+
         return { savedPages, savedComponents };
       });
-      
+
       console.log("저장된 페이지:", result.savedPages);
       console.log("저장된 컴포넌트:", result.savedComponents);
 
