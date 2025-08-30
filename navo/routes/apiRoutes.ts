@@ -5,6 +5,7 @@ import authRoutes from "./authRoutes.js";
 import projectRoutes from "./projectRoutes.js";
 import pageRoutes from "./pageRoutes.js";
 import componentRoutes from "./componentRoutes.js";
+import healthRoutes from "./healthRoutes.js";
 
 export default async function apiRoutes(app: FastifyInstance) {
   console.log("🚀 API 라우트 등록 시작...");
@@ -33,6 +34,11 @@ export default async function apiRoutes(app: FastifyInstance) {
   console.log("🧩 컴포넌트 라우트 등록 중...");
   app.register(componentRoutes, { prefix: "/api" });
   console.log("✅ 컴포넌트 라우트 등록 완료");
+
+  // 헬스체크 라우트
+  console.log("🩺 헬스체크 라우트 등록 중...");
+  app.register(healthRoutes, { prefix: "/api" });
+  console.log("✅ 헬스체크 라우트 등록 완료");
 
   console.log("🎉 모든 API 라우트 등록 완료!");
 }
