@@ -17,6 +17,7 @@ import { CodeGeneratorAgent } from "../agents/codeGeneratorAgent.js";
 import { DevelopmentGuideAgent } from "../agents/developmentGuideAgent.js";
 import { UIUXDesignerAgent } from "../agents/uiuxDesignerAgent.js";
 import { refineJsonResponse, safeJsonParse } from "../utils/jsonRefiner.js";
+import { contextManager, UserContext } from "../core/contextManager.js";
 
 import createDOMPurify from "dompurify";
 
@@ -213,24 +214,13 @@ Your suggestion:
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 export async function handleGenerateProject(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
   try {
-    const { projectName, projectDescription, requirements } = request.body as any;
+    const { projectName, projectDescription, requirements } =
+      request.body as any;
     const userId = request.userId;
     if (!userId) {
       reply.status(401).send({ error: "Unauthorized" });
@@ -242,7 +232,8 @@ export async function handleGenerateProject(
     }
 
     // requirements가 있으면 저장, 없으면 projectDescription 사용
-    const projectRequirements = requirements || projectDescription || projectName;
+    const projectRequirements =
+      requirements || projectDescription || projectName;
 
     const created = await db
       .insert(projects)
@@ -250,7 +241,7 @@ export async function handleGenerateProject(
         name: projectName as string,
         ownerId: userId as string,
         description: projectDescription || projectName,
-        requirements: projectRequirements
+        requirements: projectRequirements,
       })
       .returning();
 
@@ -266,11 +257,23 @@ export async function handleGenerateProject(
 
     const result = await db.transaction(async (tx) => {
       // 새 데이터 생성
-      const savedPages = await saveGeneratedPagesWithTx(tx, projectId, generatedContent.pages);
-      const savedComponentDefinitions = await saveGeneratedComponentsWithTx(tx, projectId, generatedContent.components);
+      const savedPages = await saveGeneratedPagesWithTx(
+        tx,
+        projectId,
+        generatedContent.pages
+      );
+      const savedComponentDefinitions = await saveGeneratedComponentsWithTx(
+        tx,
+        projectId,
+        generatedContent.components
+      );
 
       // pages에 components 인스턴스 배치
-      const savedComponents = await savePageComponentsWithTx(tx, savedPages, savedComponentDefinitions);
+      const savedComponents = await savePageComponentsWithTx(
+        tx,
+        savedPages,
+        savedComponentDefinitions
+      );
 
       return { savedPages, savedComponents, savedComponentDefinitions };
     });
@@ -329,16 +332,53 @@ export async function handleMultiAgentChat(
       return;
     }
 
-    // Convert chat message to a coarse ProjectRequest
-    const req: ProjectRequest = buildProjectRequestFromMessage(message);
+    // 세션 ID 생성 또는 기존 세션 사용
+    const sessionId = context?.sessionId || `session_${Date.now()}_${userId}`;
+
+    // ContextManager를 사용하여 사용자 컨텍스트 조회
+    let userContext: UserContext;
+    try {
+      userContext = await contextManager.getContext(sessionId, userId);
+    } catch (error) {
+      console.error("Error getting user context:", error);
+      // 컨텍스트 조회 실패 시 기본 컨텍스트 사용
+      userContext = {
+        sessionId,
+        userId,
+        status: "active",
+        version: 1,
+        contextData: {},
+        lastActivity: new Date(),
+      };
+    }
+
+    // 사용자 메시지를 대화 히스토리에 추가
+    await contextManager.addMessage(
+      sessionId,
+      userId,
+      "user",
+      { message },
+      undefined,
+      undefined,
+      { source: "multi_agent_chat" }
+    );
+
+    // 컨텍스트를 고려한 프로젝트 요청 생성
+    const req: ProjectRequest = await buildProjectRequestFromMessageWithContext(
+      message,
+      userContext,
+      sessionId
+    );
 
     const agent = new MasterDeveloperAgent();
     const start = Date.now();
 
-    // context에 userId 추가
+    // 컨텍스트 정보를 포함한 enhanced context
     const enhancedContext = {
       ...context,
       userId: userId,
+      sessionId: sessionId,
+      userContext: userContext,
     };
 
     const plan = await agent.execute(req, enhancedContext);
@@ -368,7 +408,7 @@ export async function handleMultiAgentChat(
       },
     ];
 
-    const agents = agentResults.map(result => ({
+    const agents = agentResults.map((result) => ({
       success: true,
       message: generateAgentSuccessMessage(result.name, result.action),
       agentName: result.name,
@@ -376,11 +416,43 @@ export async function handleMultiAgentChat(
       data: result.data,
     }));
 
+    // 어시스턴트 응답을 대화 히스토리에 추가
+    const assistantMessage = generateSummaryMessage(
+      agents.length,
+      agents.length
+    );
+    await contextManager.addMessage(
+      sessionId,
+      userId,
+      "assistant",
+      { message: assistantMessage },
+      undefined,
+      undefined,
+      {
+        agents: agents.length,
+        totalExecutionTime,
+        source: "multi_agent_chat",
+      }
+    );
+
+    // 마지막 액션 업데이트
+    await contextManager.updateLastAction(
+      sessionId,
+      userId,
+      "multi_agent_chat",
+      "project_generation",
+      {
+        success: true,
+        agentsCount: agents.length,
+      }
+    );
+
     reply.send({
       success: true,
       agents,
       totalExecutionTime,
-      summary: generateSummaryMessage(agents.length, agents.length),
+      summary: assistantMessage,
+      sessionId: sessionId, // 클라이언트에 세션 ID 반환
     });
   } catch (error) {
     console.error("Error handling multi-agent chat:", error);
@@ -427,6 +499,49 @@ function buildProjectRequestFromMessage(message: string): ProjectRequest {
     complexity: "medium",
     estimatedTime: undefined,
   };
+}
+
+async function buildProjectRequestFromMessageWithContext(
+  message: string,
+  userContext: UserContext,
+  sessionId: string
+): Promise<ProjectRequest> {
+  // 기본 프로젝트 요청 생성
+  const baseRequest = buildProjectRequestFromMessage(message);
+
+  // 컨텍스트 정보를 분석하여 요청을 개선
+  const enhancedRequest = { ...baseRequest };
+
+  // 현재 프로젝트가 있는 경우, 기존 프로젝트 정보 활용
+  if (userContext.currentProject) {
+    enhancedRequest.name = userContext.currentProject.name;
+    enhancedRequest.description = `${userContext.currentProject.description || ""}\n\n새로운 요청: ${message}`;
+  }
+
+  // 현재 컴포넌트가 있는 경우, 컴포넌트 관련 요청으로 해석
+  if (userContext.currentComponent) {
+    const componentContext = `현재 작업 중인 컴포넌트: ${userContext.currentComponent.displayName} (${userContext.currentComponent.type})`;
+    enhancedRequest.description = `${componentContext}\n\n요청: ${message}`;
+  }
+
+  // 대화 히스토리를 분석하여 연속성 있는 요청 생성
+  // 최근 메시지들을 조회하여 컨텍스트 구성
+  const recentMessages = await contextManager.getMessages(sessionId, 3);
+  if (recentMessages.length > 0) {
+    const messageTexts = recentMessages
+      .map((msg) => msg.content.message)
+      .join("\n");
+
+    enhancedRequest.description = `이전 대화:\n${messageTexts}\n\n현재 요청: ${message}`;
+  }
+
+  // 마지막 액션 정보를 활용
+  if (userContext.lastAction) {
+    const actionContext = `마지막 작업: ${userContext.lastAction.type} - ${userContext.lastAction.target}`;
+    enhancedRequest.description = `${enhancedRequest.description}\n\n${actionContext}`;
+  }
+
+  return enhancedRequest;
 }
 
 function deriveProjectName(message: string): string {
@@ -492,7 +607,8 @@ export async function handleProjectRecovery(
       }
 
       // 프로젝트 요구사항 분석 (requirements 컬럼 우선 사용)
-      const requirements = project.requirements || project.description || project.name;
+      const requirements =
+        project.requirements || project.description || project.name;
 
       // AI를 사용하여 프로젝트 완성
       console.log("프로젝트 복구 시작:", { projectId, requirements });
@@ -506,14 +622,28 @@ export async function handleProjectRecovery(
       const result = await db.transaction(async (tx) => {
         // 기존 데이터 삭제
         await tx.delete(pages).where(eq(pages.projectId, projectId));
-        await tx.delete(componentDefinitions).where(eq(componentDefinitions.projectId, projectId));
+        await tx
+          .delete(componentDefinitions)
+          .where(eq(componentDefinitions.projectId, projectId));
 
-                // 새 데이터 생성
-        const savedPages = await saveGeneratedPagesWithTx(tx, projectId, generatedContent.pages);
-        const savedComponentDefinitions = await saveGeneratedComponentsWithTx(tx, projectId, generatedContent.components);
+        // 새 데이터 생성
+        const savedPages = await saveGeneratedPagesWithTx(
+          tx,
+          projectId,
+          generatedContent.pages
+        );
+        const savedComponentDefinitions = await saveGeneratedComponentsWithTx(
+          tx,
+          projectId,
+          generatedContent.components
+        );
 
         // pages에 components 인스턴스 배치
-        const savedComponents = await savePageComponentsWithTx(tx, savedPages, savedComponentDefinitions);
+        const savedComponents = await savePageComponentsWithTx(
+          tx,
+          savedPages,
+          savedComponentDefinitions
+        );
 
         return { savedPages, savedComponents, savedComponentDefinitions };
       });
@@ -598,7 +728,6 @@ JSON 형태로 응답해주세요. 다음과 같은 구조로:
     }
 
     return parsedResult;
-
   } catch (error) {
     console.error("AI 생성 실패, 기본 템플릿 사용:", error);
 
@@ -724,7 +853,11 @@ async function saveGeneratedPages(projectId: string, pageData: any[]) {
 }
 
 // 트랜잭션 내에서 페이지 저장 (새로 추가)
-async function saveGeneratedPagesWithTx(tx: any, projectId: string, pageData: any[]) {
+async function saveGeneratedPagesWithTx(
+  tx: any,
+  projectId: string,
+  pageData: any[]
+) {
   const savedPages = [];
 
   for (const page of pageData) {
@@ -752,7 +885,9 @@ async function saveGeneratedComponents(
   const savedComponents = [];
 
   // 기존 컴포넌트 데이터 삭제 (프로젝트 복구 시)
-  await db.delete(componentDefinitions).where(eq(componentDefinitions.projectId, projectId));
+  await db
+    .delete(componentDefinitions)
+    .where(eq(componentDefinitions.projectId, projectId));
 
   for (const component of componentData) {
     const savedComponent = await db
@@ -923,7 +1058,10 @@ export async function renderProjectToHTML(projectData: any) {
 }
 
 // 메시지 템플릿 함수들
-function generateAgentSuccessMessage(agentName: string, action: string): string {
+function generateAgentSuccessMessage(
+  agentName: string,
+  action: string
+): string {
   const messages = {
     "Project Architect Agent": `${action} 아키텍처 설계를 완료했습니다.`,
     "UI/UX Designer Agent": `${action} UI/UX 인터페이스 설계를 완료했습니다.`,
@@ -932,10 +1070,16 @@ function generateAgentSuccessMessage(agentName: string, action: string): string 
     "Database Manager Agent": `${action} 데이터베이스 설계를 완료했습니다.`,
   };
 
-  return messages[agentName as keyof typeof messages] || `${action} 작업을 완료했습니다.`;
+  return (
+    messages[agentName as keyof typeof messages] ||
+    `${action} 작업을 완료했습니다.`
+  );
 }
 
-function generateSummaryMessage(agentCount: number, successCount: number): string {
+function generateSummaryMessage(
+  agentCount: number,
+  successCount: number
+): string {
   if (successCount === agentCount) {
     return `모든 에이전트(${agentCount}개)가 성공적으로 작업을 완료했습니다.`;
   } else if (successCount > 0) {
@@ -955,7 +1099,9 @@ function generateErrorMessage(agentName: string, error?: any): string {
     "Database Manager Agent": "데이터베이스 설계 중 오류가 발생했습니다.",
   };
 
-  const baseMessage = baseMessages[agentName as keyof typeof baseMessages] || "처리 중 오류가 발생했습니다.";
+  const baseMessage =
+    baseMessages[agentName as keyof typeof baseMessages] ||
+    "처리 중 오류가 발생했습니다.";
 
   if (error?.message) {
     return `${baseMessage} (${error.message})`;

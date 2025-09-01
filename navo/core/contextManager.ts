@@ -1,0 +1,604 @@
+import { db } from "../db/db.js";
+import {
+  userSessions,
+  chatMessages,
+  chatSessionSummaries,
+  users,
+  projects,
+  componentDefinitions,
+} from "../db/schema.js";
+import { eq, and, desc, asc } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
+import { sql } from "drizzle-orm";
+
+/**
+ * 사용자 컨텍스트 인터페이스
+ */
+export interface UserContext {
+  sessionId: string;
+  userId: string;
+  title?: string;
+  currentProject?: {
+    id: string;
+    name: string;
+    description?: string;
+    structure?: any;
+  };
+  currentComponent?: {
+    id: string;
+    name: string;
+    displayName: string;
+    type: string;
+  };
+  status: "active" | "archived";
+  expiresAt?: Date;
+  version: number;
+  lastAction?: {
+    type: string;
+    target: string;
+    timestamp: Date;
+    result?: any;
+  };
+  contextData?: any; // 추가 컨텍스트 데이터
+  lastActivity: Date;
+}
+
+/**
+ * 채팅 메시지 인터페이스
+ */
+export interface ChatMessage {
+  id: string;
+  sessionId: string;
+  role: "user" | "assistant" | "system" | "tool";
+  content: {
+    message: string;
+    [key: string]: any;
+  };
+  model?: string;
+  tokens?: number;
+  metadata?: any;
+  createdAt: Date;
+}
+
+/**
+ * 세션 요약 인터페이스
+ */
+export interface SessionSummary {
+  id: string;
+  sessionId: string;
+  summary: string;
+  lastMsgId?: string;
+  tokenCount?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * 컨텍스트 업데이트 인터페이스
+ */
+export interface ContextUpdate {
+  currentProjectId?: string;
+  currentComponentId?: string;
+  conversationHistory?: Array<{
+    role: "user" | "assistant";
+    message: string;
+    timestamp: Date;
+    metadata?: any;
+  }>;
+  lastAction?: {
+    type: string;
+    target: string;
+    timestamp: Date;
+    result?: any;
+  };
+  contextData?: any;
+}
+
+/**
+ * ContextManager 클래스
+ * 사용자 세션 및 대화 컨텍스트를 관리합니다.
+ */
+export class ContextManager {
+  private static instance: ContextManager;
+  private sessionCache: Map<string, UserContext> = new Map();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5분
+
+  private constructor() {}
+
+  /**
+   * 싱글톤 인스턴스 반환
+   */
+  public static getInstance(): ContextManager {
+    if (!ContextManager.instance) {
+      ContextManager.instance = new ContextManager();
+    }
+    return ContextManager.instance;
+  }
+
+  /**
+   * 세션 ID 생성
+   */
+  private generateSessionId(): string {
+    return uuidv4();
+  }
+
+  /**
+   * 사용자 컨텍스트 조회
+   */
+  async getContext(sessionId: string, userId: string): Promise<UserContext> {
+    // 캐시에서 먼저 확인
+    const cacheKey = `${sessionId}-${userId}`;
+    const cached = this.sessionCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      // 데이터베이스에서 세션 조회
+      const session = await db
+        .select()
+        .from(userSessions)
+        .where(
+          and(
+            eq(userSessions.sessionId, sessionId),
+            eq(userSessions.userId, userId),
+            eq(userSessions.status, "active")
+          )
+        )
+        .limit(1);
+
+      if (session.length === 0) {
+        // 세션이 없으면 새로 생성
+        return await this.createSession(userId);
+      }
+
+      const sessionData = session[0];
+
+      // 현재 프로젝트 정보 조회
+      let currentProject = undefined;
+      if (sessionData.currentProjectId) {
+        const project = await db
+          .select()
+          .from(projects)
+          .where(eq(projects.id, sessionData.currentProjectId))
+          .limit(1);
+
+        if (project.length > 0) {
+          currentProject = {
+            id: project[0].id,
+            name: project[0].name,
+            description: project[0].description || undefined,
+            structure: sessionData.contextData?.projectStructure || undefined,
+          };
+        }
+      }
+
+      // 현재 컴포넌트 정보 조회
+      let currentComponent = undefined;
+      if (sessionData.currentComponentId) {
+        const component = await db
+          .select()
+          .from(componentDefinitions)
+          .where(eq(componentDefinitions.id, sessionData.currentComponentId))
+          .limit(1);
+
+        if (component.length > 0) {
+          currentComponent = {
+            id: component[0].id,
+            name: component[0].name,
+            displayName: component[0].displayName,
+            type: component[0].category,
+          };
+        }
+      }
+
+      const context: UserContext = {
+        sessionId: sessionData.sessionId,
+        userId: sessionData.userId,
+        title: sessionData.title || undefined,
+        currentProject,
+        currentComponent,
+        status: sessionData.status as "active" | "archived",
+        expiresAt: sessionData.expiresAt || undefined,
+        version: sessionData.version,
+        lastAction: sessionData.lastAction || undefined,
+        contextData: sessionData.contextData || {},
+        lastActivity: sessionData.lastActivity,
+      };
+
+      // 캐시에 저장
+      this.sessionCache.set(cacheKey, context);
+
+      // TTL 설정
+      setTimeout(() => {
+        this.sessionCache.delete(cacheKey);
+      }, this.CACHE_TTL);
+
+      return context;
+    } catch (error) {
+      console.error("Error getting context:", error);
+      throw new Error("Failed to get user context");
+    }
+  }
+
+  /**
+   * 새 세션 생성
+   */
+  async createSession(userId: string, title?: string): Promise<UserContext> {
+    const sessionId = this.generateSessionId();
+
+    try {
+      const [session] = await db
+        .insert(userSessions)
+        .values({
+          sessionId,
+          userId,
+          title,
+          status: "active",
+          version: 1,
+          contextData: {},
+        })
+        .returning();
+
+      const context: UserContext = {
+        sessionId: session.sessionId,
+        userId: session.userId,
+        title: session.title || undefined,
+        status: "active",
+        version: session.version,
+        contextData: {},
+        lastActivity: session.lastActivity,
+      };
+
+      // 캐시에 저장
+      const cacheKey = `${sessionId}-${userId}`;
+      this.sessionCache.set(cacheKey, context);
+
+      return context;
+    } catch (error) {
+      console.error("Error creating session:", error);
+      throw new Error("Failed to create user session");
+    }
+  }
+
+  /**
+   * 컨텍스트 업데이트
+   */
+  async updateContext(
+    sessionId: string,
+    userId: string,
+    updates: ContextUpdate
+  ): Promise<void> {
+    try {
+      const updateData: any = {
+        updatedAt: new Date(),
+        lastActivity: new Date(),
+      };
+
+      if (updates.currentProjectId !== undefined) {
+        updateData.currentProjectId = updates.currentProjectId;
+      }
+
+      if (updates.currentComponentId !== undefined) {
+        updateData.currentComponentId = updates.currentComponentId;
+      }
+
+      if (updates.conversationHistory !== undefined) {
+        updateData.conversationHistory = updates.conversationHistory;
+      }
+
+      if (updates.lastAction !== undefined) {
+        updateData.lastAction = updates.lastAction;
+      }
+
+      if (updates.contextData !== undefined) {
+        updateData.contextData = updates.contextData;
+      }
+
+      await db
+        .update(userSessions)
+        .set(updateData)
+        .where(
+          and(
+            eq(userSessions.sessionId, sessionId),
+            eq(userSessions.userId, userId)
+          )
+        );
+
+      // 캐시 무효화
+      const cacheKey = `${sessionId}-${userId}`;
+      this.sessionCache.delete(cacheKey);
+    } catch (error) {
+      console.error("Error updating context:", error);
+      throw new Error("Failed to update user context");
+    }
+  }
+
+  /**
+   * 대화 히스토리에 메시지 추가
+   */
+  async addMessage(
+    sessionId: string,
+    userId: string,
+    role: "user" | "assistant" | "system" | "tool",
+    content: { message: string; [key: string]: any },
+    model?: string,
+    tokens?: number,
+    metadata?: any
+  ): Promise<string> {
+    try {
+      // 메시지 저장
+      const [message] = await db
+        .insert(chatMessages)
+        .values({
+          sessionId,
+          role,
+          content,
+          model,
+          tokens,
+          metadata,
+        })
+        .returning();
+
+      // 세션 활동 시간 업데이트
+      await this.updateContext(sessionId, userId, {
+        lastActivity: new Date(),
+      });
+
+      return message.id;
+    } catch (error) {
+      console.error("Error adding message:", error);
+      throw new Error("Failed to add message to conversation history");
+    }
+  }
+
+  /**
+   * 세션의 메시지 조회 (페이징 지원)
+   */
+  async getMessages(
+    sessionId: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<ChatMessage[]> {
+    try {
+      const messages = await db
+        .select()
+        .from(chatMessages)
+        .where(eq(chatMessages.sessionId, sessionId))
+        .orderBy(desc(chatMessages.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      return messages.map((msg) => ({
+        id: msg.id,
+        sessionId: msg.sessionId,
+        role: msg.role as "user" | "assistant" | "system" | "tool",
+        content: msg.content,
+        model: msg.model || undefined,
+        tokens: msg.tokens || undefined,
+        metadata: msg.metadata || undefined,
+        createdAt: msg.createdAt,
+      }));
+    } catch (error) {
+      console.error("Error getting messages:", error);
+      throw new Error("Failed to get conversation messages");
+    }
+  }
+
+  /**
+   * 세션 요약 생성/업데이트
+   */
+  async updateSessionSummary(
+    sessionId: string,
+    summary: string,
+    lastMsgId: string,
+    tokenCount?: number
+  ): Promise<void> {
+    try {
+      await db
+        .insert(chatSessionSummaries)
+        .values({
+          sessionId,
+          summary,
+          lastMsgId,
+          tokenCount,
+        })
+        .onConflictDoUpdate({
+          target: chatSessionSummaries.sessionId,
+          set: {
+            summary,
+            lastMsgId,
+            tokenCount,
+            updatedAt: new Date(),
+          },
+        });
+    } catch (error) {
+      console.error("Error updating session summary:", error);
+      throw new Error("Failed to update session summary");
+    }
+  }
+
+  /**
+   * 세션 요약 조회
+   */
+  async getSessionSummary(sessionId: string): Promise<SessionSummary | null> {
+    try {
+      const summary = await db
+        .select()
+        .from(chatSessionSummaries)
+        .where(eq(chatSessionSummaries.sessionId, sessionId))
+        .limit(1);
+
+      if (summary.length === 0) {
+        return null;
+      }
+
+      const summaryData = summary[0];
+      return {
+        id: summaryData.id,
+        sessionId: summaryData.sessionId,
+        summary: summaryData.summary,
+        lastMsgId: summaryData.lastMsgId || undefined,
+        tokenCount: summaryData.tokenCount || undefined,
+        createdAt: summaryData.createdAt,
+        updatedAt: summaryData.updatedAt,
+      };
+    } catch (error) {
+      console.error("Error getting session summary:", error);
+      throw new Error("Failed to get session summary");
+    }
+  }
+
+  /**
+   * 현재 프로젝트 설정
+   */
+  async setCurrentProject(
+    sessionId: string,
+    userId: string,
+    projectId: string
+  ): Promise<void> {
+    try {
+      await this.updateContext(sessionId, userId, {
+        currentProjectId: projectId,
+        currentComponentId: null, // 프로젝트 변경 시 컴포넌트 초기화
+      });
+    } catch (error) {
+      console.error("Error setting current project:", error);
+      throw new Error("Failed to set current project");
+    }
+  }
+
+  /**
+   * 현재 컴포넌트 설정
+   */
+  async setCurrentComponent(
+    sessionId: string,
+    userId: string,
+    componentId: string
+  ): Promise<void> {
+    try {
+      await this.updateContext(sessionId, userId, {
+        currentComponentId: componentId,
+      });
+    } catch (error) {
+      console.error("Error setting current component:", error);
+      throw new Error("Failed to set current component");
+    }
+  }
+
+  /**
+   * 마지막 액션 업데이트
+   */
+  async updateLastAction(
+    sessionId: string,
+    userId: string,
+    actionType: string,
+    target: string,
+    result?: any
+  ): Promise<void> {
+    try {
+      await this.updateContext(sessionId, userId, {
+        lastAction: {
+          type: actionType,
+          target,
+          timestamp: new Date(),
+          result,
+        },
+      });
+    } catch (error) {
+      console.error("Error updating last action:", error);
+      throw new Error("Failed to update last action");
+    }
+  }
+
+  /**
+   * 세션 아카이브
+   */
+  async archiveSession(sessionId: string, userId: string): Promise<void> {
+    try {
+      await db
+        .update(userSessions)
+        .set({
+          status: "archived",
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(userSessions.sessionId, sessionId),
+            eq(userSessions.userId, userId)
+          )
+        );
+
+      // 캐시에서 제거
+      const cacheKey = `${sessionId}-${userId}`;
+      this.sessionCache.delete(cacheKey);
+    } catch (error) {
+      console.error("Error archiving session:", error);
+      throw new Error("Failed to archive session");
+    }
+  }
+
+  /**
+   * 오래된 세션 정리 (24시간 이상 비활성)
+   */
+  async cleanupOldSessions(): Promise<void> {
+    try {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      await db
+        .update(userSessions)
+        .set({
+          status: "archived",
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(userSessions.status, "active"),
+            sql`${userSessions.lastActivity} < ${twentyFourHoursAgo}`
+          )
+        );
+    } catch (error) {
+      console.error("Error cleaning up old sessions:", error);
+    }
+  }
+
+  /**
+   * 컨텍스트 요약 정보 반환
+   */
+  async getContextSummary(
+    sessionId: string,
+    userId: string
+  ): Promise<{
+    hasProject: boolean;
+    hasComponent: boolean;
+    messageCount: number;
+    lastActivity: Date;
+    title?: string;
+    status: string;
+  }> {
+    try {
+      const context = await this.getContext(sessionId, userId);
+
+      // 메시지 수 조회
+      const messageCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(chatMessages)
+        .where(eq(chatMessages.sessionId, sessionId));
+
+      return {
+        hasProject: !!context.currentProject,
+        hasComponent: !!context.currentComponent,
+        messageCount: messageCount[0]?.count || 0,
+        lastActivity: context.lastActivity,
+        title: context.title,
+        status: context.status,
+      };
+    } catch (error) {
+      console.error("Error getting context summary:", error);
+      throw new Error("Failed to get context summary");
+    }
+  }
+}
+
+// 싱글톤 인스턴스 export
+export const contextManager = ContextManager.getInstance();

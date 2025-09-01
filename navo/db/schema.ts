@@ -11,6 +11,7 @@ import {
   unique,
   bigserial,
 } from "drizzle-orm/pg-core";
+import { eq, sql, desc } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -173,3 +174,105 @@ export const publishDeploys = pgTable("publish_deploys", {
     .defaultNow()
     .notNull(),
 });
+
+export const userSessions = pgTable(
+  "user_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sessionId: varchar("session_id", { length: 255 }).notNull().unique(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }), // 세션 제목
+    currentProjectId: uuid("current_project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
+    currentComponentId: uuid("current_component_id").references(
+      () => componentDefinitions.id,
+      { onDelete: "set null" }
+    ),
+    status: varchar("status", { length: 50 }).notNull().default("active"), // active, archived
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }),
+    version: integer("version").notNull().default(1), // 낙관적 락
+    lastAction: jsonb("last_action").default("{}"),
+    contextData: jsonb("context_data").notNull().default("{}"),
+    lastActivity: timestamp("last_activity", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    sessionIdx: index("idx_user_sessions_session").on(table.sessionId),
+    userIdx: index("idx_user_sessions_user").on(table.userId),
+    activityIdx: index("idx_user_sessions_activity").on(table.lastActivity),
+    activeIdx: index("idx_user_sessions_active")
+      .on(table.status)
+      .where(eq(table.status, "active")),
+    // JSON 안정성 체크 제약
+    lastActionCheck: sql`check (jsonb_typeof(last_action) = 'object')`,
+    contextDataCheck: sql`check (jsonb_typeof(context_data) = 'object')`,
+  })
+);
+
+// 대화 메시지 테이블
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sessionId: varchar("session_id", { length: 255 })
+      .notNull()
+      .references(() => userSessions.sessionId, { onDelete: "cascade" }),
+    role: varchar("role", { length: 50 }).notNull(), // user, assistant, system, tool
+    content: jsonb("content").notNull(),
+    model: varchar("model", { length: 100 }), // 사용된 AI 모델
+    tokens: integer("tokens"), // 토큰 수
+    metadata: jsonb("metadata").default("{}"), // 추가 메타데이터
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    sessionTimeIdx: index("idx_chat_messages_session_time").on(
+      table.sessionId,
+      desc(table.createdAt)
+    ),
+    roleIdx: index("idx_chat_messages_role").on(table.role),
+    // JSON 안정성 체크 제약
+    contentCheck: sql`check (jsonb_typeof(content) = 'object')`,
+    metadataCheck: sql`check (jsonb_typeof(metadata) = 'object')`,
+  })
+);
+
+// 세션 요약 테이블
+export const chatSessionSummaries = pgTable(
+  "chat_session_summaries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sessionId: varchar("session_id", { length: 255 })
+      .notNull()
+      .unique()
+      .references(() => userSessions.sessionId, { onDelete: "cascade" }),
+    summary: text("summary").notNull(), // 요약문
+    lastMsgId: uuid("last_msg_id").references(() => chatMessages.id, {
+      onDelete: "set null",
+    }),
+    tokenCount: integer("token_count"), // 요약에 사용된 토큰 수
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    sessionIdx: index("idx_chat_session_summaries_session").on(table.sessionId),
+  })
+);
