@@ -158,3 +158,95 @@ export const chatSessionSummaries = pgTable("chat_session_summaries", {
 		}).onDelete("cascade"),
 	check("check_key_points_json", sql`jsonb_typeof(key_points) = 'array'::text`),
 ]);
+
+export const events = pgTable(
+  "events",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid("user_id").notNull(),
+    sessionId: uuid("session_id"),
+    eventType: varchar({ length: 100 }).notNull(),
+    eventData: jsonb("event_data").default({}).notNull(),
+    metadata: jsonb("metadata").default({}),
+    timestamp: timestamp("timestamp", { withTimezone: true, mode: "string" })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_events_user_id").using(
+      "btree",
+      table.userId.asc().nullsLast().op("uuid_ops")
+    ),
+    index("idx_events_session_id").using(
+      "btree",
+      table.sessionId.asc().nullsLast().op("uuid_ops")
+    ),
+    index("idx_events_event_type").using(
+      "btree",
+      table.eventType.asc().nullsLast().op("text_ops")
+    ),
+    index("idx_events_timestamp").using(
+      "btree",
+      table.timestamp.asc().nullsLast().op("timestamptz_ops")
+    ),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: "events_user_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [userSessions.id],
+      name: "events_session_id_fkey",
+    }).onDelete("cascade"),
+    check(
+      "check_event_data_json",
+      sql`jsonb_typeof(event_data) = 'object'::text`
+    ),
+    check("check_metadata_json", sql`jsonb_typeof(metadata) = 'object'::text`),
+  ]
+);
+
+export const publishDeploys = pgTable(
+  "publish_deploys",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    projectId: uuid("project_id").notNull(),
+    version: varchar({ length: 50 }).notNull(),
+    status: varchar({ length: 20 }).default("pending").notNull(),
+    deployUrl: text(),
+    environment: varchar({ length: 20 }).default("production").notNull(),
+    metadata: jsonb("metadata").default({}),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .defaultNow()
+      .notNull(),
+    deployedAt: timestamp("deployed_at", { withTimezone: true, mode: "string" }),
+  },
+  (table) => [
+    index("idx_publish_deploys_project_id").using(
+      "btree",
+      table.projectId.asc().nullsLast().op("uuid_ops")
+    ),
+    index("idx_publish_deploys_status").using(
+      "btree",
+      table.status.asc().nullsLast().op("text_ops")
+    ),
+    index("idx_publish_deploys_created_at").using(
+      "btree",
+      table.createdAt.asc().nullsLast().op("timestamptz_ops")
+    ),
+    index("idx_publish_deploys_version").using(
+      "btree",
+      table.version.asc().nullsLast().op("text_ops")
+    ),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: "publish_deploys_project_id_fkey",
+    }).onDelete("cascade"),
+    check("check_metadata_json", sql`jsonb_typeof(metadata) = 'object'::text`),
+  ]
+);

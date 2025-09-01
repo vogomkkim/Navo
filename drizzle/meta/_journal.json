@@ -15,6 +15,13 @@
       "when": 1756695606455,
       "tag": "0001_famous_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756699337475,
+      "tag": "0002_shocking_daredevil",
+      "breakpoints": true
     }
   ]
 }
