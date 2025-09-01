@@ -645,14 +645,89 @@ async function buildProjectRequestFromActionResult(
 }
 
 function deriveProjectName(message: string): string {
+  // 메시지에서 핵심 키워드 추출
+  const keywords = extractProjectKeywords(message);
+
+  if (keywords.length > 0) {
+    // 키워드 기반으로 의미있는 프로젝트명 생성
+    const projectName = generateMeaningfulProjectName(keywords);
+    return projectName.length > 20 ? projectName.slice(0, 20) : projectName;
+  }
+
+  // 폴백: 기본 프로젝트명 생성
   const words = message
     .replace(/[\n\r]/g, " ")
     .split(" ")
     .filter(Boolean)
-    .slice(0, 4)
+    .slice(0, 3)
     .map((w) => w.replace(/[^\p{L}\p{N}_-]/gu, ""));
-  const base = words.join("-") || "my-project";
-  return base.length > 48 ? base.slice(0, 48) : base;
+  const base = words.join("-") || "내-프로젝트";
+  return base.length > 20 ? base.slice(0, 20) : base;
+}
+
+function extractProjectKeywords(message: string): string[] {
+  const lowerMessage = message.toLowerCase();
+  const keywords: string[] = [];
+
+  // 프로젝트 타입 키워드
+  if (lowerMessage.includes("sns") || lowerMessage.includes("소셜"))
+    keywords.push("social");
+  if (lowerMessage.includes("블로그")) keywords.push("blog");
+  if (lowerMessage.includes("쇼핑") || lowerMessage.includes("커머스"))
+    keywords.push("shop");
+  if (lowerMessage.includes("퀴즈") || lowerMessage.includes("학습"))
+    keywords.push("learn");
+  if (lowerMessage.includes("게임")) keywords.push("game");
+  if (lowerMessage.includes("채팅")) keywords.push("chat");
+  if (lowerMessage.includes("결제")) keywords.push("payment");
+  if (lowerMessage.includes("경매")) keywords.push("auction");
+
+  // 기능 키워드
+  if (lowerMessage.includes("로그인") || lowerMessage.includes("인증"))
+    keywords.push("auth");
+  if (lowerMessage.includes("프로필")) keywords.push("profile");
+  if (lowerMessage.includes("게시물") || lowerMessage.includes("포스트"))
+    keywords.push("post");
+  if (lowerMessage.includes("댓글")) keywords.push("comment");
+  if (lowerMessage.includes("피드")) keywords.push("feed");
+  if (lowerMessage.includes("친구")) keywords.push("friend");
+  if (lowerMessage.includes("실시간")) keywords.push("realtime");
+
+  return keywords;
+}
+
+function generateMeaningfulProjectName(keywords: string[]): string {
+  const nameMap: { [key: string]: string } = {
+    social: "소셜커넥트",
+    blog: "블로그스페이스",
+    shop: "스마트쇼핑",
+    learn: "러닝플로우",
+    game: "게임존",
+    chat: "채팅허브",
+    payment: "페이플로우",
+    auction: "옥션프로",
+    auth: "인증시스템",
+    profile: "프로필허브",
+    post: "포스트쉐어",
+    comment: "댓글허브",
+    feed: "피드플로우",
+    friend: "친구커넥트",
+    realtime: "실시간허브",
+  };
+
+  // 키워드 조합으로 프로젝트명 생성
+  if (keywords.length === 1) {
+    return nameMap[keywords[0]] || `${keywords[0]}앱`;
+  }
+
+  if (keywords.length >= 2) {
+    // 가장 중요한 키워드 2개 조합 (한글)
+    const primary = nameMap[keywords[0]] || keywords[0];
+    const secondary = nameMap[keywords[1]] || keywords[1];
+    return `${primary}${secondary}`;
+  }
+
+  return "스마트앱";
 }
 
 // End of helpers

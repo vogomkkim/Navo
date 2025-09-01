@@ -285,9 +285,14 @@ export class ProjectCreationHandler implements ActionHandler {
     sessionId: string
   ): Promise<ActionResult> {
     try {
+      // 향상된 메시지에서 의미있는 프로젝트명 생성
+      const projectName = this.generateMeaningfulProjectName(
+        enhancedPrompt.enhancedMessage
+      );
+
       // 새 프로젝트 생성 로직
       const projectData = {
-        name: enhancedPrompt.action.parameters.projectName || "새 프로젝트",
+        name: projectName,
         type: enhancedPrompt.action.parameters.projectType || "web",
         features: enhancedPrompt.action.parameters.features || ["core"],
         description: enhancedPrompt.enhancedMessage,
@@ -306,6 +311,59 @@ export class ProjectCreationHandler implements ActionHandler {
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
+  }
+
+  private generateMeaningfulProjectName(message: string): string {
+    const lowerMessage = message.toLowerCase();
+
+    // SNS 관련 키워드
+    if (
+      lowerMessage.includes("sns") ||
+      lowerMessage.includes("소셜") ||
+      lowerMessage.includes("게시물") ||
+      lowerMessage.includes("피드")
+    ) {
+      return "소셜커넥트";
+    }
+
+    // 블로그 관련 키워드
+    if (lowerMessage.includes("블로그") || lowerMessage.includes("포스트")) {
+      return "블로그스페이스";
+    }
+
+    // 쇼핑 관련 키워드
+    if (
+      lowerMessage.includes("쇼핑") ||
+      lowerMessage.includes("커머스") ||
+      lowerMessage.includes("결제")
+    ) {
+      return "스마트쇼핑";
+    }
+
+    // 학습 관련 키워드
+    if (
+      lowerMessage.includes("학습") ||
+      lowerMessage.includes("퀴즈") ||
+      lowerMessage.includes("교육")
+    ) {
+      return "러닝플로우";
+    }
+
+    // 게임 관련 키워드
+    if (
+      lowerMessage.includes("게임") ||
+      lowerMessage.includes("엔터테인먼트")
+    ) {
+      return "게임존";
+    }
+
+    // 채팅 관련 키워드
+    if (lowerMessage.includes("채팅") || lowerMessage.includes("메시지")) {
+      return "채팅허브";
+    }
+
+    // 기본값
+    return "스마트앱";
   }
 }
 
