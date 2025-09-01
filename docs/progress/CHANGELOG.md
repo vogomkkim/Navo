@@ -39,17 +39,17 @@ All notable changes to this project will be documented in this file.
 
   ```javascript
   // v4
-  plugins: ["@tailwindcss/postcss"];
+  plugins: ['@tailwindcss/postcss'];
 
   // v3
-  plugins: ["tailwindcss", "autoprefixer"];
+  plugins: ['tailwindcss', 'autoprefixer'];
   ```
 
 - **CSS 지시어 변경**:
 
   ```css
   /* v4 */
-  @import "tailwindcss";
+  @import 'tailwindcss';
 
   /* v3 */
   @tailwind base;
@@ -253,7 +253,7 @@ All notable changes to this project will be documented in this file.
   const context = await contextManager.getContext(sessionId, userId);
 
   // 메시지 추가
-  await contextManager.addMessage(sessionId, userId, "user", message);
+  await contextManager.addMessage(sessionId, userId, 'user', message);
 
   // 현재 프로젝트 설정
   await contextManager.setCurrentProject(sessionId, userId, projectId);
@@ -292,12 +292,12 @@ All notable changes to this project will be documented in this file.
 
   ```typescript
   // 기존: 하드코딩된 메시지
-  message: "프로젝트 요구사항 분석 및 아키텍처 설계를 완료했습니다.";
+  message: '프로젝트 요구사항 분석 및 아키텍처 설계를 완료했습니다.';
 
   // 개선: 동적 생성
   message: generateAgentSuccessMessage(
-    "Project Architect Agent",
-    "프로젝트 요구사항 분석 및"
+    'Project Architect Agent',
+    '프로젝트 요구사항 분석 및'
   );
   ```
 

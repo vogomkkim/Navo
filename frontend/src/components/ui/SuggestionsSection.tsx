@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useSuggestions } from "@/lib/api";
+import { useState } from 'react';
+import { useSuggestions } from '@/lib/api';
 
 export function SuggestionsSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { data, isLoading, isError, error, refetch } = useSuggestions({
-    queryKey: ["suggestions"],
+    queryKey: ['suggestions'],
     enabled: isPanelOpen, // Only fetch when panel is open
   });
 
@@ -44,7 +44,7 @@ export function SuggestionsSection() {
       )}
 
       <div
-        className={`suggestions-panel ${isPanelOpen ? "open" : ""}`}
+        className={`suggestions-panel ${isPanelOpen ? 'open' : ''}`}
         id="suggestionsPanel"
       >
         <div className="suggestions-header">
@@ -72,7 +72,7 @@ export function SuggestionsSection() {
           )}
           {data?.suggestions.map((suggestion: any, index: number) => (
             <div key={index} className="suggestion-card">
-              <p>{JSON.stringify(suggestion.content)}</p>{" "}
+              <p>{JSON.stringify(suggestion.content)}</p>{' '}
               {/* TODO: Render suggestion content properly */}
               {/* Add apply button here */}
             </div>

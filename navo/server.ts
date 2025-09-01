@@ -1,10 +1,10 @@
-import Fastify, { FastifyRequest, FastifyReply } from "fastify";
-import cors from "@fastify/cors";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import apiRoutes from "./routes/apiRoutes.js";
-import { setupStaticRoutes } from "./routes/staticRoutes.js";
-import { errorHandlingMiddleware } from "./middleware/errorHandler.js";
-import logger from "./core/logger.js";
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
+import cors from '@fastify/cors';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import apiRoutes from './routes/apiRoutes.js';
+import { setupStaticRoutes } from './routes/staticRoutes.js';
+import { errorHandlingMiddleware } from './middleware/errorHandler.js';
+import logger from './core/logger.js';
 
 const app = Fastify({ logger: false });
 
@@ -12,9 +12,9 @@ const app = Fastify({ logger: false });
 app.register(cors);
 
 // Setup routes
-console.log("🚀 서버 시작 - 라우트 설정 중...");
+console.log('🚀 서버 시작 - 라우트 설정 중...');
 app.register(apiRoutes);
-console.log("✅ API 라우트 설정 완료");
+console.log('✅ API 라우트 설정 완료');
 // setupStaticRoutes(app); // 정적 파일 서빙 비활성화
 
 // Error handler (must be after routes)
@@ -22,8 +22,8 @@ app.setErrorHandler(errorHandlingMiddleware);
 
 // AI suggestion generation
 export async function generateAiSuggestion(prompt: string): Promise<string> {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+  const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
   try {
     const result = await model.generateContent(prompt);
@@ -31,11 +31,11 @@ export async function generateAiSuggestion(prompt: string): Promise<string> {
     let text = response.text();
 
     // Clean up the response
-    text = text.replace(/```json\s*/g, "").replace(/```\s*$/g, "");
+    text = text.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
 
     return text;
   } catch (error) {
-    logger.error("Error generating AI suggestion", error);
+    logger.error('Error generating AI suggestion', error);
     throw error;
   }
 }
@@ -47,11 +47,11 @@ export async function handleGenerateDummySuggestion(
 ): Promise<void> {
   try {
     const suggestion = await generateAiSuggestion(
-      "Generate a simple website layout suggestion in JSON format"
+      'Generate a simple website layout suggestion in JSON format'
     );
     reply.send({ suggestion });
   } catch (error) {
-    reply.status(500).send({ error: "Failed to generate suggestion" });
+    reply.status(500).send({ error: 'Failed to generate suggestion' });
   }
 }
 

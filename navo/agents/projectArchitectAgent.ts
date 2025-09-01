@@ -5,19 +5,19 @@
  * 에러 해결과 프로젝트 설계를 모두 지원합니다.
  */
 
-import { BaseAgent, ProjectRequest } from "../core/masterDeveloper.js";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { refineJsonResponse } from "../utils/jsonRefiner.js";
+import { BaseAgent, ProjectRequest } from '../core/masterDeveloper.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { refineJsonResponse } from '../utils/jsonRefiner.js';
 
 export class ProjectArchitectAgent extends BaseAgent {
   private model: any;
 
   constructor() {
-    super("ProjectArchitectAgent", 1); // 최고 우선순위
+    super('ProjectArchitectAgent', 1); // 최고 우선순위
 
     // Gemini API 초기화
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+    this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   /**
@@ -28,7 +28,7 @@ export class ProjectArchitectAgent extends BaseAgent {
     // 프로젝트 생성 요청인지 확인
     if (
       request &&
-      typeof request === "object" &&
+      typeof request === 'object' &&
       request.name &&
       request.description
     ) {
@@ -46,16 +46,16 @@ export class ProjectArchitectAgent extends BaseAgent {
       // 프로젝트 설계 요청인지 확인
       if (
         request &&
-        typeof request === "object" &&
+        typeof request === 'object' &&
         request.name &&
         request.description
       ) {
         return await this.designProject(request, context);
       }
 
-      throw new Error("지원하지 않는 요청 타입입니다.");
+      throw new Error('지원하지 않는 요청 타입입니다.');
     } catch (e) {
-      this.logger.error("Project Architect Agent 실행 실패:", { error: e });
+      this.logger.error('Project Architect Agent 실행 실패:', { error: e });
       throw e;
     }
   }
@@ -65,25 +65,25 @@ export class ProjectArchitectAgent extends BaseAgent {
    */
   private async designProject(request: any, context: any): Promise<any> {
     try {
-      this.logger.info("🏗️ 프로젝트 아키텍처 설계 시작", { request });
+      this.logger.info('🏗️ 프로젝트 아키텍처 설계 시작', { request });
 
       // AI를 사용한 프로젝트 아키텍처 설계
       const architecture = await this.designArchitectureWithAI(request);
 
-      this.logger.info("✅ 프로젝트 아키텍처 설계 완료", { architecture });
+      this.logger.info('✅ 프로젝트 아키텍처 설계 완료', { architecture });
 
       return {
         success: true,
         architecture,
         executionTime: Date.now(),
         nextSteps: [
-          "아키텍처 설계 완료: UI/UX Designer Agent가 인터페이스를 설계합니다",
-          "Code Generator Agent가 실제 코드를 생성합니다",
-          "Development Guide Agent가 개발 가이드를 작성합니다",
+          '아키텍처 설계 완료: UI/UX Designer Agent가 인터페이스를 설계합니다',
+          'Code Generator Agent가 실제 코드를 생성합니다',
+          'Development Guide Agent가 개발 가이드를 작성합니다',
         ],
       };
     } catch (e) {
-      this.logger.error("프로젝트 설계 실패:", { error: e });
+      this.logger.error('프로젝트 설계 실패:', { error: e });
       throw e;
     }
   }
@@ -95,25 +95,25 @@ export class ProjectArchitectAgent extends BaseAgent {
     request: ProjectRequest
   ): Promise<any> {
     try {
-      this.logger.info("🏗️ AI 아키텍처 설계 시작 (단계별 처리)", { request });
+      this.logger.info('🏗️ AI 아키텍처 설계 시작 (단계별 처리)', { request });
 
       // 1단계: 프로젝트 기본 정보 생성
-      this.logger.info("📝 1단계: 프로젝트 기본 정보 생성 중...");
+      this.logger.info('📝 1단계: 프로젝트 기본 정보 생성 중...');
       const projectBasic = await this.createProjectBasic(request);
 
       // 2단계: 페이지 구조 설계
-      this.logger.info("📄 2단계: 페이지 구조 설계 중...");
+      this.logger.info('📄 2단계: 페이지 구조 설계 중...');
       const pageStructure = await this.createPageStructure(
         request,
         projectBasic
       );
 
       // 3단계: 컴포넌트 정의
-      this.logger.info("🧩 3단계: 컴포넌트 정의 중...");
+      this.logger.info('🧩 3단계: 컴포넌트 정의 중...');
       const components = await this.createComponents(request, pageStructure);
 
       // 4단계: 최종 프로젝트 구조 조합
-      this.logger.info("🔗 4단계: 최종 구조 조합 중...");
+      this.logger.info('🔗 4단계: 최종 구조 조합 중...');
       const finalArchitecture = this.combineArchitecture(
         projectBasic,
         pageStructure,
@@ -123,16 +123,16 @@ export class ProjectArchitectAgent extends BaseAgent {
       // 생성된 구조 검증
       this.validateProjectStructure(finalArchitecture);
 
-      this.logger.info("✅ AI 아키텍처 설계 완료 (단계별 처리)", {
+      this.logger.info('✅ AI 아키텍처 설계 완료 (단계별 처리)', {
         totalFiles: this.countFiles(finalArchitecture.project.file_structure),
-        steps: ["프로젝트 기본", "페이지 구조", "컴포넌트", "최종 조합"],
+        steps: ['프로젝트 기본', '페이지 구조', '컴포넌트', '최종 조합'],
       });
 
       return finalArchitecture;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error("AI 아키텍처 설계 실패:", { error: errorMessage });
+      this.logger.error('AI 아키텍처 설계 실패:', { error: errorMessage });
       throw new Error(`AI 아키텍처 설계 실패: ${errorMessage}`);
     }
   }
@@ -172,13 +172,13 @@ export class ProjectArchitectAgent extends BaseAgent {
       const refinedJson = await refineJsonResponse(text);
       return JSON.parse(refinedJson);
     } catch (error) {
-      this.logger.warn("⚠️ 1단계 실패, 기본값 사용", { error });
+      this.logger.warn('⚠️ 1단계 실패, 기본값 사용', { error });
       return {
         project: {
           name: this.generateDefaultProjectName(request.name),
           description:
             request.description || `AI가 생성한 ${request.name} 프로젝트`,
-          type: request.type || "web-application",
+          type: request.type || 'web-application',
         },
       };
     }
@@ -189,33 +189,33 @@ export class ProjectArchitectAgent extends BaseAgent {
     const timestamp = Date.now();
 
     const nameMap: { [key: string]: string[] } = {
-      퀴즐렛: ["QuizMaster", "QuizHub", "QuizZone", "QuizLab", "QuizStudio"],
-      퀴즈: ["QuizHub", "QuizMaster", "QuizZone", "QuizLab", "QuizStudio"],
-      학습: ["LearnFlow", "StudyHub", "EduZone", "LearnLab", "StudyStudio"],
-      교육: ["EduTech", "EduHub", "EduZone", "EduLab", "EduStudio"],
+      퀴즐렛: ['QuizMaster', 'QuizHub', 'QuizZone', 'QuizLab', 'QuizStudio'],
+      퀴즈: ['QuizHub', 'QuizMaster', 'QuizZone', 'QuizLab', 'QuizStudio'],
+      학습: ['LearnFlow', 'StudyHub', 'EduZone', 'LearnLab', 'StudyStudio'],
+      교육: ['EduTech', 'EduHub', 'EduZone', 'EduLab', 'EduStudio'],
       커머스: [
-        "ShopSmart",
-        "CommerceHub",
-        "ShopZone",
-        "ShopLab",
-        "CommerceStudio",
+        'ShopSmart',
+        'CommerceHub',
+        'ShopZone',
+        'ShopLab',
+        'CommerceStudio',
       ],
-      쇼핑: ["BuyEasy", "ShopHub", "ShopZone", "ShopLab", "BuyStudio"],
-      블로그: ["BlogSpace", "BlogHub", "BlogZone", "BlogLab", "BlogStudio"],
+      쇼핑: ['BuyEasy', 'ShopHub', 'ShopZone', 'ShopLab', 'BuyStudio'],
+      블로그: ['BlogSpace', 'BlogHub', 'BlogZone', 'BlogLab', 'BlogStudio'],
       소셜: [
-        "SocialConnect",
-        "SocialHub",
-        "SocialZone",
-        "SocialLab",
-        "SocialStudio",
+        'SocialConnect',
+        'SocialHub',
+        'SocialZone',
+        'SocialLab',
+        'SocialStudio',
       ],
-      게임: ["GameZone", "GameHub", "GameLab", "GameStudio", "PlayZone"],
+      게임: ['GameZone', 'GameHub', 'GameLab', 'GameStudio', 'PlayZone'],
       엔터테인먼트: [
-        "EntertainHub",
-        "EntertainZone",
-        "EntertainLab",
-        "EntertainStudio",
-        "FunHub",
+        'EntertainHub',
+        'EntertainZone',
+        'EntertainLab',
+        'EntertainStudio',
+        'FunHub',
       ],
     };
 
@@ -227,36 +227,36 @@ export class ProjectArchitectAgent extends BaseAgent {
 
     // 기본 창의적인 영어 이름들
     const defaultNames = [
-      "NeoSpace",
-      "FutureHub",
-      "InnovationZone",
-      "CreativeLab",
-      "TechFlow",
-      "DigitalStudio",
-      "IdeaFactory",
-      "SmartWorks",
-      "CloudNest",
-      "DataHub",
-      "CodeStudio",
-      "WebCraft",
-      "AppMaster",
-      "DigitalArt",
-      "TechMaster",
-      "MagicLab",
-      "CraftZone",
-      "FactorySpace",
-      "StudioHub",
-      "FlowCraft",
-      "NeoMagic",
-      "FutureCraft",
-      "InnovationMagic",
-      "CreativeMagic",
-      "TechCraft",
-      "DigitalMagic",
-      "IdeaCraft",
-      "SmartMagic",
-      "CloudCraft",
-      "DataMagic",
+      'NeoSpace',
+      'FutureHub',
+      'InnovationZone',
+      'CreativeLab',
+      'TechFlow',
+      'DigitalStudio',
+      'IdeaFactory',
+      'SmartWorks',
+      'CloudNest',
+      'DataHub',
+      'CodeStudio',
+      'WebCraft',
+      'AppMaster',
+      'DigitalArt',
+      'TechMaster',
+      'MagicLab',
+      'CraftZone',
+      'FactorySpace',
+      'StudioHub',
+      'FlowCraft',
+      'NeoMagic',
+      'FutureCraft',
+      'InnovationMagic',
+      'CreativeMagic',
+      'TechCraft',
+      'DigitalMagic',
+      'IdeaCraft',
+      'SmartMagic',
+      'CloudCraft',
+      'DataMagic',
     ];
 
     return defaultNames[timestamp % defaultNames.length];
@@ -296,20 +296,20 @@ export class ProjectArchitectAgent extends BaseAgent {
       const refinedJson = await refineJsonResponse(text);
       return JSON.parse(refinedJson);
     } catch (error) {
-      this.logger.warn("⚠️ 2단계 실패, 기본 페이지 사용", { error });
+      this.logger.warn('⚠️ 2단계 실패, 기본 페이지 사용', { error });
       return {
         pages: [
           {
-            name: "Home",
-            path: "/",
-            description: "메인 페이지",
-            type: "page",
+            name: 'Home',
+            path: '/',
+            description: '메인 페이지',
+            type: 'page',
           },
           {
-            name: "Login",
-            path: "/login",
-            description: "로그인 페이지",
-            type: "auth",
+            name: 'Login',
+            path: '/login',
+            description: '로그인 페이지',
+            type: 'auth',
           },
         ],
       };
@@ -324,7 +324,7 @@ export class ProjectArchitectAgent extends BaseAgent {
     const prompt = `다음 프로젝트의 기본 컴포넌트만 생성하세요:
 
 프로젝트: ${request.name}
-페이지: ${pageStructure.pages.map((p: any) => p.name).join(", ")}
+페이지: ${pageStructure.pages.map((p: any) => p.name).join(', ')}
 
 **응답 형식 (JSON만):**
 {
@@ -350,20 +350,20 @@ export class ProjectArchitectAgent extends BaseAgent {
       const refinedJson = await refineJsonResponse(text);
       return JSON.parse(refinedJson);
     } catch (error) {
-      this.logger.warn("⚠️ 3단계 실패, 기본 컴포넌트 사용", { error });
+      this.logger.warn('⚠️ 3단계 실패, 기본 컴포넌트 사용', { error });
       return {
         components: [
           {
-            name: "Header",
-            type: "layout",
-            description: "페이지 헤더",
-            props: ["title", "navigation"],
+            name: 'Header',
+            type: 'layout',
+            description: '페이지 헤더',
+            props: ['title', 'navigation'],
           },
           {
-            name: "Button",
-            type: "ui",
-            description: "기본 버튼",
-            props: ["text", "onClick", "variant"],
+            name: 'Button',
+            type: 'ui',
+            description: '기본 버튼',
+            props: ['text', 'onClick', 'variant'],
           },
         ],
       };
@@ -378,28 +378,28 @@ export class ProjectArchitectAgent extends BaseAgent {
   ): any {
     // 간단한 파일 구조 생성
     const fileStructure = {
-      type: "folder",
+      type: 'folder',
       name: projectBasic.project.name,
       children: [
         {
-          type: "file",
-          name: "package.json",
+          type: 'file',
+          name: 'package.json',
           content: JSON.stringify(
             {
               name: projectBasic.project.name,
-              version: "1.0.0",
+              version: '1.0.0',
               description: projectBasic.project.description,
-              main: "index.js",
-              scripts: { start: "node index.js" },
+              main: 'index.js',
+              scripts: { start: 'node index.js' },
             },
             null,
             2
           ),
         },
         {
-          type: "file",
-          name: "README.md",
-          content: `# ${projectBasic.project.name}\n\n${projectBasic.project.description}\n\n## 페이지\n${pageStructure.pages.map((p: any) => `- ${p.name}: ${p.description}`).join("\n")}\n\n## 컴포넌트\n${components.components.map((c: any) => `- ${c.name}: ${c.description}`).join("\n")}`,
+          type: 'file',
+          name: 'README.md',
+          content: `# ${projectBasic.project.name}\n\n${projectBasic.project.description}\n\n## 페이지\n${pageStructure.pages.map((p: any) => `- ${p.name}: ${p.description}`).join('\n')}\n\n## 컴포넌트\n${components.components.map((c: any) => `- ${c.name}: ${c.description}`).join('\n')}`,
         },
       ],
     };
@@ -421,38 +421,38 @@ export class ProjectArchitectAgent extends BaseAgent {
       !architecture.project ||
       !architecture.project.file_structure
     ) {
-      throw new Error("생성된 프로젝트 구조가 올바르지 않습니다.");
+      throw new Error('생성된 프로젝트 구조가 올바르지 않습니다.');
     }
 
     const fileStructure = architecture.project.file_structure;
     if (
-      fileStructure.type !== "folder" ||
+      fileStructure.type !== 'folder' ||
       fileStructure.name !== architecture.project.name
     ) {
       throw new Error(
-        "프로젝트 루트 폴더의 이름이 프로젝트 이름과 일치하지 않습니다."
+        '프로젝트 루트 폴더의 이름이 프로젝트 이름과 일치하지 않습니다.'
       );
     }
 
     if (!fileStructure.children || !Array.isArray(fileStructure.children)) {
       throw new Error(
-        "프로젝트 루트 폴더에 파일 또는 폴더 목록이 포함되지 않았습니다."
+        '프로젝트 루트 폴더에 파일 또는 폴더 목록이 포함되지 않았습니다.'
       );
     }
 
     // 파일 개수 확인
     const totalFiles = this.countFiles(fileStructure);
     if (totalFiles === 0) {
-      throw new Error("생성된 프로젝트에 파일이 하나도 없습니다.");
+      throw new Error('생성된 프로젝트에 파일이 하나도 없습니다.');
     }
   }
 
   // 파일 개수 세기
   private countFiles(node: any): number {
     let count = 0;
-    if (node.type === "file") {
+    if (node.type === 'file') {
       count++;
-    } else if (node.type === "folder") {
+    } else if (node.type === 'folder') {
       if (node.children) {
         count += node.children.length;
         for (const child of node.children) {

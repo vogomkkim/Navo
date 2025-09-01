@@ -1,5 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { UserContext, ChatMessage } from "./contextManager.js";
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { UserContext, ChatMessage } from './contextManager.js';
 
 /**
  * 향상된 프롬프트 인터페이스
@@ -85,7 +85,7 @@ export class PromptEnhancer {
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash', systemInstruction: '' });
   }
 
   /**
@@ -146,14 +146,14 @@ export class PromptEnhancer {
           conversationContext: contextInfo.conversationContext,
         },
         metadata: {
-          model: "gemini-2.5-flash",
+          model: 'gemini-2.5-flash',
           tokens: 0, // TODO: 실제 토큰 수 계산
           processingTime,
           timestamp: new Date(),
         },
       };
     } catch (error) {
-      console.error("Error enhancing prompt:", error);
+      console.error('Error enhancing prompt:', error);
       // Fallback: 기본 향상된 프롬프트 반환
       return this.createFallbackPrompt(message, userContext);
     }
@@ -177,7 +177,7 @@ export class PromptEnhancer {
       contextInfo.projectContext = `현재 작업 중인 프로젝트: ${userContext.currentProject.name}${
         userContext.currentProject.description
           ? ` (${userContext.currentProject.description})`
-          : ""
+          : ''
       }`;
     }
 
@@ -191,7 +191,7 @@ export class PromptEnhancer {
       const recentTexts = recentMessages
         .slice(-3) // 최근 3개 메시지만
         .map((msg) => `${msg.role}: ${msg.content.message}`)
-        .join("\n");
+        .join('\n');
       contextInfo.conversationContext = `최근 대화:\n${recentTexts}`;
     }
 
@@ -208,9 +208,9 @@ export class PromptEnhancer {
     const prompt = `다음 사용자 메시지의 의도를 분석해주세요.
 
 컨텍스트 정보:
-${contextInfo.projectContext ? `- ${contextInfo.projectContext}` : ""}
-${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ""}
-${contextInfo.conversationContext ? `- ${contextInfo.conversationContext}` : ""}
+${contextInfo.projectContext ? `- ${contextInfo.projectContext}` : ''}
+${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ''}
+${contextInfo.conversationContext ? `- ${contextInfo.conversationContext}` : ''}
 
 사용자 메시지: "${message}"
 
@@ -252,13 +252,13 @@ JSON 형태로 응답해주세요:
 
       // 마크다운 코드 블록 제거
       let jsonText = response.trim();
-      if (jsonText.startsWith("```json")) {
+      if (jsonText.startsWith('```json')) {
         jsonText = jsonText.substring(7);
       }
-      if (jsonText.startsWith("```")) {
+      if (jsonText.startsWith('```')) {
         jsonText = jsonText.substring(3);
       }
-      if (jsonText.endsWith("```")) {
+      if (jsonText.endsWith('```')) {
         jsonText = jsonText.substring(0, jsonText.length - 3);
       }
       jsonText = jsonText.trim();
@@ -268,16 +268,16 @@ JSON 형태로 응답해주세요:
       return {
         type: analysis.type,
         confidence: analysis.confidence || 0.8,
-        description: analysis.description || "의도 분석 완료",
+        description: analysis.description || '의도 분석 완료',
         isVague: analysis.isVague || false,
         clarification: analysis.clarification || undefined,
       };
     } catch (error) {
-      console.error("Error analyzing intent:", error);
+      console.error('Error analyzing intent:', error);
       return {
-        type: "general",
+        type: 'general',
         confidence: 0.5,
-        description: "의도 분석 실패, 기본값 사용",
+        description: '의도 분석 실패, 기본값 사용',
       };
     }
   }
@@ -292,8 +292,8 @@ JSON 형태로 응답해주세요:
     const prompt = `다음 사용자 메시지에서 대상(target)을 분석해주세요.
 
 컨텍스트 정보:
-${contextInfo.projectContext ? `- ${contextInfo.projectContext}` : ""}
-${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ""}
+${contextInfo.projectContext ? `- ${contextInfo.projectContext}` : ''}
+${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ''}
 
 사용자 메시지: "${message}"
 
@@ -326,13 +326,13 @@ JSON 형태로 응답해주세요:
 
       // 마크다운 코드 블록 제거
       let jsonText = response.trim();
-      if (jsonText.startsWith("```json")) {
+      if (jsonText.startsWith('```json')) {
         jsonText = jsonText.substring(7);
       }
-      if (jsonText.startsWith("```")) {
+      if (jsonText.startsWith('```')) {
         jsonText = jsonText.substring(3);
       }
-      if (jsonText.endsWith("```")) {
+      if (jsonText.endsWith('```')) {
         jsonText = jsonText.substring(0, jsonText.length - 3);
       }
       jsonText = jsonText.trim();
@@ -346,10 +346,10 @@ JSON 형태로 응답해주세요:
         description: analysis.description,
       };
     } catch (error) {
-      console.error("Error analyzing target:", error);
+      console.error('Error analyzing target:', error);
       return {
-        type: "general",
-        description: "대상 분석 실패, 기본값 사용",
+        type: 'general',
+        description: '대상 분석 실패, 기본값 사용',
       };
     }
   }
@@ -364,8 +364,8 @@ JSON 형태로 응답해주세요:
     const prompt = `다음 사용자 메시지에서 수행할 액션을 분석해주세요.
 
 컨텍스트 정보:
-${contextInfo.projectContext ? `- ${contextInfo.projectContext}` : ""}
-${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ""}
+${contextInfo.projectContext ? `- ${contextInfo.projectContext}` : ''}
+${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ''}
 
 사용자 메시지: "${message}"
 
@@ -401,13 +401,13 @@ JSON 형태로 응답해주세요:
 
       // 마크다운 코드 블록 제거
       let jsonText = response.trim();
-      if (jsonText.startsWith("```json")) {
+      if (jsonText.startsWith('```json')) {
         jsonText = jsonText.substring(7);
       }
-      if (jsonText.startsWith("```")) {
+      if (jsonText.startsWith('```')) {
         jsonText = jsonText.substring(3);
       }
-      if (jsonText.endsWith("```")) {
+      if (jsonText.endsWith('```')) {
         jsonText = jsonText.substring(0, jsonText.length - 3);
       }
       jsonText = jsonText.trim();
@@ -417,15 +417,15 @@ JSON 형태로 응답해주세요:
       return {
         type: analysis.type,
         parameters: analysis.parameters || {},
-        description: analysis.description || "액션 분석 완료",
+        description: analysis.description || '액션 분석 완료',
         priority: analysis.priority || 1,
       };
     } catch (error) {
-      console.error("Error analyzing action:", error);
+      console.error('Error analyzing action:', error);
       return {
-        type: "explain",
+        type: 'explain',
         parameters: {},
-        description: "액션 분석 실패, 기본값 사용",
+        description: '액션 분석 실패, 기본값 사용',
         priority: 1,
       };
     }
@@ -447,12 +447,12 @@ JSON 형태로 응답해주세요:
 
 분석 결과:
 - 의도: ${intent.type} (${intent.description})
-- 대상: ${target.type} ${target.name ? `(${target.name})` : ""}
+- 대상: ${target.type} ${target.name ? `(${target.name})` : ''}
 - 액션: ${action.type} (${action.description})
 
 컨텍스트:
-${contextInfo.projectContext ? `- ${contextInfo.projectContext}` : ""}
-${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ""}
+${contextInfo.projectContext ? `- ${contextInfo.projectContext}` : ''}
+${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ''}
 
 향상된 메시지는 다음을 포함해야 합니다:
 1. 명확한 의도 표현
@@ -466,7 +466,7 @@ ${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ""}
       const result = await this.model.generateContent(prompt);
       return result.response.text();
     } catch (error) {
-      console.error("Error generating enhanced message:", error);
+      console.error('Error generating enhanced message:', error);
       return originalMessage; // 실패 시 원본 메시지 반환
     }
   }
@@ -482,25 +482,25 @@ ${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ""}
       originalMessage: message,
       enhancedMessage: message,
       intent: {
-        type: "general",
+        type: 'general',
         confidence: 0.5,
-        description: "기본 의도",
+        description: '기본 의도',
       },
       target: {
-        type: "general",
-        description: "기본 대상",
+        type: 'general',
+        description: '기본 대상',
       },
       action: {
-        type: "explain",
+        type: 'explain',
         parameters: {},
-        description: "기본 액션",
+        description: '기본 액션',
       },
       context: {
         projectContext: userContext.currentProject?.name,
         componentContext: userContext.currentComponent?.displayName,
       },
       metadata: {
-        model: "fallback",
+        model: 'fallback',
         tokens: 0,
         processingTime: 0,
         timestamp: new Date(),
@@ -518,24 +518,24 @@ ${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ""}
     const { intent, target, action, context } = enhancedPrompt;
 
     switch (templateType) {
-      case "project_creation":
+      case 'project_creation':
         return `프로젝트 생성 요청을 처리합니다.
 의도: ${intent.description}
 요청: ${enhancedPrompt.enhancedMessage}
-프로젝트 타입: ${action.parameters.projectType || "웹 애플리케이션"}
-기능 요구사항: ${action.parameters.features || "기본 기능"}`;
+프로젝트 타입: ${action.parameters.projectType || '웹 애플리케이션'}
+기능 요구사항: ${action.parameters.features || '기본 기능'}`;
 
-      case "component_modification":
+      case 'component_modification':
         return `컴포넌트 수정 요청을 처리합니다.
 의도: ${intent.description}
-대상 컴포넌트: ${target.name || "현재 컴포넌트"}
+대상 컴포넌트: ${target.name || '현재 컴포넌트'}
 수정 사항: ${action.description}
 요청: ${enhancedPrompt.enhancedMessage}`;
 
-      case "bug_fix":
+      case 'bug_fix':
         return `버그 수정 요청을 처리합니다.
 의도: ${intent.description}
-문제 영역: ${target.description || "전체 시스템"}
+문제 영역: ${target.description || '전체 시스템'}
 수정 유형: ${action.type}
 요청: ${enhancedPrompt.enhancedMessage}`;
 
@@ -577,11 +577,11 @@ JSON 형태로 응답해주세요:
       const response = result.response.text();
       return JSON.parse(response);
     } catch (error) {
-      console.error("Error evaluating prompt quality:", error);
+      console.error('Error evaluating prompt quality:', error);
       return {
         score: 5.0,
-        feedback: "품질 평가 실패",
-        suggestions: ["기본 품질 평가 사용"],
+        feedback: '품질 평가 실패',
+        suggestions: ['기본 품질 평가 사용'],
       };
     }
   }
@@ -589,5 +589,5 @@ JSON 형태로 응답해주세요:
 
 // 싱글톤 인스턴스 export
 export const promptEnhancer = new PromptEnhancer(
-  process.env.GEMINI_API_KEY || ""
+  process.env.GEMINI_API_KEY || ''
 );

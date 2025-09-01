@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { usePageLayout } from "@/lib/api";
-import { LayoutRenderer } from "./LayoutRenderer";
-import { LayoutProvider } from "@/app/context/LayoutContext";
+import { usePageLayout } from '@/lib/api';
+import { LayoutRenderer } from './LayoutRenderer';
+import { LayoutProvider } from '@/app/context/LayoutContext';
 
 interface PagePreviewProps {
   pageId: string;
   className?: string;
 }
 
-export function PagePreview({ pageId, className = "" }: PagePreviewProps) {
+export function PagePreview({ pageId, className = '' }: PagePreviewProps) {
   const { data, isLoading, isError, error } = usePageLayout(pageId);
 
   if (isLoading) {
@@ -28,7 +28,7 @@ export function PagePreview({ pageId, className = "" }: PagePreviewProps) {
         <div className="error-icon">❌</div>
         <h3>페이지를 불러올 수 없습니다</h3>
         <p>
-          <strong>오류:</strong> {error?.message || "알 수 없는 오류"}
+          <strong>오류:</strong> {error?.message || '알 수 없는 오류'}
         </p>
         <p>
           <strong>페이지 ID:</strong> {pageId}

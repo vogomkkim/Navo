@@ -1,17 +1,17 @@
-import { db } from "../db/db.js";
+import { db } from '../db/db.js';
 import {
   projects,
   pages,
   componentDefinitions,
   components,
-} from "../db/schema.js";
-import { eq } from "drizzle-orm";
-import { BaseAgent } from "../core/masterDeveloper.js";
-import { randomUUID as uuidv4 } from "node:crypto";
+} from '../db/schema.js';
+import { eq } from 'drizzle-orm';
+import { BaseAgent } from '../core/masterDeveloper.js';
+import { randomUUID as uuidv4 } from 'node:crypto';
 
 export class ProjectDatabaseManagerAgent extends BaseAgent {
   constructor() {
-    super("ProjectDatabaseManagerAgent", 4); // Lower priority, as it's a utility agent
+    super('ProjectDatabaseManagerAgent', 4); // Lower priority, as it's a utility agent
   }
 
   canHandle(request: any): boolean {
@@ -22,7 +22,7 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
   async execute(request: any, context: any): Promise<any> {
     // This agent is not meant to be executed directly in the main loop.
     // It provides utility methods for other agents.
-    throw new Error("ProjectDatabaseManagerAgent cannot be executed directly.");
+    throw new Error('ProjectDatabaseManagerAgent cannot be executed directly.');
   }
 
   /**
@@ -56,7 +56,7 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
       );
       return result[0];
     } catch (error) {
-      this.logger.error("❌ Failed to create project in database", {
+      this.logger.error('❌ Failed to create project in database', {
         error: error instanceof Error ? error.message : String(error),
         projectData,
       });
@@ -86,14 +86,14 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
         !Array.isArray(projectArchitecture.pages)
       ) {
         this.logger.warn(
-          "⚠️ No pages found in architecture, creating default page"
+          '⚠️ No pages found in architecture, creating default page'
         );
         projectArchitecture.pages = [
           {
-            name: "Home",
-            path: "/",
-            description: "메인 페이지",
-            type: "page",
+            name: 'Home',
+            path: '/',
+            description: '메인 페이지',
+            type: 'page',
           },
         ];
       }
@@ -107,14 +107,14 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
           name: pageData.name,
           path: pageData.path || `/${pageData.name.toLowerCase()}`,
           description: pageData.description || `${pageData.name} 페이지`,
-          type: pageData.type || "page",
+          type: pageData.type || 'page',
           layoutJson: {
             components: pageData.components || [],
-            layout: pageData.layout || "default",
+            layout: pageData.layout || 'default',
             metadata: {
-              createdBy: "AI Agent",
+              createdBy: 'AI Agent',
               createdAt: new Date().toISOString(),
-              version: "1.0.0",
+              version: '1.0.0',
             },
           },
           isPublished: false,
@@ -133,7 +133,7 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
       this.logger.info(`🎉 Successfully created ${createdPages.length} pages`);
       return createdPages;
     } catch (error) {
-      this.logger.error("❌ Failed to create pages from architecture", {
+      this.logger.error('❌ Failed to create pages from architecture', {
         error: error instanceof Error ? error.message : String(error),
         projectId,
       });
@@ -163,29 +163,29 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
         !Array.isArray(projectArchitecture.components)
       ) {
         this.logger.warn(
-          "⚠️ No components found in architecture, creating default components"
+          '⚠️ No components found in architecture, creating default components'
         );
         projectArchitecture.components = [
           {
-            name: "Header",
-            display_name: "페이지 헤더",
-            type: "layout",
-            description: "페이지 헤더 컴포넌트",
-            props_schema: ["title", "navigation"],
+            name: 'Header',
+            display_name: '페이지 헤더',
+            type: 'layout',
+            description: '페이지 헤더 컴포넌트',
+            props_schema: ['title', 'navigation'],
             render_template:
               "<header class='header'><h1>{title}</h1><nav>{navigation}</nav></header>",
-            css_styles: ".header { padding: 1rem; background: #f8f9fa; }",
+            css_styles: '.header { padding: 1rem; background: #f8f9fa; }',
           },
           {
-            name: "Button",
-            display_name: "버튼",
-            type: "ui",
-            description: "기본 버튼 컴포넌트",
-            props_schema: ["text", "onClick", "variant"],
+            name: 'Button',
+            display_name: '버튼',
+            type: 'ui',
+            description: '기본 버튼 컴포넌트',
+            props_schema: ['text', 'onClick', 'variant'],
             render_template:
               "<button class='btn btn-{variant}' onclick='{onClick}'>{text}</button>",
             css_styles:
-              ".btn { padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }",
+              '.btn { padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }',
           },
         ];
       }
@@ -198,12 +198,12 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
           name: compData.name,
           displayName: compData.display_name || compData.name,
           description: compData.description || `${compData.name} 컴포넌트`,
-          category: compData.type || "ui",
+          category: compData.type || 'ui',
           propsSchema: compData.props_schema || {},
           renderTemplate:
             compData.render_template ||
             `<div class="${compData.name.toLowerCase()}">{content}</div>`,
-          cssStyles: compData.css_styles || "",
+          cssStyles: compData.css_styles || '',
           isActive: true,
         };
 
@@ -224,7 +224,7 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
       return createdComponents;
     } catch (error) {
       this.logger.error(
-        "❌ Failed to create component definitions from architecture",
+        '❌ Failed to create component definitions from architecture',
         {
           error: error instanceof Error ? error.message : String(error),
           projectId,
@@ -261,7 +261,7 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
 
       if (projectComponentDefs.length === 0) {
         this.logger.warn(
-          "⚠️ No component definitions found for project, skipping component creation"
+          '⚠️ No component definitions found for project, skipping component creation'
         );
         return [];
       }
@@ -272,11 +272,11 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
       // 현재 페이지 정보 찾기 (ID 또는 path로 매칭)
       const currentPage =
         projectArchitecture.pages?.find((page: any) => page.id === pageId) ||
-        projectArchitecture.pages?.find((page: any) => page.path === "/") ||
+        projectArchitecture.pages?.find((page: any) => page.path === '/') ||
         projectArchitecture.pages?.[0];
 
       this.logger.info(
-        `📄 Processing page: ${currentPage?.name || "Unknown"} (${currentPage?.path})`
+        `📄 Processing page: ${currentPage?.name || 'Unknown'} (${currentPage?.path})`
       );
 
       if (
@@ -360,7 +360,7 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
       );
       return createdComponents;
     } catch (error) {
-      this.logger.error("❌ Failed to create components from architecture", {
+      this.logger.error('❌ Failed to create components from architecture', {
         error: error instanceof Error ? error.message : String(error),
         projectId,
         pageId,
@@ -375,8 +375,8 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
    * 페이지 특성에 맞는 props를 생성합니다.
    */
   private generatePageSpecificProps(page: any, component: any): any {
-    const pageName = page?.name || "";
-    const pagePath = page?.path || "";
+    const pageName = page?.name || '';
+    const pagePath = page?.path || '';
 
     // 기본 props
     const baseProps = {
@@ -386,58 +386,58 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
 
     // 컴포넌트 타입에 따른 특화된 props
     if (
-      component.name === "FeedContainer" ||
-      component.displayName.includes("Feed")
+      component.name === 'FeedContainer' ||
+      component.displayName.includes('Feed')
     ) {
       return {
         ...baseProps,
         title: `${pageName} - 최신 게시물`,
-        description: "사용자들의 최신 게시물을 확인하세요",
+        description: '사용자들의 최신 게시물을 확인하세요',
         showFilters: true,
-        sortBy: "latest",
+        sortBy: 'latest',
       };
     } else if (
-      component.name === "UserProfileCard" ||
-      component.displayName.includes("Profile")
+      component.name === 'UserProfileCard' ||
+      component.displayName.includes('Profile')
     ) {
       return {
         ...baseProps,
         title: `${pageName} - 사용자 프로필`,
-        description: "사용자 정보와 활동 내역을 확인하세요",
+        description: '사용자 정보와 활동 내역을 확인하세요',
         showStats: true,
         showPosts: true,
       };
     } else if (
-      component.name === "AuthForm" ||
-      component.displayName.includes("Auth")
+      component.name === 'AuthForm' ||
+      component.displayName.includes('Auth')
     ) {
       return {
         ...baseProps,
         title: `${pageName} - 로그인/회원가입`,
-        description: "계정에 로그인하거나 새 계정을 만드세요",
+        description: '계정에 로그인하거나 새 계정을 만드세요',
         showSocialLogin: true,
         showForgotPassword: true,
       };
     } else if (
-      component.name === "PostEditor" ||
-      component.displayName.includes("Editor")
+      component.name === 'PostEditor' ||
+      component.displayName.includes('Editor')
     ) {
       return {
         ...baseProps,
         title: `${pageName} - 새 게시물 작성`,
-        description: "새로운 게시물을 작성하고 공유하세요",
+        description: '새로운 게시물을 작성하고 공유하세요',
         allowImages: true,
         allowVideos: true,
         maxLength: 1000,
       };
     } else if (
-      component.name === "PostItem" ||
-      component.displayName.includes("Post")
+      component.name === 'PostItem' ||
+      component.displayName.includes('Post')
     ) {
       return {
         ...baseProps,
         title: `${pageName} - 게시물 상세`,
-        description: "게시물의 상세 내용과 댓글을 확인하세요",
+        description: '게시물의 상세 내용과 댓글을 확인하세요',
         showComments: true,
         showLikes: true,
         showShare: true,

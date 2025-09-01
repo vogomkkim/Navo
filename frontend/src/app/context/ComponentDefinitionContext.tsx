@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { createContext, useContext, ReactNode, useEffect } from "react";
-import { useListComponents } from "@/lib/api";
-import { useAuth } from "./AuthContext";
+import { createContext, useContext, ReactNode, useEffect } from 'react';
+import { useListComponents } from '@/lib/api';
+import { useAuth } from './AuthContext';
 
 interface ComponentDef {
   id: string;
@@ -39,7 +39,7 @@ export function ComponentDefinitionProvider({
   // 인증된 사용자만 API 호출
   const { data, isLoading, isError, error } = useListComponents({
     enabled: isAuthenticated, // 인증된 경우에만 쿼리 실행
-    queryKey: ["componentDefinitions", isAuthenticated], // queryKey 추가
+    queryKey: ['componentDefinitions', isAuthenticated], // queryKey 추가
   });
 
   const componentRegistry = new Map<string, ComponentDef>();
@@ -73,7 +73,7 @@ export function useComponentDefinitions() {
   const context = useContext(ComponentDefinitionContext);
   if (context === undefined) {
     throw new Error(
-      "useComponentDefinitions must be used within a ComponentDefinitionProvider"
+      'useComponentDefinitions must be used within a ComponentDefinitionProvider'
     );
   }
   return context;

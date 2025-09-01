@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 interface ChatPlaceholderProps {
   onExampleClick: (message: string) => void;
@@ -6,9 +6,9 @@ interface ChatPlaceholderProps {
 
 export function ChatPlaceholder({ onExampleClick }: ChatPlaceholderProps) {
   const examples = [
-    "전자상거래 웹사이트 만들어줘",
-    "블로그 플랫폼 만들어줘",
-    "경매 사이트 만들어줘",
+    '전자상거래 웹사이트 만들어줘',
+    '블로그 플랫폼 만들어줘',
+    '경매 사이트 만들어줘',
   ];
 
   return (
@@ -23,7 +23,7 @@ export function ChatPlaceholder({ onExampleClick }: ChatPlaceholderProps) {
             className="example-button"
             onClick={() => onExampleClick(example)}
           >
-            • {example.replace("만들어줘", "")}
+            • {example.replace('만들어줘', '')}
           </button>
         ))}
       </div>

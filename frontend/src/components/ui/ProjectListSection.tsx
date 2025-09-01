@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useListProjects } from "@/lib/api";
+import { useState } from 'react';
+import { useListProjects } from '@/lib/api';
 
 export function ProjectListSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { data, isLoading, isError, error, refetch } = useListProjects({
-    queryKey: ["projects"],
+    queryKey: ['projects'],
     enabled: isPanelOpen, // Only fetch when panel is open
   });
 
@@ -35,7 +35,7 @@ export function ProjectListSection() {
       </div>
 
       <div
-        className={`project-list-panel ${isPanelOpen ? "open" : ""}`}
+        className={`project-list-panel ${isPanelOpen ? 'open' : ''}`}
         id="projectListPanel"
       >
         <div className="panel-section project-list-section">
@@ -57,7 +57,7 @@ export function ProjectListSection() {
             )}
             {data?.projects.map((project: any) => (
               <li key={project.id}>
-                {project.name} (생성일:{" "}
+                {project.name} (생성일:{' '}
                 {new Date(project.createdAt).toLocaleDateString()})
                 {/* TODO: Add functionality to view project pages */}
               </li>

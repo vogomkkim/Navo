@@ -1,0 +1,4 @@
+frontend/.next
+frontend/.npm-cache
+frontend/out
+frontend/node_modules

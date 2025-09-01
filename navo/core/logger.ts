@@ -1,7 +1,7 @@
-type LogLevel = "debug" | "info" | "warn" | "error";
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 // 환경 변수로 로그 레벨 제어
-const LOG_LEVEL = (process.env.LOG_LEVEL || "info") as LogLevel;
+const LOG_LEVEL = (process.env.LOG_LEVEL || 'info') as LogLevel;
 const LOG_LEVELS: Record<LogLevel, number> = {
   debug: 0,
   info: 1,
@@ -19,14 +19,14 @@ function formatMessage(
   meta?: unknown
 ): string {
   const now = new Date();
-  const timestamp = now.toISOString().replace("T", " ").replace("Z", "");
+  const timestamp = now.toISOString().replace('T', ' ').replace('Z', '');
   const levelText = level.toUpperCase().padEnd(5);
 
   let output = `[${timestamp}] [${levelText}] : ${message}`;
 
   // meta가 있으면 간단하게 추가
   if (meta !== undefined) {
-    if (typeof meta === "object" && meta !== null) {
+    if (typeof meta === 'object' && meta !== null) {
       try {
         const metaStr = JSON.stringify(meta, null, 2);
         output += `\n${metaStr}`;
@@ -43,23 +43,23 @@ function formatMessage(
 
 export const logger = {
   debug(message: string, meta?: unknown) {
-    if (shouldLog("debug") && process.env.NODE_ENV !== "production") {
-      console.debug(formatMessage("debug", message, meta));
+    if (shouldLog('debug') && process.env.NODE_ENV !== 'production') {
+      console.debug(formatMessage('debug', message, meta));
     }
   },
   info(message: string, meta?: unknown) {
-    if (shouldLog("info")) {
-      console.info(formatMessage("info", message, meta));
+    if (shouldLog('info')) {
+      console.info(formatMessage('info', message, meta));
     }
   },
   warn(message: string, meta?: unknown) {
-    if (shouldLog("warn")) {
-      console.warn(formatMessage("warn", message, meta));
+    if (shouldLog('warn')) {
+      console.warn(formatMessage('warn', message, meta));
     }
   },
   error(message: string, meta?: unknown) {
-    if (shouldLog("error")) {
-      console.error(formatMessage("error", message, meta));
+    if (shouldLog('error')) {
+      console.error(formatMessage('error', message, meta));
     }
   },
 };

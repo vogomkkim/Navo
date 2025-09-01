@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 interface SaveButtonProps {
   currentLayout: any; // TODO: Define a more specific type for Layout
@@ -13,14 +13,14 @@ export function SaveButton({
 }: SaveButtonProps) {
   const handleSaveClick = () => {
     if (!currentLayout) {
-      console.warn("Save failed: No layout data");
-      onSaveError?.(new Error("No layout data to save."));
+      console.warn('Save failed: No layout data');
+      onSaveError?.(new Error('No layout data to save.'));
       return;
     }
 
     // TODO: Implement actual save functionality
-    console.log("Saving layout:", currentLayout);
-    onSaveSuccess?.({ message: "Layout saved successfully" });
+    console.log('Saving layout:', currentLayout);
+    onSaveSuccess?.({ message: 'Layout saved successfully' });
   };
 
   return (

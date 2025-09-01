@@ -3,16 +3,16 @@ import {
   useMutation,
   UseQueryOptions,
   UseMutationOptions,
-} from "@tanstack/react-query";
-import { useAuth } from "@/app/context/AuthContext"; // Assuming @/app/context/AuthContext is the correct alias
+} from '@tanstack/react-query';
+import { useAuth } from '@/app/context/AuthContext'; // Assuming @/app/context/AuthContext is the correct alias
 
 // Define a base URL for your API. This should be configured via environment variables in Next.js
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 if (!API_BASE_URL) {
   throw new Error(
-    "NEXT_PUBLIC_API_BASE_URL environment variable is required. " +
-      "Please set it in your Vercel environment variables or local .env.local file."
+    'NEXT_PUBLIC_API_BASE_URL environment variable is required. ' +
+      'Please set it in your Vercel environment variables or local .env.local file.'
   );
 }
 
@@ -26,20 +26,20 @@ async function fetchApi<T>(
 ): Promise<T> {
   const { token, ...restOptions } = options;
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
     ...restOptions.headers,
   };
 
   if (token) {
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
   const fullUrl = `${API_BASE_URL}${url}`;
 
   // API 호출 로그 추가
-  console.log("🌐 API 호출 시작:", {
+  console.log('🌐 API 호출 시작:', {
     fullUrl,
-    method: restOptions.method || "GET",
+    method: restOptions.method || 'GET',
     headers,
     body: restOptions.body,
     API_BASE_URL,
@@ -52,7 +52,7 @@ async function fetchApi<T>(
       headers,
     });
 
-    console.log("📡 API 응답 받음:", {
+    console.log('📡 API 응답 받음:', {
       status: response.status,
       statusText: response.statusText,
       url: response.url,
@@ -62,23 +62,23 @@ async function fetchApi<T>(
     if (response.status === 401) {
       // This should ideally be handled by a global interceptor or the AuthContext itself
       // For now, we'll just throw an error that the AuthContext can catch
-      console.log("❌ 인증 실패 (401)");
-      throw new Error("Unauthorized");
+      console.log('❌ 인증 실패 (401)');
+      throw new Error('Unauthorized');
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({
-        error: "Request failed with status " + response.status,
+        error: 'Request failed with status ' + response.status,
       }));
-      console.log("❌ API 에러 응답:", errorData);
-      throw new Error(errorData.error || "API request failed");
+      console.log('❌ API 에러 응답:', errorData);
+      throw new Error(errorData.error || 'API request failed');
     }
 
     const responseData = await response.json();
-    console.log("✅ API 성공 응답:", responseData);
+    console.log('✅ API 성공 응답:', responseData);
     return responseData as T;
   } catch (error) {
-    console.error("💥 API 호출 중 에러 발생:", {
+    console.error('💥 API 호출 중 에러 발생:', {
       error: error instanceof Error ? error.message : String(error),
       errorType: error instanceof Error ? error.constructor.name : typeof error,
       fullUrl,
@@ -111,7 +111,7 @@ interface AgentResponse {
   success: boolean;
   message: string;
   agentName: string;
-  status: "thinking" | "working" | "completed" | "error";
+  status: 'thinking' | 'working' | 'completed' | 'error';
   data?: any;
   executionTime?: number;
   nextSteps?: string[];
@@ -161,15 +161,15 @@ export function useGenerateProject(
     mutationFn: async (data: GenerateProjectPayload) => {
       try {
         return await fetchApi<GenerateProjectResponse>(
-          "/api/ai/generate-project",
+          '/api/ai/generate-project',
           {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(data),
             token,
           }
         );
       } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
+        if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
         }
         throw error;
@@ -195,12 +195,12 @@ export function useListProjects(
 ) {
   const { token, logout } = useAuth();
   return useQuery<ProjectListResponse, Error>({
-    queryKey: ["projects"],
+    queryKey: ['projects'],
     queryFn: async () => {
       try {
-        return await fetchApi<ProjectListResponse>("/api/projects", { token });
+        return await fetchApi<ProjectListResponse>('/api/projects', { token });
       } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
+        if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
         }
         throw error;
@@ -226,7 +226,7 @@ export function useListProjectPages(
 ) {
   const { token, logout } = useAuth();
   return useQuery<ProjectPagesResponse, Error>({
-    queryKey: ["projectPages", projectId],
+    queryKey: ['projectPages', projectId],
     queryFn: async () => {
       try {
         return await fetchApi<ProjectPagesResponse>(
@@ -236,7 +236,7 @@ export function useListProjectPages(
           }
         );
       } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
+        if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
         }
         throw error;
@@ -273,15 +273,15 @@ export function useGenerateComponent(
     mutationFn: async (data: GenerateComponentPayload) => {
       try {
         return await fetchApi<GenerateComponentResponse>(
-          "/api/ai/components/generate",
+          '/api/ai/components/generate',
           {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(data),
             token,
           }
         );
       } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
+        if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
         }
         throw error;
@@ -296,13 +296,13 @@ export function useSuggestions(
 ) {
   const { token, logout } = useAuth();
   return useQuery<SuggestionsResponse, Error>({
-    queryKey: ["suggestions"],
+    queryKey: ['suggestions'],
     queryFn: async () => {
       try {
         const url = `/api/ai/suggestions?limit=3`; // Hardcoded limit for now
         return await fetchApi<SuggestionsResponse>(url, { token });
       } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
+        if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
         }
         throw error;
@@ -321,14 +321,14 @@ export function useGenerateDummySuggestion(
     mutationFn: async () => {
       try {
         return await fetchApi<GenerateDummySuggestionResponse>(
-          "/api/ai/generate-dummy-suggestion",
+          '/api/ai/generate-dummy-suggestion',
           {
-            method: "POST",
+            method: 'POST',
             token,
           }
         );
       } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
+        if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
         }
         throw error;
@@ -360,13 +360,13 @@ export function useTrackEvents(
   return useMutation<TrackEventsResponse, Error, EventData[]>({
     mutationFn: async (events: EventData[]) => {
       try {
-        return await fetchApi<TrackEventsResponse>("/api/events", {
-          method: "POST",
+        return await fetchApi<TrackEventsResponse>('/api/events', {
+          method: 'POST',
           body: JSON.stringify({ events }),
           token,
         });
       } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
+        if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
         }
         throw error;
@@ -409,14 +409,14 @@ export function useLogError(
   return useMutation<LogErrorResponse, Error, LogErrorPayload>({
     mutationFn: async (errorData: LogErrorPayload) => {
       try {
-        return await fetchApi<LogErrorResponse>("/api/log-error", {
-          method: "POST",
+        return await fetchApi<LogErrorResponse>('/api/log-error', {
+          method: 'POST',
           body: JSON.stringify(errorData),
           token,
         });
       } catch (error) {
         // Do not logout here, as logging errors should not cause a logout loop
-        console.error("Failed to send error log:", error);
+        console.error('Failed to send error log:', error);
         throw error; // Re-throw to indicate mutation failure
       }
     },
@@ -447,14 +447,14 @@ export function useListComponents(
 ) {
   const { token, logout } = useAuth();
   return useQuery<ComponentListResponse, Error>({
-    queryKey: ["componentDefinitions"],
+    queryKey: ['componentDefinitions'],
     queryFn: async () => {
       try {
-        return await fetchApi<ComponentListResponse>("/api/components", {
+        return await fetchApi<ComponentListResponse>('/api/components', {
           token,
         });
       } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
+        if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
         }
         throw error;
@@ -482,14 +482,14 @@ export function usePageLayout(
 ) {
   const { token, logout } = useAuth();
   return useQuery<PageLayoutResponse, Error>({
-    queryKey: ["pageLayout", pageId],
+    queryKey: ['pageLayout', pageId],
     queryFn: async () => {
       try {
         return await fetchApi<PageLayoutResponse>(`/api/pages/${pageId}`, {
           token,
         });
       } catch (error) {
-        if (error instanceof Error && error.message === "Unauthorized") {
+        if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
         }
         throw error;
@@ -507,8 +507,8 @@ export function useMultiAgentSystem(
   const { token } = useAuth();
   return useMutation({
     mutationFn: (data: MultiAgentRequest) =>
-      fetchApi<MultiAgentResponse>("/api/ai/chat", {
-        method: "POST",
+      fetchApi<MultiAgentResponse>('/api/ai/chat', {
+        method: 'POST',
         body: JSON.stringify(data),
         token,
       }),

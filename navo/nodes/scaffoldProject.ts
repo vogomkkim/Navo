@@ -1,6 +1,6 @@
-import * as fs from "node:fs/promises";
-import * as path from "node:path";
-import { spawnSync } from "node:child_process";
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 // Simple logger for now
 const logger = {
@@ -12,16 +12,16 @@ export async function scaffoldProject(
   projectId: string,
   generatedStructure: any
 ): Promise<{ projectPath: string }> {
-  logger.info("Scaffolding project...");
+  logger.info('Scaffolding project...');
 
   if (!projectId || !generatedStructure) {
-    logger.error("Project ID or generated structure missing for scaffolding.");
+    logger.error('Project ID or generated structure missing for scaffolding.');
     throw new Error(
-      "Scaffolding failed: Missing project ID or generated structure."
+      'Scaffolding failed: Missing project ID or generated structure.'
     );
   }
 
-  const projectDir = path.join(process.cwd(), "generated_projects", projectId);
+  const projectDir = path.join(process.cwd(), 'generated_projects', projectId);
 
   try {
     await fs.mkdir(projectDir, { recursive: true });
@@ -29,19 +29,19 @@ export async function scaffoldProject(
 
     // Create basic file structure (e.g., package.json, tsconfig.json)
     await fs.writeFile(
-      path.join(projectDir, "package.json"),
+      path.join(projectDir, 'package.json'),
       JSON.stringify(
         {
           name: `project-${projectId}`,
-          version: "1.0.0",
+          version: '1.0.0',
           private: true,
-          type: "module",
+          type: 'module',
           scripts: {
-            start: "node dist/index.js",
-            build: "tsc",
+            start: 'node dist/index.js',
+            build: 'tsc',
           },
           dependencies: {
-            ...(generatedStructure.apiEndpoints && { fastify: "^5.5.0" }), // Add Fastify if API endpoints exist
+            ...(generatedStructure.apiEndpoints && { fastify: '^5.5.0' }), // Add Fastify if API endpoints exist
             // Add common dependencies here, e.g., express, react, etc.
           },
         },
@@ -49,48 +49,48 @@ export async function scaffoldProject(
         2
       )
     );
-    logger.info("Created package.json");
+    logger.info('Created package.json');
 
     // Install dependencies
-    logger.info("Installing dependencies...");
-    const npmInstallProcess = spawnSync("npm", ["install"], {
+    logger.info('Installing dependencies...');
+    const npmInstallProcess = spawnSync('npm', ['install'], {
       cwd: projectDir,
-      stdio: "inherit", // Pipe stdio to parent process
+      stdio: 'inherit', // Pipe stdio to parent process
     });
 
     if (npmInstallProcess.status !== 0) {
       logger.error(
         `npm install failed with exit code ${npmInstallProcess.status}`
       );
-      throw new Error("Failed to install dependencies.");
+      throw new Error('Failed to install dependencies.');
     }
-    logger.info("Dependencies installed successfully.");
+    logger.info('Dependencies installed successfully.');
 
     await fs.writeFile(
-      path.join(projectDir, "tsconfig.json"),
+      path.join(projectDir, 'tsconfig.json'),
       JSON.stringify(
         {
           compilerOptions: {
-            target: "ES2022",
-            module: "ES2022",
-            lib: ["ES2022", "DOM"],
+            target: 'ES2022',
+            module: 'ES2022',
+            lib: ['ES2022', 'DOM'],
             strict: true,
             esModuleInterop: true,
             skipLibCheck: true,
             forceConsistentCasingInFileNames: true,
-            outDir: "dist",
+            outDir: 'dist',
           },
-          include: ["src/**/*"],
-          exclude: ["node_modules"],
+          include: ['src/**/*'],
+          exclude: ['node_modules'],
         },
         null,
         2
       )
     );
-    logger.info("Created tsconfig.json");
+    logger.info('Created tsconfig.json');
 
-    await fs.mkdir(path.join(projectDir, "src"), { recursive: true });
-    logger.info("Created src directory");
+    await fs.mkdir(path.join(projectDir, 'src'), { recursive: true });
+    logger.info('Created src directory');
 
     let indexTsContent = 'console.log("Project scaffolded!");';
 
@@ -118,22 +118,22 @@ console.log('Fastify server listening on port 3001');
 
 start();
 `;
-      logger.info("Generated basic Fastify server in src/index.ts");
+      logger.info('Generated basic Fastify server in src/index.ts');
     } else if (
       generatedStructure.pages &&
       generatedStructure.pages.length > 0
     ) {
       // TODO: Generate basic React app structure
-      logger.info("Generated basic React app placeholder in src/index.ts");
+      logger.info('Generated basic React app placeholder in src/index.ts');
     }
 
     await fs.writeFile(
-      path.join(projectDir, "src", "index.ts"),
+      path.join(projectDir, 'src', 'index.ts'),
       indexTsContent
     );
-    logger.info("Created src/index.ts");
+    logger.info('Created src/index.ts');
 
-    logger.info("Project scaffolding completed.");
+    logger.info('Project scaffolding completed.');
     return { projectPath: projectDir };
   } catch (error) {
     logger.error(`Error during project scaffolding: ${error}`);

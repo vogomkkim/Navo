@@ -1,5 +1,5 @@
-import { EnhancedPrompt } from "./promptEnhancer.js";
-import { UserContext } from "./contextManager.js";
+import { EnhancedPrompt } from './promptEnhancer.js';
+import { UserContext } from './contextManager.js';
 
 /**
  * 액션 핸들러 인터페이스
@@ -79,7 +79,7 @@ export class ActionRouter {
     }
 
     // 기본 핸들러 반환
-    return this.handlers.get("default") || null;
+    return this.handlers.get('default') || null;
   }
 
   /**
@@ -138,90 +138,90 @@ export class ActionRouter {
     return [
       // 프로젝트 생성
       {
-        intent: "project_creation",
-        handler: "projectCreationHandler",
+        intent: 'project_creation',
+        handler: 'projectCreationHandler',
         priority: 100,
-        description: "새 프로젝트 생성 처리",
+        description: '새 프로젝트 생성 처리',
       },
 
       // 페이지 생성
       {
-        intent: "page_creation",
-        handler: "pageCreationHandler",
+        intent: 'page_creation',
+        handler: 'pageCreationHandler',
         priority: 90,
-        description: "새 페이지 생성 처리",
+        description: '새 페이지 생성 처리',
       },
 
       // 컴포넌트 생성
       {
-        intent: "component_creation",
-        handler: "componentCreationHandler",
+        intent: 'component_creation',
+        handler: 'componentCreationHandler',
         priority: 85,
-        description: "새 컴포넌트 생성 처리",
+        description: '새 컴포넌트 생성 처리',
       },
 
       // 페이지 수정
       {
-        intent: "page_modification",
-        handler: "pageModificationHandler",
+        intent: 'page_modification',
+        handler: 'pageModificationHandler',
         priority: 80,
-        description: "페이지 수정 처리",
+        description: '페이지 수정 처리',
       },
 
       // 컴포넌트 수정
       {
-        intent: "component_modification",
-        handler: "componentModificationHandler",
+        intent: 'component_modification',
+        handler: 'componentModificationHandler',
         priority: 75,
-        description: "컴포넌트 수정 처리",
+        description: '컴포넌트 수정 처리',
       },
 
       // 버그 수정
       {
-        intent: "bug_fix",
-        handler: "bugFixHandler",
+        intent: 'bug_fix',
+        handler: 'bugFixHandler',
         priority: 70,
-        description: "버그 수정 처리",
+        description: '버그 수정 처리',
       },
 
       // 기능 요청
       {
-        intent: "feature_request",
-        handler: "featureRequestHandler",
+        intent: 'feature_request',
+        handler: 'featureRequestHandler',
         priority: 65,
-        description: "기능 요청 처리",
+        description: '기능 요청 처리',
       },
 
       // 코드 리뷰
       {
-        intent: "code_review",
-        handler: "codeReviewHandler",
+        intent: 'code_review',
+        handler: 'codeReviewHandler',
         priority: 60,
-        description: "코드 리뷰 처리",
+        description: '코드 리뷰 처리',
       },
 
       // 질문
       {
-        intent: "question",
-        handler: "questionHandler",
+        intent: 'question',
+        handler: 'questionHandler',
         priority: 50,
-        description: "질문 처리",
+        description: '질문 처리',
       },
 
       // 불만/넋두리
       {
-        intent: "complaint",
-        handler: "complaintHandler",
+        intent: 'complaint',
+        handler: 'complaintHandler',
         priority: 45,
-        description: "불만/넋두리 처리",
+        description: '불만/넋두리 처리',
       },
 
       // 일반 대화
       {
-        intent: "general",
-        handler: "generalHandler",
+        intent: 'general',
+        handler: 'generalHandler',
         priority: 10,
-        description: "일반 대화 처리",
+        description: '일반 대화 처리',
       },
     ];
   }
@@ -272,11 +272,11 @@ export class ActionRouter {
 
 // 프로젝트 생성 핸들러
 export class ProjectCreationHandler implements ActionHandler {
-  name = "projectCreationHandler";
-  description = "새 프로젝트 생성 처리";
+  name = 'projectCreationHandler';
+  description = '새 프로젝트 생성 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "project_creation";
+    return intent === 'project_creation';
   }
 
   async execute(
@@ -293,8 +293,8 @@ export class ProjectCreationHandler implements ActionHandler {
       // 새 프로젝트 생성 로직
       const projectData = {
         name: projectName,
-        type: enhancedPrompt.action.parameters.projectType || "web",
-        features: enhancedPrompt.action.parameters.features || ["core"],
+        type: enhancedPrompt.action.parameters.projectType || 'web',
+        features: enhancedPrompt.action.parameters.features || ['core'],
         description: enhancedPrompt.enhancedMessage,
       };
 
@@ -302,13 +302,13 @@ export class ProjectCreationHandler implements ActionHandler {
         success: true,
         message: `새 프로젝트 "${projectData.name}" 생성 요청을 처리합니다.`,
         data: projectData,
-        nextAction: "create_project",
+        nextAction: 'create_project',
       };
     } catch (error) {
       return {
         success: false,
-        message: "프로젝트 생성 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '프로젝트 생성 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -319,130 +319,130 @@ export class ProjectCreationHandler implements ActionHandler {
 
     // SNS 관련 키워드
     if (
-      lowerMessage.includes("sns") ||
-      lowerMessage.includes("소셜") ||
-      lowerMessage.includes("게시물") ||
-      lowerMessage.includes("피드")
+      lowerMessage.includes('sns') ||
+      lowerMessage.includes('소셜') ||
+      lowerMessage.includes('게시물') ||
+      lowerMessage.includes('피드')
     ) {
       const socialNames = [
-        "소셜커넥트",
-        "소셜허브",
-        "커뮤니티존",
-        "소셜스페이스",
-        "프렌드허브",
-        "소셜매직",
-        "커넥트존",
-        "소셜팩토리",
-        "프렌드스튜디오",
-        "소셜크래프트",
+        '소셜커넥트',
+        '소셜허브',
+        '커뮤니티존',
+        '소셜스페이스',
+        '프렌드허브',
+        '소셜매직',
+        '커넥트존',
+        '소셜팩토리',
+        '프렌드스튜디오',
+        '소셜크래프트',
       ];
       return socialNames[timestamp % socialNames.length];
     }
 
     // 블로그 관련 키워드
-    if (lowerMessage.includes("블로그") || lowerMessage.includes("포스트")) {
+    if (lowerMessage.includes('블로그') || lowerMessage.includes('포스트')) {
       const blogNames = [
-        "블로그스페이스",
-        "포스트허브",
-        "스토리랩",
-        "컨텐츠스튜디오",
-        "블로그마스터",
+        '블로그스페이스',
+        '포스트허브',
+        '스토리랩',
+        '컨텐츠스튜디오',
+        '블로그마스터',
       ];
       return blogNames[timestamp % blogNames.length];
     }
 
     // 쇼핑 관련 키워드
     if (
-      lowerMessage.includes("쇼핑") ||
-      lowerMessage.includes("커머스") ||
-      lowerMessage.includes("결제")
+      lowerMessage.includes('쇼핑') ||
+      lowerMessage.includes('커머스') ||
+      lowerMessage.includes('결제')
     ) {
       const shopNames = [
-        "스마트쇼핑",
-        "커머스허브",
-        "쇼핑존",
-        "마켓플레이스",
-        "스토어랩",
+        '스마트쇼핑',
+        '커머스허브',
+        '쇼핑존',
+        '마켓플레이스',
+        '스토어랩',
       ];
       return shopNames[timestamp % shopNames.length];
     }
 
     // 학습 관련 키워드
     if (
-      lowerMessage.includes("학습") ||
-      lowerMessage.includes("퀴즈") ||
-      lowerMessage.includes("교육")
+      lowerMessage.includes('학습') ||
+      lowerMessage.includes('퀴즈') ||
+      lowerMessage.includes('교육')
     ) {
       const learnNames = [
-        "러닝플로우",
-        "에듀허브",
-        "스터디존",
-        "학습스페이스",
-        "지식랩",
+        '러닝플로우',
+        '에듀허브',
+        '스터디존',
+        '학습스페이스',
+        '지식랩',
       ];
       return learnNames[timestamp % learnNames.length];
     }
 
     // 게임 관련 키워드
     if (
-      lowerMessage.includes("게임") ||
-      lowerMessage.includes("엔터테인먼트")
+      lowerMessage.includes('게임') ||
+      lowerMessage.includes('엔터테인먼트')
     ) {
       const gameNames = [
-        "게임존",
-        "플레이허브",
-        "엔터테인먼트랩",
-        "게임스튜디오",
-        "플레이존",
+        '게임존',
+        '플레이허브',
+        '엔터테인먼트랩',
+        '게임스튜디오',
+        '플레이존',
       ];
       return gameNames[timestamp % gameNames.length];
     }
 
     // 채팅 관련 키워드
-    if (lowerMessage.includes("채팅") || lowerMessage.includes("메시지")) {
+    if (lowerMessage.includes('채팅') || lowerMessage.includes('메시지')) {
       const chatNames = [
-        "채팅허브",
-        "메시지존",
-        "커뮤니케이션랩",
-        "채팅스페이스",
-        "톡허브",
+        '채팅허브',
+        '메시지존',
+        '커뮤니케이션랩',
+        '채팅스페이스',
+        '톡허브',
       ];
       return chatNames[timestamp % chatNames.length];
     }
 
     // 기본 창의적인 이름들
-          const defaultNames = [
-        "네오스페이스",
-        "퓨처허브",
-        "인노베이션존",
-        "크리에이티브랩",
-        "테크플로우",
-        "디지털스튜디오",
-        "아이디어팩토리",
-        "스마트워크스",
-        "클라우드네스트",
-        "데이터허브",
-        "코드스튜디오",
-        "웹크래프트",
-        "앱마스터",
-        "디지털아트",
-        "테크마스터",
-        "매직랩",
-        "크래프트존",
-        "팩토리스페이스",
-        "스튜디오허브",
-        "플로우크래프트",
-        "네오매직",
-        "퓨처크래프트",
-        "인노베이션매직",
-        "크리에이티브매직",
-        "테크크래프트",
-        "디지털매직",
-        "아이디어크래프트",
-        "스마트매직",
-        "클라우드크래프트",
-        "데이터매직",
-      ];
+    const defaultNames = [
+      '네오스페이스',
+      '퓨처허브',
+      '인노베이션존',
+      '크리에이티브랩',
+      '테크플로우',
+      '디지털스튜디오',
+      '아이디어팩토리',
+      '스마트워크스',
+      '클라우드네스트',
+      '데이터허브',
+      '코드스튜디오',
+      '웹크래프트',
+      '앱마스터',
+      '디지털아트',
+      '테크마스터',
+      '매직랩',
+      '크래프트존',
+      '팩토리스페이스',
+      '스튜디오허브',
+      '플로우크래프트',
+      '네오매직',
+      '퓨처크래프트',
+      '인노베이션매직',
+      '크리에이티브매직',
+      '테크크래프트',
+      '디지털매직',
+      '아이디어크래프트',
+      '스마트매직',
+      '클라우드크래프트',
+      '데이터매직',
+    ];
 
     return defaultNames[timestamp % defaultNames.length];
   }
@@ -450,11 +450,11 @@ export class ProjectCreationHandler implements ActionHandler {
 
 // 페이지 생성 핸들러
 export class PageCreationHandler implements ActionHandler {
-  name = "pageCreationHandler";
-  description = "새 페이지 생성 처리";
+  name = 'pageCreationHandler';
+  description = '새 페이지 생성 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "page_creation";
+    return intent === 'page_creation';
   }
 
   async execute(
@@ -464,8 +464,8 @@ export class PageCreationHandler implements ActionHandler {
   ): Promise<ActionResult> {
     try {
       const pageData = {
-        name: enhancedPrompt.target.name || "새 페이지",
-        type: enhancedPrompt.action.parameters.pageType || "content",
+        name: enhancedPrompt.target.name || '새 페이지',
+        type: enhancedPrompt.action.parameters.pageType || 'content',
         features: enhancedPrompt.action.parameters.features || [],
         description: enhancedPrompt.enhancedMessage,
       };
@@ -474,13 +474,13 @@ export class PageCreationHandler implements ActionHandler {
         success: true,
         message: `새 페이지 "${pageData.name}" 생성 요청을 처리합니다.`,
         data: pageData,
-        nextAction: "create_page",
+        nextAction: 'create_page',
       };
     } catch (error) {
       return {
         success: false,
-        message: "페이지 생성 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '페이지 생성 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -488,11 +488,11 @@ export class PageCreationHandler implements ActionHandler {
 
 // 컴포넌트 생성 핸들러
 export class ComponentCreationHandler implements ActionHandler {
-  name = "componentCreationHandler";
-  description = "새 컴포넌트 생성 처리";
+  name = 'componentCreationHandler';
+  description = '새 컴포넌트 생성 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "component_creation";
+    return intent === 'component_creation';
   }
 
   async execute(
@@ -502,8 +502,8 @@ export class ComponentCreationHandler implements ActionHandler {
   ): Promise<ActionResult> {
     try {
       const componentData = {
-        name: enhancedPrompt.target.name || "새 컴포넌트",
-        type: enhancedPrompt.action.parameters.componentType || "ui",
+        name: enhancedPrompt.target.name || '새 컴포넌트',
+        type: enhancedPrompt.action.parameters.componentType || 'ui',
         props: enhancedPrompt.action.parameters.props || {},
         description: enhancedPrompt.enhancedMessage,
       };
@@ -512,13 +512,13 @@ export class ComponentCreationHandler implements ActionHandler {
         success: true,
         message: `새 컴포넌트 "${componentData.name}" 생성 요청을 처리합니다.`,
         data: componentData,
-        nextAction: "create_component",
+        nextAction: 'create_component',
       };
     } catch (error) {
       return {
         success: false,
-        message: "컴포넌트 생성 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '컴포넌트 생성 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -526,11 +526,11 @@ export class ComponentCreationHandler implements ActionHandler {
 
 // 페이지 수정 핸들러
 export class PageModificationHandler implements ActionHandler {
-  name = "pageModificationHandler";
-  description = "페이지 수정 처리";
+  name = 'pageModificationHandler';
+  description = '페이지 수정 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "page_modification";
+    return intent === 'page_modification';
   }
 
   async execute(
@@ -540,7 +540,7 @@ export class PageModificationHandler implements ActionHandler {
   ): Promise<ActionResult> {
     try {
       const modificationData = {
-        targetPage: enhancedPrompt.target.name || "현재 페이지",
+        targetPage: enhancedPrompt.target.name || '현재 페이지',
         modifications: enhancedPrompt.action.parameters.modifications || {},
         description: enhancedPrompt.enhancedMessage,
       };
@@ -549,13 +549,13 @@ export class PageModificationHandler implements ActionHandler {
         success: true,
         message: `페이지 "${modificationData.targetPage}" 수정 요청을 처리합니다.`,
         data: modificationData,
-        nextAction: "modify_page",
+        nextAction: 'modify_page',
       };
     } catch (error) {
       return {
         success: false,
-        message: "페이지 수정 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '페이지 수정 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -563,11 +563,11 @@ export class PageModificationHandler implements ActionHandler {
 
 // 컴포넌트 수정 핸들러
 export class ComponentModificationHandler implements ActionHandler {
-  name = "componentModificationHandler";
-  description = "컴포넌트 수정 처리";
+  name = 'componentModificationHandler';
+  description = '컴포넌트 수정 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "component_modification";
+    return intent === 'component_modification';
   }
 
   async execute(
@@ -580,7 +580,7 @@ export class ComponentModificationHandler implements ActionHandler {
         targetComponent:
           enhancedPrompt.target.name ||
           userContext.currentComponent?.displayName ||
-          "현재 컴포넌트",
+          '현재 컴포넌트',
         modifications: enhancedPrompt.action.parameters.modifications || {},
         description: enhancedPrompt.enhancedMessage,
       };
@@ -589,13 +589,13 @@ export class ComponentModificationHandler implements ActionHandler {
         success: true,
         message: `컴포넌트 "${modificationData.targetComponent}" 수정 요청을 처리합니다.`,
         data: modificationData,
-        nextAction: "modify_component",
+        nextAction: 'modify_component',
       };
     } catch (error) {
       return {
         success: false,
-        message: "컴포넌트 수정 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '컴포넌트 수정 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -603,11 +603,11 @@ export class ComponentModificationHandler implements ActionHandler {
 
 // 버그 수정 핸들러
 export class BugFixHandler implements ActionHandler {
-  name = "bugFixHandler";
-  description = "버그 수정 처리";
+  name = 'bugFixHandler';
+  description = '버그 수정 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "bug_fix";
+    return intent === 'bug_fix';
   }
 
   async execute(
@@ -617,9 +617,9 @@ export class BugFixHandler implements ActionHandler {
   ): Promise<ActionResult> {
     try {
       const bugFixData = {
-        issue: enhancedPrompt.action.parameters.issue || "알 수 없는 버그",
-        severity: enhancedPrompt.action.parameters.severity || "medium",
-        target: enhancedPrompt.target.description || "전체 시스템",
+        issue: enhancedPrompt.action.parameters.issue || '알 수 없는 버그',
+        severity: enhancedPrompt.action.parameters.severity || 'medium',
+        target: enhancedPrompt.target.description || '전체 시스템',
         description: enhancedPrompt.enhancedMessage,
       };
 
@@ -627,13 +627,13 @@ export class BugFixHandler implements ActionHandler {
         success: true,
         message: `버그 수정 요청을 처리합니다.`,
         data: bugFixData,
-        nextAction: "fix_bug",
+        nextAction: 'fix_bug',
       };
     } catch (error) {
       return {
         success: false,
-        message: "버그 수정 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '버그 수정 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -641,11 +641,11 @@ export class BugFixHandler implements ActionHandler {
 
 // 기능 요청 핸들러
 export class FeatureRequestHandler implements ActionHandler {
-  name = "featureRequestHandler";
-  description = "기능 요청 처리";
+  name = 'featureRequestHandler';
+  description = '기능 요청 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "feature_request";
+    return intent === 'feature_request';
   }
 
   async execute(
@@ -655,9 +655,9 @@ export class FeatureRequestHandler implements ActionHandler {
   ): Promise<ActionResult> {
     try {
       const featureData = {
-        feature: enhancedPrompt.action.parameters.feature || "새 기능",
-        priority: enhancedPrompt.action.parameters.priority || "medium",
-        target: enhancedPrompt.target.description || "현재 프로젝트",
+        feature: enhancedPrompt.action.parameters.feature || '새 기능',
+        priority: enhancedPrompt.action.parameters.priority || 'medium',
+        target: enhancedPrompt.target.description || '현재 프로젝트',
         description: enhancedPrompt.enhancedMessage,
       };
 
@@ -665,13 +665,13 @@ export class FeatureRequestHandler implements ActionHandler {
         success: true,
         message: `기능 요청을 처리합니다.`,
         data: featureData,
-        nextAction: "implement_feature",
+        nextAction: 'implement_feature',
       };
     } catch (error) {
       return {
         success: false,
-        message: "기능 요청 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '기능 요청 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -679,11 +679,11 @@ export class FeatureRequestHandler implements ActionHandler {
 
 // 코드 리뷰 핸들러
 export class CodeReviewHandler implements ActionHandler {
-  name = "codeReviewHandler";
-  description = "코드 리뷰 처리";
+  name = 'codeReviewHandler';
+  description = '코드 리뷰 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "code_review";
+    return intent === 'code_review';
   }
 
   async execute(
@@ -693,11 +693,11 @@ export class CodeReviewHandler implements ActionHandler {
   ): Promise<ActionResult> {
     try {
       const reviewData = {
-        target: enhancedPrompt.target.description || "전체 코드",
+        target: enhancedPrompt.target.description || '전체 코드',
         aspects: enhancedPrompt.action.parameters.aspects || [
-          "performance",
-          "security",
-          "readability",
+          'performance',
+          'security',
+          'readability',
         ],
         description: enhancedPrompt.enhancedMessage,
       };
@@ -706,13 +706,13 @@ export class CodeReviewHandler implements ActionHandler {
         success: true,
         message: `코드 리뷰 요청을 처리합니다.`,
         data: reviewData,
-        nextAction: "review_code",
+        nextAction: 'review_code',
       };
     } catch (error) {
       return {
         success: false,
-        message: "코드 리뷰 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '코드 리뷰 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -720,11 +720,11 @@ export class CodeReviewHandler implements ActionHandler {
 
 // 질문 핸들러
 export class QuestionHandler implements ActionHandler {
-  name = "questionHandler";
-  description = "질문 처리";
+  name = 'questionHandler';
+  description = '질문 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "question";
+    return intent === 'question';
   }
 
   async execute(
@@ -743,13 +743,13 @@ export class QuestionHandler implements ActionHandler {
         success: true,
         message: `질문에 답변합니다.`,
         data: questionData,
-        nextAction: "answer_question",
+        nextAction: 'answer_question',
       };
     } catch (error) {
       return {
         success: false,
-        message: "질문 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '질문 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -757,11 +757,11 @@ export class QuestionHandler implements ActionHandler {
 
 // 불만/넋두리 핸들러
 export class ComplaintHandler implements ActionHandler {
-  name = "complaintHandler";
-  description = "불만/넋두리 처리";
+  name = 'complaintHandler';
+  description = '불만/넋두리 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "complaint";
+    return intent === 'complaint';
   }
 
   async execute(
@@ -789,12 +789,12 @@ export class ComplaintHandler implements ActionHandler {
           data: {
             ...complaintData,
             suggestions: [
-              "어떤 부분이 마음에 들지 않으신가요? (색상, 크기, 위치, 텍스트 등)",
-              "어떻게 변경하고 싶으신가요?",
-              "구체적인 요청을 해주시면 바로 도와드리겠습니다.",
+              '어떤 부분이 마음에 들지 않으신가요? (색상, 크기, 위치, 텍스트 등)',
+              '어떻게 변경하고 싶으신가요?',
+              '구체적인 요청을 해주시면 바로 도와드리겠습니다.',
             ],
           },
-          nextAction: "clarify_complaint",
+          nextAction: 'clarify_complaint',
         };
       }
 
@@ -802,13 +802,13 @@ export class ComplaintHandler implements ActionHandler {
         success: true,
         message: `불만을 이해했습니다. 개선 방안을 제안해드리겠습니다.`,
         data: complaintData,
-        nextAction: "suggest_improvement",
+        nextAction: 'suggest_improvement',
       };
     } catch (error) {
       return {
         success: false,
-        message: "불만 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '불만 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -816,11 +816,11 @@ export class ComplaintHandler implements ActionHandler {
 
 // 일반 대화 핸들러
 export class GeneralHandler implements ActionHandler {
-  name = "generalHandler";
-  description = "일반 대화 처리";
+  name = 'generalHandler';
+  description = '일반 대화 처리';
 
   canHandle(intent: string, target: string): boolean {
-    return intent === "general";
+    return intent === 'general';
   }
 
   async execute(
@@ -839,13 +839,13 @@ export class GeneralHandler implements ActionHandler {
         success: true,
         message: `일반적인 대화를 처리합니다.`,
         data: generalData,
-        nextAction: "general_conversation",
+        nextAction: 'general_conversation',
       };
     } catch (error) {
       return {
         success: false,
-        message: "일반 대화 처리 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: '일반 대화 처리 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -853,8 +853,8 @@ export class GeneralHandler implements ActionHandler {
 
 // 기본 핸들러
 export class DefaultHandler implements ActionHandler {
-  name = "default";
-  description = "기본 처리";
+  name = 'default';
+  description = '기본 처리';
 
   canHandle(intent: string, target: string): boolean {
     return true; // 모든 의도를 처리할 수 있음
@@ -874,7 +874,7 @@ export class DefaultHandler implements ActionHandler {
         action: enhancedPrompt.action,
         message: enhancedPrompt.enhancedMessage,
       },
-      nextAction: "default_processing",
+      nextAction: 'default_processing',
     };
   }
 }
@@ -884,29 +884,29 @@ export const actionRouter = new ActionRouter();
 
 // 기본 핸들러들 등록
 actionRouter.registerHandler(
-  "projectCreationHandler",
+  'projectCreationHandler',
   new ProjectCreationHandler()
 );
-actionRouter.registerHandler("pageCreationHandler", new PageCreationHandler());
+actionRouter.registerHandler('pageCreationHandler', new PageCreationHandler());
 actionRouter.registerHandler(
-  "componentCreationHandler",
+  'componentCreationHandler',
   new ComponentCreationHandler()
 );
 actionRouter.registerHandler(
-  "pageModificationHandler",
+  'pageModificationHandler',
   new PageModificationHandler()
 );
 actionRouter.registerHandler(
-  "componentModificationHandler",
+  'componentModificationHandler',
   new ComponentModificationHandler()
 );
-actionRouter.registerHandler("bugFixHandler", new BugFixHandler());
+actionRouter.registerHandler('bugFixHandler', new BugFixHandler());
 actionRouter.registerHandler(
-  "featureRequestHandler",
+  'featureRequestHandler',
   new FeatureRequestHandler()
 );
-actionRouter.registerHandler("codeReviewHandler", new CodeReviewHandler());
-actionRouter.registerHandler("questionHandler", new QuestionHandler());
-actionRouter.registerHandler("complaintHandler", new ComplaintHandler());
-actionRouter.registerHandler("generalHandler", new GeneralHandler());
-actionRouter.registerHandler("default", new DefaultHandler());
+actionRouter.registerHandler('codeReviewHandler', new CodeReviewHandler());
+actionRouter.registerHandler('questionHandler', new QuestionHandler());
+actionRouter.registerHandler('complaintHandler', new ComplaintHandler());
+actionRouter.registerHandler('generalHandler', new GeneralHandler());
+actionRouter.registerHandler('default', new DefaultHandler());

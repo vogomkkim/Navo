@@ -25,7 +25,7 @@ npm install -D tailwindcss@3.4.17 postcss autoprefixer
 
 ```javascript
 const config = {
-  plugins: ["tailwindcss", "autoprefixer"],
+  plugins: ['tailwindcss', 'autoprefixer'],
 };
 
 export default config;
@@ -45,29 +45,29 @@ export default config;
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./src/app/**/*.{js,ts,jsx,tsx}",
-    "./src/components/**/*.{js,ts,jsx,tsx}",
+    './src/**/*.{js,ts,jsx,tsx}',
+    './src/app/**/*.{js,ts,jsx,tsx}',
+    './src/components/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
       colors: {
         // 커스텀 색상 정의
         primary: {
-          50: "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
-          800: "#1e40af",
-          900: "#1e3a8a",
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
     },
   },
@@ -164,7 +164,7 @@ module.exports = {
 ```css
 @layer base {
   html {
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
   body {
@@ -244,9 +244,9 @@ npm install
 ```javascript
 // tailwind.config.js
 module.exports = {
-  content: ["./src/**/*.{js,ts,jsx,tsx}"],
+  content: ['./src/**/*.{js,ts,jsx,tsx}'],
   // 개발 환경에서만 JIT 모드 사용
-  mode: process.env.NODE_ENV === "development" ? "jit" : "aot",
+  mode: process.env.NODE_ENV === 'development' ? 'jit' : 'aot',
 };
 ```
 
@@ -279,17 +279,17 @@ module.exports = {
 
    ```javascript
    // v4
-   plugins: ["@tailwindcss/postcss"];
+   plugins: ['@tailwindcss/postcss'];
 
    // v3
-   plugins: ["tailwindcss", "autoprefixer"];
+   plugins: ['tailwindcss', 'autoprefixer'];
    ```
 
 3. **CSS 지시어 변경**
 
    ```css
    /* v4 */
-   @import "tailwindcss";
+   @import 'tailwindcss';
 
    /* v3 */
    @tailwind base;
@@ -301,7 +301,7 @@ module.exports = {
    ```javascript
    // tailwind.config.js 생성
    module.exports = {
-     content: ["./src/**/*.{js,ts,jsx,tsx}"],
+     content: ['./src/**/*.{js,ts,jsx,tsx}'],
      theme: { extend: {} },
      plugins: [],
    };

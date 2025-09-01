@@ -6,7 +6,11 @@ export type RunnerOptions = {
   timeoutMs?: number; // per node timeout (legacy)
   // Detailed error-handling & observability
   onNodeStart?: (name: string) => void | Promise<void>;
-  onNodeSuccess?: (name: string, ms: number, result: unknown) => void | Promise<void>;
+  onNodeSuccess?: (
+    name: string,
+    ms: number,
+    result: unknown
+  ) => void | Promise<void>;
   onNodeFailure?: (name: string, error: unknown) => void | Promise<void>;
   // Global defaults for resiliency controls
   defaultRetries?: number;
@@ -131,11 +135,13 @@ async function executeNodeWithResilience(
 ): Promise<unknown> {
   const retries = node.retries ?? options.defaultRetries ?? 0;
   const baseDelay = node.retryDelayMs ?? options.defaultRetryDelayMs ?? 0;
-  const useExponential = node.exponentialBackoff ?? options.defaultExponentialBackoff ?? false;
+  const useExponential =
+    node.exponentialBackoff ?? options.defaultExponentialBackoff ?? false;
 
   const shouldRetry = (error: unknown): boolean => {
     if (node.shouldRetry) return node.shouldRetry(error);
-    if (options.shouldRetryGlobal) return options.shouldRetryGlobal(error, node);
+    if (options.shouldRetryGlobal)
+      return options.shouldRetryGlobal(error, node);
     return retries > 0; // default heuristic: if retries configured, retry any error
   };
 
@@ -182,7 +188,9 @@ async function executeNodeWithResilience(
       }
 
       // Will retry
-      const delay = useExponential ? baseDelay * Math.pow(2, attempt) : baseDelay;
+      const delay = useExponential
+        ? baseDelay * Math.pow(2, attempt)
+        : baseDelay;
       if (delay > 0) await sleep(delay);
       attempt += 1;
     }

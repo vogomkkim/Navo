@@ -1,7 +1,7 @@
-import type { NextConfig } from "next";
-import path from "path";
+import type { NextConfig } from 'next';
+import path from 'path';
 
-const isDev = process.env.NODE_ENV === "development";
+const isDev = process.env.NODE_ENV === 'development';
 
 const nextConfig: NextConfig = {
   // 타입 체크 최적화
@@ -18,9 +18,9 @@ const nextConfig: NextConfig = {
   ...(isDev && {
     turbopack: {
       rules: {
-        "*.css": {
-          loaders: ["css-loader"],
-          as: "*.css",
+        '*.css': {
+          loaders: ['css-loader'],
+          as: '*.css',
         },
       },
     },
@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
     // reactCompiler: true,
   },
 
-  outputFileTracingRoot: path.join(__dirname, ".."),
+  outputFileTracingRoot: path.join(__dirname, '..'),
 };
 
 export default nextConfig;

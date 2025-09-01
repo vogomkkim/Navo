@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 interface UseInputHistoryReturn {
   inputValue: string;
@@ -9,11 +9,11 @@ interface UseInputHistoryReturn {
   messageHistory: string[];
 }
 
-const HISTORY_KEY = "navo_input_history";
+const HISTORY_KEY = 'navo_input_history';
 const MAX_HISTORY_SIZE = 10;
 
 export function useInputHistory(): UseInputHistoryReturn {
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState('');
   const [messageHistory, setMessageHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
@@ -28,7 +28,7 @@ export function useInputHistory(): UseInputHistoryReturn {
         }
       }
     } catch (error) {
-      console.warn("Failed to load input history from localStorage:", error);
+      console.warn('Failed to load input history from localStorage:', error);
     }
   }, []);
 
@@ -37,12 +37,12 @@ export function useInputHistory(): UseInputHistoryReturn {
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(messageHistory));
     } catch (error) {
-      console.warn("Failed to save input history to localStorage:", error);
+      console.warn('Failed to save input history to localStorage:', error);
     }
   }, [messageHistory]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowUp") {
+    if (e.key === 'ArrowUp') {
       e.preventDefault();
 
       if (historyIndex < messageHistory.length - 1) {
@@ -52,7 +52,7 @@ export function useInputHistory(): UseInputHistoryReturn {
       }
     }
 
-    if (e.key === "ArrowDown") {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
 
       if (historyIndex > 0) {
@@ -61,10 +61,10 @@ export function useInputHistory(): UseInputHistoryReturn {
         setInputValue(messageHistory[messageHistory.length - 1 - newIndex]);
       } else if (historyIndex === 0) {
         setHistoryIndex(-1);
-        setInputValue(""); // 빈 값으로 초기화
+        setInputValue(''); // 빈 값으로 초기화
       } else if (historyIndex === -1) {
         // 이미 빈 상태에서 ↓ 누르면 그대로 빈 상태 유지
-        setInputValue("");
+        setInputValue('');
       }
     }
   };
@@ -96,7 +96,7 @@ export function useInputHistory(): UseInputHistoryReturn {
     try {
       localStorage.removeItem(HISTORY_KEY);
     } catch (error) {
-      console.warn("Failed to clear input history from localStorage:", error);
+      console.warn('Failed to clear input history from localStorage:', error);
     }
   };
 

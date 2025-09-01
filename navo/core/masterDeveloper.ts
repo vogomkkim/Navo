@@ -5,8 +5,8 @@
  * 에러 해결과 프로젝트 생성을 모두 지원합니다.
  */
 
-import { runGraph } from "./runner.js";
-import { GraphNode, NodeContext } from "./node.js";
+import { runGraph } from './runner.js';
+import { GraphNode, NodeContext } from './node.js';
 
 // Define AgentGraphNode type
 export type AgentGraphNode = GraphNode & {
@@ -35,8 +35,6 @@ export interface MasterDeveloperAgent {
   execute(request: any, context: any, payload?: unknown): Promise<any>;
 }
 
-
-
 /**
  * 프로젝트 생성 요청 정보
  */
@@ -46,13 +44,13 @@ export interface ProjectRequest {
   /** 프로젝트 설명 */
   description: string;
   /** 프로젝트 타입 */
-  type: "web" | "mobile" | "desktop" | "api" | "fullstack";
+  type: 'web' | 'mobile' | 'desktop' | 'api' | 'fullstack';
   /** 주요 기능들 */
   features: string[];
   /** 기술 스택 */
   technology?: string[];
   /** 복잡도 */
-  complexity?: "simple" | "medium" | "complex";
+  complexity?: 'simple' | 'medium' | 'complex';
   /** 예상 개발 기간 */
   estimatedTime?: string;
 }
@@ -119,7 +117,7 @@ export interface ProjectResult {
 export interface GeneratedFile {
   path: string;
   content: string;
-  type: "code" | "config" | "documentation";
+  type: 'code' | 'config' | 'documentation';
   description: string;
 }
 
@@ -150,7 +148,7 @@ export interface CodeChange {
   /** 변경할 파일 경로 */
   file: string;
   /** 변경 유형 */
-  action: "create" | "modify" | "delete" | "replace" | "rollback";
+  action: 'create' | 'modify' | 'delete' | 'replace' | 'rollback';
   /** 새로운 코드 내용 */
   content?: string;
   /** 변경 이유 */
@@ -178,37 +176,37 @@ export interface CodeChange {
  */
 export enum ErrorType {
   // DOM 관련 에러
-  NULL_REFERENCE = "null_reference",
-  ELEMENT_NOT_FOUND = "element_not_found",
-  DOM_MANIPULATION = "dom_manipulation",
+  NULL_REFERENCE = 'null_reference',
+  ELEMENT_NOT_FOUND = 'element_not_found',
+  DOM_MANIPULATION = 'dom_manipulation',
 
   // API 관련 에러
-  NETWORK_ERROR = "network_error",
-  API_RESPONSE_ERROR = "api_response_error",
-  AUTHENTICATION_ERROR = "authentication_error",
+  NETWORK_ERROR = 'network_error',
+  API_RESPONSE_ERROR = 'api_response_error',
+  AUTHENTICATION_ERROR = 'authentication_error',
 
   // 타입 관련 에러
-  TYPE_ERROR = "type_error",
-  UNDEFINED_ERROR = "undefined_error",
-  VALIDATION_ERROR = "validation_error",
+  TYPE_ERROR = 'type_error',
+  UNDEFINED_ERROR = 'undefined_error',
+  VALIDATION_ERROR = 'validation_error',
 
   // 로직 관련 에러
-  INFINITE_LOOP = "infinite_loop",
-  MEMORY_LEAK = "memory_leak",
-  TIMEOUT_ERROR = "timeout_error",
+  INFINITE_LOOP = 'infinite_loop',
+  MEMORY_LEAK = 'memory_leak',
+  TIMEOUT_ERROR = 'timeout_error',
 
   // 기타
-  UNKNOWN_ERROR = "unknown_error",
+  UNKNOWN_ERROR = 'unknown_error',
 }
 
 /**
  * 에러 심각도
  */
 export enum ErrorSeverity {
-  CRITICAL = "critical", // 애플리케이션 중단
-  HIGH = "high", // 주요 기능 장애
-  MEDIUM = "medium", // 일부 기능 장애
-  LOW = "low", // 경고 수준
+  CRITICAL = 'critical', // 애플리케이션 중단
+  HIGH = 'high', // 주요 기능 장애
+  MEDIUM = 'medium', // 일부 기능 장애
+  LOW = 'low', // 경고 수준
 }
 
 /**
@@ -338,13 +336,13 @@ export interface Logger {
 
 export class ConsoleLogger implements Logger {
   info(message: string, data?: Record<string, any>): void {
-    console.log(JSON.stringify({ level: "info", message, ...data }));
+    console.log(JSON.stringify({ level: 'info', message, ...data }));
   }
   warn(message: string, data?: Record<string, any>): void {
-    console.warn(JSON.stringify({ level: "warn", message, ...data }));
+    console.warn(JSON.stringify({ level: 'warn', message, ...data }));
   }
   error(message: string, data?: Record<string, any>): void {
-    console.error(JSON.stringify({ level: "error", message, ...data }));
+    console.error(JSON.stringify({ level: 'error', message, ...data }));
   }
 }
 
@@ -398,8 +396,8 @@ export class MasterDeveloperManager {
         success: false,
         changes: [],
         executionTime: 0,
-        errorMessage: "Automated resolution failed after multiple retries.",
-        nextSteps: ["Manual debugging is required."],
+        errorMessage: 'Automated resolution failed after multiple retries.',
+        nextSteps: ['Manual debugging is required.'],
         humanInterventionRequired: true,
       };
 
@@ -410,10 +408,10 @@ export class MasterDeveloperManager {
         { DevelopmentGuideAgent },
         { RollbackAgent },
       ] = await Promise.all([
-        import("../agents/projectArchitectAgent.js"),
-        import("../agents/codeGeneratorAgent.js"),
-        import("../agents/developmentGuideAgent.js"),
-        import("../agents/rollbackAgent.js"),
+        import('../agents/projectArchitectAgent.js'),
+        import('../agents/codeGeneratorAgent.js'),
+        import('../agents/developmentGuideAgent.js'),
+        import('../agents/rollbackAgent.js'),
       ]);
 
       while (retryCount < maxRetries) {
@@ -435,22 +433,22 @@ export class MasterDeveloperManager {
         // Define graph nodes
         const nodes: GraphNode[] = [
           {
-            name: "analyzeError",
+            name: 'analyzeError',
             deps: [],
             run: async (ctx: NodeContext) => {
               const result = await projectArchitect.execute(error, context);
               if (!result.success) {
-                throw new Error(result.errorMessage || "Error analysis failed");
+                throw new Error(result.errorMessage || 'Error analysis failed');
               }
               return result;
             },
           },
           {
-            name: "fixCode",
-            deps: ["analyzeError"],
+            name: 'fixCode',
+            deps: ['analyzeError'],
             run: async (ctx: NodeContext) => {
               const analysisResult = ctx.outputs.get(
-                "analyzeError"
+                'analyzeError'
               ) as ResolutionResult;
               // Pass the codeChanges from analysis to the fixer
               const result = await codeGenerator.execute(
@@ -459,16 +457,16 @@ export class MasterDeveloperManager {
                 analysisResult.changes
               );
               if (!result.success) {
-                throw new Error(result.errorMessage || "Code fix failed");
+                throw new Error(result.errorMessage || 'Code fix failed');
               }
               return result;
             },
           },
           {
-            name: "runTests",
-            deps: ["fixCode"],
+            name: 'runTests',
+            deps: ['fixCode'],
             run: async (ctx: NodeContext) => {
-              const fixResult = ctx.outputs.get("fixCode") as ResolutionResult;
+              const fixResult = ctx.outputs.get('fixCode') as ResolutionResult;
               // Test if the fix resolved the error
               const result = await developmentGuide.execute(
                 error,
@@ -478,23 +476,23 @@ export class MasterDeveloperManager {
               if (!result.success) {
                 // If tests fail, we might need to trigger rollback
                 throw new Error(
-                  result.errorMessage || "Tests failed after fix"
+                  result.errorMessage || 'Tests failed after fix'
                 );
               }
               return result;
             },
           },
           {
-            name: "rollbackChanges",
-            deps: ["runTests"], // Rollback depends on test results
+            name: 'rollbackChanges',
+            deps: ['runTests'], // Rollback depends on test results
             run: async (ctx: NodeContext) => {
               const testResult = ctx.outputs.get(
-                "runTests"
+                'runTests'
               ) as ResolutionResult;
               if (!testResult.success) {
                 // Only rollback if tests failed
                 const fixResult = ctx.outputs.get(
-                  "fixCode"
+                  'fixCode'
                 ) as ResolutionResult;
                 // Pass the changes that were applied by the fixer to the rollback agent
                 const result = await rollbackAgent.execute(
@@ -503,7 +501,7 @@ export class MasterDeveloperManager {
                   fixResult.changes
                 );
                 if (!result.success) {
-                  throw new Error(result.errorMessage || "Rollback failed");
+                  throw new Error(result.errorMessage || 'Rollback failed');
                 }
                 return result;
               }
@@ -511,7 +509,7 @@ export class MasterDeveloperManager {
                 success: true,
                 changes: [],
                 executionTime: 0,
-                nextSteps: ["No rollback needed"],
+                nextSteps: ['No rollback needed'],
               };
             },
           },
@@ -530,13 +528,13 @@ export class MasterDeveloperManager {
 
           // Determine result of this attempt
           const currentTestResult = graphOutputs.get(
-            "runTests"
+            'runTests'
           ) as ResolutionResult;
           const currentFixResult = graphOutputs.get(
-            "fixCode"
+            'fixCode'
           ) as ResolutionResult;
           const currentRollbackResult = graphOutputs.get(
-            "rollbackChanges"
+            'rollbackChanges'
           ) as ResolutionResult;
 
           if (currentTestResult && currentTestResult.success) {
@@ -546,7 +544,7 @@ export class MasterDeveloperManager {
               executionTime:
                 (currentFixResult?.executionTime || 0) +
                 (currentTestResult?.executionTime || 0),
-              nextSteps: ["Error successfully resolved and verified."],
+              nextSteps: ['Error successfully resolved and verified.'],
             };
             break; // Exit retry loop on success
           } else if (currentRollbackResult && currentRollbackResult.success) {
@@ -557,8 +555,8 @@ export class MasterDeveloperManager {
                 (currentFixResult?.executionTime || 0) +
                 (currentTestResult?.executionTime || 0) +
                 (currentRollbackResult?.executionTime || 0),
-              errorMessage: "Fix failed, but changes were rolled back.",
-              nextSteps: ["Fix failed, changes rolled back. Retrying..."],
+              errorMessage: 'Fix failed, but changes were rolled back.',
+              nextSteps: ['Fix failed, changes rolled back. Retrying...'],
             };
             // Continue to next retry attempt
           } else {
@@ -569,8 +567,8 @@ export class MasterDeveloperManager {
                 (currentFixResult?.executionTime || 0) +
                 (currentTestResult?.executionTime || 0) +
                 (currentRollbackResult?.executionTime || 0),
-              errorMessage: "Error resolution process failed in this attempt.",
-              nextSteps: ["Automated resolution failed. Retrying..."],
+              errorMessage: 'Error resolution process failed in this attempt.',
+              nextSteps: ['Automated resolution failed. Retrying...'],
             };
             // Continue to next retry attempt
           }
@@ -590,7 +588,7 @@ export class MasterDeveloperManager {
             changes: [],
             executionTime: 0,
             errorMessage: `Graph execution failed: ${graphError instanceof Error ? graphError.message : String(graphError)}`,
-            nextSteps: ["Retrying..."],
+            nextSteps: ['Retrying...'],
           };
           // Continue to next retry attempt
         }
@@ -621,7 +619,7 @@ export class MasterDeveloperManager {
     } catch (e) {
       this.logger.error(`Error during error resolution process:`, {
         error: e instanceof Error ? e.message : String(e),
-        stack: e instanceof Error ? e.stack : "N/A",
+        stack: e instanceof Error ? e.stack : 'N/A',
       });
 
       return {
@@ -629,7 +627,7 @@ export class MasterDeveloperManager {
         changes: [],
         executionTime: 0,
         errorMessage: `에러 해결 중 오류 발생: ${e instanceof Error ? e.message : String(e)}`,
-        nextSteps: ["시스템 관리자에게 문의하세요."],
+        nextSteps: ['시스템 관리자에게 문의하세요.'],
         humanInterventionRequired: true,
       };
     } finally {
@@ -669,7 +667,7 @@ export class MasterDeveloperManager {
    */
   async processHumanFeedback(
     previousResult: ResolutionResult,
-    humanInput: "approve" | "reject" | "retry" | "manual_fix"
+    humanInput: 'approve' | 'reject' | 'retry' | 'manual_fix'
   ): Promise<ResolutionResult> {
     this.logger.info(
       `[ErrorResolutionManager] Processing human feedback: ${humanInput}`,
@@ -677,50 +675,50 @@ export class MasterDeveloperManager {
     );
 
     switch (humanInput) {
-      case "approve":
+      case 'approve':
         // 인간이 승인했으므로 성공으로 간주
         return {
           ...previousResult,
           success: true,
           humanInterventionRequired: false,
-          nextSteps: ["Human approved the resolution."],
+          nextSteps: ['Human approved the resolution.'],
         };
-      case "reject":
+      case 'reject':
         // 인간이 거부했으므로 실패로 간주하고 수동 해결 필요
         return {
           ...previousResult,
           success: false,
           humanInterventionRequired: true,
           errorMessage:
-            "Human rejected the proposed resolution. Manual fix required.",
-          nextSteps: ["Manual debugging is required."],
+            'Human rejected the proposed resolution. Manual fix required.',
+          nextSteps: ['Manual debugging is required.'],
         };
-      case "retry":
+      case 'retry':
         // 재시도 로직 (새로운 에러로 간주하고 resolveError 호출)
         // 이 부분은 외부에서 resolveError를 다시 호출하도록 유도해야 함
         return {
           ...previousResult,
           success: false,
           humanInterventionRequired: false, // 재시도할 것이므로 더 이상 인간 개입 필요 없음
-          errorMessage: "Human requested a retry.",
-          nextSteps: ["Retrying automated resolution..."],
+          errorMessage: 'Human requested a retry.',
+          nextSteps: ['Retrying automated resolution...'],
         };
-      case "manual_fix":
+      case 'manual_fix':
         // 수동 해결 필요
         return {
           ...previousResult,
           success: false,
           humanInterventionRequired: true,
-          errorMessage: "Human decided to fix manually.",
-          nextSteps: ["Manual debugging is required."],
+          errorMessage: 'Human decided to fix manually.',
+          nextSteps: ['Manual debugging is required.'],
         };
       default:
         return {
           ...previousResult,
           success: false,
           humanInterventionRequired: true,
-          errorMessage: "Invalid human input. Manual fix required.",
-          nextSteps: ["Manual debugging is required."],
+          errorMessage: 'Invalid human input. Manual fix required.',
+          nextSteps: ['Manual debugging is required.'],
         };
     }
   }
@@ -735,25 +733,25 @@ export class MasterDeveloperManager {
  */
 export function estimateErrorType(error: Error): ErrorType {
   const message = error.message.toLowerCase();
-  const stack = error.stack?.toLowerCase() || "";
+  const stack = error.stack?.toLowerCase() || '';
 
-  if (message.includes("null") || message.includes("undefined")) {
+  if (message.includes('null') || message.includes('undefined')) {
     return ErrorType.NULL_REFERENCE;
   }
 
-  if (message.includes("element") || message.includes("dom")) {
+  if (message.includes('element') || message.includes('dom')) {
     return ErrorType.ELEMENT_NOT_FOUND;
   }
 
-  if (message.includes("network") || message.includes("fetch")) {
+  if (message.includes('network') || message.includes('fetch')) {
     return ErrorType.NETWORK_ERROR;
   }
 
-  if (message.includes("type") || message.includes("cannot read")) {
+  if (message.includes('type') || message.includes('cannot read')) {
     return ErrorType.TYPE_ERROR;
   }
 
-  if (message.includes("timeout")) {
+  if (message.includes('timeout')) {
     return ErrorType.TIMEOUT_ERROR;
   }
 

@@ -1,55 +1,55 @@
-import { FastifyInstance } from "fastify";
-import { authenticateToken } from "../auth/auth.js";
+import { FastifyInstance } from 'fastify';
+import { authenticateToken } from '../auth/auth.js';
 import {
   handleMultiAgentChat,
   handleVirtualPreview,
   handleProjectRecovery,
   getProjectStructure,
-  renderProjectToHTML,
-} from "../handlers/aiHandlers.js";
-import { and, eq } from "drizzle-orm";
-import { projects } from "../db/schema.js";
-import { db } from "../db/db.js";
+} from '../handlers/aiHandlers.js';
+import { renderProjectToHTML } from '../services/ai/render.js';
+import { and, eq } from 'drizzle-orm';
+import { projects } from '../db/schema.js';
+import { db } from '../db/db.js';
 
 export default async function aiRoutes(fastify: FastifyInstance) {
   // AI 멀티 에이전트 채팅
   fastify.post(
-    "/ai/chat",
+    '/ai/chat',
     { preHandler: [authenticateToken] },
     handleMultiAgentChat
   );
 
   // AI 제안 생성
   fastify.post(
-    "/ai/suggest",
+    '/ai/suggest',
     { preHandler: [authenticateToken] },
     async (request, reply) => {
       try {
         // TODO: Implement AI suggestion generation
-        reply.send({ message: "AI suggestion endpoint" });
+        reply.send({ message: 'AI suggestion endpoint' });
       } catch (error) {
-        reply.status(500).send({ error: "AI suggestion failed" });
+        reply.status(500).send({ error: 'AI suggestion failed' });
       }
     }
   );
 
   // 가상 파일 미리보기
   fastify.get(
-    "/preview/:pageId/*",
+    '/preview/:pageId/*',
     { preHandler: [authenticateToken] },
     handleVirtualPreview
   );
 
   // 프로젝트 복구 (이어서 완성하기)
   fastify.post(
-    "/ai/recover-project",
+    '/ai/recover-project',
     { preHandler: [authenticateToken] },
     handleProjectRecovery
   );
 
   // 프로젝트 구조 가져오기
   fastify.get(
-    "/ai/project-structure/:projectId",
+    '/ai/project-structure/:projectId',
     { preHandler: [authenticateToken] },
     async (request, reply) => {
       try {
@@ -58,7 +58,7 @@ export default async function aiRoutes(fastify: FastifyInstance) {
 
         // 프로젝트 소유권 확인
         if (!userId) {
-          reply.status(401).send({ error: "Unauthorized" });
+          reply.status(401).send({ error: 'Unauthorized' });
           return;
         }
 
@@ -67,7 +67,7 @@ export default async function aiRoutes(fastify: FastifyInstance) {
         });
 
         if (!project) {
-          reply.status(404).send({ error: "Project not found" });
+          reply.status(404).send({ error: 'Project not found' });
           return;
         }
 
@@ -76,31 +76,31 @@ export default async function aiRoutes(fastify: FastifyInstance) {
 
         reply.send(projectStructure);
       } catch (error) {
-        console.error("Error getting project structure:", error);
-        reply.status(500).send({ error: "Failed to get project structure" });
+        console.error('Error getting project structure:', error);
+        reply.status(500).send({ error: 'Failed to get project structure' });
       }
     }
   );
 
   // 동적 사이트 렌더링 (인증 없이 접근 가능)
-  fastify.get("/site/:projectId", async (request, reply) => {
+  fastify.get('/site/:projectId', async (request, reply) => {
     try {
       const { projectId } = request.params as any;
 
       // 프로젝트 구조 가져오기
       const project = await getProjectStructure(projectId);
       if (!project) {
-        reply.status(404).send("Project not found");
+        reply.status(404).send('Project not found');
         return;
       }
 
       // HTML 렌더링
       const html = await renderProjectToHTML(project);
 
-      reply.type("text/html").send(html);
+      reply.type('text/html').send(html);
     } catch (error) {
-      console.error("Error rendering site:", error);
-      reply.status(500).send("Internal server error");
+      console.error('Error rendering site:', error);
+      reply.status(500).send('Internal server error');
     }
   });
 }

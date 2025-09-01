@@ -19,16 +19,16 @@
 @tailwind utilities;
 
 /* 커스텀 애니메이션 */
-@import "./animations/keyframes.css";
+@import './animations/keyframes.css';
 
 /* 기본 레이아웃 및 UI 컴포넌트 */
-@import "./components/layout.css";
+@import './components/layout.css';
 
 /* AI Agent 컴포넌트 스타일 */
-@import "./components/ai-agent.css";
+@import './components/ai-agent.css';
 
 /* 반응형 디자인 유틸리티 */
-@import "./components/responsive.css";
+@import './components/responsive.css';
 
 /*
  * 🎯 이제 globals.css는 매우 간단해졌습니다!

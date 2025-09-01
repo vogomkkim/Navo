@@ -1,4 +1,4 @@
-import { db } from "../db/db.js";
+import { db } from '../db/db.js';
 import {
   userSessions,
   chatMessages,
@@ -6,10 +6,10 @@ import {
   users,
   projects,
   componentDefinitions,
-} from "../db/schema.js";
-import { eq, and, desc, asc } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
-import { sql } from "drizzle-orm";
+} from '../db/schema.js';
+import { eq, and, desc, asc } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
+import { sql } from 'drizzle-orm';
 
 /**
  * 사용자 컨텍스트 인터페이스
@@ -30,7 +30,7 @@ export interface UserContext {
     displayName: string;
     type: string;
   };
-  status: "active" | "archived";
+  status: 'active' | 'archived';
   expiresAt?: Date;
   version: number;
   lastAction?: {
@@ -49,7 +49,7 @@ export interface UserContext {
 export interface ChatMessage {
   id: string;
   sessionId: string;
-  role: "user" | "assistant" | "system" | "tool";
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: {
     message: string;
     [key: string]: any;
@@ -80,7 +80,7 @@ export interface ContextUpdate {
   currentProjectId?: string;
   currentComponentId?: string;
   conversationHistory?: Array<{
-    role: "user" | "assistant";
+    role: 'user' | 'assistant';
     message: string;
     timestamp: Date;
     metadata?: any;
@@ -143,8 +143,8 @@ export class ContextManager {
       // 세션이 없으면 새로 생성
       return await this.createSession(userId);
     } catch (error) {
-      console.error("Error getting or creating context:", error);
-      throw new Error("Failed to get or create user context");
+      console.error('Error getting or creating context:', error);
+      throw new Error('Failed to get or create user context');
     }
   }
 
@@ -178,7 +178,7 @@ export class ContextManager {
       const sessionDataJson = sessionData.sessionData as any;
 
       // 현재 프로젝트 정보 조회
-      let currentProject: UserContext["currentProject"] = undefined;
+      let currentProject: UserContext['currentProject'] = undefined;
       if (sessionDataJson.currentProjectId) {
         const project = await db
           .select()
@@ -197,7 +197,7 @@ export class ContextManager {
       }
 
       // 현재 컴포넌트 정보 조회
-      let currentComponent: UserContext["currentComponent"] = undefined;
+      let currentComponent: UserContext['currentComponent'] = undefined;
       if (sessionDataJson.currentComponentId) {
         const component = await db
           .select()
@@ -223,7 +223,7 @@ export class ContextManager {
         title: sessionDataJson.title || undefined,
         currentProject,
         currentComponent,
-        status: "active",
+        status: 'active',
         version: sessionData.version,
         lastAction: sessionDataJson.lastAction || undefined,
         contextData: sessionDataJson.contextData || {},
@@ -240,8 +240,8 @@ export class ContextManager {
 
       return context;
     } catch (error) {
-      console.error("Error getting context:", error);
-      throw new Error("Failed to get user context");
+      console.error('Error getting context:', error);
+      throw new Error('Failed to get user context');
     }
   }
 
@@ -254,7 +254,7 @@ export class ContextManager {
     const sessionDataJson = sessionData.sessionData as any;
 
     // 현재 프로젝트 정보 조회
-    let currentProject: UserContext["currentProject"] = undefined;
+    let currentProject: UserContext['currentProject'] = undefined;
     if (sessionDataJson.currentProjectId) {
       const project = await db
         .select()
@@ -273,7 +273,7 @@ export class ContextManager {
     }
 
     // 현재 컴포넌트 정보 조회
-    let currentComponent: UserContext["currentComponent"] = undefined;
+    let currentComponent: UserContext['currentComponent'] = undefined;
     if (sessionDataJson.currentComponentId) {
       const component = await db
         .select()
@@ -297,7 +297,7 @@ export class ContextManager {
       title: sessionDataJson.title || undefined,
       currentProject,
       currentComponent,
-      status: "active",
+      status: 'active',
       version: sessionData.version,
       lastAction: sessionDataJson.lastAction || undefined,
       contextData: sessionDataJson.contextData || {},
@@ -331,7 +331,7 @@ export class ContextManager {
         sessionId: session.id, // DB에서 생성된 UUID 사용
         userId: session.userId,
         title: title || undefined,
-        status: "active",
+        status: 'active',
         version: session.version,
         contextData: {},
         lastActivity: session.updatedAt,
@@ -343,8 +343,8 @@ export class ContextManager {
 
       return context;
     } catch (error) {
-      console.error("Error creating session:", error);
-      throw new Error("Failed to create user session");
+      console.error('Error creating session:', error);
+      throw new Error('Failed to create user session');
     }
   }
 
@@ -366,7 +366,7 @@ export class ContextManager {
         );
 
       if (!currentSession) {
-        throw new Error("Session not found");
+        throw new Error('Session not found');
       }
 
       // 기존 sessionData와 새로운 업데이트 병합
@@ -397,8 +397,8 @@ export class ContextManager {
       const cacheKey = `${sessionId}-${userId}`;
       this.sessionCache.delete(cacheKey);
     } catch (error) {
-      console.error("Error updating context:", error);
-      throw new Error("Failed to update user context");
+      console.error('Error updating context:', error);
+      throw new Error('Failed to update user context');
     }
   }
 
@@ -408,7 +408,7 @@ export class ContextManager {
   async addMessage(
     sessionId: string,
     userId: string,
-    role: "user" | "assistant" | "system" | "tool",
+    role: 'user' | 'assistant' | 'system' | 'tool',
     content: { message: string; [key: string]: any },
     model?: string,
     tokens?: number,
@@ -444,8 +444,8 @@ export class ContextManager {
 
       return message.id;
     } catch (error) {
-      console.error("Error adding message:", error);
-      throw new Error("Failed to add message to conversation history");
+      console.error('Error adding message:', error);
+      throw new Error('Failed to add message to conversation history');
     }
   }
 
@@ -469,7 +469,7 @@ export class ContextManager {
       return messages.map((msg) => ({
         id: msg.id,
         sessionId: msg.sessionId,
-        role: msg.messageType as "user" | "assistant" | "system" | "tool",
+        role: msg.messageType as 'user' | 'assistant' | 'system' | 'tool',
         content: {
           message: msg.content,
           ...(msg.metadata as any)?.originalContent,
@@ -480,8 +480,8 @@ export class ContextManager {
         createdAt: msg.createdAt,
       }));
     } catch (error) {
-      console.error("Error getting messages:", error);
-      throw new Error("Failed to get conversation messages");
+      console.error('Error getting messages:', error);
+      throw new Error('Failed to get conversation messages');
     }
   }
 
@@ -522,8 +522,8 @@ export class ContextManager {
         });
       }
     } catch (error) {
-      console.error("Error updating session summary:", error);
-      throw new Error("Failed to update session summary");
+      console.error('Error updating session summary:', error);
+      throw new Error('Failed to update session summary');
     }
   }
 
@@ -560,8 +560,8 @@ export class ContextManager {
             : new Date(),
       };
     } catch (error) {
-      console.error("Error getting session summary:", error);
-      throw new Error("Failed to get session summary");
+      console.error('Error getting session summary:', error);
+      throw new Error('Failed to get session summary');
     }
   }
 
@@ -579,8 +579,8 @@ export class ContextManager {
         currentComponentId: undefined, // 프로젝트 변경 시 컴포넌트 초기화
       });
     } catch (error) {
-      console.error("Error setting current project:", error);
-      throw new Error("Failed to set current project");
+      console.error('Error setting current project:', error);
+      throw new Error('Failed to set current project');
     }
   }
 
@@ -597,8 +597,8 @@ export class ContextManager {
         currentComponentId: componentId,
       });
     } catch (error) {
-      console.error("Error setting current component:", error);
-      throw new Error("Failed to set current component");
+      console.error('Error setting current component:', error);
+      throw new Error('Failed to set current component');
     }
   }
 
@@ -622,8 +622,8 @@ export class ContextManager {
         },
       });
     } catch (error) {
-      console.error("Error updating last action:", error);
-      throw new Error("Failed to update last action");
+      console.error('Error updating last action:', error);
+      throw new Error('Failed to update last action');
     }
   }
 
@@ -635,7 +635,7 @@ export class ContextManager {
       await db
         .update(userSessions)
         .set({
-          status: "archived",
+          status: 'archived',
           updatedAt: new Date().toISOString(),
         })
         .where(
@@ -646,8 +646,8 @@ export class ContextManager {
       const cacheKey = `${sessionId}-${userId}`;
       this.sessionCache.delete(cacheKey);
     } catch (error) {
-      console.error("Error archiving session:", error);
-      throw new Error("Failed to archive session");
+      console.error('Error archiving session:', error);
+      throw new Error('Failed to archive session');
     }
   }
 
@@ -662,17 +662,17 @@ export class ContextManager {
       await db
         .update(userSessions)
         .set({
-          status: "archived",
+          status: 'archived',
           updatedAt: new Date().toISOString(),
         })
         .where(
           and(
-            eq(userSessions.status, "active"),
+            eq(userSessions.status, 'active'),
             sql`${userSessions.lastActivity} < ${twentyFourHoursAgo}`
           )
         );
     } catch (error) {
-      console.error("Error cleaning up old sessions:", error);
+      console.error('Error cleaning up old sessions:', error);
     }
   }
 
@@ -708,8 +708,8 @@ export class ContextManager {
         status: context.status,
       };
     } catch (error) {
-      console.error("Error getting context summary:", error);
-      throw new Error("Failed to get context summary");
+      console.error('Error getting context summary:', error);
+      throw new Error('Failed to get context summary');
     }
   }
 }

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { useAuth } from "@/app/context/AuthContext";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { AvatarIcon, ExitIcon, GearIcon } from "@radix-ui/react-icons";
+import { useState, useRef, useEffect } from 'react';
+import { useAuth } from '@/app/context/AuthContext';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { AvatarIcon, ExitIcon, GearIcon } from '@radix-ui/react-icons';
 
 export function ProfileMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,9 +33,9 @@ export function ProfileMenu() {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 

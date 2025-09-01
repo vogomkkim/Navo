@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { PreviewDemo } from "@/components/PreviewDemo";
+import { PreviewDemo } from '@/components/PreviewDemo';
 
 export default function PreviewDemoPage() {
   return (

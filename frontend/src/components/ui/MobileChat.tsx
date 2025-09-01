@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { geminiClient } from "@/lib/gemini";
+import { useState, useRef, useEffect } from 'react';
+import { geminiClient } from '@/lib/gemini';
 
 export function MobileChat() {
   const [isOpen, setIsOpen] = useState(false);
-  const [chatInput, setChatInput] = useState("");
+  const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<
     Array<{
       id: string;
-      type: "user" | "ai";
+      type: 'user' | 'ai';
       message: string;
       timestamp: Date;
     }>
   >([
     {
-      id: "welcome",
-      type: "ai",
+      id: 'welcome',
+      type: 'ai',
       message:
-        "안녕하세요! 모바일에서도 AI와 대화할 수 있습니다. 무엇을 도와드릴까요?",
+        '안녕하세요! 모바일에서도 AI와 대화할 수 있습니다. 무엇을 도와드릴까요?',
       timestamp: new Date(),
     },
   ]);
@@ -39,20 +39,20 @@ export function MobileChat() {
     if (chatInput.trim() && !isProcessing) {
       const userMessage = {
         id: Date.now().toString(),
-        type: "user" as const,
+        type: 'user' as const,
         message: chatInput,
         timestamp: new Date(),
       };
 
       setChatHistory((prev) => [...prev, userMessage]);
-      setChatInput("");
+      setChatInput('');
       setIsProcessing(true);
 
       try {
         // AI 응답 생성 (실제 API 연동)
         const aiResponse = {
           id: (Date.now() + 1).toString(),
-          type: "ai" as const,
+          type: 'ai' as const,
           message: `"${chatInput}"에 대한 답변을 생성 중입니다...`,
           timestamp: new Date(),
         };
@@ -74,7 +74,7 @@ export function MobileChat() {
           setIsProcessing(false);
         }, 2000);
       } catch (error) {
-        console.error("AI chat error:", error);
+        console.error('AI chat error:', error);
         setIsProcessing(false);
       }
     }
@@ -100,7 +100,7 @@ export function MobileChat() {
     const onTouchStart = (e: TouchEvent) => {
       startY = e.touches[0].clientY;
       startHeight = chatDrawer.offsetHeight;
-      chatDrawer.style.transition = "none";
+      chatDrawer.style.transition = 'none';
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -111,17 +111,17 @@ export function MobileChat() {
     };
 
     const onTouchEnd = () => {
-      chatDrawer.style.transition = "";
+      chatDrawer.style.transition = '';
     };
 
-    dragHandle.addEventListener("touchstart", onTouchStart);
-    dragHandle.addEventListener("touchmove", onTouchMove);
-    dragHandle.addEventListener("touchend", onTouchEnd);
+    dragHandle.addEventListener('touchstart', onTouchStart);
+    dragHandle.addEventListener('touchmove', onTouchMove);
+    dragHandle.addEventListener('touchend', onTouchEnd);
 
     return () => {
-      dragHandle.removeEventListener("touchstart", onTouchStart);
-      dragHandle.removeEventListener("touchmove", onTouchMove);
-      dragHandle.removeEventListener("touchend", onTouchEnd);
+      dragHandle.removeEventListener('touchstart', onTouchStart);
+      dragHandle.removeEventListener('touchmove', onTouchMove);
+      dragHandle.removeEventListener('touchend', onTouchEnd);
     };
   }, []);
 
@@ -135,7 +135,7 @@ export function MobileChat() {
         ></div>
       )}
       <div
-        className={`mobile-chat-drawer ${isOpen ? "open" : ""}`}
+        className={`mobile-chat-drawer ${isOpen ? 'open' : ''}`}
         id="mobileChatDrawer"
         aria-hidden={!isOpen}
         ref={chatDrawerRef}
@@ -165,14 +165,14 @@ export function MobileChat() {
           {chatHistory.map((message) => (
             <div
               key={message.id}
-              className={`chat-message ${message.type === "user" ? "user" : "ai"}`}
+              className={`chat-message ${message.type === 'user' ? 'user' : 'ai'}`}
             >
               <div className="message-content">
                 <p>{message.message}</p>
                 <span className="message-time">
-                  {message.timestamp.toLocaleTimeString("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
+                  {message.timestamp.toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </span>
               </div>
@@ -208,7 +208,7 @@ export function MobileChat() {
           value={chatInput}
           onChange={(e) => setChatInput(e.target.value)}
           onKeyPress={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === 'Enter') {
               handleSendChat();
             }
           }}
@@ -219,7 +219,7 @@ export function MobileChat() {
           onClick={handleSendChat}
           disabled={isProcessing || !chatInput.trim()}
         >
-          {isProcessing ? "전송 중..." : "전송"}
+          {isProcessing ? '전송 중...' : '전송'}
         </button>
       </div>
     </>

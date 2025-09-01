@@ -8,8 +8,10 @@ export class UIUXDesignerAgent extends BaseAgent {
   canHandle(request: any): boolean {
     return (
       request &&
-      typeof request === "object" &&
-      (request.type === "web" || request.type === "mobile" || request.type === "fullstack")
+      typeof request === 'object' &&
+      (request.type === 'web' ||
+        request.type === 'mobile' ||
+        request.type === 'fullstack')
     );
   }
 
@@ -17,12 +19,18 @@ export class UIUXDesignerAgent extends BaseAgent {
     if (this.canHandle(request)) {
       return this.designInterface(request, payload?.architecture);
     } else {
-      throw new Error("UIUXDesignerAgent cannot handle this request.");
+      throw new Error('UIUXDesignerAgent cannot handle this request.');
     }
   }
 
-  async designInterface(request: ProjectRequest, architecture: any): Promise<any> {
-    this.logger.info('UI/UX Designer Agent is designing the interface', { request, architecture });
+  async designInterface(
+    request: ProjectRequest,
+    architecture: any
+  ): Promise<any> {
+    this.logger.info('UI/UX Designer Agent is designing the interface', {
+      request,
+      architecture,
+    });
     // In a real scenario, this would involve generating wireframes, mockups, etc.
     return {
       theme: 'dark',

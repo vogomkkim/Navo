@@ -138,9 +138,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "users_email_key": {
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "nullsNotDistinct": false,
           "name": "users_email_key"
         }
@@ -256,12 +254,8 @@
           "tableFrom": "component_definitions",
           "tableTo": "projects",
           "schemaTo": "public",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -269,10 +263,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "component_definitions_project_id_name_key": {
-          "columns": [
-            "project_id",
-            "name"
-          ],
+          "columns": ["project_id", "name"],
           "nullsNotDistinct": false,
           "name": "component_definitions_project_id_name_key"
         }
@@ -355,12 +346,8 @@
           "tableFrom": "projects",
           "tableTo": "users",
           "schemaTo": "public",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -459,12 +446,8 @@
           "tableFrom": "pages",
           "tableTo": "projects",
           "schemaTo": "public",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -472,10 +455,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "pages_project_id_path_key": {
-          "columns": [
-            "project_id",
-            "path"
-          ],
+          "columns": ["project_id", "path"],
           "nullsNotDistinct": false,
           "name": "pages_project_id_path_key"
         }
@@ -583,12 +563,8 @@
           "tableFrom": "components",
           "tableTo": "component_definitions",
           "schemaTo": "public",
-          "columnsFrom": [
-            "component_definition_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["component_definition_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -597,12 +573,8 @@
           "tableFrom": "components",
           "tableTo": "pages",
           "schemaTo": "public",
-          "columnsFrom": [
-            "page_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["page_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -704,12 +676,8 @@
           "tableFrom": "chat_messages",
           "tableTo": "user_sessions",
           "schemaTo": "public",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -798,12 +766,8 @@
           "tableFrom": "chat_session_summaries",
           "tableTo": "user_sessions",
           "schemaTo": "public",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

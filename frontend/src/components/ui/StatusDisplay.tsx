@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 interface StatusDisplayProps {
   initialStatus?: string;
 }
 
 export function StatusDisplay({
-  initialStatus = "대기중",
+  initialStatus = '대기중',
 }: StatusDisplayProps) {
   const [status, setStatus] = useState(initialStatus);
 

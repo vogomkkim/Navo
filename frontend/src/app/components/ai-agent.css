@@ -116,9 +116,11 @@
   flex-direction: row-reverse;
 }
 
-.message-content {
-  flex: 1;
-  max-width: 100%;
+.message-bubble {
+  max-width: min(720px, 80%);
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(229 231 235);
 }
 
 .message-header {
@@ -144,18 +146,25 @@
 }
 
 .message-text {
-  background-color: white;
-  padding: 0.75rem;
-  border-radius: 0.75rem;
-  color: rgb(17 24 39);
+  background-color: transparent;
+  color: inherit;
   line-height: 1.5;
   word-wrap: break-word;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  white-space: pre-wrap;
 }
 
-.chat-message.user .message-text {
+.chat-message.user .message-bubble {
   background-color: rgb(59 130 246);
   color: white;
+  border-color: rgb(29 78 216);
+  border-bottom-right-radius: 0.4rem;
+}
+
+.chat-message:not(.user) .message-bubble {
+  background-color: white;
+  color: rgb(17 24 39);
+  border-color: rgb(226 232 240);
+  border-bottom-left-radius: 0.4rem;
 }
 
 /* 채팅 플레이스홀더 */

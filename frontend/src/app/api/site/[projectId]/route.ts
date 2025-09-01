@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
@@ -9,14 +9,14 @@ export async function GET(
 
     // Fastify 백엔드로 요청 전달
     const response = await fetch(`http://localhost:3001/site/${projectId}`, {
-      method: "GET",
+      method: 'GET',
     });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error("Backend error:", errorData);
+      console.error('Backend error:', errorData);
       return NextResponse.json(
-        { error: "사이트 렌더링 실패" },
+        { error: '사이트 렌더링 실패' },
         { status: response.status }
       );
     }
@@ -24,13 +24,13 @@ export async function GET(
     const html = await response.text();
     return new NextResponse(html, {
       headers: {
-        "Content-Type": "text/html",
+        'Content-Type': 'text/html',
       },
     });
   } catch (error) {
-    console.error("Proxy error:", error);
+    console.error('Proxy error:', error);
     return NextResponse.json(
-      { error: "사이트 렌더링 중 오류가 발생했습니다." },
+      { error: '사이트 렌더링 중 오류가 발생했습니다.' },
       { status: 500 }
     );
   }

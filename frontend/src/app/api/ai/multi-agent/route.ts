@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 
 // Gemini API 클라이언트 (서버 사이드)
 class GeminiClient {
@@ -6,12 +6,12 @@ class GeminiClient {
   private baseUrl: string;
 
   constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || "";
+    this.apiKey = process.env.GEMINI_API_KEY || '';
     this.baseUrl =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     if (!this.apiKey) {
-      throw new Error("Gemini API 키가 설정되지 않았습니다.");
+      throw new Error('Gemini API 키가 설정되지 않았습니다.');
     }
   }
 
@@ -35,8 +35,8 @@ class GeminiClient {
 
     try {
       const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),
       });
 
@@ -51,10 +51,10 @@ class GeminiClient {
       if (data.candidates && data.candidates[0] && data.candidates[0].content) {
         return data.candidates[0].content.parts[0].text;
       } else {
-        throw new Error("Gemini API 응답 형식이 올바르지 않습니다.");
+        throw new Error('Gemini API 응답 형식이 올바르지 않습니다.');
       }
     } catch (error) {
-      console.error("Gemini API 호출 오류:", error);
+      console.error('Gemini API 호출 오류:', error);
       throw error;
     }
   }
@@ -102,25 +102,25 @@ class GeminiClient {
       return {
         summary: response,
         requirements: [
-          "사용자 인증 시스템",
-          "데이터 관리 기능",
-          "반응형 UI/UX",
+          '사용자 인증 시스템',
+          '데이터 관리 기능',
+          '반응형 UI/UX',
         ],
-        targetAudience: "일반 사용자",
-        businessGoals: ["사용자 경험 향상", "비즈니스 효율성 증대"],
-        successMetrics: ["사용자 만족도", "시스템 안정성"],
+        targetAudience: '일반 사용자',
+        businessGoals: ['사용자 경험 향상', '비즈니스 효율성 증대'],
+        successMetrics: ['사용자 만족도', '시스템 안정성'],
       };
     } catch (error) {
       return {
         summary: response,
         requirements: [
-          "사용자 인증 시스템",
-          "데이터 관리 기능",
-          "반응형 UI/UX",
+          '사용자 인증 시스템',
+          '데이터 관리 기능',
+          '반응형 UI/UX',
         ],
-        targetAudience: "일반 사용자",
-        businessGoals: ["사용자 경험 향상", "비즈니스 효율성 증대"],
-        successMetrics: ["사용자 만족도", "시스템 안정성"],
+        targetAudience: '일반 사용자',
+        businessGoals: ['사용자 경험 향상', '비즈니스 효율성 증대'],
+        successMetrics: ['사용자 만족도', '시스템 안정성'],
       };
     }
   }
@@ -158,20 +158,20 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
       }
       return {
         summary: response,
-        timeline: "2-3주 내 완성",
-        techStack: ["React + TypeScript", "Node.js + Express", "PostgreSQL"],
-        milestones: ["요구사항 분석 완료", "프로토타입 개발", "테스트 및 배포"],
-        risks: ["기술적 복잡성", "일정 지연 가능성"],
-        resources: ["프론트엔드 개발자", "백엔드 개발자", "UI/UX 디자이너"],
+        timeline: '2-3주 내 완성',
+        techStack: ['React + TypeScript', 'Node.js + Express', 'PostgreSQL'],
+        milestones: ['요구사항 분석 완료', '프로토타입 개발', '테스트 및 배포'],
+        risks: ['기술적 복잡성', '일정 지연 가능성'],
+        resources: ['프론트엔드 개발자', '백엔드 개발자', 'UI/UX 디자이너'],
       };
     } catch (error) {
       return {
         summary: response,
-        timeline: "2-3주 내 완성",
-        techStack: ["React + TypeScript", "Node.js + Express", "PostgreSQL"],
-        milestones: ["요구사항 분석 완료", "프로토타입 개발", "테스트 및 배포"],
-        risks: ["기술적 복잡성", "일정 지연 가능성"],
-        resources: ["프론트엔드 개발자", "백엔드 개발자", "UI/UX 디자이너"],
+        timeline: '2-3주 내 완성',
+        techStack: ['React + TypeScript', 'Node.js + Express', 'PostgreSQL'],
+        milestones: ['요구사항 분석 완료', '프로토타입 개발', '테스트 및 배포'],
+        risks: ['기술적 복잡성', '일정 지연 가능성'],
+        resources: ['프론트엔드 개발자', '백엔드 개발자', 'UI/UX 디자이너'],
       };
     }
   }
@@ -212,20 +212,20 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
       }
       return {
         architecture: response,
-        databaseSchema: ["users", "projects", "settings"],
-        components: ["UserAuth", "ProjectList", "Dashboard"],
-        apis: ["/api/auth", "/api/projects", "/api/users"],
-        securityFeatures: ["JWT 인증", "입력 검증", "CORS 설정"],
-        performanceOptimizations: ["캐싱", "지연 로딩", "코드 분할"],
+        databaseSchema: ['users', 'projects', 'settings'],
+        components: ['UserAuth', 'ProjectList', 'Dashboard'],
+        apis: ['/api/auth', '/api/projects', '/api/users'],
+        securityFeatures: ['JWT 인증', '입력 검증', 'CORS 설정'],
+        performanceOptimizations: ['캐싱', '지연 로딩', '코드 분할'],
       };
     } catch (error) {
       return {
         architecture: response,
-        databaseSchema: ["users", "projects", "settings"],
-        components: ["UserAuth", "ProjectList", "Dashboard"],
-        apis: ["/api/auth", "/api/projects", "/api/users"],
-        securityFeatures: ["JWT 인증", "입력 검증", "CORS 설정"],
-        performanceOptimizations: ["캐싱", "지연 로딩", "코드 분할"],
+        databaseSchema: ['users', 'projects', 'settings'],
+        components: ['UserAuth', 'ProjectList', 'Dashboard'],
+        apis: ['/api/auth', '/api/projects', '/api/users'],
+        securityFeatures: ['JWT 인증', '입력 검증', 'CORS 설정'],
+        performanceOptimizations: ['캐싱', '지연 로딩', '코드 분할'],
       };
     }
   }
@@ -262,20 +262,20 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
       }
       return {
         summary: response,
-        testCoverage: "95%",
-        performanceScore: "A+",
-        securityStatus: "보안 검증 완료",
-        improvements: ["코드 가독성 향상", "에러 처리 강화", "성능 최적화"],
-        testPlan: ["단위 테스트", "통합 테스트", "사용자 테스트"],
+        testCoverage: '95%',
+        performanceScore: 'A+',
+        securityStatus: '보안 검증 완료',
+        improvements: ['코드 가독성 향상', '에러 처리 강화', '성능 최적화'],
+        testPlan: ['단위 테스트', '통합 테스트', '사용자 테스트'],
       };
     } catch (error) {
       return {
         summary: response,
-        testCoverage: "95%",
-        performanceScore: "A+",
-        securityStatus: "보안 검증 완료",
-        improvements: ["코드 가독성 향상", "에러 처리 강화", "성능 최적화"],
-        testPlan: ["단위 테스트", "통합 테스트", "사용자 테스트"],
+        testCoverage: '95%',
+        performanceScore: 'A+',
+        securityStatus: '보안 검증 완료',
+        improvements: ['코드 가독성 향상', '에러 처리 강화', '성능 최적화'],
+        testPlan: ['단위 테스트', '통합 테스트', '사용자 테스트'],
       };
     }
   }
@@ -312,20 +312,20 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
       }
       return {
         environment: response,
-        cicdStatus: "자동화 완료",
-        monitoringStatus: "실시간 모니터링 구축",
-        optimizationStatus: "성능 최적화 완료",
-        backupStrategy: "일일 자동 백업",
-        scalingPlan: "로드 밸런서 기반 확장",
+        cicdStatus: '자동화 완료',
+        monitoringStatus: '실시간 모니터링 구축',
+        optimizationStatus: '성능 최적화 완료',
+        backupStrategy: '일일 자동 백업',
+        scalingPlan: '로드 밸런서 기반 확장',
       };
     } catch (error) {
       return {
         environment: response,
-        cicdStatus: "자동화 완료",
-        monitoringStatus: "실시간 모니터링 구축",
-        optimizationStatus: "성능 최적화 완료",
-        backupStrategy: "일일 자동 백업",
-        scalingPlan: "로드 밸런서 기반 확장",
+        cicdStatus: '자동화 완료',
+        monitoringStatus: '실시간 모니터링 구축',
+        optimizationStatus: '성능 최적화 완료',
+        backupStrategy: '일일 자동 백업',
+        scalingPlan: '로드 밸런서 기반 확장',
       };
     }
   }
@@ -333,8 +333,8 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
 
 export async function GET() {
   return NextResponse.json({
-    message: "멀티 에이전트 시스템 API가 정상적으로 작동하고 있습니다.",
-    status: "active",
+    message: '멀티 에이전트 시스템 API가 정상적으로 작동하고 있습니다.',
+    status: 'active',
     timestamp: new Date().toISOString(),
   });
 }
@@ -346,93 +346,93 @@ export async function POST(request: NextRequest) {
 
     if (!message) {
       return NextResponse.json(
-        { success: false, error: "메시지가 필요합니다." },
+        { success: false, error: '메시지가 필요합니다.' },
         { status: 400 }
       );
     }
 
-    console.log("🚀 멀티 에이전트 시스템 시작:", { message, context });
+    console.log('🚀 멀티 에이전트 시스템 시작:', { message, context });
 
     const geminiClient = new GeminiClient();
     const agents = [];
 
     // 1단계: Strategic Planner
-    console.log("📋 Strategic Planner 시작...");
+    console.log('📋 Strategic Planner 시작...');
     const strategicResult =
       await geminiClient.analyzeProjectRequirements(message);
     agents.push({
       success: true,
-      message: `**프로젝트 분석 결과:**\n${strategicResult.summary}\n\n**핵심 요구사항:**\n${strategicResult.requirements.map((req: string) => `• ${req}`).join("\n")}\n\n**타겟 사용자:** ${strategicResult.targetAudience}\n\n**비즈니스 목표:**\n${strategicResult.businessGoals.map((goal: string) => `• ${goal}`).join("\n")}\n\n**성공 지표:**\n${strategicResult.successMetrics.map((metric: string) => `• ${metric}`).join("\n")}`,
-      agentName: "Strategic Planner",
-      status: "completed",
+      message: `**프로젝트 분석 결과:**\n${strategicResult.summary}\n\n**핵심 요구사항:**\n${strategicResult.requirements.map((req: string) => `• ${req}`).join('\n')}\n\n**타겟 사용자:** ${strategicResult.targetAudience}\n\n**비즈니스 목표:**\n${strategicResult.businessGoals.map((goal: string) => `• ${goal}`).join('\n')}\n\n**성공 지표:**\n${strategicResult.successMetrics.map((metric: string) => `• ${metric}`).join('\n')}`,
+      agentName: 'Strategic Planner',
+      status: 'completed',
       data: strategicResult,
-      nextSteps: ["Project Manager가 프로젝트 계획을 수립합니다."],
+      nextSteps: ['Project Manager가 프로젝트 계획을 수립합니다.'],
       executionTime: Date.now() - startTime,
     });
 
     // 2단계: Project Manager
-    console.log("📊 Project Manager 시작...");
+    console.log('📊 Project Manager 시작...');
     const projectPlan = await geminiClient.createProjectPlan(strategicResult);
     agents.push({
       success: true,
-      message: `**프로젝트 계획:**\n${projectPlan.summary}\n\n**기술 스택:**\n${projectPlan.techStack.map((tech: string) => `• ${tech}`).join("\n")}\n\n**일정:** ${projectPlan.timeline}\n\n**마일스톤:**\n${projectPlan.milestones.map((milestone: string) => `• ${milestone}`).join("\n")}\n\n**위험 요소:**\n${projectPlan.risks.map((risk: string) => `• ${risk}`).join("\n")}\n\n**필요 리소스:**\n${projectPlan.resources.map((resource: string) => `• ${resource}`).join("\n")}`,
-      agentName: "Project Manager",
-      status: "completed",
+      message: `**프로젝트 계획:**\n${projectPlan.summary}\n\n**기술 스택:**\n${projectPlan.techStack.map((tech: string) => `• ${tech}`).join('\n')}\n\n**일정:** ${projectPlan.timeline}\n\n**마일스톤:**\n${projectPlan.milestones.map((milestone: string) => `• ${milestone}`).join('\n')}\n\n**위험 요소:**\n${projectPlan.risks.map((risk: string) => `• ${risk}`).join('\n')}\n\n**필요 리소스:**\n${projectPlan.resources.map((resource: string) => `• ${resource}`).join('\n')}`,
+      agentName: 'Project Manager',
+      status: 'completed',
       data: projectPlan,
       nextSteps: [
-        "Full-Stack Developer가 아키텍처를 설계하고 코드를 생성합니다.",
+        'Full-Stack Developer가 아키텍처를 설계하고 코드를 생성합니다.',
       ],
       executionTime: Date.now() - startTime,
     });
 
     // 3단계: Full-Stack Developer
-    console.log("⚡ Full-Stack Developer 시작...");
+    console.log('⚡ Full-Stack Developer 시작...');
     const developmentResult = await geminiClient.generateProjectCode(
       projectPlan,
       message
     );
     agents.push({
       success: true,
-      message: `**아키텍처 설계:**\n${developmentResult.architecture}\n\n**데이터베이스 스키마:**\n${developmentResult.databaseSchema.map((table: string) => `• ${table}`).join("\n")}\n\n**생성된 컴포넌트:**\n${developmentResult.components.map((comp: string) => `• ${comp}`).join("\n")}\n\n**API 엔드포인트:**\n${developmentResult.apis.map((api: string) => `• ${api}`).join("\n")}\n\n**보안 기능:**\n${developmentResult.securityFeatures.map((feature: string) => `• ${feature}`).join("\n")}\n\n**성능 최적화:**\n${developmentResult.performanceOptimizations.map((opt: string) => `• ${opt}`).join("\n")}`,
-      agentName: "Full-Stack Developer",
-      status: "completed",
+      message: `**아키텍처 설계:**\n${developmentResult.architecture}\n\n**데이터베이스 스키마:**\n${developmentResult.databaseSchema.map((table: string) => `• ${table}`).join('\n')}\n\n**생성된 컴포넌트:**\n${developmentResult.components.map((comp: string) => `• ${comp}`).join('\n')}\n\n**API 엔드포인트:**\n${developmentResult.apis.map((api: string) => `• ${api}`).join('\n')}\n\n**보안 기능:**\n${developmentResult.securityFeatures.map((feature: string) => `• ${feature}`).join('\n')}\n\n**성능 최적화:**\n${developmentResult.performanceOptimizations.map((opt: string) => `• ${opt}`).join('\n')}`,
+      agentName: 'Full-Stack Developer',
+      status: 'completed',
       data: developmentResult,
-      nextSteps: ["Quality Assurance Engineer가 코드 품질을 검증합니다."],
+      nextSteps: ['Quality Assurance Engineer가 코드 품질을 검증합니다.'],
       executionTime: Date.now() - startTime,
     });
 
     // 4단계: Quality Assurance Engineer
-    console.log("🔍 Quality Assurance Engineer 시작...");
+    console.log('🔍 Quality Assurance Engineer 시작...');
     const qaResult =
       await geminiClient.performQualityAssurance(developmentResult);
     agents.push({
       success: true,
-      message: `**품질 검증 결과:**\n${qaResult.summary}\n\n**테스트 커버리지:** ${qaResult.testCoverage}\n\n**성능 점수:** ${qaResult.performanceScore}\n\n**보안 검증:** ${qaResult.securityStatus}\n\n**개선 제안:**\n${qaResult.improvements.map((imp: string) => `• ${imp}`).join("\n")}\n\n**테스트 계획:**\n${qaResult.testPlan.map((test: string) => `• ${test}`).join("\n")}`,
-      agentName: "Quality Assurance Engineer",
-      status: "completed",
+      message: `**품질 검증 결과:**\n${qaResult.summary}\n\n**테스트 커버리지:** ${qaResult.testCoverage}\n\n**성능 점수:** ${qaResult.performanceScore}\n\n**보안 검증:** ${qaResult.securityStatus}\n\n**개선 제안:**\n${qaResult.improvements.map((imp: string) => `• ${imp}`).join('\n')}\n\n**테스트 계획:**\n${qaResult.testPlan.map((test: string) => `• ${test}`).join('\n')}`,
+      agentName: 'Quality Assurance Engineer',
+      status: 'completed',
       data: qaResult,
-      nextSteps: ["DevOps Engineer가 배포 환경을 구축합니다."],
+      nextSteps: ['DevOps Engineer가 배포 환경을 구축합니다.'],
       executionTime: Date.now() - startTime,
     });
 
     // 5단계: DevOps Engineer
-    console.log("🚀 DevOps Engineer 시작...");
+    console.log('🚀 DevOps Engineer 시작...');
     const devopsResult =
       await geminiClient.setupDeploymentEnvironment(qaResult);
     agents.push({
       success: true,
       message: `**배포 환경:**\n${devopsResult.environment}\n\n**CI/CD 파이프라인:** ${devopsResult.cicdStatus}\n\n**모니터링 시스템:** ${devopsResult.monitoringStatus}\n\n**성능 최적화:** ${devopsResult.optimizationStatus}\n\n**백업 전략:** ${devopsResult.backupStrategy}\n\n**확장 계획:** ${devopsResult.scalingPlan}`,
-      agentName: "DevOps Engineer",
-      status: "completed",
+      agentName: 'DevOps Engineer',
+      status: 'completed',
       data: devopsResult,
-      nextSteps: ["프로젝트가 성공적으로 배포되었습니다!"],
+      nextSteps: ['프로젝트가 성공적으로 배포되었습니다!'],
       executionTime: Date.now() - startTime,
     });
 
     const totalExecutionTime = Date.now() - startTime;
     const summary = `"${message}" 프로젝트가 성공적으로 완성되었습니다. 5단계 AI 에이전트 워크플로우를 통해 프로젝트 기획부터 배포까지 모든 과정이 완료되었습니다.`;
 
-    console.log("✅ 멀티 에이전트 시스템 완료:", {
+    console.log('✅ 멀티 에이전트 시스템 완료:', {
       totalExecutionTime,
       agentsCount: agents.length,
     });
@@ -444,7 +444,7 @@ export async function POST(request: NextRequest) {
       summary,
     });
   } catch (error) {
-    console.error("❌ 멀티 에이전트 시스템 오류:", error);
+    console.error('❌ 멀티 에이전트 시스템 오류:', error);
 
     return NextResponse.json(
       {
@@ -452,7 +452,7 @@ export async function POST(request: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : "알 수 없는 오류가 발생했습니다.",
+            : '알 수 없는 오류가 발생했습니다.',
       },
       { status: 500 }
     );

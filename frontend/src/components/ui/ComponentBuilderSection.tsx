@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useGenerateComponent } from "@/lib/api";
+import { useState } from 'react';
+import { useGenerateComponent } from '@/lib/api';
 
 export function ComponentBuilderSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [componentDescription, setComponentDescription] = useState("");
-  const [generationStatus, setGenerationStatus] = useState("");
+  const [componentDescription, setComponentDescription] = useState('');
+  const [generationStatus, setGenerationStatus] = useState('');
   const [generatedComponent, setGeneratedComponent] = useState<any>(null);
 
   const {
@@ -27,10 +27,10 @@ export function ComponentBuilderSection() {
 
   const handleGenerateComponent = () => {
     if (!componentDescription.trim()) {
-      setGenerationStatus("설명을 입력해주세요.");
+      setGenerationStatus('설명을 입력해주세요.');
       return;
     }
-    setGenerationStatus("생성 중...");
+    setGenerationStatus('생성 중...');
     setGeneratedComponent(null);
     generateComponent(
       {
@@ -38,13 +38,13 @@ export function ComponentBuilderSection() {
       },
       {
         onSuccess: (data) => {
-          setGenerationStatus("컴포넌트가 성공적으로 생성되었습니다!");
+          setGenerationStatus('컴포넌트가 성공적으로 생성되었습니다!');
           setGeneratedComponent(data.component);
-          console.log("Generated Component:", data.component);
+          console.log('Generated Component:', data.component);
         },
         onError: (err) => {
           setGenerationStatus(`오류: ${err.message}`);
-          console.error("Component generation failed:", err);
+          console.error('Component generation failed:', err);
         },
       }
     );
@@ -63,7 +63,7 @@ export function ComponentBuilderSection() {
       </div>
 
       <div
-        className={`component-builder-panel ${isPanelOpen ? "open" : ""}`}
+        className={`component-builder-panel ${isPanelOpen ? 'open' : ''}`}
         id="componentBuilderPanel"
       >
         <div className="panel-section component-builder-section">
@@ -91,7 +91,7 @@ export function ComponentBuilderSection() {
               onClick={handleGenerateComponent}
               disabled={isPending}
             >
-              {isPending ? "생성 중..." : "🚀 컴포넌트 생성"}
+              {isPending ? '생성 중...' : '🚀 컴포넌트 생성'}
             </button>
           </div>
           <div id="generationStatus" className="generation-status">

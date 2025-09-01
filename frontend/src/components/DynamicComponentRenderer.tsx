@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useComponentDefinitions } from "@/app/context/ComponentDefinitionContext";
-import { useLayoutContext } from "@/app/context/LayoutContext"; // Import useLayoutContext
-import parse, { DOMNode } from "html-react-parser";
-import { EditableText } from "@/components/ui/EditableText";
+import { useComponentDefinitions } from '@/app/context/ComponentDefinitionContext';
+import { useLayoutContext } from '@/app/context/LayoutContext'; // Import useLayoutContext
+import parse, { DOMNode } from 'html-react-parser';
+import { EditableText } from '@/components/ui/EditableText';
 
 interface LayoutComponent {
   id: string;
@@ -114,7 +114,7 @@ export function DynamicComponentRenderer({
                 <button
                   onClick={() =>
                     navigator.clipboard.writeText(
-                      Array.from(componentRegistry.keys()).join(", ") || "없음"
+                      Array.from(componentRegistry.keys()).join(', ') || '없음'
                     )
                   }
                   className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs"
@@ -124,7 +124,7 @@ export function DynamicComponentRenderer({
                 </button>
               </div>
               <p className="text-xs">
-                {Array.from(componentRegistry.keys()).join(", ") || "없음"}
+                {Array.from(componentRegistry.keys()).join(', ') || '없음'}
               </p>
             </div>
           </details>
@@ -134,23 +134,23 @@ export function DynamicComponentRenderer({
   }
 
   // Implement placeholder substitution
-  let renderedHtml = componentDef.render_template || "";
+  let renderedHtml = componentDef.render_template || '';
   const allProps = { id: component.id, ...component.props };
 
   Object.entries(allProps).forEach(([key, value]) => {
-    const placeholder = new RegExp(`{{${key}}}`, "g");
+    const placeholder = new RegExp(`{{${key}}}`, 'g');
     // HTML 문자열인지 확인 (features 같은 경우)
     if (
-      typeof value === "string" &&
-      value.includes("<") &&
-      value.includes(">")
+      typeof value === 'string' &&
+      value.includes('<') &&
+      value.includes('>')
     ) {
       // HTML 문자열인 경우 이스케이프하지 않음
       renderedHtml = renderedHtml.replace(placeholder, value);
     } else {
       // 일반 텍스트인 경우 이스케이프
       const safeValue =
-        value !== undefined && value !== null ? String(value) : "";
+        value !== undefined && value !== null ? String(value) : '';
       renderedHtml = renderedHtml.replace(placeholder, escapeHtml(safeValue));
     }
   });
@@ -158,27 +158,27 @@ export function DynamicComponentRenderer({
   // Utility function to escape HTML for safe display (copied from navo/web/components.ts)
   function escapeHtml(text: unknown): string {
     if (text === null || text === undefined) {
-      return "";
+      return '';
     }
-    const div = document.createElement("div");
+    const div = document.createElement('div');
     div.textContent = String(text);
     return div.innerHTML;
   }
 
   const replace = (node: DOMNode) => {
     if (
-      node.type === "tag" &&
+      node.type === 'tag' &&
       node.attribs &&
-      node.attribs["data-editable"] === "true"
+      node.attribs['data-editable'] === 'true'
     ) {
-      const propName = node.attribs["data-prop-name"]; // Assuming a new attribute to identify the prop
+      const propName = node.attribs['data-prop-name']; // Assuming a new attribute to identify the prop
 
       // Safely access text content from children
-      let initialText = "";
+      let initialText = '';
       if (node.children && node.children.length > 0) {
         const firstChild = node.children[0];
-        if (firstChild.type === "text") {
-          initialText = firstChild.data || "";
+        if (firstChild.type === 'text') {
+          initialText = firstChild.data || '';
         }
       }
 

@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useGenerateProject } from "@/lib/api";
+import { useState } from 'react';
+import { useGenerateProject } from '@/lib/api';
 
 export function ProjectGenerationSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [projectName, setProjectName] = useState("");
-  const [projectDescription, setProjectDescription] = useState("");
-  const [projectFeatures, setProjectFeatures] = useState("");
-  const [targetAudience, setTargetAudience] = useState("");
-  const [businessType, setBusinessType] = useState("");
-  const [generationStatus, setGenerationStatus] = useState("");
+  const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
+  const [projectFeatures, setProjectFeatures] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [businessType, setBusinessType] = useState('');
+  const [generationStatus, setGenerationStatus] = useState('');
   const [projectResult, setProjectResult] = useState<any>(null);
 
   const {
@@ -30,7 +30,7 @@ export function ProjectGenerationSection() {
   };
 
   const handleGenerateProject = () => {
-    setGenerationStatus("생성 중...");
+    setGenerationStatus('생성 중...');
     setProjectResult(null);
     generateProject(
       {
@@ -43,13 +43,13 @@ export function ProjectGenerationSection() {
       },
       {
         onSuccess: (data) => {
-          setGenerationStatus("프로젝트가 성공적으로 생성되었습니다!");
+          setGenerationStatus('프로젝트가 성공적으로 생성되었습니다!');
           setProjectResult(data.generatedStructure);
-          console.log("Generated Project:", data);
+          console.log('Generated Project:', data);
         },
         onError: (err) => {
           setGenerationStatus(`오류: ${err.message}`);
-          console.error("Project generation failed:", err);
+          console.error('Project generation failed:', err);
         },
       }
     );
@@ -68,7 +68,7 @@ export function ProjectGenerationSection() {
       </div>
 
       <div
-        className={`project-generation-panel ${isPanelOpen ? "open" : ""}`}
+        className={`project-generation-panel ${isPanelOpen ? 'open' : ''}`}
         id="projectGenerationPanel"
       >
         <div className="panel-section project-generation-section">
@@ -125,7 +125,7 @@ export function ProjectGenerationSection() {
               onClick={handleGenerateProject}
               disabled={isPending}
             >
-              {isPending ? "생성 중..." : "프로젝트 생성"}
+              {isPending ? '생성 중...' : '프로젝트 생성'}
             </button>
           </div>
           <div id="generationStatus" className="generation-status">

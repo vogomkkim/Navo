@@ -9,6 +9,7 @@ Navo 프로젝트에서는 API 관련 환경 변수를 일관성 있게 사용�
 ### 1. Frontend (Client-side)
 
 **`NEXT_PUBLIC_API_BASE_URL`**
+
 - **용도**: 클라이언트에서 접근 가능한 API 기본 URL
 - **사용 위치**:
   - `frontend/src/lib/api.ts`
@@ -19,6 +20,7 @@ Navo 프로젝트에서는 API 관련 환경 변수를 일관성 있게 사용�
 ### 2. Backend (Server-side)
 
 **`API_BASE_URL`**
+
 - **용도**: 서버에서만 접근하는 API 기본 URL
 - **사용 위치**:
   - `navo/config.ts`
@@ -28,6 +30,7 @@ Navo 프로젝트에서는 API 관련 환경 변수를 일관성 있게 사용�
 ### 3. Build Tools
 
 **Next.js 설정**
+
 - **용도**: 프론트엔드 빌드 시 API URL 주입
 - **사용 위치**: `frontend/next.config.ts`
 - **환경 변수**: `NEXT_PUBLIC_API_BASE_URL` 사용
@@ -35,11 +38,13 @@ Navo 프로젝트에서는 API 관련 환경 변수를 일관성 있게 사용�
 ## 포트 설정
 
 ### 개발 환경
+
 - **Backend**: 3001
 - **Frontend**: 3000
 - **Next.js Dev Server**: 3000
 
 ### 프로덕션 환경
+
 - **Backend**: 환경 변수 `PORT` 또는 8080
 - **Frontend**: 환경 변수 `PORT` 또는 3000
 
@@ -62,6 +67,7 @@ ENABLE_NEW_FEATURE=false
 ## 사용 시 주의사항
 
 ### 1. Frontend에서 사용할 때
+
 ```typescript
 // ✅ 올바른 사용법
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -71,6 +77,7 @@ const API_BASE_URL = process.env.API_BASE_URL;
 ```
 
 ### 2. Backend에서 사용할 때
+
 ```typescript
 // ✅ 올바른 사용법
 baseUrl: process.env.API_BASE_URL || '',
@@ -80,9 +87,11 @@ baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
 ```
 
 ### 3. Next.js에서 사용할 때
+
 ```typescript
 // ✅ 올바른 사용법
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
 // ❌ 잘못된 사용법
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
@@ -100,6 +109,7 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 ## 문제 해결
 
 ### 1. 포트 충돌
+
 ```bash
 # 포트 사용 중인지 확인
 netstat -ano | findstr :8080
@@ -110,6 +120,7 @@ taskkill /PID <PID> /F
 ```
 
 ### 2. 환경 변수 로드 실패
+
 ```bash
 # .env 파일 존재 확인
 ls -la | grep .env
@@ -120,6 +131,7 @@ echo $API_BASE_URL
 ```
 
 ### 3. API 연결 실패
+
 ```bash
 # Backend 서버 상태 확인
 curl http://localhost:3001/health

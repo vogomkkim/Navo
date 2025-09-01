@@ -11,11 +11,11 @@ import {
   ErrorType,
   ErrorSeverity,
   ErrorAnalysis,
-} from "../core/masterDeveloper.js";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import * as fs from "fs/promises";
-import { exec as cpExec } from "node:child_process";
-import { promisify } from "node:util";
+} from '../core/masterDeveloper.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import * as fs from 'fs/promises';
+import { exec as cpExec } from 'node:child_process';
+import { promisify } from 'node:util';
 
 const exec = promisify(cpExec);
 
@@ -25,11 +25,11 @@ export class ErrorResolutionAgent extends BaseAgent {
   private analysisCache: Map<string, ErrorAnalysis> = new Map();
 
   constructor() {
-    super("ErrorResolutionAgent", 2); // Priority for error resolution
+    super('ErrorResolutionAgent', 2); // Priority for error resolution
 
     // Gemini API 초기화
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   canHandle(request: any): boolean {
@@ -37,13 +37,16 @@ export class ErrorResolutionAgent extends BaseAgent {
     return request instanceof Error;
   }
 
-  async execute(error: Error, context: ErrorContext): Promise<ResolutionResult> {
+  async execute(
+    error: Error,
+    context: ErrorContext
+  ): Promise<ResolutionResult> {
     // Placeholder for execute method
     return {
       success: false,
       changes: [],
       executionTime: 0,
-      errorMessage: "Not implemented yet.",
+      errorMessage: 'Not implemented yet.',
       nextSteps: [],
     };
   }

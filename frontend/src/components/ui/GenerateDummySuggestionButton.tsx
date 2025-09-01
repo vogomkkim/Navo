@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useGenerateDummySuggestion } from "@/lib/api";
+import { useGenerateDummySuggestion } from '@/lib/api';
 
 interface GenerateDummySuggestionButtonProps {
   onGenerateSuccess?: (data: any) => void;
@@ -23,11 +23,11 @@ export function GenerateDummySuggestionButton({
     generateSuggestion(undefined, {
       // Pass undefined as the mutation function doesn't require a payload
       onSuccess: (data) => {
-        console.log("Dummy suggestion generated successfully:", data);
+        console.log('Dummy suggestion generated successfully:', data);
         onGenerateSuccess?.(data);
       },
       onError: (err) => {
-        console.error("Failed to generate dummy suggestion:", err);
+        console.error('Failed to generate dummy suggestion:', err);
         onGenerateError?.(err);
       },
     });
@@ -39,7 +39,7 @@ export function GenerateDummySuggestionButton({
       onClick={handleGenerateClick}
       disabled={isPending}
     >
-      {isPending ? "생성 중..." : "더미 제안 생성"}
+      {isPending ? '생성 중...' : '더미 제안 생성'}
     </button>
   );
 }

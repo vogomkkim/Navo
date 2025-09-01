@@ -27,13 +27,13 @@ class GeminiClient {
   private baseUrl: string;
 
   constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || "";
+    this.apiKey = process.env.GEMINI_API_KEY || '';
     this.baseUrl =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     if (!this.apiKey) {
       console.warn(
-        "Gemini API 키가 설정되지 않았습니다. 환경변수 GEMINI_API_KEY를 확인해주세요."
+        'Gemini API 키가 설정되지 않았습니다. 환경변수 GEMINI_API_KEY를 확인해주세요.'
       );
     }
   }
@@ -43,7 +43,7 @@ class GeminiClient {
     temperature: number = 0.7
   ): Promise<GeminiResponse> {
     if (!this.apiKey) {
-      throw new Error("Gemini API 키가 설정되지 않았습니다.");
+      throw new Error('Gemini API 키가 설정되지 않았습니다.');
     }
 
     const request: GeminiRequest = {
@@ -66,9 +66,9 @@ class GeminiClient {
 
     try {
       const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
       });
@@ -93,10 +93,10 @@ class GeminiClient {
             : undefined,
         };
       } else {
-        throw new Error("Gemini API 응답 형식이 올바르지 않습니다.");
+        throw new Error('Gemini API 응답 형식이 올바르지 않습니다.');
       }
     } catch (error) {
-      console.error("Gemini API 호출 오류:", error);
+      console.error('Gemini API 호출 오류:', error);
       throw error;
     }
   }
@@ -147,26 +147,26 @@ class GeminiClient {
       return {
         summary: response.text,
         requirements: [
-          "사용자 인증 시스템",
-          "데이터 관리 기능",
-          "반응형 UI/UX",
+          '사용자 인증 시스템',
+          '데이터 관리 기능',
+          '반응형 UI/UX',
         ],
-        targetAudience: "일반 사용자",
-        businessGoals: ["사용자 경험 향상", "비즈니스 효율성 증대"],
-        successMetrics: ["사용자 만족도", "시스템 안정성"],
+        targetAudience: '일반 사용자',
+        businessGoals: ['사용자 경험 향상', '비즈니스 효율성 증대'],
+        successMetrics: ['사용자 만족도', '시스템 안정성'],
       };
     } catch (error) {
-      console.error("JSON 파싱 오류:", error);
+      console.error('JSON 파싱 오류:', error);
       return {
         summary: response.text,
         requirements: [
-          "사용자 인증 시스템",
-          "데이터 관리 기능",
-          "반응형 UI/UX",
+          '사용자 인증 시스템',
+          '데이터 관리 기능',
+          '반응형 UI/UX',
         ],
-        targetAudience: "일반 사용자",
-        businessGoals: ["사용자 경험 향상", "비즈니스 효율성 증대"],
-        successMetrics: ["사용자 만족도", "시스템 안정성"],
+        targetAudience: '일반 사용자',
+        businessGoals: ['사용자 경험 향상', '비즈니스 효율성 증대'],
+        successMetrics: ['사용자 만족도', '시스템 안정성'],
       };
     }
   }
@@ -205,20 +205,20 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
 
       return {
         summary: response.text,
-        timeline: "2-3주 내 완성",
-        techStack: ["React + TypeScript", "Node.js + Express", "PostgreSQL"],
-        milestones: ["요구사항 분석 완료", "프로토타입 개발", "테스트 및 배포"],
-        risks: ["기술적 복잡성", "일정 지연 가능성"],
-        resources: ["프론트엔드 개발자", "백엔드 개발자", "UI/UX 디자이너"],
+        timeline: '2-3주 내 완성',
+        techStack: ['React + TypeScript', 'Node.js + Express', 'PostgreSQL'],
+        milestones: ['요구사항 분석 완료', '프로토타입 개발', '테스트 및 배포'],
+        risks: ['기술적 복잡성', '일정 지연 가능성'],
+        resources: ['프론트엔드 개발자', '백엔드 개발자', 'UI/UX 디자이너'],
       };
     } catch (error) {
       return {
         summary: response.text,
-        timeline: "2-3주 내 완성",
-        techStack: ["React + TypeScript", "Node.js + Express", "PostgreSQL"],
-        milestones: ["요구사항 분석 완료", "프로토타입 개발", "테스트 및 배포"],
-        risks: ["기술적 복잡성", "일정 지연 가능성"],
-        resources: ["프론트엔드 개발자", "백엔드 개발자", "UI/UX 디자이너"],
+        timeline: '2-3주 내 완성',
+        techStack: ['React + TypeScript', 'Node.js + Express', 'PostgreSQL'],
+        milestones: ['요구사항 분석 완료', '프로토타입 개발', '테스트 및 배포'],
+        risks: ['기술적 복잡성', '일정 지연 가능성'],
+        resources: ['프론트엔드 개발자', '백엔드 개발자', 'UI/UX 디자이너'],
       };
     }
   }
@@ -260,20 +260,20 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
 
       return {
         architecture: response.text,
-        databaseSchema: ["users", "projects", "settings"],
-        components: ["UserAuth", "ProjectList", "Dashboard"],
-        apis: ["/api/auth", "/api/projects", "/api/users"],
-        securityFeatures: ["JWT 인증", "입력 검증", "CORS 설정"],
-        performanceOptimizations: ["캐싱", "지연 로딩", "코드 분할"],
+        databaseSchema: ['users', 'projects', 'settings'],
+        components: ['UserAuth', 'ProjectList', 'Dashboard'],
+        apis: ['/api/auth', '/api/projects', '/api/users'],
+        securityFeatures: ['JWT 인증', '입력 검증', 'CORS 설정'],
+        performanceOptimizations: ['캐싱', '지연 로딩', '코드 분할'],
       };
     } catch (error) {
       return {
         architecture: response.text,
-        databaseSchema: ["users", "projects", "settings"],
-        components: ["UserAuth", "ProjectList", "Dashboard"],
-        apis: ["/api/auth", "/api/projects", "/api/users"],
-        securityFeatures: ["JWT 인증", "입력 검증", "CORS 설정"],
-        performanceOptimizations: ["캐싱", "지연 로딩", "코드 분할"],
+        databaseSchema: ['users', 'projects', 'settings'],
+        components: ['UserAuth', 'ProjectList', 'Dashboard'],
+        apis: ['/api/auth', '/api/projects', '/api/users'],
+        securityFeatures: ['JWT 인증', '입력 검증', 'CORS 설정'],
+        performanceOptimizations: ['캐싱', '지연 로딩', '코드 분할'],
       };
     }
   }
@@ -311,20 +311,20 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
 
       return {
         summary: response.text,
-        testCoverage: "95%",
-        performanceScore: "A+",
-        securityStatus: "보안 검증 완료",
-        improvements: ["코드 가독성 향상", "에러 처리 강화", "성능 최적화"],
-        testPlan: ["단위 테스트", "통합 테스트", "사용자 테스트"],
+        testCoverage: '95%',
+        performanceScore: 'A+',
+        securityStatus: '보안 검증 완료',
+        improvements: ['코드 가독성 향상', '에러 처리 강화', '성능 최적화'],
+        testPlan: ['단위 테스트', '통합 테스트', '사용자 테스트'],
       };
     } catch (error) {
       return {
         summary: response.text,
-        testCoverage: "95%",
-        performanceScore: "A+",
-        securityStatus: "보안 검증 완료",
-        improvements: ["코드 가독성 향상", "에러 처리 강화", "성능 최적화"],
-        testPlan: ["단위 테스트", "통합 테스트", "사용자 테스트"],
+        testCoverage: '95%',
+        performanceScore: 'A+',
+        securityStatus: '보안 검증 완료',
+        improvements: ['코드 가독성 향상', '에러 처리 강화', '성능 최적화'],
+        testPlan: ['단위 테스트', '통합 테스트', '사용자 테스트'],
       };
     }
   }
@@ -362,20 +362,20 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
 
       return {
         environment: response.text,
-        cicdStatus: "자동화 완료",
-        monitoringStatus: "실시간 모니터링 구축",
-        optimizationStatus: "성능 최적화 완료",
-        backupStrategy: "일일 자동 백업",
-        scalingPlan: "로드 밸런서 기반 확장",
+        cicdStatus: '자동화 완료',
+        monitoringStatus: '실시간 모니터링 구축',
+        optimizationStatus: '성능 최적화 완료',
+        backupStrategy: '일일 자동 백업',
+        scalingPlan: '로드 밸런서 기반 확장',
       };
     } catch (error) {
       return {
         environment: response.text,
-        cicdStatus: "자동화 완료",
-        monitoringStatus: "실시간 모니터링 구축",
-        optimizationStatus: "성능 최적화 완료",
-        backupStrategy: "일일 자동 백업",
-        scalingPlan: "로드 밸런서 기반 확장",
+        cicdStatus: '자동화 완료',
+        monitoringStatus: '실시간 모니터링 구축',
+        optimizationStatus: '성능 최적화 완료',
+        backupStrategy: '일일 자동 백업',
+        scalingPlan: '로드 밸런서 기반 확장',
       };
     }
   }
