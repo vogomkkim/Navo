@@ -141,8 +141,7 @@ export class ContextManager {
         .where(
           and(
             eq(userSessions.sessionId, sessionId),
-            eq(userSessions.userId, userId),
-            eq(userSessions.status, "active")
+            eq(userSessions.userId, userId)
           )
         )
         .limit(1);
@@ -155,7 +154,7 @@ export class ContextManager {
       const sessionData = session[0];
 
       // 현재 프로젝트 정보 조회
-      let currentProject = undefined;
+      let currentProject: UserContext['currentProject'] = undefined;
       if (sessionData.currentProjectId) {
         const project = await db
           .select()
@@ -168,13 +167,13 @@ export class ContextManager {
             id: project[0].id,
             name: project[0].name,
             description: project[0].description || undefined,
-            structure: sessionData.contextData?.projectStructure || undefined,
+            structure: (sessionData.contextData as any)?.projectStructure || undefined,
           };
         }
       }
 
       // 현재 컴포넌트 정보 조회
-      let currentComponent = undefined;
+      let currentComponent: UserContext['currentComponent'] = undefined;
       if (sessionData.currentComponentId) {
         const component = await db
           .select()
@@ -201,7 +200,7 @@ export class ContextManager {
         status: sessionData.status as "active" | "archived",
         expiresAt: sessionData.expiresAt || undefined,
         version: sessionData.version,
-        lastAction: sessionData.lastAction || undefined,
+        lastAction: sessionData.lastAction as any || undefined,
         contextData: sessionData.contextData || {},
         lastActivity: sessionData.lastActivity,
       };
@@ -283,10 +282,6 @@ export class ContextManager {
         updateData.currentComponentId = updates.currentComponentId;
       }
 
-      if (updates.conversationHistory !== undefined) {
-        updateData.conversationHistory = updates.conversationHistory;
-      }
-
       if (updates.lastAction !== undefined) {
         updateData.lastAction = updates.lastAction;
       }
@@ -341,9 +336,15 @@ export class ContextManager {
         .returning();
 
       // 세션 활동 시간 업데이트
-      await this.updateContext(sessionId, userId, {
-        lastActivity: new Date(),
-      });
+      await db
+        .update(userSessions)
+        .set({ lastActivity: new Date() })
+        .where(
+          and(
+            eq(userSessions.sessionId, sessionId),
+            eq(userSessions.userId, userId)
+          )
+        );
 
       return message.id;
     } catch (error) {
@@ -373,7 +374,7 @@ export class ContextManager {
         id: msg.id,
         sessionId: msg.sessionId,
         role: msg.role as "user" | "assistant" | "system" | "tool",
-        content: msg.content,
+        content: msg.content as any,
         model: msg.model || undefined,
         tokens: msg.tokens || undefined,
         metadata: msg.metadata || undefined,
@@ -460,7 +461,7 @@ export class ContextManager {
     try {
       await this.updateContext(sessionId, userId, {
         currentProjectId: projectId,
-        currentComponentId: null, // 프로젝트 변경 시 컴포넌트 초기화
+        currentComponentId: undefined, // 프로젝트 변경 시 컴포넌트 초기화
       });
     } catch (error) {
       console.error("Error setting current project:", error);
