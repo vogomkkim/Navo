@@ -123,7 +123,33 @@ export class ContextManager {
   }
 
   /**
-   * 사용자 컨텍스트 조회
+   * 사용자 컨텍스트 조회 또는 생성
+   */
+  async getOrCreateContext(userId: string): Promise<UserContext> {
+    try {
+      // 가장 최근 세션 조회
+      const sessions = await db
+        .select()
+        .from(userSessions)
+        .where(eq(userSessions.userId, userId))
+        .orderBy(desc(userSessions.updatedAt))
+        .limit(1);
+
+      if (sessions.length > 0) {
+        // 기존 세션이 있으면 반환
+        return await this.buildContextFromSession(sessions[0]);
+      }
+
+      // 세션이 없으면 새로 생성
+      return await this.createSession(userId);
+    } catch (error) {
+      console.error("Error getting or creating context:", error);
+      throw new Error("Failed to get or create user context");
+    }
+  }
+
+  /**
+   * 사용자 컨텍스트 조회 (기존 메서드 - 호환성 유지)
    */
   async getContext(sessionId: string, userId: string): Promise<UserContext> {
     // 캐시에서 먼저 확인
@@ -220,11 +246,69 @@ export class ContextManager {
   }
 
   /**
+   * 세션 데이터로부터 컨텍스트 빌드
+   */
+  private async buildContextFromSession(sessionData: any): Promise<UserContext> {
+    const sessionDataJson = sessionData.sessionData as any;
+
+    // 현재 프로젝트 정보 조회
+    let currentProject: UserContext["currentProject"] = undefined;
+    if (sessionDataJson.currentProjectId) {
+      const project = await db
+        .select()
+        .from(projects)
+        .where(eq(projects.id, sessionDataJson.currentProjectId))
+        .limit(1);
+
+      if (project.length > 0) {
+        currentProject = {
+          id: project[0].id,
+          name: project[0].name,
+          description: project[0].description || undefined,
+          structure: sessionDataJson.projectStructure || undefined,
+        };
+      }
+    }
+
+    // 현재 컴포넌트 정보 조회
+    let currentComponent: UserContext["currentComponent"] = undefined;
+    if (sessionDataJson.currentComponentId) {
+      const component = await db
+        .select()
+        .from(componentDefinitions)
+        .where(eq(componentDefinitions.id, sessionDataJson.currentComponentId))
+        .limit(1);
+
+      if (component.length > 0) {
+        currentComponent = {
+          id: component[0].id,
+          name: component[0].name,
+          displayName: component[0].displayName,
+          type: component[0].category,
+        };
+      }
+    }
+
+    const context: UserContext = {
+      sessionId: sessionData.id,
+      userId: sessionData.userId,
+      title: sessionDataJson.title || undefined,
+      currentProject,
+      currentComponent,
+      status: "active",
+      version: sessionData.version,
+      lastAction: sessionDataJson.lastAction || undefined,
+      contextData: sessionDataJson.contextData || {},
+      lastActivity: sessionData.updatedAt,
+    };
+
+    return context;
+  }
+
+  /**
    * 새 세션 생성
    */
   async createSession(userId: string, title?: string): Promise<UserContext> {
-    const sessionId = this.generateSessionId();
-
     try {
       const [session] = await db
         .insert(userSessions)
@@ -242,7 +326,7 @@ export class ContextManager {
         .returning();
 
       const context: UserContext = {
-        sessionId: session.id,
+        sessionId: session.id, // DB에서 생성된 UUID 사용
         userId: session.userId,
         title: title || undefined,
         status: "active",
@@ -251,8 +335,8 @@ export class ContextManager {
         lastActivity: session.updatedAt,
       };
 
-      // 캐시에 저장
-      const cacheKey = `${sessionId}-${userId}`;
+      // 캐시에 저장 (DB에서 생성된 ID 사용)
+      const cacheKey = `${session.id}-${userId}`;
       this.sessionCache.set(cacheKey, context);
 
       return context;

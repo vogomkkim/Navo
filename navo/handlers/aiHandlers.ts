@@ -335,25 +335,16 @@ export async function handleMultiAgentChat(
       return;
     }
 
-    // 세션 ID 생성 또는 기존 세션 사용
-    const sessionId = context?.sessionId || uuidv4();
-
-    // ContextManager를 사용하여 사용자 컨텍스트 조회
+    // ContextManager를 사용하여 사용자 컨텍스트 조회 또는 생성
     let userContext: UserContext;
     try {
-      userContext = await contextManager.getContext(sessionId, userId);
+      userContext = await contextManager.getOrCreateContext(userId);
     } catch (error) {
-      console.error("Error getting user context:", error);
-      // 컨텍스트 조회 실패 시 기본 컨텍스트 사용
-      userContext = {
-        sessionId,
-        userId,
-        status: "active",
-        version: 1,
-        contextData: {},
-        lastActivity: new Date(),
-      };
+      console.error("Error getting or creating user context:", error);
+      throw new Error("Failed to get or create user context");
     }
+
+    const sessionId = userContext.sessionId; // DB에서 생성된 UUID 사용
 
     // 최근 메시지 조회 (컨텍스트 구성용)
     const recentMessages = await contextManager.getMessages(sessionId, 3);
