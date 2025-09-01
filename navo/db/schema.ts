@@ -179,46 +179,21 @@ export const userSessions = pgTable(
   "user_sessions",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    sessionId: varchar("session_id", { length: 255 }).notNull().unique(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    title: varchar("title", { length: 255 }), // 세션 제목
-    currentProjectId: uuid("current_project_id").references(() => projects.id, {
-      onDelete: "set null",
-    }),
-    currentComponentId: uuid("current_component_id").references(
-      () => componentDefinitions.id,
-      { onDelete: "set null" }
-    ),
-    status: varchar("status", { length: 50 }).notNull().default("active"), // active, archived
-    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }),
-    version: integer("version").notNull().default(1), // 낙관적 락
-    lastAction: jsonb("last_action").default("{}"),
-    contextData: jsonb("context_data").notNull().default("{}"),
-    lastActivity: timestamp("last_activity", {
-      withTimezone: true,
-      mode: "date",
-    })
-      .defaultNow()
-      .notNull(),
+    userId: uuid("user_id").notNull(),
+    sessionData: jsonb("session_data").notNull().default("{}"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .defaultNow()
       .notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
       .defaultNow()
       .notNull(),
+    version: integer("version").notNull().default(1),
   },
   (table) => ({
-    sessionIdx: index("idx_user_sessions_session").on(table.sessionId),
     userIdx: index("idx_user_sessions_user").on(table.userId),
-    activityIdx: index("idx_user_sessions_activity").on(table.lastActivity),
-    activeIdx: index("idx_user_sessions_active")
-      .on(table.status)
-      .where(eq(table.status, "active")),
+    createdAtIdx: index("idx_user_sessions_created_at").on(table.createdAt),
     // JSON 안정성 체크 제약
-    lastActionCheck: sql`check (jsonb_typeof(last_action) = 'object')`,
-    contextDataCheck: sql`check (jsonb_typeof(context_data) = 'object')`,
+    sessionDataCheck: sql`check (jsonb_typeof(session_data) = 'object')`,
   })
 );
 
@@ -227,26 +202,24 @@ export const chatMessages = pgTable(
   "chat_messages",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    sessionId: varchar("session_id", { length: 255 })
+    sessionId: uuid("session_id")
       .notNull()
-      .references(() => userSessions.sessionId, { onDelete: "cascade" }),
-    role: varchar("role", { length: 50 }).notNull(), // user, assistant, system, tool
-    content: jsonb("content").notNull(),
-    model: varchar("model", { length: 100 }), // 사용된 AI 모델
-    tokens: integer("tokens"), // 토큰 수
-    metadata: jsonb("metadata").default("{}"), // 추가 메타데이터
+      .references(() => userSessions.id, { onDelete: "cascade" }),
+    messageType: text("message_type").notNull(), // user, assistant
+    content: text("content").notNull(),
+    metadata: jsonb("metadata").default("{}"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .defaultNow()
       .notNull(),
+    version: integer("version").notNull().default(1),
   },
   (table) => ({
     sessionTimeIdx: index("idx_chat_messages_session_time").on(
       table.sessionId,
       desc(table.createdAt)
     ),
-    roleIdx: index("idx_chat_messages_role").on(table.role),
+    messageTypeIdx: index("idx_chat_messages_type").on(table.messageType),
     // JSON 안정성 체크 제약
-    contentCheck: sql`check (jsonb_typeof(content) = 'object')`,
     metadataCheck: sql`check (jsonb_typeof(metadata) = 'object')`,
   })
 );
@@ -256,23 +229,19 @@ export const chatSessionSummaries = pgTable(
   "chat_session_summaries",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    sessionId: varchar("session_id", { length: 255 })
+    sessionId: uuid("session_id")
       .notNull()
-      .unique()
-      .references(() => userSessions.sessionId, { onDelete: "cascade" }),
-    summary: text("summary").notNull(), // 요약문
-    lastMsgId: uuid("last_msg_id").references(() => chatMessages.id, {
-      onDelete: "set null",
-    }),
-    tokenCount: integer("token_count"), // 요약에 사용된 토큰 수
+      .references(() => userSessions.id, { onDelete: "cascade" }),
+    summary: text("summary").notNull(),
+    keyPoints: jsonb("key_points").default("[]"),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
-      .defaultNow()
-      .notNull(),
+    version: integer("version").notNull().default(1),
   },
   (table) => ({
     sessionIdx: index("idx_chat_session_summaries_session").on(table.sessionId),
+    // JSON 안정성 체크 제약
+    keyPointsCheck: sql`check (jsonb_typeof(key_points) = 'array')`,
   })
 );

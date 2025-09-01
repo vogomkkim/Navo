@@ -139,10 +139,7 @@ export class ContextManager {
         .select()
         .from(userSessions)
         .where(
-          and(
-            eq(userSessions.sessionId, sessionId),
-            eq(userSessions.userId, userId)
-          )
+          and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId))
         )
         .limit(1);
 
@@ -152,14 +149,15 @@ export class ContextManager {
       }
 
       const sessionData = session[0];
+      const sessionDataJson = sessionData.sessionData as any;
 
       // 현재 프로젝트 정보 조회
-      let currentProject: UserContext['currentProject'] = undefined;
-      if (sessionData.currentProjectId) {
+      let currentProject: UserContext["currentProject"] = undefined;
+      if (sessionDataJson.currentProjectId) {
         const project = await db
           .select()
           .from(projects)
-          .where(eq(projects.id, sessionData.currentProjectId))
+          .where(eq(projects.id, sessionDataJson.currentProjectId))
           .limit(1);
 
         if (project.length > 0) {
@@ -167,18 +165,20 @@ export class ContextManager {
             id: project[0].id,
             name: project[0].name,
             description: project[0].description || undefined,
-            structure: (sessionData.contextData as any)?.projectStructure || undefined,
+            structure: sessionDataJson.projectStructure || undefined,
           };
         }
       }
 
       // 현재 컴포넌트 정보 조회
-      let currentComponent: UserContext['currentComponent'] = undefined;
-      if (sessionData.currentComponentId) {
+      let currentComponent: UserContext["currentComponent"] = undefined;
+      if (sessionDataJson.currentComponentId) {
         const component = await db
           .select()
           .from(componentDefinitions)
-          .where(eq(componentDefinitions.id, sessionData.currentComponentId))
+          .where(
+            eq(componentDefinitions.id, sessionDataJson.currentComponentId)
+          )
           .limit(1);
 
         if (component.length > 0) {
@@ -192,17 +192,16 @@ export class ContextManager {
       }
 
       const context: UserContext = {
-        sessionId: sessionData.sessionId,
+        sessionId: sessionData.id,
         userId: sessionData.userId,
-        title: sessionData.title || undefined,
+        title: sessionDataJson.title || undefined,
         currentProject,
         currentComponent,
-        status: sessionData.status as "active" | "archived",
-        expiresAt: sessionData.expiresAt || undefined,
+        status: "active",
         version: sessionData.version,
-        lastAction: sessionData.lastAction as any || undefined,
-        contextData: sessionData.contextData || {},
-        lastActivity: sessionData.lastActivity,
+        lastAction: sessionDataJson.lastAction || undefined,
+        contextData: sessionDataJson.contextData || {},
+        lastActivity: sessionData.updatedAt,
       };
 
       // 캐시에 저장
@@ -230,23 +229,26 @@ export class ContextManager {
       const [session] = await db
         .insert(userSessions)
         .values({
-          sessionId,
           userId,
-          title,
-          status: "active",
+          sessionData: {
+            title,
+            currentProjectId: null,
+            currentComponentId: null,
+            lastAction: null,
+            contextData: {},
+          },
           version: 1,
-          contextData: {},
         })
         .returning();
 
       const context: UserContext = {
-        sessionId: session.sessionId,
+        sessionId: session.id,
         userId: session.userId,
-        title: session.title || undefined,
+        title: title || undefined,
         status: "active",
         version: session.version,
         contextData: {},
-        lastActivity: session.lastActivity,
+        lastActivity: session.updatedAt,
       };
 
       // 캐시에 저장
@@ -327,23 +329,23 @@ export class ContextManager {
         .insert(chatMessages)
         .values({
           sessionId,
-          role,
-          content,
-          model,
-          tokens,
-          metadata,
+          messageType: role,
+          content: content.message,
+          metadata: {
+            ...metadata,
+            model,
+            tokens,
+            originalContent: content,
+          },
         })
         .returning();
 
       // 세션 활동 시간 업데이트
       await db
         .update(userSessions)
-        .set({ lastActivity: new Date() })
+        .set({ updatedAt: new Date() })
         .where(
-          and(
-            eq(userSessions.sessionId, sessionId),
-            eq(userSessions.userId, userId)
-          )
+          and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId))
         );
 
       return message.id;
@@ -373,10 +375,13 @@ export class ContextManager {
       return messages.map((msg) => ({
         id: msg.id,
         sessionId: msg.sessionId,
-        role: msg.role as "user" | "assistant" | "system" | "tool",
-        content: msg.content as any,
-        model: msg.model || undefined,
-        tokens: msg.tokens || undefined,
+        role: msg.messageType as "user" | "assistant" | "system" | "tool",
+        content: {
+          message: msg.content,
+          ...(msg.metadata as any)?.originalContent,
+        },
+        model: (msg.metadata as any)?.model || undefined,
+        tokens: (msg.metadata as any)?.tokens || undefined,
         metadata: msg.metadata || undefined,
         createdAt: msg.createdAt,
       }));
