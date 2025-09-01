@@ -248,7 +248,9 @@ export class ContextManager {
   /**
    * 세션 데이터로부터 컨텍스트 빌드
    */
-  private async buildContextFromSession(sessionData: any): Promise<UserContext> {
+  private async buildContextFromSession(
+    sessionData: any
+  ): Promise<UserContext> {
     const sessionDataJson = sessionData.sessionData as any;
 
     // 현재 프로젝트 정보 조회

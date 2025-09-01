@@ -253,38 +253,68 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
         `🔧 Creating components from AI architecture for page ${pageId} in project ${projectId}`
       );
 
-      // 기본 컴포넌트 생성 (Header, Hero, Feature 등)
-      const defaultComponents = [
-        {
-          name: "Header",
-          componentDefinitionId: "header-def-id", // 임시 ID
-          props: { title: "Welcome to " + projectArchitecture.name },
+      // 프로젝트의 컴포넌트 정의들을 가져오기
+      const projectComponentDefs = await db
+        .select()
+        .from(componentDefinitions)
+        .where(eq(componentDefinitions.projectId, projectId));
+
+      if (projectComponentDefs.length === 0) {
+        this.logger.warn(
+          "⚠️ No component definitions found for project, skipping component creation"
+        );
+        return [];
+      }
+
+      // AI 아키텍처에서 페이지별 컴포넌트 정보 가져오기
+      const pageComponents = [];
+
+      // 현재 페이지 정보 찾기
+      const currentPage =
+        projectArchitecture.pages?.find((page: any) => page.id === pageId) ||
+        projectArchitecture.pages?.find((page: any) => page.path === "/") ||
+        projectArchitecture.pages?.[0];
+
+      if (
+        currentPage &&
+        currentPage.components &&
+        Array.isArray(currentPage.components)
+      ) {
+        // 페이지에 정의된 컴포넌트들 사용
+        for (let i = 0; i < currentPage.components.length; i++) {
+          const pageComp = currentPage.components[i];
+          const matchingDef = projectComponentDefs.find(
+            (def) => def.name === pageComp.type
+          );
+
+          if (matchingDef) {
+            pageComponents.push({
+              name: pageComp.type,
+              componentDefinitionId: matchingDef.id,
+              props: pageComp.props || {},
+              order: i + 1,
+            });
+          }
+        }
+      }
+
+      // 컴포넌트가 없으면 기본 컴포넌트 하나 생성
+      if (pageComponents.length === 0) {
+        pageComponents.push({
+          name:
+            projectComponentDefs[0].displayName || projectComponentDefs[0].name,
+          componentDefinitionId: projectComponentDefs[0].id,
+          props: {
+            title:
+              "Welcome to " + (currentPage?.name || projectArchitecture.name),
+          },
           order: 1,
-        },
-        {
-          name: "Hero",
-          componentDefinitionId: "hero-def-id",
-          props: {
-            title: "Get Started",
-            subtitle: "AI가 생성한 프로젝트입니다",
-            ctaText: "시작하기",
-          },
-          order: 2,
-        },
-        {
-          name: "Feature",
-          componentDefinitionId: "feature-def-id",
-          props: {
-            title: "주요 기능",
-            description: "AI가 설계한 핵심 기능들",
-          },
-          order: 3,
-        },
-      ];
+        });
+      }
 
       const createdComponents = [];
 
-      for (const compData of defaultComponents) {
+      for (const compData of pageComponents) {
         const newComponent = {
           pageId,
           componentDefinitionId: compData.componentDefinitionId,
