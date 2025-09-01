@@ -20,6 +20,7 @@ import { refineJsonResponse, safeJsonParse } from "../utils/jsonRefiner.js";
 import { contextManager, UserContext } from "../core/contextManager.js";
 import { promptEnhancer, EnhancedPrompt } from "../core/promptEnhancer.js";
 import { actionRouter, ActionResult } from "../core/actionRouter.js";
+import { v4 as uuidv4 } from "uuid";
 
 import createDOMPurify from "dompurify";
 
@@ -335,7 +336,7 @@ export async function handleMultiAgentChat(
     }
 
     // 세션 ID 생성 또는 기존 세션 사용
-    const sessionId = context?.sessionId || `session_${Date.now()}_${userId}`;
+    const sessionId = context?.sessionId || uuidv4();
 
     // ContextManager를 사용하여 사용자 컨텍스트 조회
     let userContext: UserContext;
