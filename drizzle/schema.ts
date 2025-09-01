@@ -1,4 +1,4 @@
-import { pgTable, index, check, uuid, jsonb, timestamp, integer, unique, varchar, text, foreignKey, boolean } from "drizzle-orm/pg-core"
+import { pgTable, index, check, uuid, jsonb, timestamp, integer, varchar, unique, text, foreignKey, boolean } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -10,8 +10,12 @@ export const userSessions = pgTable("user_sessions", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	version: integer().default(1),
+	lastActivity: timestamp("last_activity", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	status: varchar({ length: 50 }).default('active').notNull(),
 }, (table) => [
 	index("idx_user_sessions_created_at").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
+	index("idx_user_sessions_last_activity").using("btree", table.lastActivity.asc().nullsLast().op("timestamptz_ops")),
+	index("idx_user_sessions_status").using("btree", table.status.asc().nullsLast().op("text_ops")),
 	index("idx_user_sessions_user_id").using("btree", table.userId.asc().nullsLast().op("uuid_ops")),
 	check("check_session_data_json", sql`jsonb_typeof(session_data) = 'object'::text`),
 ]);
@@ -136,8 +140,17 @@ export const chatSessionSummaries = pgTable("chat_session_summaries", {
 	keyPoints: jsonb("key_points").default([]),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	version: integer().default(1),
+	lastMsgId: uuid("last_msg_id"),
+	tokenCount: integer("token_count").default(0).notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 }, (table) => [
+	index("idx_chat_session_summaries_last_msg").using("btree", table.lastMsgId.asc().nullsLast().op("uuid_ops")),
 	index("idx_chat_session_summaries_session_id").using("btree", table.sessionId.asc().nullsLast().op("uuid_ops")),
+	foreignKey({
+			columns: [table.lastMsgId],
+			foreignColumns: [chatMessages.id],
+			name: "chat_session_summaries_last_msg_id_fkey"
+		}).onDelete("set null"),
 	foreignKey({
 			columns: [table.sessionId],
 			foreignColumns: [userSessions.id],
