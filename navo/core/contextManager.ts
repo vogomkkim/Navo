@@ -374,13 +374,13 @@ export class ContextManager {
       const updatedSessionData = {
         ...currentSessionData,
         ...updates,
-        lastActivity: new Date(),
       };
 
       await db
         .update(userSessions)
         .set({
           sessionData: updatedSessionData,
+          lastActivity: new Date(),
           updatedAt: new Date(),
         })
         .where(
@@ -426,28 +426,15 @@ export class ContextManager {
         .returning();
 
       // 세션 활동 시간 업데이트
-      const [currentSession] = await db
-        .select()
-        .from(userSessions)
+      await db
+        .update(userSessions)
+        .set({
+          lastActivity: new Date(),
+          updatedAt: new Date(),
+        })
         .where(
           and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId))
         );
-
-      if (currentSession) {
-        const currentSessionData = (currentSession.sessionData as any) || {};
-        await db
-          .update(userSessions)
-          .set({
-            sessionData: {
-              ...currentSessionData,
-              lastActivity: new Date(),
-            },
-            updatedAt: new Date(),
-          })
-          .where(
-            and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId))
-          );
-      }
 
       return message.id;
     } catch (error) {
@@ -509,22 +496,14 @@ export class ContextManager {
         .where(eq(chatSessionSummaries.sessionId, sessionId));
 
       if (existingSummary) {
-        // 기존 요약 업데이트 - keyPoints에 추가 정보 저장
-        const currentKeyPoints = (existingSummary.keyPoints as any) || [];
-        const updatedKeyPoints = [
-          ...currentKeyPoints,
-          {
-            lastMsgId,
-            tokenCount,
-            updatedAt: new Date(),
-          },
-        ];
-
+        // 기존 요약 업데이트
         await db
           .update(chatSessionSummaries)
           .set({
             summary,
-            keyPoints: updatedKeyPoints,
+            lastMsgId,
+            tokenCount: tokenCount || 0,
+            updatedAt: new Date(),
           })
           .where(eq(chatSessionSummaries.sessionId, sessionId));
       } else {
@@ -532,13 +511,8 @@ export class ContextManager {
         await db.insert(chatSessionSummaries).values({
           sessionId,
           summary,
-          keyPoints: [
-            {
-              lastMsgId,
-              tokenCount,
-              createdAt: new Date(),
-            },
-          ],
+          lastMsgId,
+          tokenCount: tokenCount || 0,
         });
       }
     } catch (error) {
@@ -563,20 +537,18 @@ export class ContextManager {
       }
 
       const summaryData = summary[0];
-      const keyPoints = (summaryData.keyPoints as any) || [];
-      const lastKeyPoint = keyPoints[keyPoints.length - 1] || {};
 
       return {
         id: summaryData.id,
         sessionId: summaryData.sessionId,
         summary: summaryData.summary,
-        lastMsgId: lastKeyPoint.lastMsgId || undefined,
-        tokenCount: lastKeyPoint.tokenCount || undefined,
+        lastMsgId: summaryData.lastMsgId || undefined,
+        tokenCount: summaryData.tokenCount || undefined,
         createdAt: summaryData.createdAt
           ? new Date(summaryData.createdAt)
           : new Date(),
-        updatedAt: lastKeyPoint.updatedAt
-          ? new Date(lastKeyPoint.updatedAt)
+        updatedAt: summaryData.updatedAt
+          ? new Date(summaryData.updatedAt)
           : summaryData.createdAt
             ? new Date(summaryData.createdAt)
             : new Date(),
@@ -654,28 +626,15 @@ export class ContextManager {
    */
   async archiveSession(sessionId: string, userId: string): Promise<void> {
     try {
-      const [currentSession] = await db
-        .select()
-        .from(userSessions)
+      await db
+        .update(userSessions)
+        .set({
+          status: "archived",
+          updatedAt: new Date(),
+        })
         .where(
           and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId))
         );
-
-      if (currentSession) {
-        const currentSessionData = (currentSession.sessionData as any) || {};
-        await db
-          .update(userSessions)
-          .set({
-            sessionData: {
-              ...currentSessionData,
-              status: "archived",
-            },
-            updatedAt: new Date(),
-          })
-          .where(
-            and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId))
-          );
-      }
 
       // 캐시에서 제거
       const cacheKey = `${sessionId}-${userId}`;
@@ -693,25 +652,19 @@ export class ContextManager {
     try {
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-      // 24시간 이상 비활성인 세션들을 찾아서 아카이브 처리
-      const oldSessions = await db
-        .select()
-        .from(userSessions)
-        .where(sql`${userSessions.updatedAt} < ${twentyFourHoursAgo}`);
-
-      for (const session of oldSessions) {
-        const currentSessionData = (session.sessionData as any) || {};
-        await db
-          .update(userSessions)
-          .set({
-            sessionData: {
-              ...currentSessionData,
-              status: "archived",
-            },
-            updatedAt: new Date(),
-          })
-          .where(eq(userSessions.id, session.id));
-      }
+      // 24시간 이상 비활성인 세션들을 아카이브 처리
+      await db
+        .update(userSessions)
+        .set({
+          status: "archived",
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(userSessions.status, "active"),
+            sql`${userSessions.lastActivity} < ${twentyFourHoursAgo}`
+          )
+        );
     } catch (error) {
       console.error("Error cleaning up old sessions:", error);
     }
