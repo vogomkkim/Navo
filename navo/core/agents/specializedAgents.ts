@@ -11,6 +11,7 @@ import { projects, pages, components, componentDefinitions } from '../../db/sche
 import { eq } from 'drizzle-orm';
 import {
     PROJECT_CREATION_PROMPT,
+    SITE_PLANNER_PROMPT,
     buildComponentModificationPrompt,
     buildPageModificationPrompt,
     CODE_REVIEW_PROMPT,
@@ -563,6 +564,179 @@ export class DevelopmentSetupAgent implements Agent {
             message: `💻 **개발 환경 구성이 완료되었습니다!**\n\n📁 **생성된 파일들:**\n• package.json - 프로젝트 의존성\n• vite.config.js - 빌드 설정\n• tailwind.config.js - 스타일 설정\n• .env.example - 환경 변수 템플릿\n\n🔧 **설치 명령어:**\n\`\`\`bash\nnpm install\n\`\`\`\n\n🚀 **개발 서버 시작:**\n\`\`\`bash\nnpm run dev\n\`\`\`\n\n✨ **다음 단계:**\n1. 의존성 설치\n2. 환경 변수 설정\n3. 개발 시작\n\n🎉 **거의 완료되었습니다!**`,
             data: devFiles,
             type: 'development_setup'
+        };
+    }
+}
+
+/**
+ * 사이트 플래너 에이전트 - 아웃라인을 TaskPlan(JSON)으로 변환
+ */
+export class SitePlannerAgent implements Agent {
+    name = 'SitePlannerAgent';
+    description = '아웃라인을 기반으로 페이지/섹션 설계를 생성';
+
+    constructor(private model: any) {}
+
+    canHandle(intent: string): boolean {
+        return intent === 'site_planning';
+    }
+
+    async execute(
+        message: string,
+        intentAnalysis: IntentAnalysis,
+        userContext: UserContext,
+        sessionId: string
+    ): Promise<AgentResult> {
+        const start = Date.now();
+        const prompt = `${SITE_PLANNER_PROMPT}\n\n프로젝트 설명 또는 요청: ${message}`;
+        const result = await this.model.generateContent(prompt);
+        const response = result.response.text();
+
+        // 코드블록 제거 및 JSON 추출
+        let json = response.trim();
+        if (json.startsWith('```json')) json = json.slice(7);
+        if (json.startsWith('```')) json = json.slice(3);
+        if (json.endsWith('```')) json = json.slice(0, -3);
+        const s = json.indexOf('{');
+        const e = json.lastIndexOf('}');
+        if (s !== -1 && e !== -1 && e > s) json = json.slice(s, e + 1);
+
+        try {
+            const taskPlan = JSON.parse(json);
+            return {
+                success: true,
+                message: '사이트 계획이 생성되었습니다.',
+                data: { taskPlan },
+                type: 'site_plan',
+                metadata: { executionTime: Date.now() - start, tokens: 0, model: 'gemini-2.5-flash' }
+            };
+        } catch (err) {
+            return {
+                success: false,
+                message: '사이트 계획 생성 중 JSON 파싱에 실패했습니다.',
+                type: 'text'
+            };
+        }
+    }
+}
+
+/**
+ * 사이트 컴포저 에이전트 - TaskPlan을 DB(CMS)에 적용
+ */
+export class SiteComposerAgent implements Agent {
+    name = 'SiteComposerAgent';
+    description = 'TaskPlan을 바탕으로 페이지/컴포넌트 DB에 기록';
+
+    constructor(private model: any) {}
+
+    canHandle(intent: string): boolean {
+        return intent === 'site_composition';
+    }
+
+    async execute(
+        message: string,
+        intentAnalysis: IntentAnalysis,
+        userContext: UserContext,
+        sessionId: string
+    ): Promise<AgentResult> {
+        const start = Date.now();
+        if (!userContext.currentProject?.id) {
+            return { success: false, message: '현재 프로젝트가 없습니다.', type: 'text' };
+        }
+
+        // message는 로그용, 실제 계획은 intentAnalysis.targets 또는 userContext.contextData에서 받을 수 있음
+        // 여기서는 message에 포함된 JSON 혹은 userContext.contextData.taskPlan 우선
+        let taskPlan: any = (userContext as any).contextData?.taskPlan;
+        if (!taskPlan) {
+            try {
+                const s = message.indexOf('{');
+                const e = message.lastIndexOf('}');
+                if (s !== -1 && e !== -1 && e > s) {
+                    taskPlan = JSON.parse(message.slice(s, e + 1));
+                }
+            } catch {}
+        }
+
+        if (!taskPlan || !Array.isArray(taskPlan.pages)) {
+            return { success: false, message: '유효한 TaskPlan이 없습니다.', type: 'text' };
+        }
+
+        const projectId = userContext.currentProject.id;
+        const createdPages: Array<{ id: string; path: string }> = [];
+
+        // 1) 필요한 컴포넌트 정의 idempotent 생성/재사용을 위한 맵
+        const neededTypes = new Set<string>();
+        for (const p of taskPlan.pages) {
+            for (const s of p.sections || []) neededTypes.add(s.type);
+        }
+
+        const typeToDefId = new Map<string, string>();
+
+        // 조회 후 없으면 생성
+        for (const typeName of neededTypes) {
+            const existing = await db.query.componentDefinitions.findFirst({
+                where: (cd: typeof componentDefinitions, { and, eq }: any) => and(eq(cd.projectId, projectId), eq(cd.name, typeName))
+            } as any);
+
+            if (existing) {
+                typeToDefId.set(typeName, (existing as any).id);
+            } else {
+                const [def] = await db.insert(componentDefinitions).values({
+                    projectId,
+                    name: typeName,
+                    displayName: typeName,
+                    description: `${typeName} 자동 생성`,
+                    category: 'content',
+                    propsSchema: {},
+                    renderTemplate: '<div>{{content}}</div>',
+                    cssStyles: ''
+                }).returning();
+                typeToDefId.set(typeName, def.id);
+            }
+        }
+
+        // 2) 페이지 생성(upsert: path 기준)
+        for (const p of taskPlan.pages) {
+            const existing = await db.query.pages.findFirst({
+                where: (pg: typeof pages, { and, eq }: any) => and(eq(pg.projectId, projectId), eq(pg.path, p.path))
+            } as any);
+
+            let pageId: string;
+            if (existing) {
+                pageId = (existing as any).id;
+            } else {
+                const [page] = await db.insert(pages).values({
+                    projectId,
+                    path: p.path,
+                    name: p.name || p.path,
+                    description: p.description || null,
+                    layoutJson: { components: [] }
+                }).returning();
+                pageId = page.id;
+            }
+
+            createdPages.push({ id: pageId, path: p.path });
+
+            // 3) 컴포넌트 배치(기존은 유지, 간단히 append). 향후 idempotent 정교화 가능
+            let order = 0;
+            for (const s of p.sections || []) {
+                const defId = typeToDefId.get(s.type);
+                if (!defId) continue;
+                await db.insert(components).values({
+                    pageId,
+                    componentDefinitionId: defId,
+                    props: s.props || {},
+                    orderIndex: order++
+                });
+            }
+        }
+
+        return {
+            success: true,
+            message: '사이트 구성 요소가 DB에 적용되었습니다.',
+            data: { pages: createdPages },
+            type: 'site_composed',
+            metadata: { executionTime: Date.now() - start, tokens: 0, model: 'gemini-2.5-flash' }
         };
     }
 }

@@ -4,7 +4,7 @@
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { UserContext } from '../contextManager.js';
+import { UserContext, contextManager } from '../contextManager.js';
 import { IntentAnalysis } from '../types/intent.js';
 import { Agent, AgentResult } from './types.js';
 import { INTENT_ANALYSIS_SYSTEM_PROMPT, buildIntentAnalysisUserPrompt } from './prompts.js';
@@ -38,6 +38,8 @@ export class IntentBasedAgentSystem {
             ProjectSetupAgent,
             DevelopmentSetupAgent,
             DeploymentSetupAgent,
+            SitePlannerAgent,
+            SiteComposerAgent,
             ComponentModificationAgent,
             PageModificationAgent,
             CodeReviewAgent,
@@ -52,6 +54,8 @@ export class IntentBasedAgentSystem {
             this.registerAgent(new ProjectSetupAgent(this.model));
             this.registerAgent(new DevelopmentSetupAgent(this.model));
             this.registerAgent(new DeploymentSetupAgent(this.model));
+            this.registerAgent(new SitePlannerAgent(this.model));
+            this.registerAgent(new SiteComposerAgent(this.model));
             this.registerAgent(new ComponentModificationAgent(this.model));
             this.registerAgent(new PageModificationAgent(this.model));
             this.registerAgent(new CodeReviewAgent(this.model));
@@ -118,9 +122,20 @@ export class IntentBasedAgentSystem {
                 messageLength: result.message.length
             });
 
-            // 4. 체인 에이전트 실행 (프로젝트 생성 후 자동 실행)
+            // 4. 프로젝트 생성 후: 현재 프로젝트 지정, 체인 실행
             if (result.success && result.type === 'project_creation') {
                 console.log('🔄 체인 에이전트 실행 시작...');
+
+                // projectId를 컨텍스트에 반영 (UI/후속 단계에서 활용)
+                try {
+                    const newProjectId = (result.data as any)?.project?.id;
+                    if (newProjectId) {
+                        await contextManager.setCurrentProject(sessionId, userContext.userId, newProjectId);
+                        userContext.currentProject = { id: newProjectId, name: (result.data as any)?.project?.name } as any;
+                    }
+                } catch (e) {
+                    console.warn('컨텍스트 프로젝트 설정 실패:', e);
+                }
 
                 const chainResults = await this.executeChainAgents(userContext, sessionId);
                 result.data = { ...result.data, chainResults };
@@ -217,6 +232,8 @@ export class IntentBasedAgentSystem {
     private async executeChainAgents(userContext: UserContext, sessionId: string): Promise<AgentResult[]> {
         const chainAgents = [
             { intent: 'project_setup', name: 'ProjectSetupAgent' },
+            { intent: 'site_planning', name: 'SitePlannerAgent' },
+            { intent: 'site_composition', name: 'SiteComposerAgent' },
             { intent: 'development_setup', name: 'DevelopmentSetupAgent' },
             { intent: 'deployment_setup', name: 'DeploymentSetupAgent' }
         ];
@@ -230,7 +247,7 @@ export class IntentBasedAgentSystem {
                 const agent = this.agents.get(chainAgent.name);
                 if (agent) {
                     const intentAnalysis: IntentAnalysis = {
-                        type: chainAgent.intent,
+                        type: chainAgent.intent as any,
                         confidence: 1.0,
                         description: `체인 실행: ${chainAgent.name}`,
                         isVague: false,
@@ -239,8 +256,18 @@ export class IntentBasedAgentSystem {
                         status: 'auto_execute'
                     };
 
+                    // SitePlanner 결과를 SiteComposer로 전달하기 위해 메시지에 JSON 포함
+                    let message = `체인 실행: ${chainAgent.name}`;
+                    if (chainAgent.intent === 'site_composition') {
+                        // 이전 결과 중 site_plan을 찾아 포함
+                        const plan = results.find(r => r.type === 'site_plan')?.data?.taskPlan;
+                        if (plan) {
+                            message += `\n${JSON.stringify(plan)}`;
+                        }
+                    }
+
                     const result = await agent.execute(
-                        `체인 실행: ${chainAgent.name}`,
+                        message,
                         intentAnalysis,
                         userContext,
                         sessionId
