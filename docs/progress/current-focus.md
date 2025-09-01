@@ -12,6 +12,9 @@
 - [x] **ContextManager 클래스 구현 완료** 🎉
 - [x] **사용자 세션 및 대화 컨텍스트 관리 시스템 구축**
 - [x] **handleMultiAgentChat에 ContextManager 통합**
+- [x] **PromptEnhancer 클래스 구현 완료** 🎉
+- [x] **AI 기반 프롬프트 개선 시스템 구축**
+- [x] **handleMultiAgentChat에 PromptEnhancer 통합**
 
 ### 🔄 **진행 중인 작업**
 
@@ -26,12 +29,12 @@
    - 목표: 사용자 세션 및 대화 컨텍스트 관리
    - 핵심: 현재 작업 중인 프로젝트, 컴포넌트, 대화 히스토리 추적
 
-2. **PromptEnhancer 클래스 구현** 🚀 **NEXT**
-   - 위치: `navo/handlers/aiHandlers.ts` 수정
+2. **PromptEnhancer 클래스 구현** ✅ **완료**
+   - 위치: `navo/core/promptEnhancer.ts` 새 파일 생성
    - 목표: AI 기반 프롬프트 개선으로 사용자 요청 명확화
    - 예시: "버튼 색이 마음에 안들어" → "현재 프로젝트의 버튼 컴포넌트 색상 변경"
 
-3. **ActionRouter 클래스 구현**
+3. **ActionRouter 클래스 구현** 🚀 **NEXT**
    - 위치: `navo/handlers/` 또는 `navo/core/`에 새 파일
    - 목표: 의도별 처리 분기 및 적절한 핸들러 선택
 
@@ -53,22 +56,30 @@
 
 ## 🚀 **즉시 시작할 작업**
 
-### **PromptEnhancer 구현 시작**
+### **ActionRouter 구현 시작**
 
 ```typescript
-// navo/handlers/aiHandlers.ts에 추가할 클래스
-class PromptEnhancer {
-  constructor(private ai: GoogleGenerativeAI) {}
+// navo/core/actionRouter.ts 새 파일 생성
+class ActionRouter {
+  constructor(private handlers: Map<string, ActionHandler>) {}
 
-  async enhance(
-    message: string,
-    context: UserContext
-  ): Promise<EnhancedPrompt> {
-    // AI를 사용해 사용자 요청을 명확하게 변환
-    // "버튼 색이 마음에 안들어" → "현재 프로젝트의 버튼 컴포넌트 색상 변경"
+  route(intent: Intent): ActionHandler {
+    // 의도에 따른 적절한 핸들러 선택
   }
 }
 ```
+
+### **PromptEnhancer 구현 완료** ✅
+
+- **파일**: `navo/core/promptEnhancer.ts`
+- **기능**: AI 기반 프롬프트 개선 시스템
+- **통합**: `handleMultiAgentChat`에 완전 통합
+- **특징**:
+  - 의도 분석 (9가지 의도 타입)
+  - 대상 분석 (6가지 대상 타입)
+  - 액션 분석 (8가지 액션 타입)
+  - 컨텍스트 기반 향상된 메시지 생성
+  - Fallback 시스템 및 품질 평가
 
 ### **ContextManager 구현 완료** ✅
 

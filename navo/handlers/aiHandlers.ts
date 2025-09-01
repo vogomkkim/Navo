@@ -18,6 +18,7 @@ import { DevelopmentGuideAgent } from "../agents/developmentGuideAgent.js";
 import { UIUXDesignerAgent } from "../agents/uiuxDesignerAgent.js";
 import { refineJsonResponse, safeJsonParse } from "../utils/jsonRefiner.js";
 import { contextManager, UserContext } from "../core/contextManager.js";
+import { promptEnhancer, EnhancedPrompt } from "../core/promptEnhancer.js";
 
 import createDOMPurify from "dompurify";
 
@@ -352,6 +353,16 @@ export async function handleMultiAgentChat(
       };
     }
 
+    // 최근 메시지 조회 (컨텍스트 구성용)
+    const recentMessages = await contextManager.getMessages(sessionId, 3);
+
+    // PromptEnhancer를 사용하여 메시지 향상
+    const enhancedPrompt: EnhancedPrompt = await promptEnhancer.enhance(
+      message,
+      userContext,
+      recentMessages
+    );
+
     // 사용자 메시지를 대화 히스토리에 추가
     await contextManager.addMessage(
       sessionId,
@@ -360,12 +371,15 @@ export async function handleMultiAgentChat(
       { message },
       undefined,
       undefined,
-      { source: "multi_agent_chat" }
+      {
+        source: "multi_agent_chat",
+        enhancedPrompt: enhancedPrompt,
+      }
     );
 
-    // 컨텍스트를 고려한 프로젝트 요청 생성
-    const req: ProjectRequest = await buildProjectRequestFromMessageWithContext(
-      message,
+    // 향상된 프롬프트를 사용하여 프로젝트 요청 생성
+    const req: ProjectRequest = await buildProjectRequestFromEnhancedPrompt(
+      enhancedPrompt,
       userContext,
       sessionId
     );
@@ -432,6 +446,7 @@ export async function handleMultiAgentChat(
         agents: agents.length,
         totalExecutionTime,
         source: "multi_agent_chat",
+        enhancedPrompt: enhancedPrompt,
       }
     );
 
@@ -453,6 +468,12 @@ export async function handleMultiAgentChat(
       totalExecutionTime,
       summary: assistantMessage,
       sessionId: sessionId, // 클라이언트에 세션 ID 반환
+      enhancedPrompt: {
+        intent: enhancedPrompt.intent,
+        target: enhancedPrompt.target,
+        action: enhancedPrompt.action,
+        enhancedMessage: enhancedPrompt.enhancedMessage,
+      },
     });
   } catch (error) {
     console.error("Error handling multi-agent chat:", error);
@@ -501,44 +522,70 @@ function buildProjectRequestFromMessage(message: string): ProjectRequest {
   };
 }
 
-async function buildProjectRequestFromMessageWithContext(
-  message: string,
+async function buildProjectRequestFromEnhancedPrompt(
+  enhancedPrompt: EnhancedPrompt,
   userContext: UserContext,
   sessionId: string
 ): Promise<ProjectRequest> {
-  // 기본 프로젝트 요청 생성
-  const baseRequest = buildProjectRequestFromMessage(message);
+  // 향상된 프롬프트를 기반으로 프로젝트 요청 생성
+  const { intent, target, action, enhancedMessage } = enhancedPrompt;
 
-  // 컨텍스트 정보를 분석하여 요청을 개선
+  // 기본 프로젝트 요청 생성
+  const baseRequest = buildProjectRequestFromMessage(enhancedMessage);
+
+  // 의도에 따른 요청 개선
   const enhancedRequest = { ...baseRequest };
 
-  // 현재 프로젝트가 있는 경우, 기존 프로젝트 정보 활용
-  if (userContext.currentProject) {
-    enhancedRequest.name = userContext.currentProject.name;
-    enhancedRequest.description = `${userContext.currentProject.description || ""}\n\n새로운 요청: ${message}`;
+  // 의도별 처리
+  switch (intent.type) {
+    case "project_creation":
+      enhancedRequest.description = `새 프로젝트 생성 요청\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      if (action.parameters.projectType) {
+        enhancedRequest.type = action.parameters.projectType as any;
+      }
+      if (action.parameters.features) {
+        enhancedRequest.features = Array.isArray(action.parameters.features)
+          ? action.parameters.features
+          : [action.parameters.features];
+      }
+      break;
+
+    case "project_modification":
+      if (userContext.currentProject) {
+        enhancedRequest.name = userContext.currentProject.name;
+        enhancedRequest.description = `기존 프로젝트 수정 요청\n프로젝트: ${userContext.currentProject.name}\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      }
+      break;
+
+    case "component_creation":
+      enhancedRequest.description = `새 컴포넌트 생성 요청\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      break;
+
+    case "component_modification":
+      if (userContext.currentComponent) {
+        const componentContext = `현재 컴포넌트: ${userContext.currentComponent.displayName}`;
+        enhancedRequest.description = `컴포넌트 수정 요청\n${componentContext}\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      }
+      break;
+
+    case "bug_fix":
+      enhancedRequest.description = `버그 수정 요청\n의도: ${intent.description}\n문제 영역: ${target.description || "전체 시스템"}\n요청: ${enhancedMessage}`;
+      break;
+
+    case "feature_request":
+      enhancedRequest.description = `기능 요청\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      break;
+
+    default:
+      enhancedRequest.description = `일반 요청\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
   }
 
-  // 현재 컴포넌트가 있는 경우, 컴포넌트 관련 요청으로 해석
-  if (userContext.currentComponent) {
-    const componentContext = `현재 작업 중인 컴포넌트: ${userContext.currentComponent.displayName} (${userContext.currentComponent.type})`;
-    enhancedRequest.description = `${componentContext}\n\n요청: ${message}`;
+  // 컨텍스트 정보 추가
+  if (enhancedPrompt.context.projectContext) {
+    enhancedRequest.description += `\n\n${enhancedPrompt.context.projectContext}`;
   }
-
-  // 대화 히스토리를 분석하여 연속성 있는 요청 생성
-  // 최근 메시지들을 조회하여 컨텍스트 구성
-  const recentMessages = await contextManager.getMessages(sessionId, 3);
-  if (recentMessages.length > 0) {
-    const messageTexts = recentMessages
-      .map((msg) => msg.content.message)
-      .join("\n");
-
-    enhancedRequest.description = `이전 대화:\n${messageTexts}\n\n현재 요청: ${message}`;
-  }
-
-  // 마지막 액션 정보를 활용
-  if (userContext.lastAction) {
-    const actionContext = `마지막 작업: ${userContext.lastAction.type} - ${userContext.lastAction.target}`;
-    enhancedRequest.description = `${enhancedRequest.description}\n\n${actionContext}`;
+  if (enhancedPrompt.context.componentContext) {
+    enhancedRequest.description += `\n\n${enhancedPrompt.context.componentContext}`;
   }
 
   return enhancedRequest;
