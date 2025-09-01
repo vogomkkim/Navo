@@ -206,6 +206,7 @@ export function useListProjects(
         throw error;
       }
     },
+    enabled: !!token, // 토큰이 있을 때만 쿼리 실행
     ...options,
   });
 }
@@ -271,6 +272,7 @@ export function useSuggestions(
         throw error;
       }
     },
+    enabled: !!token, // 토큰이 있을 때만 쿼리 실행
     ...options,
   });
 }
@@ -422,6 +424,7 @@ export function useListComponents(
         throw error;
       }
     },
+    enabled: !!token, // 토큰이 있을 때만 쿼리 실행
     ...options,
   });
 }
@@ -456,7 +459,7 @@ export function usePageLayout(
         throw error;
       }
     },
-    enabled: !!pageId, // pageId가 존재할 때만 쿼리 실행
+    enabled: !!pageId && !!token, // pageId와 토큰이 모두 존재할 때만 쿼리 실행
     ...options,
   });
 }
