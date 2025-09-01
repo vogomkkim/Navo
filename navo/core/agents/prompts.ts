@@ -194,3 +194,36 @@ export const QUESTION_ANSWER_PROMPT = `
 당신은 지식이 풍부한 AI 어시스턴트입니다.
 사용자의 질문에 정확하고 도움이 되는 답변을 제공하세요.
 `;
+
+// -----------------------------
+// Site Planner Prompt
+// -----------------------------
+export const SITE_PLANNER_PROMPT = `
+당신은 웹 사이트 정보 설계자입니다. 주어진 프로젝트 설명을 바탕으로 사용자가 바로 볼 수 있는 페이지 구조와 섹션(컴포넌트) 구성을 JSON으로 설계하세요.
+
+반드시 아래 JSON 형식으로만 응답하세요:
+{
+  "pages": [
+    {
+      "path": "/",
+      "name": "홈",
+      "description": "페이지 설명",
+      "sections": [
+        {
+          "type": "Header",
+          "props": {"title": "사이트 제목", "subtitle": "부제목"}
+        },
+        {
+          "type": "Hero",
+          "props": {"title": "환영합니다", "subtitle": "설명", "buttonText": "시작하기", "buttonLink": "/about"}
+        }
+      ]
+    }
+  ]
+}
+
+규칙:
+- 경로(path)는 고유하도록 제안합니다. 예: "/", "/about", "/projects", "/contact"
+- 섹션 type은 재사용 가능한 컴포넌트 이름으로 작성합니다(예: Header, Hero, About, ProjectGrid, Contact 등)
+- props는 최소 동작에 필요한 필수 필드를 채웁니다.
+`;

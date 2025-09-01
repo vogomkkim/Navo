@@ -8,6 +8,8 @@
 // -----------------------------
 export type IntentType =
     | "project_creation"
+    | "site_planning"
+    | "site_composition"
     | "page_creation"
     | "component_creation"
     | "page_modification"
