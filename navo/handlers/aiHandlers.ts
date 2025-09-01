@@ -19,6 +19,7 @@ import { UIUXDesignerAgent } from "../agents/uiuxDesignerAgent.js";
 import { refineJsonResponse, safeJsonParse } from "../utils/jsonRefiner.js";
 import { contextManager, UserContext } from "../core/contextManager.js";
 import { promptEnhancer, EnhancedPrompt } from "../core/promptEnhancer.js";
+import { actionRouter, ActionResult } from "../core/actionRouter.js";
 
 import createDOMPurify from "dompurify";
 
@@ -377,8 +378,44 @@ export async function handleMultiAgentChat(
       }
     );
 
-    // 향상된 프롬프트를 사용하여 프로젝트 요청 생성
-    const req: ProjectRequest = await buildProjectRequestFromEnhancedPrompt(
+    // ActionRouter를 사용하여 적절한 핸들러 선택 및 실행
+    const selectedHandler = actionRouter.route(enhancedPrompt);
+    const routingInfo = actionRouter.getRoutingInfo(enhancedPrompt);
+
+    console.log(`라우팅 정보:`, {
+      intent: enhancedPrompt.intent.type,
+      target: enhancedPrompt.target.type,
+      action: enhancedPrompt.action.type,
+      selectedHandler: selectedHandler?.name,
+      matchedRule: routingInfo.matchedRule?.description,
+    });
+
+    let actionResult: ActionResult;
+    if (selectedHandler) {
+      // 선택된 핸들러로 처리
+      actionResult = await selectedHandler.execute(
+        enhancedPrompt,
+        userContext,
+        sessionId
+      );
+    } else {
+      // 기본 처리
+      actionResult = {
+        success: false,
+        message: "적절한 핸들러를 찾을 수 없습니다.",
+        error: "No handler found",
+      };
+    }
+
+    // 모호한 표현인 경우 구체화 제안
+    if (enhancedPrompt.intent.isVague && enhancedPrompt.intent.clarification) {
+      console.log(`모호한 표현 감지: ${enhancedPrompt.originalMessage}`);
+      console.log(`구체화 제안: ${enhancedPrompt.intent.clarification}`);
+    }
+
+    // ActionRouter 결과를 기반으로 프로젝트 요청 생성
+    const req: ProjectRequest = await buildProjectRequestFromActionResult(
+      actionResult,
       enhancedPrompt,
       userContext,
       sessionId
@@ -393,6 +430,7 @@ export async function handleMultiAgentChat(
       userId: userId,
       sessionId: sessionId,
       userContext: userContext,
+      actionResult: actionResult,
     };
 
     const plan = await agent.execute(req, enhancedContext);
@@ -473,6 +511,17 @@ export async function handleMultiAgentChat(
         target: enhancedPrompt.target,
         action: enhancedPrompt.action,
         enhancedMessage: enhancedPrompt.enhancedMessage,
+        isVague: enhancedPrompt.intent.isVague,
+        clarification: enhancedPrompt.intent.clarification,
+      },
+      actionRouter: {
+        selectedHandler: selectedHandler?.name,
+        matchedRule: routingInfo.matchedRule?.description,
+        actionResult: {
+          success: actionResult.success,
+          message: actionResult.message,
+          nextAction: actionResult.nextAction,
+        },
       },
     });
   } catch (error) {
@@ -522,65 +571,74 @@ function buildProjectRequestFromMessage(message: string): ProjectRequest {
   };
 }
 
-async function buildProjectRequestFromEnhancedPrompt(
+async function buildProjectRequestFromActionResult(
+  actionResult: ActionResult,
   enhancedPrompt: EnhancedPrompt,
   userContext: UserContext,
   sessionId: string
 ): Promise<ProjectRequest> {
-  // 향상된 프롬프트를 기반으로 프로젝트 요청 생성
+  // ActionRouter 결과를 기반으로 프로젝트 요청 생성
   const { intent, target, action, enhancedMessage } = enhancedPrompt;
 
   // 기본 프로젝트 요청 생성
   const baseRequest = buildProjectRequestFromMessage(enhancedMessage);
 
-  // 의도에 따른 요청 개선
+  // ActionRouter 결과를 반영한 요청 개선
   const enhancedRequest = { ...baseRequest };
 
-  // 의도별 처리
-  switch (intent.type) {
-    case "project_creation":
-      enhancedRequest.description = `새 프로젝트 생성 요청\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
-      if (action.parameters.projectType) {
-        enhancedRequest.type = action.parameters.projectType as any;
-      }
-      if (action.parameters.features) {
-        enhancedRequest.features = Array.isArray(action.parameters.features)
-          ? action.parameters.features
-          : [action.parameters.features];
-      }
-      break;
+  // ActionRouter 결과 메시지를 설명에 포함
+  enhancedRequest.description = `${actionResult.message}\n\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
 
-    case "page_creation":
-      enhancedRequest.description = `새 페이지 생성 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
-      break;
+  // ActionRouter 데이터를 활용한 요청 개선
+  if (actionResult.data) {
+    switch (actionResult.nextAction) {
+      case "create_project":
+        enhancedRequest.description += `\n\n새 프로젝트 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+        if (actionResult.data.type) {
+          enhancedRequest.type = actionResult.data.type as any;
+        }
+        if (actionResult.data.features) {
+          enhancedRequest.features = Array.isArray(actionResult.data.features)
+            ? actionResult.data.features
+            : [actionResult.data.features];
+        }
+        break;
 
-    case "component_creation":
-      enhancedRequest.description = `새 컴포넌트 생성 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
-      break;
+      case "create_page":
+        enhancedRequest.description += `\n\n새 페이지 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+        break;
 
-    case "page_modification":
-      enhancedRequest.description = `페이지 수정 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
-      break;
+      case "create_component":
+        enhancedRequest.description += `\n\n새 컴포넌트 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+        break;
 
-    case "component_modification":
-      if (userContext.currentComponent) {
-        const componentContext = `현재 컴포넌트: ${userContext.currentComponent.displayName}`;
-        enhancedRequest.description = `컴포넌트 수정 요청\n${componentContext}\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
-      } else {
-        enhancedRequest.description = `컴포넌트 수정 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
-      }
-      break;
+      case "modify_page":
+        enhancedRequest.description += `\n\n페이지 수정 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+        break;
 
-    case "bug_fix":
-      enhancedRequest.description = `버그 수정 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n문제 영역: ${target.description || "전체 시스템"}\n요청: ${enhancedMessage}`;
-      break;
+      case "modify_component":
+        enhancedRequest.description += `\n\n컴포넌트 수정 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+        break;
 
-    case "feature_request":
-      enhancedRequest.description = `기능 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
-      break;
+      case "fix_bug":
+        enhancedRequest.description += `\n\n버그 수정 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+        break;
 
-    default:
-      enhancedRequest.description = `일반 요청\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      case "implement_feature":
+        enhancedRequest.description += `\n\n기능 구현 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+        break;
+
+      case "review_code":
+        enhancedRequest.description += `\n\n코드 리뷰 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+        break;
+
+      case "answer_question":
+        enhancedRequest.description += `\n\n질문 답변 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+        break;
+
+      default:
+        enhancedRequest.description += `\n\n처리 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
+    }
   }
 
   // 컨텍스트 정보 추가

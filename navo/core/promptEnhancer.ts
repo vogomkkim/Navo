@@ -11,6 +11,8 @@ export interface EnhancedPrompt {
     type: string;
     confidence: number;
     description: string;
+    isVague?: boolean;
+    clarification?: string;
   };
   target: {
     type: string;
@@ -43,6 +45,8 @@ export interface IntentAnalysis {
   type: string;
   confidence: number;
   description: string;
+  isVague?: boolean;
+  clarification?: string;
   alternatives?: Array<{
     type: string;
     confidence: number;
@@ -215,6 +219,11 @@ ${contextInfo.conversationContext ? `- ${contextInfo.conversationContext}` : ""}
 - "현재 프로젝트에 기능 추가" 같은 표현은 의미가 없음 (항상 현재 프로젝트가 대상)
 - 페이지나 컴포넌트는 현재 프로젝트 내에서 자유롭게 변경 가능
 
+**넋두리/혼잣말과 실제 요청 구분 규칙:**
+- 넋두리/혼잣말: "~인데?", "~같아", "~별론데" 등 불만이나 의견 표현
+- 실제 요청: "~해줘", "~바꿔줘", "~수정해줘" 등 구체적인 액션 요청
+- 모호한 표현: "~별론데" → 구체적으로 무엇이 문제인지 명확화 필요
+
 의도 타입:
 - project_creation: 새 프로젝트 생성 (완전히 새로운 프로젝트)
 - page_creation: 새 페이지 생성 (현재 프로젝트 내)
@@ -224,14 +233,17 @@ ${contextInfo.conversationContext ? `- ${contextInfo.conversationContext}` : ""}
 - code_review: 코드 리뷰 요청
 - bug_fix: 버그 수정 요청
 - feature_request: 기능 요청 (현재 프로젝트 내)
-- question: 질문
+- question: 질문 (구체적인 답변이 필요한 질문)
+- complaint: 불만/넋두리 (구체적인 수정 요청이 아닌 불만 표현)
 - general: 일반적인 대화
 
 JSON 형태로 응답해주세요:
 {
   "type": "의도_타입",
   "confidence": 0.95,
-  "description": "의도에 대한 설명"
+  "description": "의도에 대한 설명",
+  "isVague": true/false,
+  "clarification": "모호한 부분에 대한 구체화 제안"
 }`;
 
     try {
@@ -243,6 +255,8 @@ JSON 형태로 응답해주세요:
         type: analysis.type,
         confidence: analysis.confidence || 0.8,
         description: analysis.description || "의도 분석 완료",
+        isVague: analysis.isVague || false,
+        clarification: analysis.clarification || undefined,
       };
     } catch (error) {
       console.error("Error analyzing intent:", error);
