@@ -102,7 +102,7 @@ export default function HomeContent() {
     isLoading: isLoadingPageLayout,
     isError: isErrorPageLayout,
     error: errorPageLayout,
-  } = usePageLayout(selectedPageId || undefined);
+  } = usePageLayout(selectedPageId || "");
 
   const { data: projectsData, isLoading: isLoadingProjects } =
     useListProjects();
@@ -269,23 +269,18 @@ export default function HomeContent() {
                   <div className="mb-4 relative">
                     <details className="border border-gray-200 rounded">
                       <summary className="px-3 py-2 cursor-pointer hover:bg-gray-50 select-none">
-                        🚀 라우트 ({pageLayoutData?.pages?.length || 0}개) ▼
+                        🚀 라우트 (1개) ▼
                       </summary>
                       <div className="absolute top-full left-0 right-0 z-10 p-3 bg-gray-50 border border-gray-200 rounded-b shadow-lg">
                         <div className="flex flex-wrap gap-2">
-                          {pageLayoutData?.pages?.map((page: any) => (
-                            <button
-                              key={page.id}
-                              onClick={() => handlePageSelect(page.id)}
-                              className={`text-sm px-2 py-1 rounded border transition-colors ${
-                                selectedPageId === page.id
-                                  ? "bg-blue-500 text-white border-blue-500"
-                                  : "bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-300"
-                              }`}
-                            >
-                              {page.path}
-                            </button>
-                          ))}
+                          <button
+                            onClick={() =>
+                              handlePageSelect(selectedPageId || "")
+                            }
+                            className="text-sm px-2 py-1 rounded border transition-colors bg-blue-500 text-white border-blue-500"
+                          >
+                            현재 페이지
+                          </button>
                         </div>
                       </div>
                     </details>
@@ -293,12 +288,7 @@ export default function HomeContent() {
                     {/* 선택된 페이지 표시 */}
                     {selectedPageId && (
                       <div className="mt-2 text-sm text-gray-600">
-                        📄 현재 페이지:{" "}
-                        {
-                          pageLayoutData?.pages?.find(
-                            (p: any) => p.id === selectedPageId
-                          )?.path
-                        }
+                        📄 현재 페이지: 선택된 페이지
                       </div>
                     )}
 

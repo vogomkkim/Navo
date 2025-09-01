@@ -28,6 +28,7 @@ pnpm-debug.log*
 .vercel/
 .vite/
 .svelte-kit/
+.npm-cache/
 
 # TypeScript
 *.tsbuildinfo

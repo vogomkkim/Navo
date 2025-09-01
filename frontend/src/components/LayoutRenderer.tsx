@@ -54,7 +54,7 @@ export function LayoutRenderer({ layout }: LayoutRendererProps) {
           <div className="action-hint">
             <span className="hint-icon">💬</span>
             <span>
-              왼쪽 채팅에서 "전자상거래 웹사이트 만들어줘"라고 말해보세요
+              왼쪽 채팅에서 &quot;전자상거래 웹사이트 만들어줘&quot;라고 말해보세요
             </span>
           </div>
         </div>

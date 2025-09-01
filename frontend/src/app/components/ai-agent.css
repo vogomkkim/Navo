@@ -1,11 +1,9 @@
 /*
  * 🤖 AI Project Orchestrator Agent 스타일
  *
- * Tailwind CSS v4 호환 - @apply 대신 일반 CSS 속성 사용
+ * Tailwind CSS v3.4.17 호환 - 일반 CSS 속성 사용
  * AI Agent의 모든 UI 컴포넌트 스타일을 포함합니다.
  */
-
-@layer components {
   /* AI 채팅 인터페이스 */
   .chat-container {
     display: flex;
@@ -318,4 +316,3 @@
     margin-right: auto;
     opacity: 0.8;
   }
-}

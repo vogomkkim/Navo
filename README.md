@@ -9,47 +9,43 @@ The project has been successfully migrated to a modern **React/Next.js** archite
 - ✨ **Modern Development Experience** with React 19 and Next.js 15
 - 🔒 **Full Type Safety** with TypeScript
 - ⚡ **Optimized Performance** with Next.js App Router
-- 🎨 **Beautiful UI** with **Tailwind CSS v4.0** (Latest!)
+- 🎨 **Beautiful UI** with **Tailwind CSS v3.4.17** (Stable)
 - 🔄 **Real-time Updates** with React Query
 
-## 🎨 **Tailwind CSS v4.0 (중요!)**
+## 🎨 **Tailwind CSS v3.4.17**
 
-### **⚠️ 주의사항**
+### **✅ 안정적인 v3 버전 사용**
 
-이 프로젝트는 **Tailwind CSS v4.0**을 사용합니다. v3와는 완전히 다른 설정 방식입니다!
+이 프로젝트는 **Tailwind CSS v3.4.17**을 사용합니다. 안정적이고 검증된 버전입니다.
 
-### **🔧 v4 설정 방법**
+### **🔧 v3 설정 방법**
 
 ```bash
-# 1. 설치 (v4 전용 패키지)
-npm install -D tailwindcss@next @tailwindcss/postcss
+# 1. 설치 (v3 패키지)
+npm install -D tailwindcss@3.4.17 postcss autoprefixer
 
 # 2. PostCSS 설정 (postcss.config.mjs)
 export default {
-  plugins: ["@tailwindcss/postcss"],
+  plugins: ["tailwindcss", "autoprefixer"],
 };
 
 # 3. CSS에서 가져오기 (globals.css)
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 ```
 
-### **❌ v4에서 사용하지 않는 것들**
+### **✅ v3의 장점**
 
-- `tailwind.config.js` - 불필요 (zero configuration)
-- `@tailwind base; @tailwind components; @tailwind utilities;` - v3 문법
-- `npx tailwindcss init` - 작동 안 함 (bin 파일 없음)
-
-### **✅ v4의 장점**
-
-- **Zero configuration** - 설정 파일 불필요
-- **자동 컨텐츠 감지** - `content` 배열 설정 불필요
-- **빠른 빌드** - v3 대비 5.6배 빠름
-- **CSS-first 방식** - 설정을 CSS에서 직접 관리
+- **안정성** - 검증된 버전으로 안정적인 빌드
+- **호환성** - Vercel 등 모든 플랫폼에서 문제없이 작동
+- **풍부한 생태계** - 다양한 플러그인과 도구 지원
+- **문서화** - 완전한 문서와 커뮤니티 지원
 
 ## 🏗️ Architecture
 
 - **Backend**: Fastify + TypeScript + Drizzle ORM
-- **Frontend**: React 19 + Next.js 15 + TypeScript + **Tailwind CSS v4.0**
+- **Frontend**: React 19 + Next.js 15 + TypeScript + **Tailwind CSS v3.4.17**
 - **Database**: PostgreSQL with Drizzle ORM
 - **AI Integration**: Google Gemini AI for content generation
 - **Authentication**: JWT-based authentication system
@@ -141,7 +137,7 @@ navo/
 │   │   ├── context/         # React contexts
 │   │   ├── hooks/           # Custom hooks
 │   │   └── lib/             # Utilities and API
-│   ├── postcss.config.mjs   # Tailwind CSS v4 PostCSS 설정
+│   ├── postcss.config.mjs   # Tailwind CSS v3 PostCSS 설정
 │   └── package.json
 ├── navo/                     # Backend source code
 │   ├── agents/              # AI agents
@@ -180,33 +176,34 @@ API_BASE_URL=http://localhost:3001
 ```
 
 **중요**: API URL 환경 변수 사용 가이드라인
+
 - **Frontend**: `NEXT_PUBLIC_API_BASE_URL` 사용 (클라이언트에서 접근 가능)
 - **Backend**: `API_BASE_URL` 사용 (서버에서만 접근)
 
-### Tailwind CSS v4 Configuration
+### Tailwind CSS v3 Configuration
 
-**중요**: 이 프로젝트는 Tailwind CSS v4.0을 사용합니다.
+**중요**: 이 프로젝트는 Tailwind CSS v3.4.17을 사용합니다.
 
-- **설정 파일 불필요**: `tailwind.config.js` 없음
-- **PostCSS 설정**: `postcss.config.mjs`에서 `@tailwindcss/postcss` 사용
-- **CSS 가져오기**: `@import "tailwindcss"` 단일 라인
+- **설정 파일**: `tailwind.config.js` 사용
+- **PostCSS 설정**: `postcss.config.mjs`에서 `tailwindcss`, `autoprefixer` 사용
+- **CSS 가져오기**: `@tailwind base; @tailwind components; @tailwind utilities;` 사용
 
 ## 🎯 Key Features
 
 - **AI-Powered Project Generation**: Generate complete projects using AI agents
 - **Multi-Agent Workflow**: Strategic planning, development, QA, and DevOps
-- **Modern Tech Stack**: React 19, Next.js 15, TypeScript, Tailwind CSS v4
+- **Modern Tech Stack**: React 19, Next.js 15, TypeScript, Tailwind CSS v3.4.17
 - **Real-time AI Chat**: Interactive project planning and development
 - **Database Integration**: PostgreSQL with Drizzle ORM
 - **Authentication System**: JWT-based user management
 
 ## 🚨 Troubleshooting
 
-### Tailwind CSS v4 Issues
+### Tailwind CSS v3 Issues
 
-- **"Cannot apply unknown utility class"**: 커스텀 클래스는 CSS에서 직접 정의
-- **"Module not found: tailwindcss/preflight"**: v4에서는 `@import "tailwindcss"` 사용
-- **빌드 오류**: `@tailwindcss/postcss` 패키지가 설치되어 있는지 확인
+- **"Cannot apply unknown utility class"**: `tailwind.config.js`에서 `content` 배열 확인
+- **"Module not found: tailwindcss/preflight"**: v3에서는 `@tailwind base; @tailwind components; @tailwind utilities;` 사용
+- **빌드 오류**: `tailwindcss`, `autoprefixer` 패키지가 설치되어 있는지 확인
 
 ### Common Issues
 
@@ -219,7 +216,7 @@ API_BASE_URL=http://localhost:3001
 - [Frontend README](frontend/README.md) - Detailed frontend setup and usage
 - [API Documentation](docs/api.md) - Backend API endpoints
 - [AI Agent System](docs/ai-project-orchestrator-agent.md) - AI workflow details
-- [Tailwind CSS v4 Guide](https://tailwindcss.com/blog/tailwindcss-v4) - Official v4 documentation
+- [Tailwind CSS v3 Guide](https://tailwindcss.com/docs) - Official v3 documentation
 
 ## 🤝 Contributing
 

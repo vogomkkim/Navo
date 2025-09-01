@@ -4,27 +4,15 @@ import path from "path";
 const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
-  // 환경별 설정 분기
-  ...(isDev
-    ? {
-        // 🚀 개발 환경: 일반 Next.js 앱
-        // output: "export" 없음 - 정적 파일 경로 정상
+  // 타입 체크 최적화
+  typescript: {
+    ignoreBuildErrors: false,
+  },
 
-        // 타입 체크 최적화
-        typescript: {
-          ignoreBuildErrors: false,
-        },
-
-
-      }
-    : {
-        // 📦 배포 환경: 정적 사이트 생성 (SSG)
-        output: "export",
-        trailingSlash: true,
-        images: {
-          unoptimized: true,
-        },
-      }),
+  // 이미지 최적화 설정
+  images: {
+    unoptimized: true,
+  },
 
   // Turbopack 설정 (Next.js 13+ 최신 방식)
   ...(isDev && {

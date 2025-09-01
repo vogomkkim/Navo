@@ -4,46 +4,43 @@
 
 **AI Project Orchestrator Agent**는 사용자의 프로젝트 요청을 받아 5단계 워크플로우를 통해 완성된 프로젝트를 생성하는 AI 시스템입니다.
 
-## 🎨 **Tailwind CSS v4 설정 (중요!)**
+## 🎨 **Tailwind CSS v3.4.17 설정**
 
-### **⚠️ 주의사항**
+### **✅ 안정적인 v3 버전 사용**
 
-이 프로젝트는 **Tailwind CSS v4.0**을 사용합니다. v3와는 완전히 다른 설정 방식입니다!
+이 프로젝트는 **Tailwind CSS v3.4.17**을 사용합니다. 안정적이고 검증된 버전입니다.
 
-### **🔧 v4 설정 방법**
+### **🔧 v3 설정 방법**
 
 ```bash
-# 1. 설치 (v4 전용 패키지)
-npm install -D tailwindcss@next @tailwindcss/postcss
+# 1. 설치 (v3 패키지)
+npm install -D tailwindcss@3.4.17 postcss autoprefixer
 
 # 2. PostCSS 설정 (postcss.config.mjs)
 export default {
-  plugins: ["@tailwindcss/postcss"],
+  plugins: ["tailwindcss", "autoprefixer"],
 };
 
 # 3. CSS에서 가져오기 (globals.css)
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 ```
 
-### **❌ v4에서 사용하지 않는 것들**
+### **✅ v3에서 사용하는 것들**
 
-- `tailwind.config.js` - 불필요 (zero configuration)
+- `tailwind.config.js` - 설정 파일 사용
 - `@tailwind base; @tailwind components; @tailwind utilities;` - v3 문법
-- `npx tailwindcss init` - 작동 안 함 (bin 파일 없음)
-
-### **✅ v4에서 사용하는 것들**
-
-- `@import "tailwindcss"` - 단일 라인으로 모든 기능 포함
 - `@layer components` - 커스텀 컴포넌트 스타일
 - `@layer utilities` - 커스텀 유틸리티
 - CSS에서 직접 커스텀 애니메이션 정의
 
-### **🚀 v4의 장점**
+### **🚀 v3의 장점**
 
-- **Zero configuration** - 설정 파일 불필요
-- **자동 컨텐츠 감지** - `content` 배열 설정 불필요
-- **빠른 빌드** - v3 대비 5.6배 빠름
-- **CSS-first 방식** - 설정을 CSS에서 직접 관리
+- **안정성** - 검증된 버전으로 안정적인 빌드
+- **호환성** - Vercel 등 모든 플랫폼에서 문제없이 작동
+- **풍부한 생태계** - 다양한 플러그인과 도구 지원
+- **문서화** - 완전한 문서와 커뮤니티 지원
 
 ## 🛠️ **설치 및 설정**
 
@@ -144,7 +141,7 @@ AI Agent 응답:
 ## 🔧 **기술 스택**
 
 - **Frontend**: Next.js 15, React 19, TypeScript
-- **Styling**: **Tailwind CSS v4.0** (중요!)
+- **Styling**: **Tailwind CSS v3.4.17** (안정적)
 - **AI Integration**: Google Gemini API
 - **State Management**: React Hooks
 - **Build Tool**: Next.js
@@ -160,7 +157,7 @@ frontend/
 │   │   ├── gemini.ts                # Gemini API 클라이언트
 │   │   └── api.ts                   # 백엔드 API 클라이언트
 │   └── app/                         # Next.js App Router
-├── postcss.config.mjs               # Tailwind CSS v4 PostCSS 설정
+├── postcss.config.mjs               # Tailwind CSS v3 PostCSS 설정
 ├── .env.local.example               # 환경 변수 예시
 └── README.md                        # 이 파일
 ```
@@ -181,11 +178,11 @@ frontend/
 - **할당량 초과**: API 사용량 한도 확인 및 조정
 - **네트워크 오류**: 인터넷 연결 및 방화벽 설정 확인
 
-### Tailwind CSS v4 오류
+### Tailwind CSS v3 오류
 
-- **"Cannot apply unknown utility class"**: 커스텀 클래스는 CSS에서 직접 정의
-- **"Module not found: tailwindcss/preflight"**: v4에서는 `@import "tailwindcss"` 사용
-- **빌드 오류**: `@tailwindcss/postcss` 패키지가 설치되어 있는지 확인
+- **"Cannot apply unknown utility class"**: `tailwind.config.js`에서 `content` 배열 확인
+- **"Module not found: tailwindcss/preflight"**: v3에서는 `@tailwind base; @tailwind components; @tailwind utilities;` 사용
+- **빌드 오류**: `tailwindcss`, `autoprefixer` 패키지가 설치되어 있는지 확인
 
 ### 빌드 오류
 
@@ -215,7 +212,7 @@ frontend/
   - ESLint
   - Prettier
   - TypeScript Importer
-  - **Tailwind CSS IntelliSense** (v4 지원 확인)
+  - **Tailwind CSS IntelliSense** (v3 지원)
 
 ## 🔮 **향후 계획**
 
@@ -226,7 +223,6 @@ frontend/
 
 ## 📚 **참고 자료**
 
-- [Tailwind CSS v4 공식 발표](https://tailwindcss.com/blog/tailwindcss-v4)
-- [Tailwind CSS v4 문서](https://tailwindcss.com/docs)
+- [Tailwind CSS v3 문서](https://tailwindcss.com/docs)
 - [Next.js 15 문서](https://nextjs.org/docs)
 - [React 19 문서](https://react.dev/)

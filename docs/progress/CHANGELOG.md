@@ -2,6 +2,70 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025-01-27] - Tailwind CSS v3.4.17 다운그레이드 및 Vercel 배포 호환성 확보
+
+### Changed
+
+- **Tailwind CSS v4 → v3.4.17 다운그레이드**: 안정적인 v3 버전으로 전환
+  - `@tailwindcss/postcss` → `tailwindcss`, `autoprefixer` 패키지 변경
+  - `@import "tailwindcss"` → `@tailwind base; @tailwind components; @tailwind utilities;` CSS 지시어 변경
+  - `tailwind.config.js` 설정 파일 추가
+  - PostCSS 설정 최적화
+
+- **Vercel 배포 호환성 확보**: lightningcss 네이티브 바이너리 문제 해결
+  - `next.config.ts`에서 `output: "export"` 설정 제거
+  - API 라우트 동적 처리 설정 최적화
+  - 빌드 에러 완전 해결
+
+- **문서 업데이트**: 모든 문서에서 v4 관련 내용을 v3로 업데이트
+  - `README.md` v3 설정 가이드로 변경
+  - `frontend/README.md` v3 설정 가이드로 변경
+  - `docs/tech/tailwind-css-v4-guide.md` 삭제
+  - `docs/tech/tailwind-css-v3-guide.md` 새로 생성
+
+### Technical Details
+
+- **패키지 변경사항**:
+
+  ```bash
+  # 제거
+  npm uninstall @tailwindcss/postcss tailwindcss@next
+
+  # 설치
+  npm install -D tailwindcss@3.4.17 postcss autoprefixer
+  ```
+
+- **PostCSS 설정 변경**:
+
+  ```javascript
+  // v4
+  plugins: ["@tailwindcss/postcss"];
+
+  // v3
+  plugins: ["tailwindcss", "autoprefixer"];
+  ```
+
+- **CSS 지시어 변경**:
+
+  ```css
+  /* v4 */
+  @import "tailwindcss";
+
+  /* v3 */
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+  ```
+
+### Benefits
+
+- **안정성**: 검증된 v3.4.17 버전으로 안정적인 빌드
+- **호환성**: Vercel 등 모든 플랫폼에서 문제없이 작동
+- **생태계**: 풍부한 플러그인과 도구 지원
+- **문서화**: 완전한 문서와 커뮤니티 지원
+
+## [2025-01-27] - ActionRouter 구현 완료 및 Chat Enhancement System Phase 1 완료
+
 ## [2025-01-27] - ActionRouter 구현 완료 및 Chat Enhancement System Phase 1 완료
 
 ### Added
