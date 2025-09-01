@@ -104,6 +104,7 @@ export async function handleCreateComponentDefinition(
       props_schema,
       render_template,
       css_styles,
+      project_id,
     } = request.body as {
       name: string;
       display_name: string;
@@ -112,6 +113,7 @@ export async function handleCreateComponentDefinition(
       props_schema?: any;
       render_template: string;
       css_styles?: string;
+      project_id?: string;
     };
 
     if (!name || !display_name || !render_template) {
@@ -141,6 +143,7 @@ export async function handleCreateComponentDefinition(
     const created = await db
       .insert(componentDefinitions)
       .values({
+        projectId: project_id || 'default',
         name,
         displayName: display_name,
         description: description || '',
@@ -263,6 +266,7 @@ export async function handleSeedComponentDefinitions(
 
     const valuesToInsert = defaultComponents.map(
       (component: ComponentDefinition) => ({
+        projectId: 'default', // 기본 프로젝트 ID
         name: component.name,
         displayName: component.display_name,
         description: component.description || '',

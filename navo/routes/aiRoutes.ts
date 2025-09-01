@@ -6,17 +6,25 @@ import {
   handleProjectRecovery,
   getProjectStructure,
 } from '../handlers/aiHandlers.js';
+import { handleSimpleChat } from '../handlers/simpleChatHandler.js';
 import { renderProjectToHTML } from '../services/ai/render.js';
 import { and, eq } from 'drizzle-orm';
 import { projects } from '../db/schema.js';
 import { db } from '../db/db.js';
 
 export default async function aiRoutes(fastify: FastifyInstance) {
-  // AI 멀티 에이전트 채팅
+  // AI 멀티 에이전트 채팅 (기존)
   fastify.post(
     '/ai/chat',
     { preHandler: [authenticateToken] },
     handleMultiAgentChat
+  );
+
+  // 새로운 간단한 채팅 (의도 기반 에이전트)
+  fastify.post(
+    '/ai/simple-chat',
+    { preHandler: [authenticateToken] },
+    handleSimpleChat
   );
 
   // AI 제안 생성

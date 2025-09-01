@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useMultiAgentSystem } from '@/lib/api';
+import { useSimpleChatSystem } from '@/lib/api';
 import { ChatPlaceholder } from './ChatPlaceholder';
 import { useInputHistory } from '@/hooks/useInputHistory';
 import { useQueryClient } from '@tanstack/react-query'; // React Query 클라이언트 추가
@@ -77,7 +77,7 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const multiAgent = useMultiAgentSystem({});
+  const simpleChat = useSimpleChatSystem({});
   const queryClient = useQueryClient(); // React Query 클라이언트 인스턴스 생성
 
   const scrollToBottom = () => {
@@ -109,69 +109,40 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
     }
   }, [currentWorkflowStep]);
 
-  // AI Agent 워크플로우 실행
-  const executeAIAgentWorkflow = async (userMessage: string) => {
+  // 새로운 의도 기반 에이전트 시스템 실행
+  const executeSimpleChatSystem = async (userMessage: string) => {
     setIsProcessing(true);
-    setCurrentWorkflowStep(0);
-
-    // 사용자 요청을 프로젝트 컨텍스트에 저장
-    setProjectContext({ userRequest: userMessage });
 
     try {
-      // 백엔드 멀티 에이전트 시스템 호출
-      const result = await multiAgent.mutateAsync({
+      // 백엔드 새로운 에이전트 시스템 호출
+      const result = await simpleChat.mutateAsync({
         message: userMessage,
-        context: {
-          projectId: `project-${Date.now()}`,
-          sessionId: `session-${Date.now()}`,
-          userAgent: navigator.userAgent,
-          url: window.location.href,
-        },
       });
 
       if (result.success) {
-        // 최종 완료 메시지만 표시 (중간 과정 메시지 제거)
-        const completionMessage: AgentMessage = {
-          id: `completion-${Date.now()}`,
+        // 응답 메시지 생성
+        const responseMessage: AgentMessage = {
+          id: `response-${Date.now()}`,
           role: 'Strategic Planner',
-          message: `🎉 **AI Project Orchestrator Agent 워크플로우 완료!**\n\n모든 단계가 성공적으로 완료되었습니다:\n\n${result.agents.map((agent, index) => `**${index + 1}. ${agent.agentName}** ✅`).join('\n')}\n\n**프로젝트 요약:**\n${userMessage}\n\n**총 실행 시간:** ${result.totalExecutionTime}ms\n\n**최종 요약:**\n${result.summary}\n\n이제 프로젝트를 바로 사용하실 수 있습니다! 🚀`,
+          message: result.message,
           status: 'completed',
           timestamp: new Date(),
         };
 
-        setChatHistory((prev: ChatMessage[]) => [...prev, completionMessage]);
+        setChatHistory((prev: ChatMessage[]) => [...prev, responseMessage]);
 
         // 프로젝트 생성 성공 시 React Query 캐시 무효화
-        queryClient.invalidateQueries({ queryKey: ['projects'] });
-
-        // 생성된 프로젝트 자동 선택 시도
-        try {
-          let createdProjectId = (result as any).projectId;
-          if (!createdProjectId) {
-            const list = await fetchApi<{ projects: any[] }>('/api/projects', {
-              token,
-            });
-            const sorted = (list.projects || []).sort(
-              (a, b) =>
-                new Date(b.updatedAt).getTime() -
-                new Date(a.updatedAt).getTime()
-            );
-            createdProjectId = sorted[0]?.id;
-          }
-          if (createdProjectId && onProjectCreated) {
-            onProjectCreated(createdProjectId);
-          }
-        } catch (e) {
-          // ignore selection errors
+        if (result.type === 'project_creation') {
+          queryClient.invalidateQueries({ queryKey: ['projects'] });
         }
       } else {
         throw new Error('백엔드 API 호출 실패');
       }
     } catch (error) {
-      console.error('AI Agent 워크플로우 오류:', error);
+      console.error('새로운 에이전트 시스템 오류:', error);
 
       // 에러 유형별 메시지 생성
-      let errorMessage = '❌ AI Agent 워크플로우 실행 중 오류가 발생했습니다.';
+      let errorMessage = '❌ 새로운 에이전트 시스템 실행 중 오류가 발생했습니다.';
 
       if (error instanceof Error) {
         if (error.message.includes('Unauthorized')) {
@@ -196,7 +167,6 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
       setChatHistory((prev: ChatMessage[]) => [...prev, errorMessageObj]);
     } finally {
       setIsProcessing(false);
-      setCurrentWorkflowStep(0);
     }
   };
 
@@ -216,8 +186,8 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
     setChatHistory((prev: ChatMessage[]) => [...prev, userMessage]);
     setInputValue('');
 
-    // AI Agent 워크플로우 시작
-    await executeAIAgentWorkflow(inputValue);
+    // 새로운 의도 기반 에이전트 시스템 시작
+    await executeSimpleChatSystem(inputValue);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

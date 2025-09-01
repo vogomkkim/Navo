@@ -77,9 +77,13 @@ export const deploySite: GraphNode = {
       const projectId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'; // Placeholder Project ID
       await db.insert(publishDeploys).values({
         projectId: projectId,
-        url: `https://${deploymentUrl}`,
-        status: 'success', // Assuming success for now
-        vercelDeploymentId: data.id, // Store the Vercel deployment ID
+        version: '1.0.0',
+        status: 'success',
+        deployUrl: `https://${deploymentUrl}`,
+        metadata: {
+          vercelDeploymentId: data.id,
+        },
+        deployedAt: new Date().toISOString(),
       });
 
       // Clean up the temporary directory

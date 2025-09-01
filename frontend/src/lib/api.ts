@@ -12,7 +12,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 if (!API_BASE_URL) {
   throw new Error(
     'NEXT_PUBLIC_API_BASE_URL environment variable is required. ' +
-      'Please set it in your Vercel environment variables or local .env.local file.'
+    'Please set it in your Vercel environment variables or local .env.local file.'
   );
 }
 
@@ -500,7 +500,7 @@ export function usePageLayout(
   });
 }
 
-// 멀티 에이전트 시스템 API
+// 멀티 에이전트 시스템 API (기존)
 export function useMultiAgentSystem(
   options?: UseMutationOptions<MultiAgentResponse, Error, MultiAgentRequest>
 ) {
@@ -508,6 +508,38 @@ export function useMultiAgentSystem(
   return useMutation({
     mutationFn: (data: MultiAgentRequest) =>
       fetchApi<MultiAgentResponse>('/api/ai/chat', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
+    ...options,
+  });
+}
+
+// 새로운 의도 기반 에이전트 시스템 API
+interface SimpleChatRequest {
+  message: string;
+}
+
+interface SimpleChatResponse {
+  success: boolean;
+  message: string;
+  type: string;
+  data?: any;
+  metadata?: {
+    executionTime: number;
+    model: string;
+    sessionId: string;
+  };
+}
+
+export function useSimpleChatSystem(
+  options?: UseMutationOptions<SimpleChatResponse, Error, SimpleChatRequest>
+) {
+  const { token } = useAuth();
+  return useMutation({
+    mutationFn: (data: SimpleChatRequest) =>
+      fetchApi<SimpleChatResponse>('/api/ai/simple-chat', {
         method: 'POST',
         body: JSON.stringify(data),
         token,

@@ -9,7 +9,6 @@ import {
   components,
 } from '../db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
-import type { InferSelectModel } from 'drizzle-orm';
 import {
   storePages,
   storeComponentDefinitions,
@@ -19,10 +18,11 @@ import {
 import { MasterDeveloperAgent } from '../agents/masterDeveloperAgent.js';
 import { ProjectRequest } from '../core/masterDeveloper.js';
 import { contextManager, UserContext } from '../core/contextManager.js';
-import { promptEnhancer, EnhancedPrompt } from '../core/promptEnhancer.js';
+import { intentAnalyzer } from '../core/intentAnalyzer.js';
+import { EnhancedPrompt } from '../core/types/intent.js';
 import { actionRouter, ActionResult } from '../core/actionRouter.js';
+import { parseJsonFromMarkdown } from '../utils/jsonExtractor.js';
 
-// DOMPurify usage moved to utils/prompt.ts
 import { generateProjectContent } from '../services/ai/generation.js';
 import { deriveProjectName } from '../utils/prompt.js';
 
@@ -33,51 +33,8 @@ declare module 'fastify' {
   }
 }
 
-// DOMPurify handled in utils
-
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
-/**
- * Utility: Create a URL/DB safe name from free text
- */
-function slugifyName(input: string): string {
-  const base = (input || 'custom-component')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-');
-  const clipped = base.slice(0, 48) || 'component';
-  return clipped.replace(/^-+|-+$/g, '') || 'component';
-}
-
-/**
- * Validate a generated component definition object minimally
- */
-function validateGeneratedComponentDef(obj: any): {
-  ok: boolean;
-  error?: string;
-} {
-  if (!obj || typeof obj !== 'object')
-    return { ok: false, error: 'Invalid object' };
-  const requiredStringFields = ['name', 'display_name', 'render_template'];
-  for (const f of requiredStringFields) {
-    if (typeof obj[f] !== 'string' || obj[f].trim() === '') {
-      return { ok: false, error: `Missing or invalid field: ${f}` };
-    }
-  }
-  if (obj.css_styles != null && typeof obj.css_styles !== 'string') {
-    return { ok: false, error: 'css_styles must be a string if provided' };
-  }
-  if (obj.props_schema != null && typeof obj.props_schema !== 'object') {
-    return { ok: false, error: 'props_schema must be an object if provided' };
-  }
-  return { ok: true };
-}
-
-// moved to utils/prompt.ts
-
-// moved to utils/prompt.ts
 
 export async function handleAiCommand(
   request: FastifyRequest,
@@ -153,11 +110,8 @@ Your suggestion:
 
     let parsedSuggestion;
     try {
-      if (text.startsWith('```json')) {
-        text = text.replace(/```json\s*/, '').replace(/\s*```$/, '');
-      }
       console.log('[AI] Attempting to parse Gemini response:', text);
-      parsedSuggestion = JSON.parse(text);
+      parsedSuggestion = parseJsonFromMarkdown(text);
       console.log(
         '[AI] Successfully parsed Gemini response.',
         parsedSuggestion
@@ -315,8 +269,8 @@ export async function handleMultiAgentChat(
     // 최근 메시지 조회 (컨텍스트 구성용)
     const recentMessages = await contextManager.getMessages(sessionId, 3);
 
-    // PromptEnhancer를 사용하여 메시지 향상
-    const enhancedPrompt: EnhancedPrompt = await promptEnhancer.enhance(
+    // IntentAnalyzer를 사용하여 메시지 향상
+    const enhancedPrompt: EnhancedPrompt = await intentAnalyzer.enhance(
       message,
       userContext,
       recentMessages
@@ -372,116 +326,160 @@ export async function handleMultiAgentChat(
     }
 
     // ActionRouter 결과를 기반으로 프로젝트 요청 생성
-    const req: ProjectRequest = await buildProjectRequestFromActionResult(
+    const req: ProjectRequest | null = await buildProjectRequestFromActionResult(
       actionResult,
       enhancedPrompt,
       userContext,
       sessionId
     );
 
-    const agent = new MasterDeveloperAgent();
-    const start = Date.now();
+    if (req) {
+      const agent = new MasterDeveloperAgent();
+      const start = Date.now();
 
-    // 컨텍스트 정보를 포함한 enhanced context
-    const enhancedContext = {
-      ...context,
-      userId: userId,
-      sessionId: sessionId,
-      userContext: userContext,
-      actionResult: actionResult,
-    };
+      // 컨텍스트 정보를 포함한 enhanced context
+      const enhancedContext = {
+        ...context,
+        userId: userId,
+        sessionId: sessionId,
+        userContext: userContext,
+        actionResult: actionResult,
+      };
 
-    const plan = await agent.execute(req, enhancedContext);
-    const totalExecutionTime = Date.now() - start;
+      const plan = await agent.execute(req, enhancedContext);
+      const totalExecutionTime = Date.now() - start;
 
-    // 동적으로 에이전트 결과 생성
-    const agentResults = [
-      {
-        name: 'Project Architect Agent',
-        data: plan.architecture,
-        action: '프로젝트 요구사항 분석 및',
-      },
-      {
-        name: 'UI/UX Designer Agent',
-        data: plan.uiDesign,
-        action: 'UI/UX',
-      },
-      {
-        name: 'Code Generator Agent',
-        data: plan.codeStructure,
-        action: '프로젝트 코드 구조',
-      },
-      {
-        name: 'Development Guide Agent',
-        data: plan.developmentGuide,
-        action: '개발 가이드',
-      },
-    ];
-
-    const agents = agentResults.map((result) => ({
-      success: true,
-      message: generateAgentSuccessMessage(result.name, result.action),
-      agentName: result.name,
-      status: 'completed' as const,
-      data: result.data,
-    }));
-
-    // 어시스턴트 응답을 대화 히스토리에 추가
-    const assistantMessage = generateSummaryMessage(
-      agents.length,
-      agents.length
-    );
-    await contextManager.addMessage(
-      sessionId,
-      userId,
-      'assistant',
-      { message: assistantMessage },
-      undefined,
-      undefined,
-      {
-        agents: agents.length,
-        totalExecutionTime,
-        source: 'multi_agent_chat',
-        enhancedPrompt: enhancedPrompt,
-      }
-    );
-
-    // 마지막 액션 업데이트
-    await contextManager.updateLastAction(
-      sessionId,
-      userId,
-      'multi_agent_chat',
-      'project_generation',
-      {
-        success: true,
-        agentsCount: agents.length,
-      }
-    );
-
-    reply.send({
-      success: true,
-      agents,
-      totalExecutionTime,
-      summary: assistantMessage,
-      sessionId: sessionId, // 클라이언트에 세션 ID 반환
-      enhancedPrompt: {
-        intent: enhancedPrompt.intent,
-        target: enhancedPrompt.target,
-        action: enhancedPrompt.action,
-        enhancedMessage: enhancedPrompt.enhancedMessage,
-        isVague: enhancedPrompt.intent.isVague,
-        clarification: enhancedPrompt.intent.clarification,
-      },
-      actionRouter: {
-        selectedHandler: selectedHandler?.name,
-        matchedRule: routingInfo.matchedRule?.description,
-        actionResult: {
-          success: actionResult.success,
-          message: actionResult.message,
-          nextAction: actionResult.nextAction,
+      // 동적으로 에이전트 결과 생성
+      const agentResults = [
+        {
+          name: 'Project Architect Agent',
+          data: plan.architecture,
+          action: '프로젝트 요구사항 분석 및',
         },
-      },
-    });
+        {
+          name: 'UI/UX Designer Agent',
+          data: plan.uiDesign,
+          action: 'UI/UX',
+        },
+        {
+          name: 'Code Generator Agent',
+          data: plan.codeStructure,
+          action: '프로젝트 코드 구조',
+        },
+        {
+          name: 'Development Guide Agent',
+          data: plan.developmentGuide,
+          action: '개발 가이드',
+        },
+      ];
+
+      const agents = agentResults.map((result) => ({
+        success: true,
+        message: generateAgentSuccessMessage(result.name, result.action),
+        agentName: result.name,
+        status: 'completed' as const,
+        data: result.data,
+      }));
+
+      // 어시스턴트 응답을 대화 히스토리에 추가
+      const assistantMessage = generateSummaryMessage(
+        agents.length,
+        agents.length
+      );
+      await contextManager.addMessage(
+        sessionId,
+        userId,
+        'assistant',
+        { message: assistantMessage },
+        undefined,
+        undefined,
+        {
+          agents: agents.length,
+          totalExecutionTime,
+          source: 'multi_agent_chat',
+          enhancedPrompt: enhancedPrompt,
+        }
+      );
+
+      // 마지막 액션 업데이트
+      await contextManager.updateLastAction(
+        sessionId,
+        userId,
+        'multi_agent_chat',
+        'project_generation',
+        {
+          success: true,
+          agentsCount: agents.length,
+        }
+      );
+
+      reply.send({
+        success: true,
+        agents,
+        totalExecutionTime,
+        summary: assistantMessage,
+        sessionId: sessionId, // 클라이언트에 세션 ID 반환
+        enhancedPrompt: {
+          intent: enhancedPrompt.intent,
+          target: enhancedPrompt.target,
+          action: enhancedPrompt.action,
+          enhancedMessage: enhancedPrompt.enhancedMessage,
+          isVague: enhancedPrompt.intent.isVague,
+          clarification: enhancedPrompt.intent.clarification,
+        },
+        actionRouter: {
+          selectedHandler: selectedHandler?.name,
+          matchedRule: routingInfo.matchedRule?.description,
+          actionResult: {
+            success: actionResult.success,
+            message: actionResult.message,
+            nextAction: actionResult.nextAction,
+          },
+        },
+      });
+    } else {
+      // 프로젝트 생성이 필요하지 않은 경우 일반 대화 응답
+      const assistantMessage = generateGeneralResponse(actionResult, enhancedPrompt);
+      await contextManager.addMessage(
+        sessionId,
+        userId,
+        'assistant',
+        { message: assistantMessage },
+        undefined,
+        undefined,
+        {
+          agents: 0,
+          totalExecutionTime: 0,
+          source: 'multi_agent_chat',
+          enhancedPrompt: enhancedPrompt,
+        }
+      );
+
+      reply.send({
+        success: true,
+        agents: [],
+        totalExecutionTime: 0,
+        summary: assistantMessage,
+        sessionId: sessionId,
+        enhancedPrompt: {
+          intent: enhancedPrompt.intent,
+          target: enhancedPrompt.target,
+          action: enhancedPrompt.action,
+          enhancedMessage: enhancedPrompt.enhancedMessage,
+          isVague: enhancedPrompt.intent.isVague,
+          clarification: enhancedPrompt.intent.clarification,
+        },
+        actionRouter: {
+          selectedHandler: selectedHandler?.name,
+          matchedRule: routingInfo.matchedRule?.description,
+          actionResult: {
+            success: actionResult.success,
+            message: actionResult.message,
+            nextAction: actionResult.nextAction,
+          },
+        },
+      });
+    }
   } catch (error) {
     console.error('Error handling multi-agent chat:', error);
     reply.status(500).send({
@@ -532,11 +530,36 @@ function buildProjectRequestFromMessage(message: string): ProjectRequest {
 async function buildProjectRequestFromActionResult(
   actionResult: ActionResult,
   enhancedPrompt: EnhancedPrompt,
-  userContext: UserContext,
-  sessionId: string
-): Promise<ProjectRequest> {
-  // ActionRouter 결과를 기반으로 프로젝트 요청 생성
-  const { intent, target, action, enhancedMessage } = enhancedPrompt;
+  _userContext: UserContext,
+  _sessionId: string
+): Promise<ProjectRequest | null> {
+  // 프로젝트 생성이 필요한 경우에만 ProjectRequest 생성
+  const { intent, enhancedMessage } = enhancedPrompt;
+
+  // 프로젝트 생성이 필요하지 않은 의도들
+  const nonProjectIntents = [
+    'question',
+    'complaint',
+    'general',
+    'code_review'
+  ];
+
+  // 프로젝트 생성이 필요하지 않은 액션들
+  const nonProjectActions = [
+    'answer_question',
+    'clarify_complaint',
+    'suggest_improvement',
+    'general_conversation',
+    'review_code'
+  ];
+
+  // 프로젝트 생성이 필요하지 않은 경우 null 반환
+  if (
+    nonProjectIntents.includes(intent.type) ||
+    (actionResult.nextAction && nonProjectActions.includes(actionResult.nextAction))
+  ) {
+    return null;
+  }
 
   // 기본 프로젝트 요청 생성
   const baseRequest = buildProjectRequestFromMessage(enhancedMessage);
@@ -586,13 +609,7 @@ async function buildProjectRequestFromActionResult(
         enhancedRequest.description += `\n\n기능 구현 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
         break;
 
-      case 'review_code':
-        enhancedRequest.description += `\n\n코드 리뷰 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
-        break;
 
-      case 'answer_question':
-        enhancedRequest.description += `\n\n질문 답변 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
-        break;
 
       default:
         enhancedRequest.description += `\n\n처리 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
@@ -609,14 +626,6 @@ async function buildProjectRequestFromActionResult(
 
   return enhancedRequest;
 }
-
-// naming utils moved to utils/prompt.ts
-
-// moved to utils/prompt.ts
-
-// moved to utils/prompt.ts
-
-// End of helpers
 
 import { VirtualPreviewGeneratorAgent } from '../agents/virtualPreviewGeneratorAgent.js';
 
@@ -730,76 +739,6 @@ export async function handleProjectRecovery(
   }
 }
 
-// AI를 사용하여 프로젝트 콘텐츠 생성
-// moved to services/ai/generation.ts
-
-// 프로젝트 타입 결정
-// moved to services/ai/generation.ts
-
-// 기본 페이지 생성
-// moved to services/ai/generation.ts
-
-// 기본 컴포넌트 생성
-// moved to services/ai/generation.ts
-
-// 생성된 페이지를 데이터베이스에 저장 (트랜잭션 없음 - 기존 호환성용)
-async function saveGeneratedPages(projectId: string, pageData: any[]) {
-  const savedPages: InferSelectModel<typeof pages>[] = [];
-
-  // 기존 페이지 데이터 삭제 (프로젝트 복구 시)
-  await db.delete(pages).where(eq(pages.projectId, projectId));
-
-  for (const page of pageData) {
-    const savedPage = await db
-      .insert(pages)
-      .values({
-        projectId,
-        path: page.path,
-        name: page.name,
-        layoutJson: page.layoutJson,
-      })
-      .returning();
-
-    savedPages.push(savedPage[0]);
-  }
-
-  return savedPages;
-}
-
-// 생성된 컴포넌트를 데이터베이스에 저장 (트랜잭션 없음 - 기존 호환성용)
-async function saveGeneratedComponents(
-  projectId: string,
-  componentData: any[]
-) {
-  const savedComponents: InferSelectModel<typeof componentDefinitions>[] = [];
-
-  // 기존 컴포넌트 데이터 삭제 (프로젝트 복구 시)
-  await db
-    .delete(componentDefinitions)
-    .where(eq(componentDefinitions.projectId, projectId));
-
-  for (const component of componentData) {
-    const savedComponent = await db
-      .insert(componentDefinitions)
-      .values({
-        projectId,
-        name: component.type,
-        displayName: component.displayName,
-        category: component.category,
-        propsSchema: component.propsSchema,
-        renderTemplate: component.renderTemplate,
-        cssStyles: component.cssStyles,
-      })
-      .returning();
-
-    savedComponents.push(savedComponent[0]);
-  }
-
-  return savedComponents;
-}
-
-// tx variants moved to services/projects/persist.ts
-
 // 프로젝트 구조 가져오기
 export async function getProjectStructure(projectId: string) {
   const project = await db.query.projects.findFirst({
@@ -835,9 +774,6 @@ export async function getProjectStructure(projectId: string) {
   };
 }
 
-// 프로젝트를 HTML로 렌더링
-// moved to services/ai/render.ts
-
 // 메시지 템플릿 함수들
 function generateAgentSuccessMessage(
   agentName: string,
@@ -863,10 +799,20 @@ function generateSummaryMessage(
 ): string {
   if (successCount === agentCount) {
     return `모든 에이전트(${agentCount}개)가 성공적으로 작업을 완료했습니다.`;
-  } else if (successCount > 0) {
-    return `${successCount}/${agentCount} 에이전트가 성공적으로 작업을 완료했습니다.`;
   } else {
-    return '에이전트 작업 중 문제가 발생했습니다.';
+    return `${successCount}/${agentCount} 에이전트가 성공적으로 작업을 완료했습니다.`;
+  }
+}
+
+function generateGeneralResponse(
+  actionResult: ActionResult,
+  enhancedPrompt: EnhancedPrompt
+): string {
+  // ActionRouter 결과를 기반으로 적절한 응답 생성
+  if (actionResult.success) {
+    return actionResult.message;
+  } else {
+    return '죄송합니다. 요청을 처리하는 중에 문제가 발생했습니다.';
   }
 }
 

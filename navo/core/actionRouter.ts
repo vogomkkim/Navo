@@ -1,4 +1,4 @@
-import { EnhancedPrompt } from './promptEnhancer.js';
+import { EnhancedPrompt } from './types/intent.js';
 import { UserContext } from './contextManager.js';
 
 /**
@@ -829,6 +829,23 @@ export class GeneralHandler implements ActionHandler {
     sessionId: string
   ): Promise<ActionResult> {
     try {
+      const message = enhancedPrompt.originalMessage.toLowerCase();
+
+      // 인사말에 대한 적절한 응답
+      if (message.includes('안녕') || message.includes('하이') || message.includes('반갑')) {
+        return {
+          success: true,
+          message: '안녕하세요! 무엇을 도와드릴까요?',
+          data: {
+            message: enhancedPrompt.enhancedMessage,
+            context: enhancedPrompt.context,
+            type: 'greeting',
+          },
+          nextAction: 'general_conversation',
+        };
+      }
+
+      // 기타 일반 대화
       const generalData = {
         message: enhancedPrompt.enhancedMessage,
         context: enhancedPrompt.context,
@@ -837,7 +854,7 @@ export class GeneralHandler implements ActionHandler {
 
       return {
         success: true,
-        message: `일반적인 대화를 처리합니다.`,
+        message: `네, 말씀해주세요. 무엇을 도와드릴까요?`,
         data: generalData,
         nextAction: 'general_conversation',
       };
