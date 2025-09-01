@@ -7,9 +7,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **PromptEnhancer 클래스 완전 구현**: AI 기반 프롬프트 개선 시스템 구축
-  - **의도 분석 시스템**: 9가지 의도 타입 자동 분류 (project_creation, component_modification, bug_fix 등)
-  - **대상 분석 시스템**: 6가지 대상 타입 분석 (current_project, specific_component, new_project 등)
-  - **액션 분석 시스템**: 8가지 액션 타입 분석 (create, modify, fix, enhance 등)
+  - **의도 분석 시스템**: 10가지 의도 타입 자동 분류 (project_creation, page_creation, component_modification, bug_fix 등)
+- **대상 분석 시스템**: 8가지 대상 타입 분석 (current_project, current_page, specific_component, new_page 등)
+- **액션 분석 시스템**: 8가지 액션 타입 분석 (create, modify, fix, enhance 등)
   - **컨텍스트 기반 향상**: 현재 프로젝트/컴포넌트 정보를 활용한 메시지 개선
   - **Fallback 시스템**: AI 분석 실패 시 기본값으로 안전한 처리
 
@@ -23,10 +23,12 @@ All notable changes to this project will be documented in this file.
 
 - **프로젝트 요청 생성 로직 대폭 개선**: 의도별 맞춤 처리
   - project_creation: 새 프로젝트 생성 요청 처리
-  - project_modification: 기존 프로젝트 수정 요청 처리
-  - component_modification: 컴포넌트 수정 요청 처리
-  - bug_fix: 버그 수정 요청 처리
-  - feature_request: 기능 요청 처리
+  - page_creation: 새 페이지 생성 요청 (현재 프로젝트 내)
+  - component_creation: 새 컴포넌트 생성 요청 (현재 프로젝트 내)
+  - page_modification: 페이지 수정 요청 (현재 프로젝트 내)
+  - component_modification: 컴포넌트 수정 요청 (현재 프로젝트 내)
+  - bug_fix: 버그 수정 요청 처리 (현재 프로젝트 내)
+  - feature_request: 기능 요청 처리 (현재 프로젝트 내)
 
 ### Technical Details
 

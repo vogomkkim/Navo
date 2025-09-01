@@ -210,14 +210,20 @@ ${contextInfo.conversationContext ? `- ${contextInfo.conversationContext}` : ""}
 
 사용자 메시지: "${message}"
 
+중요한 규칙:
+- 현재 프로젝트는 항상 고정되어 있음
+- "현재 프로젝트에 기능 추가" 같은 표현은 의미가 없음 (항상 현재 프로젝트가 대상)
+- 페이지나 컴포넌트는 현재 프로젝트 내에서 자유롭게 변경 가능
+
 의도 타입:
-- project_creation: 새 프로젝트 생성
-- project_modification: 기존 프로젝트 수정
-- component_creation: 새 컴포넌트 생성
-- component_modification: 기존 컴포넌트 수정
+- project_creation: 새 프로젝트 생성 (완전히 새로운 프로젝트)
+- page_creation: 새 페이지 생성 (현재 프로젝트 내)
+- component_creation: 새 컴포넌트 생성 (현재 프로젝트 내)
+- page_modification: 기존 페이지 수정 (현재 프로젝트 내)
+- component_modification: 기존 컴포넌트 수정 (현재 프로젝트 내)
 - code_review: 코드 리뷰 요청
 - bug_fix: 버그 수정 요청
-- feature_request: 기능 요청
+- feature_request: 기능 요청 (현재 프로젝트 내)
 - question: 질문
 - general: 일반적인 대화
 
@@ -263,12 +269,19 @@ ${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ""}
 
 사용자 메시지: "${message}"
 
+중요한 규칙:
+- 현재 프로젝트는 항상 고정되어 있음 (사용자가 직접 프로젝트를 변경할 때만 다른 프로젝트 대상 가능)
+- 페이지나 컴포넌트는 현재 프로젝트 내에서 자유롭게 변경 가능
+- "현재 프로젝트에 기능 추가" 같은 표현은 의미가 없음 (항상 현재 프로젝트가 대상)
+
 대상 타입:
-- current_project: 현재 프로젝트
-- current_component: 현재 컴포넌트
-- specific_component: 특정 컴포넌트
-- new_project: 새 프로젝트
-- new_component: 새 컴포넌트
+- current_project: 현재 선택된 프로젝트 (기본값)
+- current_page: 현재 작업 중인 페이지
+- current_component: 현재 작업 중인 컴포넌트
+- specific_page: 특정 페이지 (현재 프로젝트 내)
+- specific_component: 특정 컴포넌트 (현재 프로젝트 내)
+- new_page: 새 페이지 (현재 프로젝트 내)
+- new_component: 새 컴포넌트 (현재 프로젝트 내)
 - general: 일반적인 대상
 
 JSON 형태로 응답해주세요:
@@ -314,12 +327,17 @@ ${contextInfo.componentContext ? `- ${contextInfo.componentContext}` : ""}
 
 사용자 메시지: "${message}"
 
+중요한 규칙:
+- 현재 프로젝트는 항상 고정되어 있음
+- 페이지나 컴포넌트는 현재 프로젝트 내에서 자유롭게 변경 가능
+- "현재 프로젝트에 기능 추가" 같은 표현은 의미가 없음
+
 액션 타입:
-- create: 생성
-- modify: 수정
+- create: 생성 (페이지, 컴포넌트, 기능)
+- modify: 수정 (기존 페이지, 컴포넌트, 기능)
 - delete: 삭제
 - review: 리뷰
-- fix: 수정
+- fix: 수정 (버그)
 - enhance: 개선
 - explain: 설명
 - suggest: 제안

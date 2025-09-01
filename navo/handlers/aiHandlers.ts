@@ -550,30 +550,33 @@ async function buildProjectRequestFromEnhancedPrompt(
       }
       break;
 
-    case "project_modification":
-      if (userContext.currentProject) {
-        enhancedRequest.name = userContext.currentProject.name;
-        enhancedRequest.description = `기존 프로젝트 수정 요청\n프로젝트: ${userContext.currentProject.name}\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
-      }
+    case "page_creation":
+      enhancedRequest.description = `새 페이지 생성 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
       break;
 
     case "component_creation":
-      enhancedRequest.description = `새 컴포넌트 생성 요청\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      enhancedRequest.description = `새 컴포넌트 생성 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      break;
+
+    case "page_modification":
+      enhancedRequest.description = `페이지 수정 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
       break;
 
     case "component_modification":
       if (userContext.currentComponent) {
         const componentContext = `현재 컴포넌트: ${userContext.currentComponent.displayName}`;
         enhancedRequest.description = `컴포넌트 수정 요청\n${componentContext}\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      } else {
+        enhancedRequest.description = `컴포넌트 수정 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
       }
       break;
 
     case "bug_fix":
-      enhancedRequest.description = `버그 수정 요청\n의도: ${intent.description}\n문제 영역: ${target.description || "전체 시스템"}\n요청: ${enhancedMessage}`;
+      enhancedRequest.description = `버그 수정 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n문제 영역: ${target.description || "전체 시스템"}\n요청: ${enhancedMessage}`;
       break;
 
     case "feature_request":
-      enhancedRequest.description = `기능 요청\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
+      enhancedRequest.description = `기능 요청 (현재 프로젝트 내)\n의도: ${intent.description}\n요청: ${enhancedMessage}`;
       break;
 
     default:
