@@ -55,7 +55,11 @@ const WORKFLOW_STEPS: AgentRole[] = [
   "DevOps Engineer",
 ];
 
-export function ChatSection() {
+interface ChatSectionProps {
+  onReset?: () => void;
+}
+
+export function ChatSection({ onReset }: ChatSectionProps) {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentWorkflowStep, setCurrentWorkflowStep] = useState(0);
@@ -63,14 +67,8 @@ export function ChatSection() {
   const [currentStepName, setCurrentStepName] = useState<string>("");
 
   // 방향키 히스토리 훅 사용
-  const {
-    inputValue,
-    setInputValue,
-    handleKeyDown,
-    addToHistory,
-    clearHistory,
-    messageHistory,
-  } = useInputHistory();
+  const { inputValue, setInputValue, handleKeyDown, addToHistory } =
+    useInputHistory();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -127,33 +125,7 @@ export function ChatSection() {
       });
 
       if (result.success) {
-        // 각 에이전트의 결과를 순차적으로 표시
-        for (let i = 0; i < result.agents.length; i++) {
-          const agent = result.agents[i];
-
-          // 현재 단계 업데이트
-          setCurrentWorkflowStep(i);
-
-          // 에이전트 메시지 생성
-          const agentMessage: AgentMessage = {
-            id: `${agent.agentName}-${Date.now()}-${i}`,
-            role: agent.agentName as AgentRole,
-            message: `✅ **${agent.agentName}** 완료!\n\n${agent.message}`,
-            status: agent.status === "completed" ? "completed" : "error",
-            timestamp: new Date(),
-            details: agent.data,
-            suggestions: agent.nextSteps,
-          };
-
-          setChatHistory((prev: ChatMessage[]) => [...prev, agentMessage]);
-
-          // 다음 단계로 진행하기 전에 잠시 대기 (사용자 경험 향상)
-          if (i < result.agents.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-        }
-
-        // 워크플로우 완료 메시지
+        // 최종 완료 메시지만 표시 (중간 과정 메시지 제거)
         const completionMessage: AgentMessage = {
           id: `completion-${Date.now()}`,
           role: "Strategic Planner",
@@ -256,35 +228,6 @@ export function ChatSection() {
               </div>
             </div>
           ))
-        )}
-
-        {/* 입력 히스토리 표시 */}
-        {messageHistory.length > 0 && (
-          <div className="input-history-section">
-            <div className="history-header">
-              <h4>입력 히스토리 ({messageHistory.length}/10)</h4>
-              <button
-                onClick={clearHistory}
-                className="clear-history-btn"
-                title="히스토리 삭제"
-              >
-                🗑️
-              </button>
-            </div>
-            <div className="history-list">
-              {messageHistory.map((message, index) => (
-                <div
-                  key={index}
-                  className="history-item"
-                  onClick={() => setInputValue(message)}
-                  title="클릭하여 다시 입력"
-                >
-                  <span className="history-number">{index + 1}</span>
-                  <span className="history-text">{message}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
 
         <div ref={messagesEndRef} />

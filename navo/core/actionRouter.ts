@@ -315,6 +315,7 @@ export class ProjectCreationHandler implements ActionHandler {
 
   private generateMeaningfulProjectName(message: string): string {
     const lowerMessage = message.toLowerCase();
+    const timestamp = Date.now();
 
     // SNS 관련 키워드
     if (
@@ -323,12 +324,31 @@ export class ProjectCreationHandler implements ActionHandler {
       lowerMessage.includes("게시물") ||
       lowerMessage.includes("피드")
     ) {
-      return "소셜커넥트";
+      const socialNames = [
+        "소셜커넥트",
+        "소셜허브",
+        "커뮤니티존",
+        "소셜스페이스",
+        "프렌드허브",
+        "소셜매직",
+        "커넥트존",
+        "소셜팩토리",
+        "프렌드스튜디오",
+        "소셜크래프트",
+      ];
+      return socialNames[timestamp % socialNames.length];
     }
 
     // 블로그 관련 키워드
     if (lowerMessage.includes("블로그") || lowerMessage.includes("포스트")) {
-      return "블로그스페이스";
+      const blogNames = [
+        "블로그스페이스",
+        "포스트허브",
+        "스토리랩",
+        "컨텐츠스튜디오",
+        "블로그마스터",
+      ];
+      return blogNames[timestamp % blogNames.length];
     }
 
     // 쇼핑 관련 키워드
@@ -337,7 +357,14 @@ export class ProjectCreationHandler implements ActionHandler {
       lowerMessage.includes("커머스") ||
       lowerMessage.includes("결제")
     ) {
-      return "스마트쇼핑";
+      const shopNames = [
+        "스마트쇼핑",
+        "커머스허브",
+        "쇼핑존",
+        "마켓플레이스",
+        "스토어랩",
+      ];
+      return shopNames[timestamp % shopNames.length];
     }
 
     // 학습 관련 키워드
@@ -346,7 +373,14 @@ export class ProjectCreationHandler implements ActionHandler {
       lowerMessage.includes("퀴즈") ||
       lowerMessage.includes("교육")
     ) {
-      return "러닝플로우";
+      const learnNames = [
+        "러닝플로우",
+        "에듀허브",
+        "스터디존",
+        "학습스페이스",
+        "지식랩",
+      ];
+      return learnNames[timestamp % learnNames.length];
     }
 
     // 게임 관련 키워드
@@ -354,16 +388,63 @@ export class ProjectCreationHandler implements ActionHandler {
       lowerMessage.includes("게임") ||
       lowerMessage.includes("엔터테인먼트")
     ) {
-      return "게임존";
+      const gameNames = [
+        "게임존",
+        "플레이허브",
+        "엔터테인먼트랩",
+        "게임스튜디오",
+        "플레이존",
+      ];
+      return gameNames[timestamp % gameNames.length];
     }
 
     // 채팅 관련 키워드
     if (lowerMessage.includes("채팅") || lowerMessage.includes("메시지")) {
-      return "채팅허브";
+      const chatNames = [
+        "채팅허브",
+        "메시지존",
+        "커뮤니케이션랩",
+        "채팅스페이스",
+        "톡허브",
+      ];
+      return chatNames[timestamp % chatNames.length];
     }
 
-    // 기본값
-    return "스마트앱";
+    // 기본 창의적인 이름들
+          const defaultNames = [
+        "네오스페이스",
+        "퓨처허브",
+        "인노베이션존",
+        "크리에이티브랩",
+        "테크플로우",
+        "디지털스튜디오",
+        "아이디어팩토리",
+        "스마트워크스",
+        "클라우드네스트",
+        "데이터허브",
+        "코드스튜디오",
+        "웹크래프트",
+        "앱마스터",
+        "디지털아트",
+        "테크마스터",
+        "매직랩",
+        "크래프트존",
+        "팩토리스페이스",
+        "스튜디오허브",
+        "플로우크래프트",
+        "네오매직",
+        "퓨처크래프트",
+        "인노베이션매직",
+        "크리에이티브매직",
+        "테크크래프트",
+        "디지털매직",
+        "아이디어크래프트",
+        "스마트매직",
+        "클라우드크래프트",
+        "데이터매직",
+      ];
+
+    return defaultNames[timestamp % defaultNames.length];
   }
 }
 

@@ -1,7 +1,13 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../db/db.js";
 import { getUserIdFromToken } from "../auth/auth.js";
-import { projects, pages, publishDeploys } from "../db/schema.js";
+import {
+  projects,
+  pages,
+  publishDeploys,
+  components,
+  componentDefinitions,
+} from "../db/schema.js";
 import { and, desc, eq, sql } from "drizzle-orm";
 
 export async function handleListProjects(
@@ -104,7 +110,43 @@ export async function handleGetPageLayout(
         .send({ error: "Forbidden: You do not own this page" });
     }
 
-    reply.send({ layout: page[0].layout_json });
+    // 실제 저장된 컴포넌트 데이터를 가져와서 레이아웃 구성
+    const pageComponents = await db
+      .select({
+        id: components.id,
+        componentDefinitionId: components.componentDefinitionId,
+        props: components.props,
+        orderIndex: components.orderIndex,
+        componentName: componentDefinitions.name,
+        componentDisplayName: componentDefinitions.displayName,
+        componentType: componentDefinitions.category,
+        renderTemplate: componentDefinitions.renderTemplate,
+        cssStyles: componentDefinitions.cssStyles,
+      })
+      .from(components)
+      .innerJoin(
+        componentDefinitions,
+        eq(components.componentDefinitionId, componentDefinitions.id)
+      )
+      .where(eq(components.pageId, pageId))
+      .orderBy(components.orderIndex);
+
+    // 레이아웃 구조로 변환
+    const layoutComponents = pageComponents.map((comp) => ({
+      id: comp.id,
+      type: comp.componentName,
+      props: comp.props,
+      displayName: comp.componentDisplayName,
+      category: comp.componentType,
+      renderTemplate: comp.renderTemplate,
+      cssStyles: comp.cssStyles,
+    }));
+
+    const layout = {
+      components: layoutComponents,
+    };
+
+    reply.send({ layout });
   } catch (error) {
     console.error("Error getting page layout:", error);
     reply.status(500).send({ error: "Failed to get page layout" });
@@ -147,7 +189,8 @@ export async function handleRollback(
           sql`${publishDeploys.metadata}->>'vercelDeploymentId' = ${rollbackTo}`
         ),
       });
-      targetDeploymentId = (deployment?.metadata as any)?.vercelDeploymentId ?? undefined;
+      targetDeploymentId =
+        (deployment?.metadata as any)?.vercelDeploymentId ?? undefined;
     } else if (typeof rollbackTo === "number") {
       // Assume rollbackTo is an index (0 for latest, 1 for second latest, etc.)
       const deployments = await db.query.publishDeploys.findMany({
@@ -157,7 +200,9 @@ export async function handleRollback(
       });
 
       if (deployments.length > rollbackTo) {
-        targetDeploymentId = (deployments[rollbackTo].metadata as any)?.vercelDeploymentId ?? undefined;
+        targetDeploymentId =
+          (deployments[rollbackTo].metadata as any)?.vercelDeploymentId ??
+          undefined;
       }
     }
 

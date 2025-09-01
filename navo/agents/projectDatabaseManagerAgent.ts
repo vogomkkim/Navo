@@ -341,7 +341,7 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
           pageId,
           componentDefinitionId: compData.componentDefinitionId,
           props: compData.props,
-          order: compData.order,
+          orderIndex: compData.order,
         };
 
         const result = await db

@@ -211,6 +211,42 @@ export function useListProjects(
   });
 }
 
+// useListProjectPages - 프로젝트의 페이지 목록을 가져오는 훅
+interface ProjectPagesResponse {
+  pages: Array<{
+    id: string;
+    path: string;
+    updated_at: string;
+  }>;
+}
+
+export function useListProjectPages(
+  projectId: string,
+  options?: UseQueryOptions<ProjectPagesResponse, Error>
+) {
+  const { token, logout } = useAuth();
+  return useQuery<ProjectPagesResponse, Error>({
+    queryKey: ["projectPages", projectId],
+    queryFn: async () => {
+      try {
+        return await fetchApi<ProjectPagesResponse>(
+          `/api/projects/${projectId}/pages`,
+          {
+            token,
+          }
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message === "Unauthorized") {
+          logout();
+        }
+        throw error;
+      }
+    },
+    enabled: !!projectId && !!token, // projectId와 토큰이 모두 존재할 때만 쿼리 실행
+    ...options,
+  });
+}
+
 // useGenerateComponent
 interface GenerateComponentPayload {
   description: string;

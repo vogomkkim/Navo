@@ -61,22 +61,27 @@ export function useInputHistory(): UseInputHistoryReturn {
         setInputValue(messageHistory[messageHistory.length - 1 - newIndex]);
       } else if (historyIndex === 0) {
         setHistoryIndex(-1);
-        setInputValue(""); // 원래 입력 상태로 복원
+        setInputValue(""); // 빈 값으로 초기화
       } else if (historyIndex === -1) {
-        // 가장 최신 상태에서 ↓ 누르면 빈 상태로
+        // 이미 빈 상태에서 ↓ 누르면 그대로 빈 상태 유지
         setInputValue("");
       }
     }
   };
 
   const addToHistory = (message: string) => {
+    // 빈 메시지는 히스토리에 추가하지 않음
+    if (!message.trim()) {
+      return;
+    }
+
     // 중복 메시지 제거 (최신 메시지가 이미 히스토리에 있으면 제거)
     const filteredHistory = messageHistory.filter((item) => item !== message);
 
     // 새 메시지를 맨 앞에 추가
     const newHistory = [message, ...filteredHistory];
 
-    // 최대 10개까지만 유지
+    // 최대 10개까지만 유지 (가장 오래된 것부터 삭제)
     if (newHistory.length > MAX_HISTORY_SIZE) {
       newHistory.splice(MAX_HISTORY_SIZE);
     }

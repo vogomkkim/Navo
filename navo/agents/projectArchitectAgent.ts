@@ -186,36 +186,80 @@ export class ProjectArchitectAgent extends BaseAgent {
 
   // 기본 프로젝트명 생성 헬퍼 메서드
   private generateDefaultProjectName(requestName: string): string {
-    const nameMap: { [key: string]: string } = {
-      퀴즐렛: "QuizMaster",
-      퀴즈: "QuizHub",
-      학습: "LearnFlow",
-      교육: "EduTech",
-      커머스: "ShopSmart",
-      쇼핑: "BuyEasy",
-      블로그: "BlogSpace",
-      소셜: "SocialConnect",
-      게임: "GameZone",
-      엔터테인먼트: "EntertainHub",
+    const timestamp = Date.now();
+
+    const nameMap: { [key: string]: string[] } = {
+      퀴즐렛: ["QuizMaster", "QuizHub", "QuizZone", "QuizLab", "QuizStudio"],
+      퀴즈: ["QuizHub", "QuizMaster", "QuizZone", "QuizLab", "QuizStudio"],
+      학습: ["LearnFlow", "StudyHub", "EduZone", "LearnLab", "StudyStudio"],
+      교육: ["EduTech", "EduHub", "EduZone", "EduLab", "EduStudio"],
+      커머스: [
+        "ShopSmart",
+        "CommerceHub",
+        "ShopZone",
+        "ShopLab",
+        "CommerceStudio",
+      ],
+      쇼핑: ["BuyEasy", "ShopHub", "ShopZone", "ShopLab", "BuyStudio"],
+      블로그: ["BlogSpace", "BlogHub", "BlogZone", "BlogLab", "BlogStudio"],
+      소셜: [
+        "SocialConnect",
+        "SocialHub",
+        "SocialZone",
+        "SocialLab",
+        "SocialStudio",
+      ],
+      게임: ["GameZone", "GameHub", "GameLab", "GameStudio", "PlayZone"],
+      엔터테인먼트: [
+        "EntertainHub",
+        "EntertainZone",
+        "EntertainLab",
+        "EntertainStudio",
+        "FunHub",
+      ],
     };
 
-    for (const [korean, english] of Object.entries(nameMap)) {
+    for (const [korean, englishNames] of Object.entries(nameMap)) {
       if (requestName.includes(korean)) {
-        return english;
+        return englishNames[timestamp % englishNames.length];
       }
     }
 
-    // 기본 영어 이름 생성
-    const cleanName = requestName.replace(/[^a-zA-Z0-9가-힣]/g, "");
-    if (cleanName.length > 0) {
-      return (
-        cleanName.charAt(0).toUpperCase() +
-        cleanName.slice(1).toLowerCase() +
-        "App"
-      );
-    }
+    // 기본 창의적인 영어 이름들
+    const defaultNames = [
+      "NeoSpace",
+      "FutureHub",
+      "InnovationZone",
+      "CreativeLab",
+      "TechFlow",
+      "DigitalStudio",
+      "IdeaFactory",
+      "SmartWorks",
+      "CloudNest",
+      "DataHub",
+      "CodeStudio",
+      "WebCraft",
+      "AppMaster",
+      "DigitalArt",
+      "TechMaster",
+      "MagicLab",
+      "CraftZone",
+      "FactorySpace",
+      "StudioHub",
+      "FlowCraft",
+      "NeoMagic",
+      "FutureCraft",
+      "InnovationMagic",
+      "CreativeMagic",
+      "TechCraft",
+      "DigitalMagic",
+      "IdeaCraft",
+      "SmartMagic",
+      "CloudCraft",
+      "DataMagic",
+    ];
 
-    return "SmartApp";
+    return defaultNames[timestamp % defaultNames.length];
   }
 
   // 2단계: 페이지 구조 설계
