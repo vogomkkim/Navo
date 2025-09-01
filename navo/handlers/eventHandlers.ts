@@ -39,8 +39,8 @@ async function storeEvents(eventsToStore: any[], userId: string) {
   const eventData = eventsToStore.map((event) => ({
     projectId: event.projectId || null,
     userId,
-    type: event.type,
-    data: event.data || {},
+    eventType: event.type,
+    eventData: event.data || {},
   }));
 
   await db.insert(events).values(eventData);

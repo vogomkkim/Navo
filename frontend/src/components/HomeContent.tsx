@@ -113,17 +113,52 @@ export default function HomeContent() {
   };
 
   // 프로젝트 선택 핸들러
-  const handleProjectSelect = (projectId: string) => {
+  const handleProjectSelect = async (projectId: string) => {
     setSelectedProjectId(projectId);
 
     // 프로젝트가 미완성인지 확인
     const project = projectsData?.projects?.find((p) => p.id === projectId);
     if (project) {
-      // 페이지나 컴포넌트가 없는지 확인 (간단한 체크)
-      const hasContent =
-        pageLayoutData?.layout && Object.keys(pageLayoutData.layout).length > 0;
+      try {
+        // 프로젝트의 실제 페이지와 컴포넌트 데이터 확인
+        const projectStructure = await fetchApi(
+          `/api/ai/project-structure/${projectId}`,
+          {
+            method: "GET",
+            token,
+          }
+        );
 
-      if (!hasContent) {
+        console.log("프로젝트 구조:", projectStructure);
+
+        // 미완성 프로젝트 판단 기준:
+        // 1. 페이지가 없거나
+        // 2. 컴포넌트 정의가 없는 경우
+        const hasPages =
+          (projectStructure as any)?.pages &&
+          (projectStructure as any).pages.length > 0;
+        const hasComponentDefinitions =
+          (projectStructure as any)?.componentDefinitions &&
+          (projectStructure as any).componentDefinitions.length > 0;
+
+        const isIncomplete = !hasPages || !hasComponentDefinitions;
+
+        if (isIncomplete) {
+          console.log("미완성 프로젝트 감지:", {
+            projectName: project.name,
+            hasPages,
+            hasComponentDefinitions,
+            pagesCount: (projectStructure as any)?.pages?.length || 0,
+            componentDefinitionsCount:
+              (projectStructure as any)?.componentDefinitions?.length || 0,
+          });
+
+          setIncompleteProject(project);
+          setShowRecoveryModal(true);
+        }
+      } catch (error) {
+        console.error("프로젝트 구조 확인 중 오류:", error);
+        // 오류 발생 시에도 미완성으로 간주
         setIncompleteProject(project);
         setShowRecoveryModal(true);
       }

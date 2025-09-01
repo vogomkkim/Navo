@@ -63,8 +63,14 @@ export function ChatSection() {
   const [currentStepName, setCurrentStepName] = useState<string>("");
 
   // 방향키 히스토리 훅 사용
-  const { inputValue, setInputValue, handleKeyDown, addToHistory } =
-    useInputHistory();
+  const {
+    inputValue,
+    setInputValue,
+    handleKeyDown,
+    addToHistory,
+    clearHistory,
+    messageHistory,
+  } = useInputHistory();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -235,34 +241,52 @@ export function ChatSection() {
           />
         ) : (
           chatHistory.map((message) => (
-            <div
-              key={message.id}
-              className={`chat-message ${"role" in message ? "agent" : "user"}`}
-            >
+            <div key={message.id} className="chat-message">
+              <div className="message-avatar">
+                {message.role === "user" ? "👤" : "🤖"}
+              </div>
               <div className="message-content">
-                <div className="message-header">
-                  <span className="message-sender">
-                    {"role" in message ? message.role : "사용자"}
-                  </span>
-                  <span className="message-time">
-                    {message.timestamp.toLocaleTimeString("ko-KR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+                <div className="message-sender">
+                  {message.role === "user" ? "사용자" : message.role}
                 </div>
-                <div className="message-text">
-                  {message.message.split("\n").map((line, index) => (
-                    <span key={index}>
-                      {line}
-                      {index < message.message.split("\n").length - 1 && <br />}
-                    </span>
-                  ))}
+                <div className="message-text">{message.message}</div>
+                <div className="message-timestamp">
+                  {message.timestamp.toLocaleTimeString()}
                 </div>
               </div>
             </div>
           ))
         )}
+
+        {/* 입력 히스토리 표시 */}
+        {messageHistory.length > 0 && (
+          <div className="input-history-section">
+            <div className="history-header">
+              <h4>입력 히스토리 ({messageHistory.length}/10)</h4>
+              <button
+                onClick={clearHistory}
+                className="clear-history-btn"
+                title="히스토리 삭제"
+              >
+                🗑️
+              </button>
+            </div>
+            <div className="history-list">
+              {messageHistory.map((message, index) => (
+                <div
+                  key={index}
+                  className="history-item"
+                  onClick={() => setInputValue(message)}
+                  title="클릭하여 다시 입력"
+                >
+                  <span className="history-number">{index + 1}</span>
+                  <span className="history-text">{message}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 

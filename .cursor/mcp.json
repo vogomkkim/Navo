@@ -1,9 +1,15 @@
 {
   "mcpServers": {
-    "render": {
-      "url": "https://mcp.render.com/mcp",
-      "headers": {
-        "Authorization": "Bearer rnd_fhaT5I1vcyAOZ32blc1Tb8DJHtXl"
+    "render-remote": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp.render.com/mcp",
+        "--header",
+        "Authorization: Bearer ${RENDER_API_KEY}"
+      ],
+      "env": {
+        "RENDER_API_KEY": "rnd_fhaT5I1vcyAOZ32blc1Tb8DJHtXl"
       }
     }
   }

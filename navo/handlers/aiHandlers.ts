@@ -8,7 +8,7 @@ import {
   pages,
   components,
 } from "../db/schema.js";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql, inArray } from "drizzle-orm";
 import { scaffoldProject } from "../nodes/scaffoldProject.js"; // Added import
 import { MasterDeveloperAgent } from "../agents/masterDeveloperAgent.js";
 import { ProjectRequest } from "../core/masterDeveloper.js";
@@ -848,9 +848,17 @@ export async function handleProjectRecovery(
 async function generateProjectContent(requirements: string) {
   console.log("generateProjectContent 호출됨:", requirements);
 
-  try {
-    // Gemini AI를 사용하여 실제 요구사항에 맞는 프로젝트 생성
-    const prompt = `사용자 요구사항: "${requirements}"
+  const MAX_RETRIES = 3;
+  let lastError: any = null;
+  let originalRequirements = requirements; // 초기 요구사항 저장
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`AI 생성 시도 ${attempt}/${MAX_RETRIES}...`);
+
+      const prompt =
+        attempt === 1
+          ? `사용자 요구사항: "${originalRequirements}"
 
 이 요구사항에 맞는 웹사이트를 생성해주세요. 다음을 포함해야 합니다:
 
@@ -882,37 +890,49 @@ JSON 형태로 응답해주세요. 다음과 같은 구조로:
       "cssStyles": "CSS 스타일"
     }
   ]
-}`;
+}`
+          : requirements; // 재시도 시에는 requirements가 자체 수정 프롬프트가 됨
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const response = await model.generateContent(prompt);
-    const result = await response.response.text();
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const response = await model.generateContent(prompt);
+      const resultText = await response.response.text();
 
-    console.log("AI 응답:", result);
+      console.log(`AI 응답 (시도 ${attempt}):`, resultText);
 
-    // JSON 파싱 및 검증
-    const parsedResult = JSON.parse(result);
+      // JSON 파싱 및 검증
+      const parsedResult = JSON.parse(resultText);
 
-    // 기본값으로 fallback
-    if (!parsedResult.pages || !parsedResult.components) {
-      console.log("AI 응답이 올바르지 않아 기본 템플릿 사용");
-      const projectType = determineProjectType(requirements);
-      const pages = generateDefaultPages(projectType);
-      const components = generateDefaultComponents(projectType);
-      return { pages, components };
+      // 응답 구조 검증
+      if (
+        parsedResult.pages &&
+        Array.isArray(parsedResult.pages) &&
+        parsedResult.components &&
+        Array.isArray(parsedResult.components)
+      ) {
+        console.log("AI 생성 성공!");
+        return parsedResult; // 성공 시 즉시 반환
+      } else {
+        throw new Error("AI 응답의 구조가 올바르지 않습니다.");
+      }
+    } catch (error) {
+      lastError = error;
+      const resultText = lastError.message; // 재시도 프롬프트에 오류 메시지 포함
+      console.error(`AI 생성 실패 (시도 ${attempt}):`, error);
+
+      if (attempt < MAX_RETRIES) {
+        console.log("자체 수정을 위해 재시도합니다...");
+        // 다음 시도를 위해 requirements를 자체 수정 프롬프트로 업데이트
+        requirements = `이전 시도에서 실패했습니다. 오류: ${resultText}\n\n원래 요구사항: "${originalRequirements}"\n\n오류를 수정하여 올바른 JSON 구조로 다시 생성해주세요. 설명이나 다른 텍스트 없이 순수한 JSON 객체만 응답해야 합니다.`;
+      }
     }
-
-    return parsedResult;
-  } catch (error) {
-    console.error("AI 생성 실패, 기본 템플릿 사용:", error);
-
-    // AI 실패 시 기본 템플릿 사용
-    const projectType = determineProjectType(requirements);
-    const pages = generateDefaultPages(projectType);
-    const components = generateDefaultComponents(projectType);
-
-    return { pages, components };
   }
+
+  // 모든 재시도 실패 후
+  console.error("최종 AI 생성 실패, 기본 템플릿 사용:", lastError);
+  const projectType = determineProjectType(originalRequirements); // 원래 요구사항으로 타입 결정
+  const pages = generateDefaultPages(projectType);
+  const components = generateDefaultComponents(projectType);
+  return { pages, components };
 }
 
 // 프로젝트 타입 결정
@@ -1162,13 +1182,23 @@ export async function getProjectStructure(projectId: string) {
     where: eq(pages.projectId, projectId),
   });
 
-  const projectComponents = await db.query.componentDefinitions.findMany({
-    where: eq(componentDefinitions.projectId, projectId),
+  const projectComponentDefinitions =
+    await db.query.componentDefinitions.findMany({
+      where: eq(componentDefinitions.projectId, projectId),
+    });
+
+  // components는 pageId를 통해 간접적으로 가져와야 함
+  const projectComponents = await db.query.components.findMany({
+    where: inArray(
+      components.pageId,
+      projectPages.map((p) => p.id)
+    ),
   });
 
   return {
     project,
     pages: projectPages,
+    componentDefinitions: projectComponentDefinitions,
     components: projectComponents,
   };
 }
@@ -1203,7 +1233,7 @@ export async function renderProjectToHTML(projectData: any) {
 
     if (page.layoutJson && page.layoutJson.components) {
       for (const comp of page.layoutJson.components) {
-        const componentDef = components.find((c) => c.name === comp.type);
+        const componentDef = components.find((c: any) => c.name === comp.type);
         if (componentDef) {
           html += `<div class="component ${comp.type}">`;
           // 컴포넌트 렌더링

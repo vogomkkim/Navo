@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { db } from "../db/db.js";
 import { getUserIdFromToken } from "../auth/auth.js";
 import { projects, pages, publishDeploys } from "../db/schema.js";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 export async function handleListProjects(
   request: FastifyRequest,
@@ -144,10 +144,10 @@ export async function handleRollback(
       const deployment = await db.query.publishDeploys.findFirst({
         where: and(
           eq(publishDeploys.projectId, projectId),
-          eq(publishDeploys.vercelDeploymentId, rollbackTo)
+          sql`${publishDeploys.metadata}->>'vercelDeploymentId' = ${rollbackTo}`
         ),
       });
-      targetDeploymentId = deployment?.vercelDeploymentId ?? undefined;
+      targetDeploymentId = (deployment?.metadata as any)?.vercelDeploymentId ?? undefined;
     } else if (typeof rollbackTo === "number") {
       // Assume rollbackTo is an index (0 for latest, 1 for second latest, etc.)
       const deployments = await db.query.publishDeploys.findMany({
@@ -157,8 +157,7 @@ export async function handleRollback(
       });
 
       if (deployments.length > rollbackTo) {
-        targetDeploymentId =
-          deployments[rollbackTo].vercelDeploymentId ?? undefined;
+        targetDeploymentId = (deployments[rollbackTo].metadata as any)?.vercelDeploymentId ?? undefined;
       }
     }
 

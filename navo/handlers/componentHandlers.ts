@@ -203,7 +203,7 @@ export async function handleUpdateComponentDefinition(
         renderTemplate: render_template,
         cssStyles: css_styles,
         isActive: is_active,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(componentDefinitions.id, id))
       .returning();
@@ -289,7 +289,7 @@ export async function handleSeedComponentDefinitions(
           renderTemplate: sql.raw(`excluded.render_template`),
           cssStyles: sql.raw(`excluded.css_styles`),
           isActive: sql.raw(`excluded.is_active`),
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         },
       });
 

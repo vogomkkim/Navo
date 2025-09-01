@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface UseInputHistoryReturn {
   inputValue: string;
@@ -6,12 +6,40 @@ interface UseInputHistoryReturn {
   handleKeyDown: (e: React.KeyboardEvent) => void;
   addToHistory: (message: string) => void;
   clearHistory: () => void;
+  messageHistory: string[];
 }
+
+const HISTORY_KEY = "navo_input_history";
+const MAX_HISTORY_SIZE = 10;
 
 export function useInputHistory(): UseInputHistoryReturn {
   const [inputValue, setInputValue] = useState("");
   const [messageHistory, setMessageHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // 컴포넌트 마운트 시 localStorage에서 히스토리 로드
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem(HISTORY_KEY);
+      if (savedHistory) {
+        const parsedHistory = JSON.parse(savedHistory);
+        if (Array.isArray(parsedHistory)) {
+          setMessageHistory(parsedHistory);
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to load input history from localStorage:", error);
+    }
+  }, []);
+
+  // 히스토리 변경 시 localStorage에 저장
+  useEffect(() => {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(messageHistory));
+    } catch (error) {
+      console.warn("Failed to save input history to localStorage:", error);
+    }
+  }, [messageHistory]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowUp") {
@@ -42,13 +70,29 @@ export function useInputHistory(): UseInputHistoryReturn {
   };
 
   const addToHistory = (message: string) => {
-    setMessageHistory((prev) => [...prev, message]);
+    // 중복 메시지 제거 (최신 메시지가 이미 히스토리에 있으면 제거)
+    const filteredHistory = messageHistory.filter((item) => item !== message);
+
+    // 새 메시지를 맨 앞에 추가
+    const newHistory = [message, ...filteredHistory];
+
+    // 최대 10개까지만 유지
+    if (newHistory.length > MAX_HISTORY_SIZE) {
+      newHistory.splice(MAX_HISTORY_SIZE);
+    }
+
+    setMessageHistory(newHistory);
     setHistoryIndex(-1); // 히스토리 인덱스 초기화
   };
 
   const clearHistory = () => {
     setMessageHistory([]);
     setHistoryIndex(-1);
+    try {
+      localStorage.removeItem(HISTORY_KEY);
+    } catch (error) {
+      console.warn("Failed to clear input history from localStorage:", error);
+    }
   };
 
   return {
@@ -57,5 +101,6 @@ export function useInputHistory(): UseInputHistoryReturn {
     handleKeyDown,
     addToHistory,
     clearHistory,
+    messageHistory,
   };
 }

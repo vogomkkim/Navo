@@ -45,8 +45,8 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
         description: projectData.description,
         ownerId: projectData.ownerId,
         type: projectData.type,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       const result = await db.insert(projects).values(newProject).returning();
@@ -118,8 +118,8 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
             },
           },
           isPublished: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
 
         const result = await db.insert(pages).values(newPage).returning();
@@ -269,11 +269,15 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
       // AI 아키텍처에서 페이지별 컴포넌트 정보 가져오기
       const pageComponents = [];
 
-      // 현재 페이지 정보 찾기
+      // 현재 페이지 정보 찾기 (ID 또는 path로 매칭)
       const currentPage =
         projectArchitecture.pages?.find((page: any) => page.id === pageId) ||
         projectArchitecture.pages?.find((page: any) => page.path === "/") ||
         projectArchitecture.pages?.[0];
+
+      this.logger.info(
+        `📄 Processing page: ${currentPage?.name || "Unknown"} (${currentPage?.path})`
+      );
 
       if (
         currentPage &&
@@ -294,22 +298,40 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
               props: pageComp.props || {},
               order: i + 1,
             });
+
+            this.logger.info(
+              `✅ Found matching component: ${pageComp.type} -> ${matchingDef.displayName}`
+            );
+          } else {
+            this.logger.warn(
+              `⚠️ No matching component definition found for: ${pageComp.type}`
+            );
           }
         }
+      } else {
+        this.logger.info(
+          `📝 No components defined in AI architecture for page: ${currentPage?.name}`
+        );
       }
 
-      // 컴포넌트가 없으면 기본 컴포넌트 하나 생성
+      // 컴포넌트가 없으면 기본 컴포넌트 하나 생성 (페이지별 맞춤 props 적용)
       if (pageComponents.length === 0) {
+        const pageSpecificProps = this.generatePageSpecificProps(
+          currentPage,
+          projectComponentDefs[0]
+        );
+
         pageComponents.push({
           name:
             projectComponentDefs[0].displayName || projectComponentDefs[0].name,
           componentDefinitionId: projectComponentDefs[0].id,
-          props: {
-            title:
-              "Welcome to " + (currentPage?.name || projectArchitecture.name),
-          },
+          props: pageSpecificProps,
           order: 1,
         });
+
+        this.logger.info(
+          `🎯 Created component with page-specific props: ${projectComponentDefs[0].displayName}`
+        );
       }
 
       const createdComponents = [];
@@ -347,5 +369,86 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
         `Component creation failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
+  }
+
+  /**
+   * 페이지 특성에 맞는 props를 생성합니다.
+   */
+  private generatePageSpecificProps(page: any, component: any): any {
+    const pageName = page?.name || "";
+    const pagePath = page?.path || "";
+
+    // 기본 props
+    const baseProps = {
+      title: pageName,
+      pagePath: pagePath,
+    };
+
+    // 컴포넌트 타입에 따른 특화된 props
+    if (
+      component.name === "FeedContainer" ||
+      component.displayName.includes("Feed")
+    ) {
+      return {
+        ...baseProps,
+        title: `${pageName} - 최신 게시물`,
+        description: "사용자들의 최신 게시물을 확인하세요",
+        showFilters: true,
+        sortBy: "latest",
+      };
+    } else if (
+      component.name === "UserProfileCard" ||
+      component.displayName.includes("Profile")
+    ) {
+      return {
+        ...baseProps,
+        title: `${pageName} - 사용자 프로필`,
+        description: "사용자 정보와 활동 내역을 확인하세요",
+        showStats: true,
+        showPosts: true,
+      };
+    } else if (
+      component.name === "AuthForm" ||
+      component.displayName.includes("Auth")
+    ) {
+      return {
+        ...baseProps,
+        title: `${pageName} - 로그인/회원가입`,
+        description: "계정에 로그인하거나 새 계정을 만드세요",
+        showSocialLogin: true,
+        showForgotPassword: true,
+      };
+    } else if (
+      component.name === "PostEditor" ||
+      component.displayName.includes("Editor")
+    ) {
+      return {
+        ...baseProps,
+        title: `${pageName} - 새 게시물 작성`,
+        description: "새로운 게시물을 작성하고 공유하세요",
+        allowImages: true,
+        allowVideos: true,
+        maxLength: 1000,
+      };
+    } else if (
+      component.name === "PostItem" ||
+      component.displayName.includes("Post")
+    ) {
+      return {
+        ...baseProps,
+        title: `${pageName} - 게시물 상세`,
+        description: "게시물의 상세 내용과 댓글을 확인하세요",
+        showComments: true,
+        showLikes: true,
+        showShare: true,
+      };
+    }
+
+    // 기본 fallback
+    return {
+      ...baseProps,
+      title: `Welcome to ${pageName}`,
+      description: `${pageName} 페이지입니다.`,
+    };
   }
 }

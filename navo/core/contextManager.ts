@@ -376,12 +376,18 @@ export class ContextManager {
         ...updates,
       };
 
+      // JSONB 필드를 안전하게 업데이트하기 위해 jsonb_set 사용
       await db
         .update(userSessions)
         .set({
-          sessionData: updatedSessionData,
-          lastActivity: new Date(),
-          updatedAt: new Date(),
+          sessionData: sql`jsonb_set(
+            COALESCE(session_data, '{}'::jsonb),
+            '{}',
+            ${JSON.stringify(updatedSessionData)}::jsonb,
+            true
+          )`,
+          lastActivity: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
         .where(
           and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId))
@@ -429,8 +435,8 @@ export class ContextManager {
       await db
         .update(userSessions)
         .set({
-          lastActivity: new Date(),
-          updatedAt: new Date(),
+          lastActivity: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
         .where(
           and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId))
@@ -503,7 +509,7 @@ export class ContextManager {
             summary,
             lastMsgId,
             tokenCount: tokenCount || 0,
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(chatSessionSummaries.sessionId, sessionId));
       } else {
@@ -611,7 +617,7 @@ export class ContextManager {
         lastAction: {
           type: actionType,
           target,
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           result,
         },
       });
@@ -630,7 +636,7 @@ export class ContextManager {
         .update(userSessions)
         .set({
           status: "archived",
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         })
         .where(
           and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId))
@@ -657,7 +663,7 @@ export class ContextManager {
         .update(userSessions)
         .set({
           status: "archived",
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         })
         .where(
           and(
