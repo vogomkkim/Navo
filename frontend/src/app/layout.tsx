@@ -6,6 +6,7 @@ import { EventTrackerProvider } from './context/EventTrackerContext';
 import { ComponentDefinitionProvider } from './context/ComponentDefinitionContext';
 import { LayoutProvider } from './context/LayoutContext';
 import { QueryClientWrapper } from '@/components/QueryClientWrapper';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'Navo - AI-Powered Website Builder',
@@ -24,7 +25,9 @@ export default function RootLayout({
           <AuthProvider>
             <EventTrackerProvider>
               <ComponentDefinitionProvider>
-                <LayoutProvider>{children}</LayoutProvider>
+                <ThemeProvider>
+                  <LayoutProvider>{children}</LayoutProvider>
+                </ThemeProvider>
               </ComponentDefinitionProvider>
             </EventTrackerProvider>
           </AuthProvider>
