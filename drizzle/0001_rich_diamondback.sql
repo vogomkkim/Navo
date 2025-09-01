@@ -1,2 +1,0 @@
-ALTER TABLE "publish_deploys" ADD COLUMN "vercel_deployment_id" varchar(255);--> statement-breakpoint
-ALTER TABLE "publish_deploys" ADD CONSTRAINT "publish_deploys_vercel_deployment_id_unique" UNIQUE("vercel_deployment_id");

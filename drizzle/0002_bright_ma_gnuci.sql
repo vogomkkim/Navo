@@ -1,1 +1,0 @@
-CREATE INDEX "idx_projects_owner" ON "projects" USING btree ("owner_id");
