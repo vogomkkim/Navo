@@ -194,19 +194,17 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
 
       for (const compData of projectArchitecture.components) {
         const newComponent = {
-          id: uuidv4(),
           projectId,
           name: compData.name,
-          display_name: compData.display_name || compData.name,
-          type: compData.type || "ui",
+          displayName: compData.display_name || compData.name,
           description: compData.description || `${compData.name} 컴포넌트`,
-          props_schema: compData.props_schema || [],
-          render_template:
+          category: compData.type || "ui",
+          propsSchema: compData.props_schema || {},
+          renderTemplate:
             compData.render_template ||
             `<div class="${compData.name.toLowerCase()}">{content}</div>`,
-          css_styles: compData.css_styles || "",
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          cssStyles: compData.css_styles || "",
+          isActive: true,
         };
 
         const result = await db
@@ -259,13 +257,13 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
       const defaultComponents = [
         {
           name: "Header",
-          componentDefinitionId: null, // 나중에 연결
+          componentDefinitionId: "header-def-id", // 임시 ID
           props: { title: "Welcome to " + projectArchitecture.name },
           order: 1,
         },
         {
           name: "Hero",
-          componentDefinitionId: null,
+          componentDefinitionId: "hero-def-id",
           props: {
             title: "Get Started",
             subtitle: "AI가 생성한 프로젝트입니다",
@@ -275,7 +273,7 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
         },
         {
           name: "Feature",
-          componentDefinitionId: null,
+          componentDefinitionId: "feature-def-id",
           props: {
             title: "주요 기능",
             description: "AI가 설계한 핵심 기능들",
@@ -288,13 +286,10 @@ export class ProjectDatabaseManagerAgent extends BaseAgent {
 
       for (const compData of defaultComponents) {
         const newComponent = {
-          id: uuidv4(),
           pageId,
           componentDefinitionId: compData.componentDefinitionId,
           props: compData.props,
           order: compData.order,
-          createdAt: new Date(),
-          updatedAt: new Date(),
         };
 
         const result = await db

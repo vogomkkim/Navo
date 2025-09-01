@@ -113,7 +113,7 @@ export const components = pgTable(
       .notNull()
       .references(() => componentDefinitions.id, { onDelete: "cascade" }),
     props: jsonb("props").notNull().default("{}"),
-    order: integer("order").notNull().default(0),
+    order: integer("order_index").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
