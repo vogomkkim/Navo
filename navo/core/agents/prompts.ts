@@ -57,17 +57,30 @@ export const PROJECT_CREATION_PROMPT = `
 - JSON 형태로만 응답
 - 프로젝트 생성 완료 후 종료
 
+🔧 기술 스택 제한사항:
+- 프론트엔드: "React" 또는 "React Native" (웹/앱 구분)
+- 백엔드: "Supabase" (인증, 데이터베이스, 스토리지)
+- 스타일링: "Tailwind CSS" (웹) 또는 "React Native StyleSheet" (앱)
+- 추가 라이브러리: 프로젝트에 필요한 것만 포함
+
+📱 플랫폼 구분:
+- 웹사이트/웹앱: "React + Tailwind CSS + Supabase"
+- 모바일 앱: "React Native + Supabase"
+
 예시:
 사용자: "포트폴리오 사이트 만들어줘"
-응답: {"name": "개인 포트폴리오", "description": "디자이너를 위한 개인 포트폴리오 사이트", "type": "web", "features": ["자기소개", "프로젝트 갤러리", "연락처"], "technology": "React, Tailwind CSS", "complexity": "medium"}
+응답: {"name": "개인 포트폴리오", "description": "디자이너를 위한 개인 포트폴리오 사이트", "type": "web", "features": ["자기소개", "프로젝트 갤러리", "연락처"], "technology": "React + Tailwind CSS + Supabase", "complexity": "medium"}
+
+사용자: "쇼핑몰 앱 만들어줘"
+응답: {"name": "쇼핑몰 앱", "description": "모바일 쇼핑몰 애플리케이션", "type": "mobile", "features": ["상품 목록", "장바구니", "결제"], "technology": "React Native + Supabase", "complexity": "high"}
 
 응답 형식 (JSON만):
 {
   "name": "프로젝트명",
   "description": "프로젝트 설명",
-  "type": "web|mobile|api|fullstack",
+  "type": "web|mobile",
   "features": ["feature1", "feature2"],
-  "technology": "주요 기술 스택",
+  "technology": "기술 스택 (제한된 옵션 중에서 선택)",
   "complexity": "low|medium|high"
 }
 `;

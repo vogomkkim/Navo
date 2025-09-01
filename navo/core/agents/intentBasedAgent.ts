@@ -30,9 +30,14 @@ export class IntentBasedAgentSystem {
      * 기본 에이전트들 등록
      */
     private registerDefaultAgents(): void {
+        console.log('🔧 에이전트 등록 시작...');
+
         // 에이전트들을 동적으로 import하여 등록
         import('./specializedAgents.js').then(({
             ProjectCreationAgent,
+            ProjectSetupAgent,
+            DevelopmentSetupAgent,
+            DeploymentSetupAgent,
             ComponentModificationAgent,
             PageModificationAgent,
             CodeReviewAgent,
@@ -41,7 +46,12 @@ export class IntentBasedAgentSystem {
             GeneralConversationAgent,
             QuestionAnswerAgent
         }) => {
+            console.log('📦 에이전트 모듈 로드 완료');
+
             this.registerAgent(new ProjectCreationAgent(this.model));
+            this.registerAgent(new ProjectSetupAgent(this.model));
+            this.registerAgent(new DevelopmentSetupAgent(this.model));
+            this.registerAgent(new DeploymentSetupAgent(this.model));
             this.registerAgent(new ComponentModificationAgent(this.model));
             this.registerAgent(new PageModificationAgent(this.model));
             this.registerAgent(new CodeReviewAgent(this.model));
@@ -49,6 +59,9 @@ export class IntentBasedAgentSystem {
             this.registerAgent(new FeatureRequestAgent(this.model));
             this.registerAgent(new GeneralConversationAgent(this.model));
             this.registerAgent(new QuestionAnswerAgent(this.model));
+
+            console.log('✅ 모든 에이전트 등록 완료');
+            console.log('📋 등록된 에이전트 목록:', Array.from(this.agents.keys()));
         });
     }
 
@@ -56,6 +69,7 @@ export class IntentBasedAgentSystem {
      * 에이전트 등록
      */
     registerAgent(agent: Agent): void {
+        console.log('➕ 에이전트 등록:', agent.name, '-', agent.description);
         this.agents.set(agent.name, agent);
     }
 
@@ -104,7 +118,16 @@ export class IntentBasedAgentSystem {
                 messageLength: result.message.length
             });
 
-            // 4. 메타데이터 추가
+            // 4. 체인 에이전트 실행 (프로젝트 생성 후 자동 실행)
+            if (result.success && result.type === 'project_creation') {
+                console.log('🔄 체인 에이전트 실행 시작...');
+
+                const chainResults = await this.executeChainAgents(userContext, sessionId);
+                result.data = { ...result.data, chainResults };
+                result.message += '\n\n' + chainResults.map(r => r.message).join('\n\n');
+            }
+
+            // 5. 메타데이터 추가
             result.metadata = {
                 executionTime: Date.now() - startTime,
                 tokens: 0, // TODO: 실제 토큰 수 계산
@@ -142,8 +165,6 @@ export class IntentBasedAgentSystem {
         const result = await this.model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
         const response = result.response.text();
 
-        console.log('📝 의도 분석 AI 응답:', response);
-
         // 응답에서 JSON만 추출
         let jsonResponse = response.trim();
 
@@ -165,8 +186,6 @@ export class IntentBasedAgentSystem {
             jsonResponse = jsonResponse.slice(start, end + 1);
         }
 
-        console.log('🔧 의도 분석 추출된 JSON:', jsonResponse);
-
         try {
             const parsed = JSON.parse(jsonResponse);
             console.log('✅ 의도 분석 JSON 파싱 성공:', parsed);
@@ -181,7 +200,7 @@ export class IntentBasedAgentSystem {
             };
         } catch (error) {
             console.log('❌ 의도 분석 JSON 파싱 실패:', error);
-            console.log('📝 파싱 실패한 응답:', response);
+            console.log('📝 AI 원본 응답:', response);
             return {
                 type: 'general',
                 confidence: 0.5,
@@ -193,14 +212,72 @@ export class IntentBasedAgentSystem {
     }
 
     /**
+     * 체인 에이전트 실행 (프로젝트 생성 후 자동 실행)
+     */
+    private async executeChainAgents(userContext: UserContext, sessionId: string): Promise<AgentResult[]> {
+        const chainAgents = [
+            { intent: 'project_setup', name: 'ProjectSetupAgent' },
+            { intent: 'development_setup', name: 'DevelopmentSetupAgent' },
+            { intent: 'deployment_setup', name: 'DeploymentSetupAgent' }
+        ];
+
+        const results: AgentResult[] = [];
+
+        for (const chainAgent of chainAgents) {
+            try {
+                console.log(`🔄 체인 에이전트 실행: ${chainAgent.name}`);
+
+                const agent = this.agents.get(chainAgent.name);
+                if (agent) {
+                    const intentAnalysis: IntentAnalysis = {
+                        type: chainAgent.intent,
+                        confidence: 1.0,
+                        description: `체인 실행: ${chainAgent.name}`,
+                        isVague: false,
+                        targets: [],
+                        actions: [],
+                        status: 'auto_execute'
+                    };
+
+                    const result = await agent.execute(
+                        `체인 실행: ${chainAgent.name}`,
+                        intentAnalysis,
+                        userContext,
+                        sessionId
+                    );
+
+                    results.push(result);
+                    console.log(`✅ 체인 에이전트 완료: ${chainAgent.name}`);
+                }
+            } catch (error) {
+                console.error(`❌ 체인 에이전트 실패: ${chainAgent.name}`, error);
+                results.push({
+                    success: false,
+                    message: `${chainAgent.name} 실행 중 오류가 발생했습니다.`,
+                    type: 'text'
+                });
+            }
+        }
+
+        return results;
+    }
+
+    /**
      * 적절한 에이전트 선택
      */
     private selectAgent(intentAnalysis: IntentAnalysis): Agent | null {
+        console.log('🔍 에이전트 선택 시작 - 의도:', intentAnalysis.type);
+        // console.log('📋 사용 가능한 에이전트들:', Array.from(this.agents.keys()));
+
         for (const agent of this.agents.values()) {
+            console.log(`🔍 ${agent.name} 체크 - canHandle(${intentAnalysis.type}):`, agent.canHandle(intentAnalysis.type));
             if (agent.canHandle(intentAnalysis.type)) {
+                console.log('✅ 선택된 에이전트:', agent.name);
                 return agent;
             }
         }
+
+        console.log('❌ 적절한 에이전트를 찾을 수 없음');
         return null;
     }
 }

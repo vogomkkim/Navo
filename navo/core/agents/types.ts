@@ -25,7 +25,7 @@ export interface AgentResult {
     success: boolean;
     message: string;
     data?: any;
-    type: 'text' | 'project' | 'project_creation' | 'component' | 'page' | 'code';
+    type: 'text' | 'project' | 'project_creation' | 'project_setup' | 'development_setup' | 'deployment_setup' | 'component' | 'page' | 'code';
     metadata?: {
         executionTime: number;
         tokens: number;
@@ -38,6 +38,9 @@ export interface AgentResult {
 // -----------------------------
 export type AgentType =
     | 'project_creation'
+    | 'project_setup'
+    | 'development_setup'
+    | 'deployment_setup'
     | 'component_modification'
     | 'page_modification'
     | 'code_review'

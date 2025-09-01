@@ -45,23 +45,43 @@ export function useInputHistory(): UseInputHistoryReturn {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
 
-      if (historyIndex < messageHistory.length - 1) {
-        const newIndex = historyIndex + 1;
+      // 히스토리가 비어있으면 아무것도 하지 않음
+      if (messageHistory.length === 0) {
+        return;
+      }
+
+      // 현재 인덱스가 -1이면 가장 최근 메시지부터 시작
+      if (historyIndex === -1) {
+        setHistoryIndex(messageHistory.length - 1);
+        setInputValue(messageHistory[messageHistory.length - 1]); // 가장 최근 메시지 (마지막 인덱스)
+        return;
+      }
+
+      // 이전 메시지로 이동 (더 오래된 메시지)
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
         setHistoryIndex(newIndex);
-        setInputValue(messageHistory[messageHistory.length - 1 - newIndex]);
+        setInputValue(messageHistory[newIndex]);
       }
     }
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
 
-      if (historyIndex > 0) {
-        const newIndex = historyIndex - 1;
+      // 히스토리가 비어있으면 아무것도 하지 않음
+      if (messageHistory.length === 0) {
+        return;
+      }
+
+      // 현재 인덱스가 마지막보다 작으면 다음 메시지로 이동 (더 최근 메시지)
+      if (historyIndex < messageHistory.length - 1) {
+        const newIndex = historyIndex + 1;
         setHistoryIndex(newIndex);
-        setInputValue(messageHistory[messageHistory.length - 1 - newIndex]);
-      } else if (historyIndex === 0) {
+        setInputValue(messageHistory[newIndex]);
+      } else if (historyIndex === messageHistory.length - 1) {
+        // 가장 최근 메시지에서 ↓ 누르면 빈 값으로 초기화
         setHistoryIndex(-1);
-        setInputValue(''); // 빈 값으로 초기화
+        setInputValue('');
       } else if (historyIndex === -1) {
         // 이미 빈 상태에서 ↓ 누르면 그대로 빈 상태 유지
         setInputValue('');
@@ -78,12 +98,12 @@ export function useInputHistory(): UseInputHistoryReturn {
     // 중복 메시지 제거 (최신 메시지가 이미 히스토리에 있으면 제거)
     const filteredHistory = messageHistory.filter((item) => item !== message);
 
-    // 새 메시지를 맨 앞에 추가
-    const newHistory = [message, ...filteredHistory];
+    // 새 메시지를 맨 뒤에 추가 (시간순 정렬)
+    const newHistory = [...filteredHistory, message];
 
     // 최대 10개까지만 유지 (가장 오래된 것부터 삭제)
     if (newHistory.length > MAX_HISTORY_SIZE) {
-      newHistory.splice(MAX_HISTORY_SIZE);
+      newHistory.splice(0, newHistory.length - MAX_HISTORY_SIZE);
     }
 
     setMessageHistory(newHistory);
