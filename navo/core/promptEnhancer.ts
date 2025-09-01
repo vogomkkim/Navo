@@ -249,7 +249,21 @@ JSON 형태로 응답해주세요:
     try {
       const result = await this.model.generateContent(prompt);
       const response = result.response.text();
-      const analysis = JSON.parse(response);
+      
+      // 마크다운 코드 블록 제거
+      let jsonText = response.trim();
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.substring(7);
+      }
+      if (jsonText.startsWith('```')) {
+        jsonText = jsonText.substring(3);
+      }
+      if (jsonText.endsWith('```')) {
+        jsonText = jsonText.substring(0, jsonText.length - 3);
+      }
+      jsonText = jsonText.trim();
+      
+      const analysis = JSON.parse(jsonText);
 
       return {
         type: analysis.type,
@@ -309,7 +323,21 @@ JSON 형태로 응답해주세요:
     try {
       const result = await this.model.generateContent(prompt);
       const response = result.response.text();
-      const analysis = JSON.parse(response);
+      
+      // 마크다운 코드 블록 제거
+      let jsonText = response.trim();
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.substring(7);
+      }
+      if (jsonText.startsWith('```')) {
+        jsonText = jsonText.substring(3);
+      }
+      if (jsonText.endsWith('```')) {
+        jsonText = jsonText.substring(0, jsonText.length - 3);
+      }
+      jsonText = jsonText.trim();
+      
+      const analysis = JSON.parse(jsonText);
 
       return {
         type: analysis.type,
@@ -370,7 +398,21 @@ JSON 형태로 응답해주세요:
     try {
       const result = await this.model.generateContent(prompt);
       const response = result.response.text();
-      const analysis = JSON.parse(response);
+      
+      // 마크다운 코드 블록 제거
+      let jsonText = response.trim();
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.substring(7);
+      }
+      if (jsonText.startsWith('```')) {
+        jsonText = jsonText.substring(3);
+      }
+      if (jsonText.endsWith('```')) {
+        jsonText = jsonText.substring(0, jsonText.length - 3);
+      }
+      jsonText = jsonText.trim();
+      
+      const analysis = JSON.parse(jsonText);
 
       return {
         type: analysis.type,
