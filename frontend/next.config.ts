@@ -1,5 +1,4 @@
 import type { NextConfig } from 'next';
-import path from 'path';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -39,8 +38,6 @@ const nextConfig: NextConfig = {
     // reactCompiler는 안정성을 위해 주석 처리
     // reactCompiler: true,
   },
-
-  outputFileTracingRoot: path.join(__dirname, '..'),
 
   async rewrites() {
     const origin = process.env.NEXT_PUBLIC_API_ORIGIN;
