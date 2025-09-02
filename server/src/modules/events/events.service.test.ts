@@ -3,7 +3,7 @@ import { EventsService } from './events.service';
 import { EventsRepositoryImpl } from './events.repository';
 
 // Mock dependencies
-jest.mock('./events.repository.js');
+jest.mock('./events.repository');
 
 describe('EventsService', () => {
   let eventsService: EventsService;

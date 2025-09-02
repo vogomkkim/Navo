@@ -4,9 +4,9 @@ import { MasterDeveloperAgent } from './masterDeveloperAgent';
 import { VirtualPreviewGeneratorAgent } from './virtualPreviewGeneratorAgent';
 
 // Mock dependencies
-jest.mock('./agents.repository.js');
-jest.mock('./masterDeveloperAgent.js');
-jest.mock('./virtualPreviewGeneratorAgent.js');
+jest.mock('./agents.repository');
+jest.mock('./masterDeveloperAgent');
+jest.mock('./virtualPreviewGeneratorAgent');
 
 describe('AgentsService', () => {
   let agentsService: AgentsService;

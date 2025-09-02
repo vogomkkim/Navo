@@ -6,8 +6,15 @@ const config: Config.InitialOptions = {
   roots: ['<rootDir>'],
   testMatch: ['**/?(*.)+(spec|test).ts'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '^@/drizzle/(.*)$': '<rootDir>/drizzle/$1',
+    '^@/drizzle/(.*)$': '<rootDir>/drizzle/$1.ts',
+    '^@/drizzle/schema$': '<rootDir>/drizzle/schema.ts',
+    '^@/schema$': '<rootDir>/drizzle/schema.ts',
+    '^@/db/db.instance$': '<rootDir>/src/modules/db/__mocks__/db.instance.ts',
+    '^@/db$': '<rootDir>/src/modules/db/index.ts',
+    '^@/db/(.*)$': '<rootDir>/src/modules/db/$1',
+    '^@/modules/(.*)$': '<rootDir>/src/modules/$1',
+    '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
+    '^@/core/(.*)$': '<rootDir>/src/core/$1',
   },
   globals: {
     'ts-jest': {

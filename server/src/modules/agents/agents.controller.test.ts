@@ -4,7 +4,7 @@ import { agentsController } from './agents.controller';
 import { AgentsService } from './agents.service';
 
 // Mock dependencies
-jest.mock('./agents.service.js');
+jest.mock('./agents.service');
 
 describe('AgentsController', () => {
   let mockApp: any;
@@ -64,7 +64,7 @@ describe('AgentsController', () => {
 
       // Act
       agentsController(mockApp);
-      const routeHandler = mockApp.post.mock.calls[0][1];
+      const routeHandler = mockApp.post.mock.calls[0][2];
       await routeHandler(mockRequest, mockReply);
 
       // Assert
@@ -121,7 +121,7 @@ describe('AgentsController', () => {
 
       // Act
       agentsController(mockApp);
-      const routeHandler = mockApp.post.mock.calls[0][1];
+      const routeHandler = mockApp.post.mock.calls[0][2];
       await routeHandler(mockRequest, mockReply);
 
       // Assert
@@ -154,7 +154,7 @@ describe('AgentsController', () => {
 
       // Act
       agentsController(mockApp);
-      const routeHandler = mockApp.get.mock.calls[0][1];
+      const routeHandler = mockApp.get.mock.calls[0][2];
       await routeHandler(mockRequest, mockReply);
 
       // Assert
@@ -193,7 +193,7 @@ describe('AgentsController', () => {
 
       // Act
       agentsController(mockApp);
-      const routeHandler = mockApp.get.mock.calls[0][1];
+      const routeHandler = mockApp.get.mock.calls[0][2];
       await routeHandler(mockRequest, mockReply);
 
       // Assert
@@ -228,7 +228,7 @@ describe('AgentsController', () => {
 
       // Act
       agentsController(mockApp);
-      const routeHandler = mockApp.get.mock.calls[1][1];
+      const routeHandler = mockApp.get.mock.calls[1][2];
       await routeHandler(mockRequest, mockReply);
 
       // Assert
@@ -262,7 +262,7 @@ describe('AgentsController', () => {
 
       // Act
       agentsController(mockApp);
-      const routeHandler = mockApp.get.mock.calls[1][1];
+      const routeHandler = mockApp.get.mock.calls[1][2];
       await routeHandler(mockRequest, mockReply);
 
       // Assert
@@ -292,7 +292,7 @@ describe('AgentsController', () => {
 
       // Act
       agentsController(mockApp);
-      const routeHandler = mockApp.get.mock.calls[1][1];
+      const routeHandler = mockApp.get.mock.calls[1][2];
       await routeHandler(mockRequest, mockReply);
 
       // Assert

@@ -169,8 +169,8 @@ export class ProjectArchitectAgent extends BaseAgent {
     const text = result.response.text();
 
     try {
-      const refinedJson = await refineJsonResponse(text);
-      return JSON.parse(refinedJson);
+      const refinedJson = await refineJsonResponse<string>(text);
+      return JSON.parse(refinedJson as string);
     } catch (error) {
       this.logger.warn('⚠️ 1단계 실패, 기본값 사용', { error });
       return {
@@ -293,8 +293,8 @@ export class ProjectArchitectAgent extends BaseAgent {
     const text = result.response.text();
 
     try {
-      const refinedJson = await refineJsonResponse(text);
-      return JSON.parse(refinedJson);
+      const refinedJson = await refineJsonResponse<string>(text);
+      return JSON.parse(refinedJson as string);
     } catch (error) {
       this.logger.warn('⚠️ 2단계 실패, 기본 페이지 사용', { error });
       return {
@@ -347,8 +347,8 @@ export class ProjectArchitectAgent extends BaseAgent {
     const text = result.response.text();
 
     try {
-      const refinedJson = await refineJsonResponse(text);
-      return JSON.parse(refinedJson);
+      const refinedJson = await refineJsonResponse<string>(text);
+      return JSON.parse(refinedJson as string);
     } catch (error) {
       this.logger.warn('⚠️ 3단계 실패, 기본 컴포넌트 사용', { error });
       return {
