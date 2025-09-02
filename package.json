@@ -1,64 +1,33 @@
 {
-  "name": "navo",
+  "name": "navo-monorepo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "server",
+    "frontend",
+    "packages/shared"
+  ],
   "scripts": {
-    "prebuild": "npm run db:generate",
-    "build": "tsc -p config/tsconfig.json",
-    "start": "node dist/navo/start.js",
-    "dev": "nodemon",
-    "dev:build": "npm run build && npm start",
+    "dev": "npm run dev -w @navo/server",
+    "build": "npm run build -w @navo/server",
+    "start": "npm run start -w @navo/server",
     "lint": "eslint . --ext .ts --config config/eslint.config.js",
-    "format": "prettier --write . --config config/.prettierrc",
-    "db:generate": "drizzle-kit generate --config config/drizzle.config.ts",
-    "db:push": "drizzle-kit push --config config/drizzle.config.ts",
-    "db:pull": "drizzle-kit introspect --config config/drizzle.config.ts"
+    "format": "prettier --write . --config config/.prettierrc"
   },
   "engines": {
     "node": "22.x"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/jsonwebtoken": "^9.0.6",
-    "@types/node": "^24.2.1",
-    "@types/pg": "^8.15.5",
     "@typescript-eslint/eslint-plugin": "^8.40.0",
     "@typescript-eslint/parser": "^8.40.0",
-    "copyfiles": "^2.4.1",
-    "cross-env": "^10.0.0",
-    "dotenv-cli": "^10.0.0",
-    "drizzle-kit": "^0.31.4",
     "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.4",
-    "nodemon": "^3.1.0",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.6.2",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.40.0"
-  },
-  "dependencies": {
-    "@dotenvx/dotenvx": "^1.49.0",
-    "@fastify/cors": "^11.1.0",
-    "@fastify/static": "^8.2.0",
-    "@google/generative-ai": "^0.15.0",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@types/uuid": "^10.0.0",
-    "@vercel/speed-insights": "^1.2.0",
-    "cors": "^2.8.5",
-    "dompurify": "^3.0.6",
-    "dotenv": "^17.2.1",
-    "drizzle-orm": "^0.44.5",
-    "fastify": "^5.5.0",
-    "jsonwebtoken": "^9.0.2",
-    "pg": "^8.16.3",
-    "postgres": "3.4.5",
-    "uuid": "^11.1.0"
-  },
-  "drizzle": {
-    "config": "config/drizzle.config.ts"
   }
 }
