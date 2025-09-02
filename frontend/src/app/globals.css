@@ -18,6 +18,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens */
+@import './tokens.css';
+
 /* 커스텀 애니메이션 */
 @import './animations/keyframes.css';
 

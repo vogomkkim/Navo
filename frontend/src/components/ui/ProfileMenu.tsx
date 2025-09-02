@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { AvatarIcon, ExitIcon, GearIcon } from '@radix-ui/react-icons';
+import { AvatarIcon, ExitIcon, GearIcon, SunIcon, MoonIcon } from '@radix-ui/react-icons';
+import { ThemeContext } from '@/components/ThemeProvider';
 
 export function ProfileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const { logout } = useAuth();
+  const { theme, toggle } = React.useContext(ThemeContext);
 
   const handleToggle = () => {
     setIsOpen((prev) => !prev);
@@ -57,6 +59,21 @@ export function ProfileMenu() {
           sideOffset={5}
           ref={menuRef}
         >
+          <DropdownMenu.Item
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-50 cursor-pointer outline-none"
+            onClick={() => {
+              toggle();
+              setIsOpen(false);
+            }}
+          >
+            {theme === 'light' ? (
+              <MoonIcon className="h-4 w-4" />
+            ) : (
+              <SunIcon className="h-4 w-4" />
+            )}
+            테마 전환
+          </DropdownMenu.Item>
+
           <DropdownMenu.Item className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-50 cursor-pointer outline-none">
             <GearIcon className="h-4 w-4" />
             설정
