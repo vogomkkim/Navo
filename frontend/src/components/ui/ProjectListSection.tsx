@@ -97,13 +97,13 @@ export function ProjectListSection() {
                     />
                     <button
                       onClick={() => submitEdit(project.id)}
-                      disabled={renameMutation.isLoading}
+                      disabled={renameMutation.isPending}
                     >
                       저장
                     </button>
                     <button
                       onClick={cancelEdit}
-                      disabled={renameMutation.isLoading}
+                      disabled={renameMutation.isPending}
                     >
                       취소
                     </button>
