@@ -20,7 +20,6 @@ import {
   useDeleteProject,
 } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
-import { useLayoutContext } from "@/app/context/LayoutContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,9 +30,10 @@ import {
   CheckIcon,
 } from "@radix-ui/react-icons";
 
+type ProjectStructure = { pages?: unknown[]; componentDefinitions?: unknown[] };
+
 export default function HomeContent() {
   const { isAuthenticated, token } = useAuth();
-  const { setCurrentLayout } = useLayoutContext();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -175,7 +175,7 @@ export default function HomeContent() {
     if (project) {
       try {
         // 프로젝트의 실제 페이지와 컴포넌트 데이터 확인
-        const projectStructure = await fetchApi(
+        const projectStructure = await fetchApi<ProjectStructure>(
           `/api/ai/project-structure/${projectId}`,
           {
             method: "GET",
@@ -189,11 +189,11 @@ export default function HomeContent() {
         // 1. 페이지가 없거나
         // 2. 컴포넌트 정의가 없는 경우
         const hasPages =
-          Array.isArray((projectStructure as any)?.pages) &&
-          (projectStructure as any).pages.length > 0;
+          Array.isArray(projectStructure.pages) &&
+          projectStructure.pages.length > 0;
         const hasComponentDefinitions =
-          Array.isArray((projectStructure as any)?.componentDefinitions) &&
-          (projectStructure as any).componentDefinitions.length > 0;
+          Array.isArray(projectStructure.componentDefinitions) &&
+          projectStructure.componentDefinitions.length > 0;
 
         const isIncomplete = !hasPages || !hasComponentDefinitions;
 
@@ -202,9 +202,9 @@ export default function HomeContent() {
             projectName: project.name,
             hasPages,
             hasComponentDefinitions,
-            pagesCount: (projectStructure as any)?.pages?.length || 0,
+            pagesCount: projectStructure.pages?.length ?? 0,
             componentDefinitionsCount:
-              (projectStructure as any)?.componentDefinitions?.length || 0,
+              projectStructure.componentDefinitions?.length ?? 0,
           });
 
           setIncompleteProject(project);

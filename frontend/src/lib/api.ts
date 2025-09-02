@@ -7,8 +7,7 @@ import {
 } from '@tanstack/react-query';
 import { useAuth } from '@/app/context/AuthContext'; // Assuming @/app/context/AuthContext is the correct alias
 
-// API는 기본적으로 상대 경로 사용(Next.js rewrites로 백엔드 프록시) → CORS 회피
-const API_BASE_URL = '';
+// 상대 경로 사용(Next.js rewrites로 백엔드 프록시) → CORS 회피
 
 interface FetchApiOptions extends RequestInit {
   token?: string | null;
@@ -32,7 +31,6 @@ async function fetchApi<T>(
 
   // API 호출 로그 (개발 환경에서만)
   if (process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line no-console
     console.log('API 호출 시작:', {
       fullUrl,
       method: restOptions.method || 'GET',
@@ -49,7 +47,6 @@ async function fetchApi<T>(
     });
 
     if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
       console.log('API 응답 받음:', {
         status: response.status,
         statusText: response.statusText,
@@ -77,7 +74,6 @@ async function fetchApi<T>(
     return responseData as T;
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
       console.error('API 호출 중 에러 발생:', {
         error: error instanceof Error ? error.message : String(error),
         errorType: error instanceof Error ? error.constructor.name : typeof error,
@@ -90,11 +86,6 @@ async function fetchApi<T>(
 }
 
 // --- React Query Hooks for API Calls ---
-
-// Layout interface for components
-interface Layout {
-  components: any[]; // Define a more specific type if available
-}
 
 // 멀티 에이전트 시스템 인터페이스
 interface MultiAgentRequest {
@@ -112,7 +103,7 @@ interface AgentResponse {
   message: string;
   agentName: string;
   status: 'thinking' | 'working' | 'completed' | 'error';
-  data?: any;
+  data?: unknown;
   executionTime?: number;
   nextSteps?: string[];
 }
@@ -131,8 +122,9 @@ interface GenerateDummySuggestionResponse {
 }
 
 // useSuggestions
+type Suggestion = Record<string, unknown>;
 interface SuggestionsResponse {
-  suggestions: any[]; // TODO: Define a more specific type for suggestions
+  suggestions: Suggestion[];
 }
 
 // useGenerateProject
@@ -146,7 +138,7 @@ interface GenerateProjectResponse {
   ok: boolean;
   message: string;
   projectId: string;
-  generatedStructure: any; // TODO: Define a more specific type
+  generatedStructure: unknown;
 }
 
 export function useGenerateProject(
@@ -249,7 +241,7 @@ export function useRenameProject(
       const previous = queryClient.getQueryData<ProjectListResponse>(['projects']);
 
       queryClient.setQueryData<ProjectListResponse>(['projects'], (old) => {
-        if (!old) return old as any;
+        if (!old) return { projects: [] };
         return {
           projects: old.projects.map((p) =>
             p.id === projectId ? { ...p, name } : p
@@ -259,16 +251,14 @@ export function useRenameProject(
 
       return { previous } as { previous: ProjectListResponse | undefined };
     },
-    onError: (err, _vars, context) => {
+    onError: (_err, _vars, context) => {
       const ctx = context as { previous: ProjectListResponse | undefined } | undefined;
       if (ctx?.previous) {
         queryClient.setQueryData(['projects'], ctx.previous);
       }
-      options?.onError?.(err, _vars, ctx as any);
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
-      options?.onSettled?.(undefined as any, undefined as any, undefined as any, undefined as any);
     },
     ...options,
   });
@@ -276,7 +266,7 @@ export function useRenameProject(
 
 // useDeleteProject - 프로젝트 삭제 훅
 interface DeleteProjectPayload { projectId: string }
-interface DeleteProjectResponse { }
+type DeleteProjectResponse = unknown;
 
 export function useDeleteProject(
   options?: UseMutationOptions<DeleteProjectResponse, Error, DeleteProjectPayload>
@@ -303,21 +293,19 @@ export function useDeleteProject(
       await queryClient.cancelQueries({ queryKey: ['projects'] });
       const previous = queryClient.getQueryData<ProjectListResponse>(['projects']);
       queryClient.setQueryData<ProjectListResponse>(['projects'], (old) => {
-        if (!old) return old as any;
+        if (!old) return { projects: [] };
         return { projects: old.projects.filter((p) => p.id !== projectId) };
       });
       return { previous } as { previous: ProjectListResponse | undefined };
     },
-    onError: (err, _vars, context) => {
+    onError: (_err, _vars, context) => {
       const ctx = context as { previous: ProjectListResponse | undefined } | undefined;
       if (ctx?.previous) {
         queryClient.setQueryData(['projects'], ctx.previous);
       }
-      options?.onError?.(err, _vars, ctx as any);
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
-      options?.onSettled?.(undefined as any, undefined as any, undefined as any, undefined as any);
     },
     ...options,
   });
@@ -366,7 +354,7 @@ interface GenerateComponentPayload {
 
 interface GenerateComponentResponse {
   ok: boolean;
-  component: any; // TODO: Define a more specific type for component
+  component: Record<string, unknown>;
 }
 
 export function useGenerateComponent(
@@ -583,7 +571,7 @@ interface PageLayoutResponse {
     components: Array<{
       id: string;
       type: string;
-      props: Record<string, any>;
+      props: Record<string, unknown>;
     }>;
   };
 }
@@ -637,7 +625,7 @@ interface SimpleChatResponse {
   success: boolean;
   message: string;
   type: string;
-  data?: any;
+  data?: unknown;
   metadata?: {
     executionTime: number;
     model: string;
