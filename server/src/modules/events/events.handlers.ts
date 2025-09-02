@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { db, events } from '@/modules/db';
+import { db } from '../db/db.instance.js';
+import { events } from '../db/schema.js';
 import logger from '../../lib/logger';
 
 async function storeEvents(eventsToStore: any[], userId: string) {

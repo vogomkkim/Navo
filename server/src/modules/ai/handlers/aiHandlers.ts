@@ -1,30 +1,30 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { db } from '../db/db.js';
+import { db } from '../../db/db.instance.js';
 import {
   events,
   projects,
   componentDefinitions,
   pages,
   components,
-} from '../db/schema.js';
+} from '../../db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 import {
   storePages,
   storeComponentDefinitions,
   storePageComponents,
   assignLayoutsForPages,
-} from '../services/projects/persist.js';
-import { MasterDeveloperAgent } from '../agents/masterDeveloperAgent.js';
-import { ProjectRequest } from '../core/masterDeveloper.js';
-import { contextManager, UserContext } from '../core/contextManager.js';
-import { intentAnalyzer } from '../core/intentAnalyzer.js';
-import { EnhancedPrompt } from '../core/types/intent.js';
-import { actionRouter, ActionResult } from '../core/actionRouter.js';
-import { parseJsonFromMarkdown } from '../utils/jsonExtractor.js';
+} from '../../services/projects/persist.js';
+import { generateProjectPlan } from '../agents/agents.service.js';
+import { ProjectRequest } from '../../core/masterDeveloper.js';
+import { contextManager, UserContext } from '../../core/contextManager.js';
+import { intentAnalyzer } from '../../core/intentAnalyzer.js';
+import { EnhancedPrompt } from '../../core/types/intent.js';
+import { actionRouter, ActionResult } from '../../core/actionRouter.js';
+import { safeJsonParse } from '../utils/jsonRefiner.js';
 
-import { generateProjectContent } from '../services/generation.js';
-import { deriveProjectName } from '../utils/prompt.js';
+import { generateProjectContent } from '../../services/generation.js';
+import { deriveProjectName } from '../../utils/prompt.js';
 
 // FastifyRequest 타입 확장
 declare module 'fastify' {
@@ -111,7 +111,7 @@ Your suggestion:
     let parsedSuggestion;
     try {
       console.log('[AI] Attempting to parse Gemini response:', text);
-      parsedSuggestion = parseJsonFromMarkdown(text);
+      parsedSuggestion = await safeJsonParse(text);
       console.log(
         '[AI] Successfully parsed Gemini response.',
         parsedSuggestion
@@ -334,7 +334,6 @@ export async function handleMultiAgentChat(
     );
 
     if (req) {
-      const agent = new MasterDeveloperAgent();
       const start = Date.now();
 
       // 컨텍스트 정보를 포함한 enhanced context
@@ -346,7 +345,7 @@ export async function handleMultiAgentChat(
         actionResult: actionResult,
       };
 
-      const plan = await agent.execute(req, enhancedContext);
+      const plan = await generateProjectPlan(req, enhancedContext);
       const totalExecutionTime = Date.now() - start;
 
       // 동적으로 에이전트 결과 생성
@@ -627,7 +626,7 @@ async function buildProjectRequestFromActionResult(
   return enhancedRequest;
 }
 
-import { VirtualPreviewGeneratorAgent } from '../agents/virtualPreviewGeneratorAgent.js';
+import { generateVirtualPreview } from '../agents/agents.service.js';
 
 export async function handleVirtualPreview(
   request: FastifyRequest,
@@ -644,11 +643,7 @@ export async function handleVirtualPreview(
       return;
     }
 
-    const previewAgent = new VirtualPreviewGeneratorAgent();
-    const htmlContent = await previewAgent.execute({
-      pageId: pageId,
-      filePath: `/${filePath}`,
-    });
+    const htmlContent = await generateVirtualPreview(pageId, `/${filePath}`);
 
     reply.type('text/html').send(htmlContent);
   } catch (error) {
