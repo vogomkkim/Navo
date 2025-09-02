@@ -12,9 +12,7 @@ const app = Fastify({ logger: false });
 app.register(cors);
 
 // Setup routes
-console.log('🚀 서버 시작 - 라우트 설정 중...');
 app.register(apiRoutes);
-console.log('✅ API 라우트 설정 완료');
 // setupStaticRoutes(app); // 정적 파일 서빙 비활성화
 
 // Error handler (must be after routes)

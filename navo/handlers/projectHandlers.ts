@@ -75,6 +75,51 @@ export async function handleListProjectPages(
   }
 }
 
+export async function handleRenameProject(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const userId = getUserIdFromToken(request.headers.authorization);
+    if (!userId) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const { projectId } = request.params as { projectId: string };
+    const { name } = request.body as { name?: string };
+
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return reply
+        .status(400)
+        .send({ error: 'Invalid name. Provide at least 2 characters.' });
+    }
+
+    // Verify ownership
+    const project = await db
+      .select({ id: projects.id, ownerId: projects.ownerId })
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.ownerId, userId)))
+      .limit(1);
+
+    if (!project[0]) {
+      return reply
+        .status(404)
+        .send({ error: 'Project not found or unauthorized' });
+    }
+
+    const updated = await db
+      .update(projects)
+      .set({ name: name.trim() })
+      .where(and(eq(projects.id, projectId), eq(projects.ownerId, userId)))
+      .returning({ id: projects.id, name: projects.name });
+
+    reply.send({ ok: true, project: updated[0] });
+  } catch (error) {
+    console.error('Error renaming project:', error);
+    reply.status(500).send({ error: 'Failed to rename project' });
+  }
+}
+
 export async function handleGetPageLayout(
   request: FastifyRequest,
   reply: FastifyReply

@@ -29,18 +29,31 @@ const nextConfig: NextConfig = {
   experimental: {
     ...(isDev
       ? {
-          // 개발 환경 실험적 기능 (turbo 제거됨)
-        }
+        // 개발 환경 실험적 기능 (turbo 제거됨)
+      }
       : {
-          workerThreads: false,
-          cpus: 1,
-        }),
+        workerThreads: false,
+        cpus: 1,
+      }),
     optimizeCss: false,
     // reactCompiler는 안정성을 위해 주석 처리
     // reactCompiler: true,
   },
 
   outputFileTracingRoot: path.join(__dirname, '..'),
+
+  async rewrites() {
+    const origin = process.env.NEXT_PUBLIC_API_ORIGIN;
+    if (!origin) {
+      return [];
+    }
+    return [
+      { source: '/api/:path*', destination: `${origin}/api/:path*` },
+      { source: '/site/:projectId', destination: `${origin}/site/:projectId` },
+      { source: '/preview/:pageId/:path*', destination: `${origin}/preview/:pageId/:path*` },
+      { source: '/preview/:path*', destination: `${origin}/preview/:path*` },
+    ];
+  },
 };
 
 export default nextConfig;

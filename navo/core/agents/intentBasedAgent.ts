@@ -4,6 +4,7 @@
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import logger from '../logger.js';
 import { UserContext, contextManager } from '../contextManager.js';
 import { IntentAnalysis } from '../types/intent.js';
 import { Agent, AgentResult } from './types.js';
@@ -30,8 +31,6 @@ export class IntentBasedAgentSystem {
      * 기본 에이전트들 등록
      */
     private registerDefaultAgents(): void {
-        console.log('🔧 에이전트 등록 시작...');
-
         // 에이전트들을 동적으로 import하여 등록
         import('./specializedAgents.js').then(({
             ProjectCreationAgent,
@@ -48,8 +47,6 @@ export class IntentBasedAgentSystem {
             GeneralConversationAgent,
             QuestionAnswerAgent
         }) => {
-            console.log('📦 에이전트 모듈 로드 완료');
-
             this.registerAgent(new ProjectCreationAgent(this.model));
             this.registerAgent(new ProjectSetupAgent(this.model));
             this.registerAgent(new DevelopmentSetupAgent(this.model));
@@ -63,9 +60,7 @@ export class IntentBasedAgentSystem {
             this.registerAgent(new FeatureRequestAgent(this.model));
             this.registerAgent(new GeneralConversationAgent(this.model));
             this.registerAgent(new QuestionAnswerAgent(this.model));
-
-            console.log('✅ 모든 에이전트 등록 완료');
-            console.log('📋 등록된 에이전트 목록:', Array.from(this.agents.keys()));
+            logger.info('에이전트 준비 완료');
         });
     }
 
@@ -73,7 +68,6 @@ export class IntentBasedAgentSystem {
      * 에이전트 등록
      */
     registerAgent(agent: Agent): void {
-        console.log('➕ 에이전트 등록:', agent.name, '-', agent.description);
         this.agents.set(agent.name, agent);
     }
 
@@ -242,7 +236,7 @@ export class IntentBasedAgentSystem {
 
         for (const chainAgent of chainAgents) {
             try {
-                console.log(`🔄 체인 에이전트 실행: ${chainAgent.name}`);
+                // minimized: run chain agent silently; rely on result statuses
 
                 const agent = this.agents.get(chainAgent.name);
                 if (agent) {
@@ -274,7 +268,7 @@ export class IntentBasedAgentSystem {
                     );
 
                     results.push(result);
-                    console.log(`✅ 체인 에이전트 완료: ${chainAgent.name}`);
+                    // minimized: completion logged only via result aggregation if needed
                 }
             } catch (error) {
                 console.error(`❌ 체인 에이전트 실패: ${chainAgent.name}`, error);
@@ -293,18 +287,18 @@ export class IntentBasedAgentSystem {
      * 적절한 에이전트 선택
      */
     private selectAgent(intentAnalysis: IntentAnalysis): Agent | null {
-        console.log('🔍 에이전트 선택 시작 - 의도:', intentAnalysis.type);
+        // minimized: selection logging suppressed
         // console.log('📋 사용 가능한 에이전트들:', Array.from(this.agents.keys()));
 
         for (const agent of this.agents.values()) {
-            console.log(`🔍 ${agent.name} 체크 - canHandle(${intentAnalysis.type}):`, agent.canHandle(intentAnalysis.type));
+            // minimized: per-agent canHandle logs suppressed
             if (agent.canHandle(intentAnalysis.type)) {
-                console.log('✅ 선택된 에이전트:', agent.name);
+                // minimized: selection detail suppressed
                 return agent;
             }
         }
 
-        console.log('❌ 적절한 에이전트를 찾을 수 없음');
+        // minimized: no matching agent log suppressed
         return null;
     }
 }

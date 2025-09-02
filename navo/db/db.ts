@@ -55,7 +55,7 @@ export const db = drizzle(client, { schema });
 export async function testConnection(): Promise<void> {
   try {
     await client`select 1`;
-    logger.info('Database connection successful');
+    // success: caller logs; avoid duplicate startup logs
   } catch (error) {
     logger.error('Database connection failed', {
       error: error instanceof Error ? error.message : String(error),

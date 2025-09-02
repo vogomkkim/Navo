@@ -6,15 +6,8 @@ import {
 } from '@tanstack/react-query';
 import { useAuth } from '@/app/context/AuthContext'; // Assuming @/app/context/AuthContext is the correct alias
 
-// Define a base URL for your API. This should be configured via environment variables in Next.js
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-if (!API_BASE_URL) {
-  throw new Error(
-    'NEXT_PUBLIC_API_BASE_URL environment variable is required. ' +
-    'Please set it in your Vercel environment variables or local .env.local file.'
-  );
-}
+// API는 기본적으로 상대 경로 사용(Next.js rewrites로 백엔드 프록시) → CORS 회피
+const API_BASE_URL = '';
 
 interface FetchApiOptions extends RequestInit {
   token?: string | null;
@@ -34,7 +27,7 @@ async function fetchApi<T>(
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  const fullUrl = `${API_BASE_URL}${url}`;
+  const fullUrl = url; // 항상 상대 경로 사용
 
   // API 호출 로그 추가
   console.log('🌐 API 호출 시작:', {
@@ -207,6 +200,40 @@ export function useListProjects(
       }
     },
     enabled: !!token, // 토큰이 있을 때만 쿼리 실행
+    ...options,
+  });
+}
+
+// useRenameProject - 프로젝트 이름 변경 훅
+interface RenameProjectPayload {
+  projectId: string;
+  name: string;
+}
+
+interface RenameProjectResponse {
+  ok: boolean;
+  project: { id: string; name: string };
+}
+
+export function useRenameProject(
+  options?: UseMutationOptions<RenameProjectResponse, Error, RenameProjectPayload>
+) {
+  const { token, logout } = useAuth();
+  return useMutation<RenameProjectResponse, Error, RenameProjectPayload>({
+    mutationFn: async ({ projectId, name }: RenameProjectPayload) => {
+      try {
+        return await fetchApi<RenameProjectResponse>(`/api/projects/${projectId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ name }),
+          token,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
     ...options,
   });
 }

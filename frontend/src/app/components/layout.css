@@ -1255,7 +1255,7 @@ header.topbar {
   color: rgb(229 235 241);
   padding: 1rem;
   border-radius: 0.375rem;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 0.75rem;
   overflow-x: auto;
   white-space: pre-wrap;
@@ -1524,19 +1524,19 @@ header.topbar {
 }
 
 /* Editable 요소에 대한 시각적 힌트 */
-[data-editable='true'] {
+[data-editable="true"] {
   cursor: pointer;
   position: relative;
   transition: all 0.2s;
 }
 
-[data-editable='true']:hover {
+[data-editable="true"]:hover {
   background: rgba(59, 130, 246, 0.05);
   outline: 1px dashed rgba(59, 130, 246, 0.3);
 }
 
-[data-editable='true']:hover::after {
-  content: '✏️';
+[data-editable="true"]:hover::after {
+  content: "✏️";
   position: absolute;
   top: -8px;
   right: -8px;
@@ -1651,7 +1651,7 @@ header.topbar .topbar-actions {
 
 /* 모든 클릭 가능한 요소에 포인터 커서 적용 */
 button,
-[role='button'],
+[role="button"],
 [data-radix-dropdown-menu-trigger] {
   cursor: pointer !important;
 }
@@ -1691,4 +1691,56 @@ button,
   border-top: 1px solid rgb(229 231 235);
   margin-top: 1rem;
   padding-top: 0.75rem;
+}
+
+/* ProjectList 전용 스타일 */
+.project-list-panel {
+  display: none;
+}
+
+.project-list-panel.open {
+  display: block;
+}
+
+.project-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.project-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.project-list li span:first-child {
+  flex: 1 1 auto;
+}
+
+.rename-btn {
+  background: none;
+  border: 1px solid rgb(229 231 235);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.375rem;
+  color: rgb(55 65 81);
+}
+
+.rename-btn:hover {
+  background-color: rgb(249 250 251);
+}
+
+.rename-input {
+  border: 1px solid rgb(209 213 219);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .project-list li {
+    align-items: flex-start;
+  }
 }

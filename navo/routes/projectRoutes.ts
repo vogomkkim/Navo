@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import {
   handleListProjects,
   handleListProjectPages,
+  handleRenameProject,
   handleRollback,
 } from '../handlers/projectHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
@@ -24,6 +25,12 @@ async function projectRoutes(
     '/projects/:projectId/rollback',
     { preHandler: [authenticateToken] },
     handleRollback
+  );
+
+  fastify.patch(
+    '/projects/:projectId',
+    { preHandler: [authenticateToken] },
+    handleRenameProject
   );
 }
 

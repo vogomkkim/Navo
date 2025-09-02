@@ -31,9 +31,7 @@ export class ProjectCreationAgent implements Agent {
     constructor(private model: any) { }
 
     canHandle(intent: string): boolean {
-        const canHandle = intent === 'project_creation';
-        console.log(`🏗️ ProjectCreationAgent.canHandle("${intent}"): ${canHandle}`);
-        return canHandle;
+        return intent === 'project_creation';
     }
 
     async execute(
@@ -42,7 +40,7 @@ export class ProjectCreationAgent implements Agent {
         userContext: UserContext,
         sessionId: string
     ): Promise<AgentResult> {
-        console.log('🏗️ ProjectCreationAgent 시작:', { message, sessionId });
+        // minimized: agent start logs suppressed
 
         const result = await this.model.generateContent(`${PROJECT_CREATION_PROMPT}\n\n사용자 요청: ${message}`);
         const response = result.response.text();
@@ -575,7 +573,7 @@ export class SitePlannerAgent implements Agent {
     name = 'SitePlannerAgent';
     description = '아웃라인을 기반으로 페이지/섹션 설계를 생성';
 
-    constructor(private model: any) {}
+    constructor(private model: any) { }
 
     canHandle(intent: string): boolean {
         return intent === 'site_planning';
@@ -627,7 +625,7 @@ export class SiteComposerAgent implements Agent {
     name = 'SiteComposerAgent';
     description = 'TaskPlan을 바탕으로 페이지/컴포넌트 DB에 기록';
 
-    constructor(private model: any) {}
+    constructor(private model: any) { }
 
     canHandle(intent: string): boolean {
         return intent === 'site_composition';
@@ -654,7 +652,7 @@ export class SiteComposerAgent implements Agent {
                 if (s !== -1 && e !== -1 && e > s) {
                     taskPlan = JSON.parse(message.slice(s, e + 1));
                 }
-            } catch {}
+            } catch { }
         }
 
         if (!taskPlan || !Array.isArray(taskPlan.pages)) {
