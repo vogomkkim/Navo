@@ -7,3 +7,4 @@ export * from './projectDatabaseManagerAgent.js';
 export * from './rollbackAgent.js';
 export * from './uiuxDesignerAgent.js';
 export * from './virtualPreviewGeneratorAgent.js';
+export * from './agents.service.js';

@@ -1,4 +1,5 @@
-import { db, users } from '@/modules/db';
+import { db } from '../db/db.instance.js';
+import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { NewUser } from '@/shared';
 

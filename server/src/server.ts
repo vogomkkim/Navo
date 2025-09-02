@@ -7,6 +7,7 @@ import { healthController } from './modules/health/health.controller';
 import { staticController } from './modules/static/static.controller';
 import { aiController } from './modules/ai/ai.controller';
 import eventRoutes from './modules/events/events.controller';
+import { agentsController } from './modules/agents/agents.controller';
 
 // Fastify 인스턴스 생성
 const app = fastify({
@@ -36,6 +37,7 @@ healthController(app);
 staticController(app);
 aiController(app);
 app.register(eventRoutes, { prefix: '/api' });
+agentsController(app);
 
 // 서버 시작 함수
 const start = async () => {
