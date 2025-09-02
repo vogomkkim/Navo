@@ -45,8 +45,17 @@ const nextConfig: NextConfig = {
       return [];
     }
     return [
-      { source: '/api/:path*', destination: `${origin}/api/:path*` },
+      // Backend API (explicit paths only) → avoid catching Next.js /api routes
+      { source: '/api/projects/:path*', destination: `${origin}/api/projects/:path*` },
+      { source: '/api/pages/:path*', destination: `${origin}/api/pages/:path*` },
+      { source: '/api/components/:path*', destination: `${origin}/api/components/:path*` },
+      { source: '/api/events', destination: `${origin}/api/events` },
+      { source: '/api/log-error', destination: `${origin}/api/log-error` },
+
+      // Preview/site proxies
       { source: '/site/:projectId', destination: `${origin}/site/:projectId` },
+      { source: '/p/:previewId', destination: `${origin}/preview-domain/:previewId` },
+      { source: '/p/:previewId/:path*', destination: `${origin}/preview-domain/:previewId/:path*` },
       { source: '/preview/:pageId/:path*', destination: `${origin}/preview/:pageId/:path*` },
       { source: '/preview/:path*', destination: `${origin}/preview/:path*` },
     ];

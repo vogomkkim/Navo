@@ -7,7 +7,7 @@ import {
   getProjectStructure,
 } from '../handlers/aiHandlers.js';
 import { handleSimpleChat } from '../handlers/simpleChatHandler.js';
-import { renderProjectToHTML } from '../services/ai/render.js';
+import { renderProjectToHTML, renderPageToHTML } from '../services/ai/render.js';
 import { and, eq } from 'drizzle-orm';
 import { projects } from '../db/schema.js';
 import { db } from '../db/db.js';
@@ -108,6 +108,41 @@ export default async function aiRoutes(fastify: FastifyInstance) {
       reply.type('text/html').send(html);
     } catch (error) {
       console.error('Error rendering site:', error);
+      reply.status(500).send('Internal server error');
+    }
+  });
+
+  // 프리뷰 도메인 라우팅: /preview-domain/:previewId(/:path*)
+  // MVP: previewId == projectId로 매핑. 추후 별도 토큰 테이블로 확장 가능
+  fastify.get('/preview-domain/:previewId', async (request, reply) => {
+    try {
+      const { previewId } = request.params as any;
+      const project = await getProjectStructure(previewId);
+      if (!project) {
+        reply.status(404).send('Not found');
+        return;
+      }
+      const html = await renderPageToHTML(project, '/', `/p/${previewId}/`);
+      reply.type('text/html').send(html);
+    } catch (error) {
+      console.error('Error preview root:', error);
+      reply.status(500).send('Internal server error');
+    }
+  });
+
+  fastify.get('/preview-domain/:previewId/*', async (request, reply) => {
+    try {
+      const { previewId, '*': pathSplat } = request.params as any;
+      const project = await getProjectStructure(previewId);
+      if (!project) {
+        reply.status(404).send('Not found');
+        return;
+      }
+      const pagePath = `/${pathSplat || ''}`;
+      const html = await renderPageToHTML(project, pagePath, `/p/${previewId}/`);
+      reply.type('text/html').send(html);
+    } catch (error) {
+      console.error('Error preview path:', error);
       reply.status(500).send('Internal server error');
     }
   });
