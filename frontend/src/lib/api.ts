@@ -3,6 +3,7 @@ import {
   useMutation,
   UseQueryOptions,
   UseMutationOptions,
+  useQueryClient,
 } from '@tanstack/react-query';
 import { useAuth } from '@/app/context/AuthContext'; // Assuming @/app/context/AuthContext is the correct alias
 
@@ -29,15 +30,17 @@ async function fetchApi<T>(
 
   const fullUrl = url; // 항상 상대 경로 사용
 
-  // API 호출 로그 추가
-  console.log('🌐 API 호출 시작:', {
-    fullUrl,
-    method: restOptions.method || 'GET',
-    headers,
-    body: restOptions.body,
-    API_BASE_URL,
-    url,
-  });
+  // API 호출 로그 (개발 환경에서만)
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.log('API 호출 시작:', {
+      fullUrl,
+      method: restOptions.method || 'GET',
+      headers,
+      body: restOptions.body,
+      url,
+    });
+  }
 
   try {
     const response = await fetch(fullUrl, {
@@ -45,12 +48,14 @@ async function fetchApi<T>(
       headers,
     });
 
-    console.log('📡 API 응답 받음:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.url,
-      headers: Object.fromEntries(response.headers.entries()),
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log('API 응답 받음:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+      });
+    }
 
     if (response.status === 401) {
       // This should ideally be handled by a global interceptor or the AuthContext itself
@@ -71,13 +76,15 @@ async function fetchApi<T>(
     console.log('✅ API 성공 응답:', responseData);
     return responseData as T;
   } catch (error) {
-    console.error('💥 API 호출 중 에러 발생:', {
-      error: error instanceof Error ? error.message : String(error),
-      errorType: error instanceof Error ? error.constructor.name : typeof error,
-      fullUrl,
-      options: restOptions,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.error('API 호출 중 에러 발생:', {
+        error: error instanceof Error ? error.message : String(error),
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        fullUrl,
+        options: restOptions,
+      });
+    }
     throw error;
   }
 }
@@ -219,6 +226,8 @@ export function useRenameProject(
   options?: UseMutationOptions<RenameProjectResponse, Error, RenameProjectPayload>
 ) {
   const { token, logout } = useAuth();
+  const queryClient = useQueryClient();
+
   return useMutation<RenameProjectResponse, Error, RenameProjectPayload>({
     mutationFn: async ({ projectId, name }: RenameProjectPayload) => {
       try {
@@ -233,6 +242,82 @@ export function useRenameProject(
         }
         throw error;
       }
+    },
+    // Optimistic update for instant UI feedback
+    onMutate: async ({ projectId, name }) => {
+      await queryClient.cancelQueries({ queryKey: ['projects'] });
+      const previous = queryClient.getQueryData<ProjectListResponse>(['projects']);
+
+      queryClient.setQueryData<ProjectListResponse>(['projects'], (old) => {
+        if (!old) return old as any;
+        return {
+          projects: old.projects.map((p) =>
+            p.id === projectId ? { ...p, name } : p
+          ),
+        };
+      });
+
+      return { previous } as { previous: ProjectListResponse | undefined };
+    },
+    onError: (err, _vars, context) => {
+      const ctx = context as { previous: ProjectListResponse | undefined } | undefined;
+      if (ctx?.previous) {
+        queryClient.setQueryData(['projects'], ctx.previous);
+      }
+      options?.onError?.(err, _vars, ctx as any);
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      options?.onSettled?.(undefined as any, undefined as any, undefined as any, undefined as any);
+    },
+    ...options,
+  });
+}
+
+// useDeleteProject - 프로젝트 삭제 훅
+interface DeleteProjectPayload { projectId: string }
+interface DeleteProjectResponse { }
+
+export function useDeleteProject(
+  options?: UseMutationOptions<DeleteProjectResponse, Error, DeleteProjectPayload>
+) {
+  const { token, logout } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation<DeleteProjectResponse, Error, DeleteProjectPayload>({
+    mutationFn: async ({ projectId }: DeleteProjectPayload) => {
+      try {
+        await fetchApi<void>(`\u002Fapi\u002Fprojects\u002F${projectId}`, {
+          method: 'DELETE',
+          token,
+        });
+        return {} as DeleteProjectResponse;
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    onMutate: async ({ projectId }) => {
+      await queryClient.cancelQueries({ queryKey: ['projects'] });
+      const previous = queryClient.getQueryData<ProjectListResponse>(['projects']);
+      queryClient.setQueryData<ProjectListResponse>(['projects'], (old) => {
+        if (!old) return old as any;
+        return { projects: old.projects.filter((p) => p.id !== projectId) };
+      });
+      return { previous } as { previous: ProjectListResponse | undefined };
+    },
+    onError: (err, _vars, context) => {
+      const ctx = context as { previous: ProjectListResponse | undefined } | undefined;
+      if (ctx?.previous) {
+        queryClient.setQueryData(['projects'], ctx.previous);
+      }
+      options?.onError?.(err, _vars, ctx as any);
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      options?.onSettled?.(undefined as any, undefined as any, undefined as any, undefined as any);
     },
     ...options,
   });

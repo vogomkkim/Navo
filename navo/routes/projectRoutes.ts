@@ -4,6 +4,7 @@ import {
   handleListProjectPages,
   handleRenameProject,
   handleRollback,
+  handleDeleteProject,
 } from '../handlers/projectHandlers.js';
 import { authenticateToken } from '../auth/auth.js';
 
@@ -31,6 +32,12 @@ async function projectRoutes(
     '/projects/:projectId',
     { preHandler: [authenticateToken] },
     handleRenameProject
+  );
+
+  fastify.delete(
+    '/projects/:projectId',
+    { preHandler: [authenticateToken] },
+    handleDeleteProject
   );
 }
 

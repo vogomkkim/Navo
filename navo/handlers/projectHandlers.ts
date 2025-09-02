@@ -120,6 +120,41 @@ export async function handleRenameProject(
   }
 }
 
+export async function handleDeleteProject(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const userId = getUserIdFromToken(request.headers.authorization);
+    if (!userId) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const { projectId } = request.params as { projectId: string };
+
+    // Verify ownership
+    const project = await db
+      .select({ id: projects.id, ownerId: projects.ownerId })
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.ownerId, userId)))
+      .limit(1);
+
+    if (!project[0]) {
+      return reply
+        .status(404)
+        .send({ error: 'Project not found or unauthorized' });
+    }
+
+    // Hard delete (FKs cascade). For soft-delete, replace with update to set deletedAt
+    await db.delete(projects).where(and(eq(projects.id, projectId), eq(projects.ownerId, userId)));
+
+    reply.status(204).send();
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    reply.status(500).send({ error: 'Failed to delete project' });
+  }
+}
+
 export async function handleGetPageLayout(
   request: FastifyRequest,
   reply: FastifyReply

@@ -17,6 +17,7 @@ import {
   usePageLayout,
   fetchApi,
   useRenameProject,
+  useDeleteProject,
 } from "@/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLayoutContext } from "@/app/context/LayoutContext";
@@ -128,6 +129,16 @@ export default function HomeContent() {
     onError: () => {
       showErrorMessage("프로젝트 이름 변경에 실패했습니다.");
     },
+  });
+
+  const deleteMutation = useDeleteProject({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
+      showSuccessMessage("프로젝트가 삭제되었습니다.");
+      setSelectedProjectId(null);
+      setSelectedPageId(null);
+    },
+    onError: () => showErrorMessage("프로젝트 삭제에 실패했습니다."),
   });
 
   // 선택된 프로젝트의 페이지들 가져오기
@@ -365,31 +376,65 @@ export default function HomeContent() {
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  className="p-2 border border-gray-300 rounded hover:bg-gray-50"
-                  title="이름 변경"
-                  aria-label="이름 변경"
-                  onClick={() => {
-                    setRenameValue(currentProjectName);
-                    setIsRenaming(true);
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                <>
+                  <button
+                    type="button"
+                    className="p-2 border border-gray-300 rounded hover:bg-gray-50"
+                    title="이름 변경"
+                    aria-label="이름 변경"
+                    onClick={() => {
+                      setRenameValue(currentProjectName);
+                      setIsRenaming(true);
+                    }}
                   >
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                  </svg>
-                </button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="p-2 border border-red-300 rounded hover:bg-red-50"
+                    title="프로젝트 삭제"
+                    aria-label="프로젝트 삭제"
+                    onClick={() => {
+                      if (!selectedProjectId) return;
+                      const ok = window.confirm(
+                        "정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+                      );
+                      if (ok)
+                        deleteMutation.mutate({ projectId: selectedProjectId });
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                      <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                    </svg>
+                  </button>
+                </>
               )}
             </div>
           )}
