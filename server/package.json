@@ -7,11 +7,11 @@
     "build": "tsc -p ./tsconfig.json",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "lint": "eslint . --ext .ts --config ../config/eslint.config.js",
+    "lint": "eslint . --ext .ts --config ../eslint.config.js",
     "test": "jest --config jest.config.ts",
-    "db:generate": "drizzle-kit generate --config ../config/drizzle.config.ts",
-    "db:push": "drizzle-kit push --config ../config/drizzle.config.ts",
-    "db:pull": "drizzle-kit introspect --config ../config/drizzle.config.ts"
+    "db:generate": "drizzle-kit generate --config ../drizzle.config.ts",
+    "db:push": "drizzle-kit push --config ../drizzle.config.ts",
+    "db:pull": "drizzle-kit introspect --config ../drizzle.config.ts"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.49.0",

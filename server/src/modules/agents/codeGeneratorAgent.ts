@@ -11,7 +11,7 @@ import {
   ResolutionResult,
   CodeChange,
   ErrorType, // Keep ErrorType for now, might be used in other parts of the file
-} from './core/masterDeveloper.js';
+} from './core/masterDeveloper';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -437,9 +437,9 @@ export class CodeGeneratorAgent extends BaseAgent {
   private generatePackageJson(request: any, architecture: any): any {
     const dependencies = architecture.technology?.includes('React')
       ? {
-          react: '^18.2.0',
-          'react-dom': '^18.2.0',
-        }
+        react: '^18.2.0',
+        'react-dom': '^18.2.0',
+      }
       : {};
 
     return {

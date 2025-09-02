@@ -5,9 +5,9 @@
  * 에러 해결과 프로젝트 설계를 모두 지원합니다.
  */
 
-import { BaseAgent, ProjectRequest } from './core/masterDeveloper.js';
+import { BaseAgent, ProjectRequest } from './core/masterDeveloper';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { refineJsonResponse } from './utils/jsonRefiner.js';
+import { refineJsonResponse } from './utils/jsonRefiner';
 
 export class ProjectArchitectAgent extends BaseAgent {
   private model: any;

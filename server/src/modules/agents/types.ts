@@ -3,8 +3,8 @@
  * 에이전트 시스템에서 사용하는 모든 타입 정의
  */
 
-import { IntentAnalysis } from '@/core/types/intent.js';
-import { UserContext } from '@/core/contextManager.js';
+import { IntentAnalysis } from '@/core/types/intent';
+import { UserContext } from '@/core/contextManager';
 
 // -----------------------------
 // Core Agent Interfaces

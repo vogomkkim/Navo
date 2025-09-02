@@ -4,9 +4,9 @@
  * 프로젝트 생성 요청을 분석하고 다른 에이전트들을 조율하는 메인 에이전트
  */
 
-import { BaseAgent, ProjectRequest } from './core/masterDeveloper.js';
-import { ProjectArchitectAgent } from './projectArchitectAgent.js';
-import { ProjectDatabaseManagerAgent } from './projectDatabaseManagerAgent.js';
+import { BaseAgent, ProjectRequest } from './core/masterDeveloper';
+import { ProjectArchitectAgent } from './projectArchitectAgent';
+import { ProjectDatabaseManagerAgent } from './projectDatabaseManagerAgent';
 
 export interface ProjectPlan {
   project: {

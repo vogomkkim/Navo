@@ -10,7 +10,7 @@ import {
   ErrorContext,
   ResolutionResult,
   CodeChange,
-} from './core/masterDeveloper.js';
+} from './core/masterDeveloper';
 
 export class DevelopmentGuideAgent extends BaseAgent {
   private testResults: Map<string, boolean> = new Map();

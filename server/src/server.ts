@@ -1,6 +1,7 @@
 import fastify from 'fastify';
 import { errorHandler } from './lib/errorHandler';
 import logger, { createRequestLogger } from './lib/logger';
+import { authenticateToken } from './modules/auth/auth.middleware';
 
 import { authController } from './modules/auth/auth.controller';
 import { healthController } from './modules/health/health.controller';
@@ -8,6 +9,10 @@ import { staticController } from './modules/static/static.controller';
 import { aiController } from './modules/ai/ai.controller';
 import eventRoutes from './modules/events/events.controller';
 import { agentsController } from './modules/agents/agents.controller';
+import { projectsController } from './modules/projects/projects.controller';
+import { pagesController } from './modules/pages/pages.controller';
+import { componentsController } from './modules/components/components.controller';
+import { analyticsController } from './modules/analytics/analytics.controller';
 
 // Fastify 인스턴스 생성
 const app = fastify({
@@ -31,6 +36,9 @@ app.addHook('onResponse', (req, reply, done) => {
 // 전역 에러 핸들러 등록
 errorHandler(app);
 
+// 전역 인증 미들웨어 등록 (모듈 간 의존성 위반 방지)
+app.decorate('authenticateToken', authenticateToken);
+
 // 컨트롤러 등록
 authController(app);
 healthController(app);
@@ -38,6 +46,10 @@ staticController(app);
 aiController(app);
 app.register(eventRoutes, { prefix: '/api' });
 agentsController(app);
+projectsController(app);
+pagesController(app);
+componentsController(app);
+analyticsController(app);
 
 // 서버 시작 함수
 const start = async () => {

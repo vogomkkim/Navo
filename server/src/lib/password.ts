@@ -1,34 +1,5 @@
 import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
 
-function scryptAsync(password: string, salt: Buffer): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    scrypt(password, salt, 64, (err, derivedKey) => {
-      if (err) return reject(err);
-      resolve(derivedKey as Buffer);
-    });
-  });
-}
-
-export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16);
-  const derivedKey = await scryptAsync(password, salt);
-  return `${salt.toString('hex')}:${derivedKey.toString('hex')}`;
-}
-
-export type VerifyResult = { ok: boolean };
-
-export async function verifyPassword(password: string, stored: string): Promise<VerifyResult> {
-  const [saltHex, hashHex] = stored.split(':');
-  if (!saltHex || !hashHex) return { ok: false };
-  const salt = Buffer.from(saltHex, 'hex');
-  const hash = Buffer.from(hashHex, 'hex');
-  const derived = await scryptAsync(password, salt);
-  const isEqual = timingSafeEqual(hash, derived);
-  return { ok: isEqual };
-}
-
-import { randomBytes, scrypt as scryptCb, timingSafeEqual } from 'crypto';
-
 function scryptAsync(
   password: string,
   salt: Buffer | string,
@@ -36,7 +7,7 @@ function scryptAsync(
   options: { N?: number; r?: number; p?: number; maxmem?: number } = {}
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    scryptCb(password, salt, keyLength, options, (err, derivedKey) => {
+    scrypt(password, salt, keyLength, options, (err, derivedKey) => {
       if (err) return reject(err);
       resolve(derivedKey as Buffer);
     });

@@ -1,1 +1,1 @@
-export * from '../../../../drizzle/schema.js';
+export * from '@/schema';

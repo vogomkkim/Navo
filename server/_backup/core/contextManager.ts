@@ -1,4 +1,4 @@
-import { db } from '../db/db.js';
+import { db } from '@/db';
 import {
   userSessions,
   chatMessages,
@@ -6,7 +6,7 @@ import {
   users,
   projects,
   componentDefinitions,
-} from '../db/schema.js';
+} from '@/db/schema';
 import { eq, and, desc, asc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { sql } from 'drizzle-orm';

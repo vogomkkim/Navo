@@ -1,30 +1,30 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { db } from '../../db/db.instance.js';
+import { db } from '../../db/db.instance';
 import {
   events,
   projects,
   componentDefinitions,
   pages,
   components,
-} from '../../db/schema.js';
+} from '../../db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import {
   storePages,
   storeComponentDefinitions,
   storePageComponents,
   assignLayoutsForPages,
-} from '../../services/projects/persist.js';
-import { generateProjectPlan } from '../agents/agents.service.js';
-import { ProjectRequest } from '../../core/masterDeveloper.js';
-import { contextManager, UserContext } from '../../core/contextManager.js';
-import { intentAnalyzer } from '../../core/intentAnalyzer.js';
-import { EnhancedPrompt } from '../../core/types/intent.js';
-import { actionRouter, ActionResult } from '../../core/actionRouter.js';
-import { safeJsonParse } from '../utils/jsonRefiner.js';
+} from '../../projects/persist';
+import { generateProjectPlan } from '../agents/agents.service';
+import { ProjectRequest } from '@/core/masterDeveloper';
+import { contextManager, UserContext } from '@/core/contextManager';
+import { intentAnalyzer } from '../core/intentAnalyzer';
+import { EnhancedPrompt } from '@/core/types/intent';
+import { actionRouter, ActionResult } from '@/core/actionRouter';
+import { safeJsonParse } from '../utils/jsonRefiner';
 
-import { generateProjectContent } from '../../services/generation.js';
-import { deriveProjectName } from '../../utils/prompt.js';
+import { generateProjectContent } from '../services/generation';
+import { deriveProjectName } from '../utils/prompt';
 
 // FastifyRequest 타입 확장
 declare module 'fastify' {
@@ -626,7 +626,7 @@ async function buildProjectRequestFromActionResult(
   return enhancedRequest;
 }
 
-import { generateVirtualPreview } from '../agents/agents.service.js';
+import { generateVirtualPreview } from '../agents/agents.service';
 
 export async function handleVirtualPreview(
   request: FastifyRequest,

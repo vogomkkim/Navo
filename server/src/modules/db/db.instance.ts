@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import * as schema from './schema.js'; // 새 경로 참조
+import * as schema from './schema';
 import logger from '@/lib/logger'; // 새 경로 참조
 
 const connectionString = process.env.DATABASE_URL ?? '';

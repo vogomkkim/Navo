@@ -7,13 +7,13 @@
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { UserContext, ChatMessage } from './contextManager.js';
-import { parseJsonFromMarkdown } from '../utils/jsonExtractor.js';
+import { UserContext, ChatMessage } from './contextManager';
+import { parseJsonFromMarkdown } from '../utils/jsonExtractor';
 import {
     IntentAnalysis,
     EnhancedPrompt,
     ContextInfo,
-} from './types/intent.js';
+} from './types/intent';
 
 
 import {
@@ -21,7 +21,7 @@ import {
     decideExecution,
     buildSystemInstruction,
     buildUserPrompt,
-} from './utils/intentUtils.js';
+} from '../utils/intentUtils';
 
 /**
  * IntentAnalyzer 클래스

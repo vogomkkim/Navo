@@ -1,5 +1,5 @@
-import { BaseAgent } from './core/masterDeveloper.js';
-import { ProjectDatabaseManagerAgent } from './projectDatabaseManagerAgent.js';
+import { BaseAgent } from './core/masterDeveloper';
+import { ProjectDatabaseManagerAgent } from './projectDatabaseManagerAgent';
 
 // Helper function to find a file in the virtual structure
 const findFileInStructure = (structure: any, filePath: string): any | null => {

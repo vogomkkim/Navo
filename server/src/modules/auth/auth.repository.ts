@@ -1,7 +1,7 @@
-import { db } from '../db/db.instance.js';
-import { users } from '../db/schema.js';
+import { db } from '@/db/db.instance';
+import { users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { NewUser } from '@/shared';
+import { NewUser } from './auth.types';
 
 export class AuthRepository {
   async findUserByEmail(email: string) {

@@ -11,7 +11,7 @@ import {
   ErrorType,
   ErrorSeverity,
   ErrorAnalysis,
-} from './core/masterDeveloper.js';
+} from './core/masterDeveloper';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as fs from 'fs/promises';
 import { exec as cpExec } from 'node:child_process';

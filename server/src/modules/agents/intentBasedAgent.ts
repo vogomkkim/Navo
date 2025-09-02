@@ -4,11 +4,11 @@
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import logger from '@/lib/logger.js';
-import { UserContext, contextManager } from '@/core/contextManager.js';
-import { IntentAnalysis } from '@/core/types/intent.js';
-import { Agent, AgentResult } from './types.js';
-import { INTENT_ANALYSIS_SYSTEM_PROMPT, buildIntentAnalysisUserPrompt } from './prompts.js';
+import logger from '@/lib/logger';
+import { UserContext, contextManager } from '@/core/contextManager';
+import { IntentAnalysis } from '@/core/types/intent';
+import { Agent, AgentResult } from './types';
+import { INTENT_ANALYSIS_SYSTEM_PROMPT, buildIntentAnalysisUserPrompt } from './prompts';
 import {
     ProjectCreationAgent,
     ProjectSetupAgent,
@@ -23,7 +23,7 @@ import {
     FeatureRequestAgent,
     GeneralConversationAgent,
     QuestionAnswerAgent
-} from './index.js';
+} from './index';
 
 /**
  * 의도 기반 에이전트 시스템

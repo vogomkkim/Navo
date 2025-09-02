@@ -1,4 +1,4 @@
-import { BaseAgent, ProjectRequest } from './core/masterDeveloper.js';
+import { BaseAgent, ProjectRequest } from './core/masterDeveloper';
 
 export class UIUXDesignerAgent extends BaseAgent {
   constructor() {

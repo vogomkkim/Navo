@@ -1,12 +1,12 @@
-import { db } from '@/db/db.js';
+import { db } from '@/db/db.instance';
 import {
   projects,
   pages,
   componentDefinitions,
   components,
-} from '@/db/schema.js';
+} from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { BaseAgent } from './core/masterDeveloper.js';
+import { BaseAgent } from './core/masterDeveloper';
 import { randomUUID as uuidv4 } from 'node:crypto';
 
 export class ProjectDatabaseManagerAgent extends BaseAgent {

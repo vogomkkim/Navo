@@ -1,16 +1,16 @@
 import { FastifyInstance } from 'fastify';
-import { authenticateToken } from '../../auth/auth.middleware.js';
+import { authenticateToken } from '../../auth/auth.middleware';
 import {
   handleMultiAgentChat,
   handleVirtualPreview,
   handleProjectRecovery,
   getProjectStructure,
-} from '../handlers/aiHandlers.js';
-import { handleSimpleChat } from '../handlers/simpleChatHandler.js';
-import { renderProjectToHTML, renderPageToHTML } from '../services/render.js';
+} from '../handlers/aiHandlers';
+import { handleSimpleChat } from '../handlers/simpleChatHandler';
+import { renderProjectToHTML, renderPageToHTML } from '../services/render';
 import { and, eq } from 'drizzle-orm';
-import { projects } from '../../db/schema.js';
-import { db } from '../../db/db.instance.js';
+import { projects } from '../../db/schema';
+import { db } from '../../db/db.instance';
 
 export default async function aiRoutes(fastify: FastifyInstance) {
   // AI 멀티 에이전트 채팅 (기존)

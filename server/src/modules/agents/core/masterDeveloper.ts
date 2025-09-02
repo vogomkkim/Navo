@@ -5,8 +5,8 @@
  * 에러 해결과 프로젝트 생성을 모두 지원합니다.
  */
 
-import { runGraph } from './runner.js';
-import { GraphNode, NodeContext } from './node.js';
+import { runGraph } from './runner';
+import { GraphNode, NodeContext } from './node';
 
 // Define AgentGraphNode type
 export type AgentGraphNode = GraphNode & {
@@ -408,10 +408,10 @@ export class MasterDeveloperManager {
         { DevelopmentGuideAgent },
         { RollbackAgent },
       ] = await Promise.all([
-        import('../agents/projectArchitectAgent.js'),
-        import('../agents/codeGeneratorAgent.js'),
-        import('../agents/developmentGuideAgent.js'),
-        import('../agents/rollbackAgent.js'),
+        import('../projectArchitectAgent'),
+        import('../codeGeneratorAgent'),
+        import('../developmentGuideAgent'),
+        import('../rollbackAgent'),
       ]);
 
       while (retryCount < maxRetries) {

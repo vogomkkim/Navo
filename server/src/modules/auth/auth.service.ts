@@ -3,7 +3,7 @@ import { hashPassword, verifyPassword } from '../../lib/password';
 import { AppError } from '../../lib/errorHandler';
 import jwt from 'jsonwebtoken';
 import { appConfig } from '../../config';
-import type { LoginData, RegisterData } from '@/shared';
+import type { LoginData, RegisterData } from './auth.types';
 
 export class AuthService {
   constructor(private readonly authRepository: AuthRepository) { }
