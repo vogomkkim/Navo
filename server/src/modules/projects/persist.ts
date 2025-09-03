@@ -1,8 +1,11 @@
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { InferSelectModel } from 'drizzle-orm';
 import { eq } from 'drizzle-orm';
-import { pages, components, componentDefinitions } from '@/db/schema';
-import { generateLayoutComponentsForPage } from '@/modules/ai/services/generation';
+import { pages, components, componentDefinitions } from '@/schema';
+// Temporary stub: replace with real AI generation
+async function generateLayoutComponentsForPage(_args: { path: string; name?: string; description?: string | null }) {
+  return [] as any[];
+}
 
 function inferLayoutFromPath(path?: string): string {
   if (!path || path === '/') return 'home';

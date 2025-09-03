@@ -23,9 +23,11 @@
     },
     "types": ["node", "jest"]
   },
-  "include": ["src/**/*.ts", "drizzle/**/*.ts", "jest.config.ts"],
+  "include": ["src/**/*.ts", "drizzle/**/*.ts"],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "**/*.test.ts",
+    "jest.config.ts"
   ]
 }

@@ -4,7 +4,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string | null;
-  ownerId: string;
+  organizationId: string;
   createdAt: string;
   updatedAt: string;
   requirements?: string | null;
@@ -24,7 +24,7 @@ export interface ProjectPage {
 export interface CreateProjectData {
   name: string;
   description?: string | null;
-  ownerId: string;
+  organizationId: string;
   requirements?: string | null;
 }
 
@@ -35,7 +35,7 @@ export interface UpdateProjectData {
 }
 
 export interface ProjectsRepository {
-  listProjectsByOwnerId(ownerId: string): Promise<Project[]>;
+  listProjectsByOrganizationId(organizationId: string): Promise<Project[]>;
   getProjectById(projectId: string): Promise<Project | null>;
   createProject(projectData: CreateProjectData): Promise<Project>;
   updateProject(

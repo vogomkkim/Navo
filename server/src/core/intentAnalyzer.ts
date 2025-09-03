@@ -1,13 +1,23 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { UserContext, ChatMessage } from '@/core/contextManager';
-import { parseJsonFromMarkdown } from '@/modules/ai/utils/jsonExtractor';
+// Fallback stub until ai/utils are available
+const parseJsonFromMarkdown = (raw: string): any => {
+  try {
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      return JSON.parse(raw.slice(start, end + 1));
+    }
+  } catch {}
+  return {};
+};
 import { IntentAnalysis, EnhancedPrompt } from '@/core/types/intent';
 import {
   normalizeModelAnalysis,
   decideExecution,
   buildSystemInstruction,
   buildUserPrompt,
-} from '@/modules/ai/utils/intentUtils';
+} from '@/core/intentUtils.fallback';
 
 export class IntentAnalyzer {
   private genAI: GoogleGenerativeAI;

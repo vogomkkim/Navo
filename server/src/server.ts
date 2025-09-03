@@ -16,8 +16,8 @@ import { workflowController } from '@/modules/workflow/workflow.controller';
 // Fastify v4 인스턴스 생성
 const app = fastify({
   logger: true,
-  genReqId: (req) =>
-    req.headers['x-request-id'] || createRequestLogger().bindings().requestId,
+  genReqId: (req: any) =>
+    (req.headers['x-request-id'] as string | undefined) || (createRequestLogger().bindings() as any).requestId,
 });
 
 // 커스텀 로거 훅 등록
