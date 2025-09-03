@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "npm@10",
   "scripts": {
     "dev": "dotenvx run -o -e .env -e .env.local -- tsx watch src/server.ts",
     "build": "tsc -p ./tsconfig.json",
