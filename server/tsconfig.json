@@ -14,7 +14,7 @@
       "@/db": ["src/modules/db"],
       "@/db/*": ["src/modules/db/*"],
       "@/schema": ["./drizzle/schema.ts"],
-      "@/drizzle/*": ["drizzle/*"],
+      "@/drizzle/*": ["./drizzle/*"],
       "@/lib/*": ["src/lib/*"],
       "@/core/*": ["src/core/*"],
       "@/modules/*": ["src/modules/*"],

@@ -18,6 +18,10 @@ export class WorkflowExecutor {
    * @returns A map of step IDs to their outputs.
    */
   async execute(plan: Plan, initialInputs: Record<string, any> = {}): Promise<Map<string, any>> {
+    if (!plan || !Array.isArray(plan.steps)) {
+      throw new Error('Invalid plan: "steps" array is missing or not an array.');
+    }
+
     const runId = randomUUID();
     console.log(`[WorkflowExecutor] Starting execution for plan "${plan.name}" (Run ID: ${runId})`);
 

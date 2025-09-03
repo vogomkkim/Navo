@@ -29,6 +29,27 @@
       "when": 1756730065774,
       "tag": "0003_gifted_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1756910043230,
+      "tag": "0004_chunky_midnight",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1756913615459,
+      "tag": "0005_perfect_doctor_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1756913842343,
+      "tag": "0006_violet_human_robot",
+      "breakpoints": true
     }
   ]
 }

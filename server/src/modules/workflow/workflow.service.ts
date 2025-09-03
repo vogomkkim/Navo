@@ -29,6 +29,12 @@ export class WorkflowService {
     const plan = await this.generatePlan(prompt);
     this.app.log.info({ plan }, '[WorkflowService] Generated Plan');
 
+    // Validate the plan immediately after generation
+    if (!plan || !Array.isArray(plan.steps)) {
+      this.app.log.error({ plan }, '[WorkflowService] AI Planner returned a plan without a valid "steps" array.');
+      throw new Error('AI Planner returned an invalid plan.');
+    }
+
     // 2. Execute the Plan
     const outputs = await workflowExecutor.execute(plan);
     this.app.log.info({ outputs: Object.fromEntries(outputs) }, '[WorkflowService] Workflow executed successfully');
@@ -66,9 +72,16 @@ export class WorkflowService {
       - Each step must use one of the available tools.
       - The 'inputs' for a step can reference outputs from previous steps using the format: \${steps.STEP_ID.outputs.PROPERTY_NAME}
       - Ensure all necessary steps are included to fulfill the user's request.
-      - If a user wants to create a project, the plan must include a 'create_project_architecture' step followed by a 'generate_project_files' step.
-      - After generating files, subsequent 'run_shell_command' steps (like 'npm install') MUST use the 'cwd' parameter, referencing the 'projectPath' output from the file generation step. Example: "cwd": "\${steps.ID_OF_GENERATE_STEP.outputs.projectPath}"
-      - The 'generate_project_files' step's 'architecture' input MUST be a reference to the 'project' property of the 'create_project_architecture' step's output, like this: "\${steps.ID_OF_ARCHITECT_STEP.outputs.project}".
+      - For a "create project" or "create website" request, the plan MUST follow this sequence:
+        1. 'create_organization': To create a tenant for the new project. You will need to invent a suitable organization name and assume a placeholder 'ownerId' like "c1b2a3d4-e5f6-7890-1234-567890abcdef".
+        2. 'create_project_architecture': Its 'organizationId' input MUST be a reference to the 'id' of the 'create_organization' step's output.
+        3. 'generate_project_files': Its 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output.
+            - Subsequent 'run_shell_command' steps (like 'npm install') MUST use the 'cwd' parameter, referencing the 'projectPath' output from the file generation step.
+      - The 'generate_project_files' step's 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output.
+
+      **Output Format (JSON only):**
+      {
+        "name": "A descriptive name for the plan",
 
       **Output Format (JSON only):**
       {
@@ -108,7 +121,14 @@ export class WorkflowService {
       }
       
       const refinedJson = await refineJsonResponse<Plan>(text);
-      return typeof refinedJson === 'string' ? JSON.parse(refinedJson) : refinedJson;
+      const planObject = typeof refinedJson === 'string' ? JSON.parse(refinedJson) : refinedJson;
+
+      if (!planObject || !Array.isArray(planObject.steps)) {
+        this.app.log.error({ plan: planObject }, '[WorkflowService] AI Planner returned a plan without a valid "steps" array.');
+        throw new Error('AI Planner returned an invalid plan.');
+      }
+
+      return planObject;
 
     } catch (error: any) {
       this.app.log.error(error, '[WorkflowService] Failed to generate or parse plan from LLM.');

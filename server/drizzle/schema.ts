@@ -12,7 +12,190 @@ import {
   text,
   foreignKey,
   boolean,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
+
+// --- Core Multi-Tenant and User Tables ---
+
+export const organizations = pgTable('organizations', {
+  id: uuid('id').defaultRandom().primaryKey().notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  ownerId: uuid('owner_id')
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+    .defaultNow()
+    .notNull(),
+});
+
+export const users = pgTable(
+  'users',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    email: varchar({ length: 255 }).notNull(),
+    name: varchar({ length: 255 }),
+    password: text().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [unique('users_email_key').on(table.email)]
+);
+
+// Junction table for many-to-many relationship between users and organizations
+export const usersToOrganizations = pgTable(
+  'users_to_organizations',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.organizationId] }),
+  })
+);
+
+// --- Project and Content Tables (Now Tenant-Aware) ---
+
+export const projects = pgTable(
+  'projects',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    organizationId: uuid('organization_id') // Changed from ownerId
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: varchar({ length: 255 }).notNull(),
+    description: text(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    requirements: text(),
+  },
+  (table) => [
+    index('idx_projects_organization').using(
+      'btree',
+      table.organizationId.asc().nullsLast().op('uuid_ops')
+    ),
+  ]
+);
+
+export const pages = pgTable(
+  'pages',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    projectId: uuid('project_id').notNull(),
+    path: text().notNull(),
+    name: varchar({ length: 255 }).notNull(),
+    description: text(),
+    layoutJson: jsonb('layout_json').default({}).notNull(),
+    isPublished: boolean('is_published').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_pages_project').using(
+      'btree',
+      table.projectId.asc().nullsLast().op('uuid_ops')
+    ),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'pages_project_id_fkey',
+    }).onDelete('cascade'),
+    unique('pages_project_id_path_key').on(table.projectId, table.path),
+  ]
+);
+
+export const componentDefinitions = pgTable(
+  'component_definitions',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    projectId: uuid('project_id').notNull(),
+    name: varchar({ length: 255 }).notNull(),
+    displayName: varchar('display_name', { length: 255 }).notNull(),
+    description: text(),
+    category: varchar({ length: 255 }).default('basic').notNull(),
+    propsSchema: jsonb('props_schema').default({}).notNull(),
+    renderTemplate: text('render_template').notNull(),
+    cssStyles: text('css_styles'),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_component_definitions_project').using(
+      'btree',
+      table.projectId.asc().nullsLast().op('uuid_ops')
+    ),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'component_definitions_project_id_fkey',
+    }).onDelete('cascade'),
+    unique('component_definitions_project_id_name_key').on(
+      table.projectId,
+      table.name
+    ),
+  ]
+);
+
+export const components = pgTable(
+  'components',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    pageId: uuid('page_id').notNull(),
+    componentDefinitionId: uuid('component_definition_id').notNull(),
+    props: jsonb().default({}).notNull(),
+    orderIndex: integer('order_index').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_components_definition').using(
+      'btree',
+      table.componentDefinitionId.asc().nullsLast().op('uuid_ops')
+    ),
+    index('idx_components_page_order').using(
+      'btree',
+      table.pageId.asc().nullsLast().op('uuid_ops'),
+      table.orderIndex.asc().nullsLast().op('int4_ops')
+    ),
+    foreignKey({
+      columns: [table.componentDefinitionId],
+      foreignColumns: [componentDefinitions.id],
+      name: 'components_component_definition_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.pageId],
+      foreignColumns: [pages.id],
+      name: 'components_page_id_fkey',
+    }).onDelete('cascade'),
+  ]
+);
+
+
+// --- User-Specific and Session Tables (Not directly tenant-aware) ---
 
 export const userSessions = pgTable(
   'user_sessions',
@@ -61,154 +244,6 @@ export const userSessions = pgTable(
   ]
 );
 
-export const users = pgTable(
-  'users',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    email: varchar({ length: 255 }).notNull(),
-    name: varchar({ length: 255 }),
-    password: text().notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [unique('users_email_key').on(table.email)]
-);
-
-export const componentDefinitions = pgTable(
-  'component_definitions',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    projectId: uuid('project_id').notNull(),
-    name: varchar({ length: 255 }).notNull(),
-    displayName: varchar('display_name', { length: 255 }).notNull(),
-    description: text(),
-    category: varchar({ length: 255 }).default('basic').notNull(),
-    propsSchema: jsonb('props_schema').default({}).notNull(),
-    renderTemplate: text('render_template').notNull(),
-    cssStyles: text('css_styles'),
-    isActive: boolean('is_active').default(true).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index('idx_component_definitions_project').using(
-      'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops')
-    ),
-    foreignKey({
-      columns: [table.projectId],
-      foreignColumns: [projects.id],
-      name: 'component_definitions_project_id_fkey',
-    }).onDelete('cascade'),
-    unique('component_definitions_project_id_name_key').on(
-      table.projectId,
-      table.name
-    ),
-  ]
-);
-
-export const projects = pgTable(
-  'projects',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    ownerId: uuid('owner_id').notNull(),
-    name: varchar({ length: 255 }).notNull(),
-    description: text(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    requirements: text(),
-  },
-  (table) => [
-    index('idx_projects_owner').using(
-      'btree',
-      table.ownerId.asc().nullsLast().op('uuid_ops')
-    ),
-    foreignKey({
-      columns: [table.ownerId],
-      foreignColumns: [users.id],
-      name: 'projects_owner_id_fkey',
-    }),
-  ]
-);
-
-export const pages = pgTable(
-  'pages',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    projectId: uuid('project_id').notNull(),
-    path: text().notNull(),
-    name: varchar({ length: 255 }).notNull(),
-    description: text(),
-    layoutJson: jsonb('layout_json').default({}).notNull(),
-    isPublished: boolean('is_published').default(false).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index('idx_pages_project').using(
-      'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops')
-    ),
-    foreignKey({
-      columns: [table.projectId],
-      foreignColumns: [projects.id],
-      name: 'pages_project_id_fkey',
-    }).onDelete('cascade'),
-    unique('pages_project_id_path_key').on(table.projectId, table.path),
-  ]
-);
-
-export const components = pgTable(
-  'components',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    pageId: uuid('page_id').notNull(),
-    componentDefinitionId: uuid('component_definition_id').notNull(),
-    props: jsonb().default({}).notNull(),
-    orderIndex: integer('order_index').default(0).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index('idx_components_definition').using(
-      'btree',
-      table.componentDefinitionId.asc().nullsLast().op('uuid_ops')
-    ),
-    index('idx_components_page_order').using(
-      'btree',
-      table.pageId.asc().nullsLast().op('int4_ops'),
-      table.orderIndex.asc().nullsLast().op('int4_ops')
-    ),
-    foreignKey({
-      columns: [table.componentDefinitionId],
-      foreignColumns: [componentDefinitions.id],
-      name: 'components_component_definition_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.pageId],
-      foreignColumns: [pages.id],
-      name: 'components_page_id_fkey',
-    }).onDelete('cascade'),
-  ]
-);
-
 export const chatMessages = pgTable(
   'chat_messages',
   {
@@ -238,7 +273,8 @@ export const chatMessages = pgTable(
   ]
 );
 
-// Agents 모듈을 위한 테이블들
+// --- Deprecated Agent Tables (To be removed or refactored) ---
+
 export const projectPlans = pgTable(
   'project_plans',
   {

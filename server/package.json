@@ -9,8 +9,8 @@
     "start": "dotenvx run -e .env -- node dist/server.js",
     "lint": "eslint . --ext .ts --config ../eslint.config.js",
     "test": "jest --config jest.config.ts",
-    "db:generate": "dotenvx run -e .env -e .env.local -- drizzle-kit generate --config ../drizzle.config.ts",
-    "db:push": "dotenvx run -e .env -e .env.local -- drizzle-kit push --config ../drizzle.config.ts",
+    "db:generate": "cd .. && npx dotenvx run -f .env -f .env.local -- npx drizzle-kit generate",
+    "db:push": "cd .. && npx dotenvx run -f .env -f .env.local -- npx drizzle-kit push",
     "db:pull": "dotenvx run -e .env -e .env.local -- drizzle-kit introspect --config ../drizzle.config.ts",
     "format": "prettier --write ."
   },
