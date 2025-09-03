@@ -44,6 +44,7 @@ Navo/
 - **의존성 방향**: `Controller` → `Service` → `Repository` 단방향으로 흐릅니다.
 - **모듈 간 참조**: 모듈 간 직접 참조는 금지합니다. 필요한 경우 `shared` 패키지(타입, DTO) 또는 `lib`의 인터페이스를 통해 통신합니다.
 - **Lint 규칙**: 위 의존성 규칙을 강제하기 위해 ESLint 플러그인(`eslint-plugin-import`)을 설정합니다.
+- **경로 별칭 규칙**: `@/lib/*`, `@/modules/*`, `@/db/*`, `@/config/*` 별칭을 사용하고, 해당 디렉터리에 대한 상대경로 import(`../lib`, `../../db` 등)는 금지합니다.
 
 ### 2. 에러 및 로깅 표준
 
@@ -111,11 +112,11 @@ Navo/
 
     components
     [a, b, c, d, e, f, g]
-    [x, x, x, x, , , ]
+    [x, x, x, x, x, x, x]
 
     analytics
     [a, b, c, d, e, f, g]
-    [x, x, x, x, , , ]
+    [x, x, x, x, x, x, x]
 
     events
     [a, b, c, d, e, f, g]
@@ -123,7 +124,7 @@ Navo/
 
     pages
     [a, b, c, d, e, f, g]
-    [x, x, x, x, , , ]
+    [x, x, x, x, x, x, x]
 
     static
     [a, b, c, d, e, f, g]
@@ -131,19 +132,24 @@ Navo/
 
     health
     [a, b, c, d, e, f, g]
-    [x, x, x, x, , , ]
+    [x, x, x, x, x, , ]
 
     db
     [a, b, c, d, e, f, g]
-    [x, x, x, , , , ]
+    [x, x, x, x, , , ]
 
 - [ ] **4단계: 최종 정리**
   - [ ] 모든 모듈 이전 완료 후, 호환성 계층 제거
   - [x] 전체 시스템 통합 테스트 및 최종 검증 (server 단위/통합 테스트 green, 2025-01-27)
+  - 호환성 계층 제거 계획
+    - no-restricted-imports 규칙을 경고 → 에러로 단계적 강화
+    - 레거시 경로 일괄 치환 codemod 적용 및 PR 가이드 배포
+    - 변경 공지 및 유예 기간 공지(최소 1주) 후 제거 실행
 
-## 5. 최근 진행 상황 (2024-12-19)
+## 5. 최근 진행 상황 (2025-01-27)
 
 ### 완료된 작업
+
 - **agents 모듈**: Repository, Service, Controller 계층 완성
 - **events 모듈**: Repository, Service, Controller 계층 완성
 - **health 모듈**: 기본 구조 완성 (간단한 health check)
@@ -151,44 +157,52 @@ Navo/
 - **projects 모듈**: Repository, Service, Controller 계층 완성
 
 ### 다음 우선순위
-1. **테스트 작성**: 완료된 모듈들에 대한 단위/통합 테스트 작성
-2. **import 경로 전환**: 기존 코드에서 새 모듈 경로로 점진적 전환
-3. **남은 모듈들**: components, analytics, pages 모듈 리팩토링
 
-## 6. 리뷰 피드백 반영 (2024-12-19)
+1. `projects` 모듈: 테스트(e) 보강 및 저장소 반환타입 정규화(null 매핑) 추가 검증
+2. `db` 모듈: 기본 리포지토리 계약에 대한 단위 테스트 추가
+3. import 경로 전환(f) 잔여 모듈 적용 및 호환 레이어 제거(g) 준비
+
+## 6. 리뷰 피드백 반영 (2025-01-27)
 
 ### ✅ 해결된 문제들
+
 1. **Repository 구현 완료**: `agents.repository.ts`에 실제 데이터베이스 연동 로직 구현
    - `projectPlans`, `virtualPreviews` 테이블 스키마 추가
    - CRUD 작업 완전 구현
 2. **의존성 규칙 준수**: 모듈 간 직접 참조 제거
    - `authenticateToken`을 전역 미들웨어로 등록
-   - `app.authenticateToken` 사용으로 모듈 간 결합도 감소
+   - 모듈은 인증 미들웨어에 직접 의존하지 않고, 라우터 레벨 전역 미들웨어로 주입되어 프레임워크 컨텍스트 결합을 최소화
 
 ### 🔄 진행 중인 작업
+
 1. **테스트 작성**: 단위/통합 테스트 작성 필요
 2. **import 경로 전환**: 기존 코드에서 새 모듈 경로로 점진적 전환
 
 ### 📋 다음 단계
-1. **테스트 코드 작성**: `AgentsService`와 `AgentsController` 중심으로 단위/통합 테스트
-2. **남은 모듈들**: `components`, `analytics`, `pages` 모듈 리팩토링
-3. **최종 검증**: 전체 시스템 통합 테스트
 
-## 7. 우선순위별 진행 상황 (2024-12-19)
+1. `projects` 모듈: 테스트(e) 보강 및 저장소 반환타입 정규화(null 매핑) 추가 검증
+2. `db` 모듈: 기본 리포지토리 계약에 대한 단위 테스트 추가
+3. import 경로 전환(f) 잔여 모듈 적용 및 호환 레이어 제거(g) 준비
+
+## 7. 우선순위별 진행 상황 (2025-01-27)
 
 ### 🎯 우선순위별 완료 현황
 
 #### 1차 (핵심): 라우트/컨트롤러 연결(d), 레거시 re-export(a)
+
 - ✅ **완료**: `ai`, `auth`, `static`, `agents`, `events`, `health`, `db`, `projects`, `components`, `analytics`, `pages`
 
 #### 2차 (정리): 타입/리포/서비스 분리(b), 별칭 일원화(c)
+
 - ✅ **완료**: `ai`, `auth`, `static`, `agents`, `events`, `health`, `db`, `projects`, `components`, `analytics`, `pages`
 
 #### 3차 (품질): 테스트(e)
+
 - ✅ **완료**: `ai`, `auth`, `static`, `agents`, `events`, `health`, `pages`, `components`, `analytics`
 - ⏳ **대기**: `db`, `projects`
 
 #### 4차 (전환): 기존 import 전환(f), soft deprecate(g)
+
 - ✅ **완료**: `ai`, `auth`, `static`, `pages`, `components`, `analytics`
 - ⏳ **대기**: `agents`, `events`, `health`, `db`, `projects`
 

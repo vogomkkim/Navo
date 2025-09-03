@@ -15,6 +15,8 @@ const config: Config.InitialOptions = {
     '^@/modules/(.*)$': '<rootDir>/src/modules/$1',
     '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
     '^@/core/(.*)$': '<rootDir>/src/core/$1',
+    '^@/config$': '<rootDir>/src/config/index.ts',
+    '^@/config/(.*)$': '<rootDir>/src/config/$1',
   },
   globals: {
     'ts-jest': {

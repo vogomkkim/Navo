@@ -146,7 +146,9 @@ export async function handleDeleteProject(
     }
 
     // Hard delete (FKs cascade). For soft-delete, replace with update to set deletedAt
-    await db.delete(projects).where(and(eq(projects.id, projectId), eq(projects.ownerId, userId)));
+    await db
+      .delete(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.ownerId, userId)));
 
     reply.status(204).send();
   } catch (error) {

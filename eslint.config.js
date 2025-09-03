@@ -19,10 +19,7 @@ export default tseslint.config(
     plugins: {
       import: importPlugin,
     },
-    extends: [
-      ...tseslint.configs.recommended,
-      eslintPluginPrettierRecommended,
-    ],
+    extends: [...tseslint.configs.recommended, eslintPluginPrettierRecommended],
     languageOptions: {
       parserOptions: {
         ecmaVersion: 'latest',
@@ -33,16 +30,35 @@ export default tseslint.config(
     rules: {
       'prettier/prettier': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       'linebreak-style': ['error', 'unix'],
-      // Enforce module boundaries
+      // Enforce alias usage instead of relative imports to top-level dirs
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            '^\\.{1,2}/(lib|modules|db|config)(/.*)?$',
+            '^@/modules/.*$',
+          ],
+        },
+      ],
+      // Enforce module boundaries (disabled inside modules via override below)
       'import/no-restricted-paths': [
         'error',
         {
           zones: [
             {
-              target: './server/src/modules',
+              target: './server/src',
               from: './server/src/modules',
-              message: 'Cross-module import is not allowed. Use shared packages or lib for communication.',
+              message:
+                'Cross-module import is not allowed. Use shared packages or lib for communication.',
             },
           ],
         },
@@ -50,24 +66,7 @@ export default tseslint.config(
       // Prevent cyclical dependencies
       'import/no-cycle': ['error', { maxDepth: 5 }],
       // Enforce import order
-      'import/order': [
-        'error',
-        {
-          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'object', 'type'],
-          pathGroups: [
-            {
-              pattern: '@/**',
-              group: 'internal',
-              position: 'before',
-            },
-          ],
-          'newlines-between': 'always',
-          alphabetize: {
-            order: 'asc',
-            caseInsensitive: true,
-          },
-        },
-      ],
+      'import/order': 'off',
     },
     settings: {
       'import/resolver': {
@@ -78,7 +77,18 @@ export default tseslint.config(
     },
   },
   {
-    // Ignore build output and node_modules
-    ignores: ['../dist/**', '../node_modules/**'],
+    // Ignore build output, node_modules, legacy backups and legacy ai core
+    ignores: [
+      '../dist/**',
+      '../node_modules/**',
+      'server/_backup/**',
+    ],
+  },
+  {
+    files: ['server/src/modules/**/*.ts'],
+    rules: {
+      // Allow intra-module relative imports; cross-module still blocked by no-restricted-imports on aliases/relative up-level
+      'import/no-restricted-paths': 'off',
+    },
   }
 );

@@ -33,7 +33,9 @@ describe('PagesService', () => {
     };
 
     jest.mocked(PagesRepositoryImpl).mockImplementation(() => mockPagesRepo);
-    jest.mocked(ProjectsRepositoryImpl).mockImplementation(() => mockProjectsRepo);
+    jest
+      .mocked(ProjectsRepositoryImpl)
+      .mockImplementation(() => mockProjectsRepo);
 
     service = new PagesService(mockApp);
   });
@@ -46,13 +48,18 @@ describe('PagesService', () => {
 
       const result = await service.listPages('p1', 'u1');
       expect(result).toEqual(pages);
-      expect(mockProjectsRepo.getProjectByUserId).toHaveBeenCalledWith('p1', 'u1');
+      expect(mockProjectsRepo.getProjectByUserId).toHaveBeenCalledWith(
+        'p1',
+        'u1'
+      );
       expect(mockPagesRepo.listPagesByProjectId).toHaveBeenCalledWith('p1');
     });
 
     it('throws when project not found or unauthorized', async () => {
       mockProjectsRepo.getProjectByUserId.mockResolvedValue(null);
-      await expect(service.listPages('p1', 'u1')).rejects.toThrow('페이지 목록 조회에 실패했습니다.');
+      await expect(service.listPages('p1', 'u1')).rejects.toThrow(
+        '페이지 목록 조회에 실패했습니다.'
+      );
       expect(mockApp.log.error).toHaveBeenCalled();
     });
   });
@@ -69,7 +76,9 @@ describe('PagesService', () => {
 
     it('throws when page not found', async () => {
       mockPagesRepo.getPageById.mockResolvedValue(null);
-      await expect(service.getPage('pg1', 'u1')).rejects.toThrow('페이지 조회에 실패했습니다.');
+      await expect(service.getPage('pg1', 'u1')).rejects.toThrow(
+        '페이지 조회에 실패했습니다.'
+      );
       expect(mockApp.log.error).toHaveBeenCalled();
     });
   });
@@ -86,7 +95,9 @@ describe('PagesService', () => {
     it('throws when page not found', async () => {
       mockProjectsRepo.getProjectByUserId.mockResolvedValue({ id: 'p1' });
       mockPagesRepo.getPageByPath.mockResolvedValue(null);
-      await expect(service.getPageByPath('p1', '/home', 'u1')).rejects.toThrow('경로별 페이지 조회에 실패했습니다.');
+      await expect(service.getPageByPath('p1', '/home', 'u1')).rejects.toThrow(
+        '경로별 페이지 조회에 실패했습니다.'
+      );
       expect(mockApp.log.error).toHaveBeenCalled();
     });
   });
@@ -98,7 +109,10 @@ describe('PagesService', () => {
       const created = { id: 'pg1', projectId: 'p1' } as any;
       mockPagesRepo.createPage.mockResolvedValue(created);
 
-      const result = await service.createPage({ projectId: 'p1', path: '/p', title: 'T' } as any, 'u1');
+      const result = await service.createPage(
+        { projectId: 'p1', path: '/p', title: 'T' } as any,
+        'u1'
+      );
       expect(result).toEqual(created);
     });
 
@@ -106,7 +120,10 @@ describe('PagesService', () => {
       mockProjectsRepo.getProjectByUserId.mockResolvedValue({ id: 'p1' });
       mockPagesRepo.getPageByPath.mockResolvedValue({ id: 'pg1' });
       await expect(
-        service.createPage({ projectId: 'p1', path: '/p', title: 'T' } as any, 'u1')
+        service.createPage(
+          { projectId: 'p1', path: '/p', title: 'T' } as any,
+          'u1'
+        )
       ).rejects.toThrow('페이지 생성에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
@@ -119,13 +136,19 @@ describe('PagesService', () => {
       mockProjectsRepo.getProjectByUserId.mockResolvedValue({ id: 'p1' });
       const updated = { ...page, title: 'New' } as any;
       mockPagesRepo.updatePage.mockResolvedValue(updated);
-      const result = await service.updatePage('pg1', { title: 'New' } as any, 'u1');
+      const result = await service.updatePage(
+        'pg1',
+        { title: 'New' } as any,
+        'u1'
+      );
       expect(result).toEqual(updated);
     });
 
     it('throws when page missing', async () => {
       mockPagesRepo.getPageById.mockResolvedValue(null);
-      await expect(service.updatePage('pg1', { title: 'New' } as any, 'u1')).rejects.toThrow('페이지 업데이트에 실패했습니다.');
+      await expect(
+        service.updatePage('pg1', { title: 'New' } as any, 'u1')
+      ).rejects.toThrow('페이지 업데이트에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
   });
@@ -141,7 +164,9 @@ describe('PagesService', () => {
 
     it('throws when page missing', async () => {
       mockPagesRepo.getPageById.mockResolvedValue(null);
-      await expect(service.deletePage('pg1', 'u1')).rejects.toThrow('페이지 삭제에 실패했습니다.');
+      await expect(service.deletePage('pg1', 'u1')).rejects.toThrow(
+        '페이지 삭제에 실패했습니다.'
+      );
       expect(mockApp.log.error).toHaveBeenCalled();
     });
   });
@@ -168,4 +193,3 @@ describe('PagesService', () => {
     });
   });
 });
-

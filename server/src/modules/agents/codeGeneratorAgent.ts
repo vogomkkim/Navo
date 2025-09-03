@@ -437,9 +437,9 @@ export class CodeGeneratorAgent extends BaseAgent {
   private generatePackageJson(request: any, architecture: any): any {
     const dependencies = architecture.technology?.includes('React')
       ? {
-        react: '^18.2.0',
-        'react-dom': '^18.2.0',
-      }
+          react: '^18.2.0',
+          'react-dom': '^18.2.0',
+        }
       : {};
 
     return {

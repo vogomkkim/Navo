@@ -1,5 +1,5 @@
-import { EnhancedPrompt } from './types/intent';
 import { UserContext } from './contextManager';
+import { EnhancedPrompt } from './types/intent';
 
 /**
  * 액션 핸들러 인터페이스
@@ -276,6 +276,7 @@ export class ProjectCreationHandler implements ActionHandler {
   description = '새 프로젝트 생성 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'project_creation';
   }
 
@@ -284,6 +285,8 @@ export class ProjectCreationHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       // 향상된 메시지에서 의미있는 프로젝트명 생성
       const projectName = this.generateMeaningfulProjectName(
@@ -454,6 +457,7 @@ export class PageCreationHandler implements ActionHandler {
   description = '새 페이지 생성 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'page_creation';
   }
 
@@ -462,6 +466,8 @@ export class PageCreationHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const pageData = {
         name: enhancedPrompt.target.name || '새 페이지',
@@ -492,6 +498,7 @@ export class ComponentCreationHandler implements ActionHandler {
   description = '새 컴포넌트 생성 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'component_creation';
   }
 
@@ -500,6 +507,8 @@ export class ComponentCreationHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const componentData = {
         name: enhancedPrompt.target.name || '새 컴포넌트',
@@ -530,6 +539,7 @@ export class PageModificationHandler implements ActionHandler {
   description = '페이지 수정 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'page_modification';
   }
 
@@ -538,6 +548,8 @@ export class PageModificationHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const modificationData = {
         targetPage: enhancedPrompt.target.name || '현재 페이지',
@@ -567,6 +579,7 @@ export class ComponentModificationHandler implements ActionHandler {
   description = '컴포넌트 수정 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'component_modification';
   }
 
@@ -575,6 +588,8 @@ export class ComponentModificationHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const modificationData = {
         targetComponent:
@@ -607,6 +622,7 @@ export class BugFixHandler implements ActionHandler {
   description = '버그 수정 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'bug_fix';
   }
 
@@ -615,6 +631,8 @@ export class BugFixHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const bugFixData = {
         issue: enhancedPrompt.action.parameters.issue || '알 수 없는 버그',
@@ -645,6 +663,7 @@ export class FeatureRequestHandler implements ActionHandler {
   description = '기능 요청 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'feature_request';
   }
 
@@ -653,6 +672,8 @@ export class FeatureRequestHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const featureData = {
         feature: enhancedPrompt.action.parameters.feature || '새 기능',
@@ -683,6 +704,7 @@ export class CodeReviewHandler implements ActionHandler {
   description = '코드 리뷰 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'code_review';
   }
 
@@ -691,6 +713,8 @@ export class CodeReviewHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const reviewData = {
         target: enhancedPrompt.target.description || '전체 코드',
@@ -724,6 +748,7 @@ export class QuestionHandler implements ActionHandler {
   description = '질문 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'question';
   }
 
@@ -732,6 +757,8 @@ export class QuestionHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const questionData = {
         question: enhancedPrompt.enhancedMessage,
@@ -761,6 +788,7 @@ export class ComplaintHandler implements ActionHandler {
   description = '불만/넋두리 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'complaint';
   }
 
@@ -769,6 +797,8 @@ export class ComplaintHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const complaintData = {
         complaint: enhancedPrompt.enhancedMessage,
@@ -820,6 +850,7 @@ export class GeneralHandler implements ActionHandler {
   description = '일반 대화 처리';
 
   canHandle(intent: string, target: string): boolean {
+    void target;
     return intent === 'general';
   }
 
@@ -828,11 +859,17 @@ export class GeneralHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     try {
       const message = enhancedPrompt.originalMessage.toLowerCase();
 
       // 인사말에 대한 적절한 응답
-      if (message.includes('안녕') || message.includes('하이') || message.includes('반갑')) {
+      if (
+        message.includes('안녕') ||
+        message.includes('하이') ||
+        message.includes('반갑')
+      ) {
         return {
           success: true,
           message: '안녕하세요! 무엇을 도와드릴까요?',
@@ -873,7 +910,7 @@ export class DefaultHandler implements ActionHandler {
   name = 'default';
   description = '기본 처리';
 
-  canHandle(intent: string, target: string): boolean {
+  canHandle(_intent: string, _target: string): boolean {
     return true; // 모든 의도를 처리할 수 있음
   }
 
@@ -882,6 +919,8 @@ export class DefaultHandler implements ActionHandler {
     userContext: UserContext,
     sessionId: string
   ): Promise<ActionResult> {
+    void userContext;
+    void sessionId;
     return {
       success: true,
       message: `기본 처리로 요청을 처리합니다.`,

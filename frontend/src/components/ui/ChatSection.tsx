@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useSimpleChatSystem } from '@/lib/api';
-import { ChatPlaceholder } from './ChatPlaceholder';
+import { useEffect, useRef, useState } from 'react';
+import { useOrchestratorChat } from '@/lib/api';
 import { useInputHistory } from '@/hooks/useInputHistory';
-import { useQueryClient } from '@tanstack/react-query'; // React Query 클라이언트 추가
-import { useAuth } from '@/app/context/AuthContext';
-import { fetchApi } from '@/lib/api';
+import { ChatPlaceholder } from './ChatPlaceholder';
 
-// AI Agent 역할 정의
+// Agent roles and statuses
 type AgentRole =
   | 'Strategic Planner'
   | 'Project Manager'
@@ -16,7 +13,6 @@ type AgentRole =
   | 'Quality Assurance Engineer'
   | 'DevOps Engineer';
 
-// AI Agent 상태
 type AgentStatus =
   | 'waiting'
   | 'analyzing'
@@ -27,18 +23,16 @@ type AgentStatus =
   | 'completed'
   | 'error';
 
-// AI Agent 메시지
 interface AgentMessage {
   id: string;
   role: AgentRole;
   message: string;
   status: AgentStatus;
   timestamp: Date;
-  details?: any; // 각 역할별 상세 정보
-  suggestions?: string[]; // 개선 제안
+  details?: any;
+  suggestions?: string[];
 }
 
-// 사용자 메시지
 interface UserMessage {
   id: string;
   role: 'user';
@@ -46,10 +40,8 @@ interface UserMessage {
   timestamp: Date;
 }
 
-// 통합 메시지 타입
 type ChatMessage = UserMessage | AgentMessage;
 
-// AI Agent 워크플로우 단계
 const WORKFLOW_STEPS: AgentRole[] = [
   'Strategic Planner',
   'Project Manager',
@@ -67,24 +59,19 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentWorkflowStep, setCurrentWorkflowStep] = useState(0);
-  const [projectContext, setProjectContext] = useState<any>({});
   const [currentStepName, setCurrentStepName] = useState<string>('');
-  const { token } = useAuth();
 
-  // 방향키 히스토리 훅 사용
   const { inputValue, setInputValue, handleKeyDown, addToHistory } =
     useInputHistory();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const simpleChat = useSimpleChatSystem({});
-  const queryClient = useQueryClient(); // React Query 클라이언트 인스턴스 생성
+  const orchestratorChat = useOrchestratorChat({});
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // 입력창 자동 높이 조정
   const autoResize = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -97,65 +84,69 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
     scrollToBottom();
   }, [chatHistory]);
 
-  // 입력창 내용 변경 시 자동 높이 조정
   useEffect(() => {
     autoResize();
   }, [inputValue]);
 
-  // 현재 단계 이름 업데이트
   useEffect(() => {
     if (currentWorkflowStep < WORKFLOW_STEPS.length) {
       setCurrentStepName(WORKFLOW_STEPS[currentWorkflowStep]);
     }
   }, [currentWorkflowStep]);
 
-  // 새로운 의도 기반 에이전트 시스템 실행
-  const executeSimpleChatSystem = async (userMessage: string) => {
+  const executeChat = async (userMessage: string) => {
     setIsProcessing(true);
-
     try {
-      // 백엔드 새로운 에이전트 시스템 호출
-      const result = await simpleChat.mutateAsync({
-        message: userMessage,
-      });
+      const result = await orchestratorChat.mutateAsync({ userMessage });
+      const payload: any = result as any;
+      const ok: boolean = payload?.ok === true;
+      let text =
+        payload?.data ??
+        payload?.result?.data ??
+        payload?.result?.message ??
+        payload?.message;
 
-      if (result.success) {
-        // 응답 메시지 생성
+      if (ok) {
+        if (text === undefined || text === null) {
+          text = '요청이 성공적으로 처리되었습니다.';
+        }
+        if (typeof text !== 'string') {
+          try {
+            text = JSON.stringify(text);
+          } catch {
+            text = String(text);
+          }
+        }
         const responseMessage: AgentMessage = {
           id: `response-${Date.now()}`,
           role: 'Strategic Planner',
-          message: result.message,
+          message: text,
           status: 'completed',
           timestamp: new Date(),
         };
-
         setChatHistory((prev: ChatMessage[]) => [...prev, responseMessage]);
-
-        // 프로젝트 생성 성공 시 React Query 캐시 무효화
-        if (result.type === 'project_creation') {
-          queryClient.invalidateQueries({ queryKey: ['projects'] });
-        }
       } else {
-        throw new Error('백엔드 API 호출 실패');
+        const errorText = payload?.error || '백엔드 API 호출 실패';
+        throw new Error(errorText);
       }
     } catch (error) {
-      console.error('새로운 에이전트 시스템 오류:', error);
-
-      // 에러 유형별 메시지 생성
-      let errorMessage = '❌ 새로운 에이전트 시스템 실행 중 오류가 발생했습니다.';
-
+      console.error('에이전트 시스템 오류:', error);
+      let errorMessage =
+        '❌ 새로운 에이전트 시스템 실행 중 오류가 발생했습니다.';
       if (error instanceof Error) {
         if (error.message.includes('Unauthorized')) {
           errorMessage = `❌ **인증 오류**\n\n로그인이 필요하거나 인증이 만료되었습니다.\n\n**해결 방법:**\n1. 로그인 상태 확인\n2. 페이지 새로고침 후 재시도\n3. 필요시 재로그인`;
         } else if (error.message.includes('API 오류')) {
           errorMessage = `❌ **백엔드 API 호출 오류**\n\n${error.message}\n\n**해결 방법:**\n1. 인터넷 연결 확인\n2. 서버 상태 확인\n3. 잠시 후 재시도`;
-        } else if (error.message.includes('백엔드 API 호출 실패')) {
+        } else if (
+          error.message.includes('백엔드 API 응답 오류') ||
+          error.message.includes('백엔드 API 호출 실패')
+        ) {
           errorMessage = `❌ **백엔드 API 응답 오류**\n\n백엔드에서 성공 응답을 받지 못했습니다.\n\n**해결 방법:**\n1. 서버 상태 확인\n2. 잠시 후 재시도\n3. 개발자에게 문의`;
         } else {
           errorMessage = `❌ **예상치 못한 오류**\n\n${error.message}\n\n**해결 방법:**\n1. 브라우저 새로고침\n2. 개발자에게 문의`;
         }
       }
-
       const errorMessageObj: AgentMessage = {
         id: `error-${Date.now()}`,
         role: 'Strategic Planner',
@@ -163,7 +154,6 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
         status: 'error',
         timestamp: new Date(),
       };
-
       setChatHistory((prev: ChatMessage[]) => [...prev, errorMessageObj]);
     } finally {
       setIsProcessing(false);
@@ -173,7 +163,6 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isProcessing) return;
 
-    // 메시지 히스토리에 추가
     addToHistory(inputValue);
 
     const userMessage: UserMessage = {
@@ -186,11 +175,10 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
     setChatHistory((prev: ChatMessage[]) => [...prev, userMessage]);
     setInputValue('');
 
-    // 새로운 의도 기반 에이전트 시스템 시작
-    await executeSimpleChatSystem(inputValue);
+    await executeChat(inputValue);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: any) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();

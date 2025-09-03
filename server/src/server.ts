@@ -1,35 +1,103 @@
 import fastify from 'fastify';
-import { errorHandler } from './lib/errorHandler';
-import logger, { createRequestLogger } from './lib/logger';
-import { authenticateToken } from './modules/auth/auth.middleware';
-
-import { authController } from './modules/auth/auth.controller';
-import { healthController } from './modules/health/health.controller';
-import { staticController } from './modules/static/static.controller';
-import { aiController } from './modules/ai/ai.controller';
-import eventRoutes from './modules/events/events.controller';
-import { agentsController } from './modules/agents/agents.controller';
-import { projectsController } from './modules/projects/projects.controller';
-import { pagesController } from './modules/pages/pages.controller';
-import { componentsController } from './modules/components/components.controller';
-import { analyticsController } from './modules/analytics/analytics.controller';
+import { errorHandler } from '@/lib/errorHandler';
+import logger, { createRequestLogger } from '@/lib/logger';
+import { authenticateToken } from '@/modules/auth/auth.middleware';
+import { authController } from '@/modules/auth/auth.controller';
+import { healthController } from '@/modules/health/health.controller';
+import { staticController } from '@/modules/static/static.controller';
+import { aiController } from '@/modules/ai/ai.controller';
+import eventRoutes from '@/modules/events/events.controller';
+import { agentsController } from '@/modules/agents/agents.controller';
+import { projectsController } from '@/modules/projects/projects.controller';
+import { pagesController } from '@/modules/pages/pages.controller';
+import { componentsController } from '@/modules/components/components.controller';
+import { analyticsController } from '@/modules/analytics/analytics.controller';
+import { orchestratorController } from '@/modules/orchestrator/orchestrator.controller'; // New import
 
 // Fastify 인스턴스 생성
 const app = fastify({
   logger: false, // 커스텀 로거를 사용하므로 기본 로거는 비활성화
-  genReqId: (req) => req.headers['x-request-id'] || createRequestLogger().bindings().requestId,
+  genReqId: (req) =>
+    req.headers['x-request-id'] || createRequestLogger().bindings().requestId,
 });
 
 // 커스텀 로거 훅 등록
-app.addHook('onRequest', (req, reply, done) => {
+app.addHook('onRequest', (req, _reply, done) => {
   const requestLogger = createRequestLogger(req.id as string);
-  requestLogger.info({ req }, `요청 수신: ${req.method} ${req.url}`);
+  (req as any)._startTime = Date.now();
+  requestLogger.info(
+    {
+      method: req.method,
+      url: req.url,
+      host: req.headers.host,
+      requestId: req.id,
+    },
+    '요청 수신'
+  );
   done();
+});
+
+// 응답 바디 프리뷰 로깅 (개발 환경 전용)
+app.addHook('onSend', (req, reply, payload, done) => {
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const requestLogger = createRequestLogger(req.id as string);
+      const contentType = String(reply.getHeader('content-type') || '');
+      const shouldLogBody =
+        contentType.includes('application/json') || contentType.startsWith('text/');
+
+      let bodyPreview: string | undefined;
+      if (shouldLogBody) {
+        let text: string;
+        if (Buffer.isBuffer(payload)) {
+          text = payload.toString('utf8');
+        } else if (typeof payload === 'string') {
+          text = payload;
+        } else {
+          try {
+            text = JSON.stringify(payload);
+          } catch {
+            text = String(payload);
+          }
+        }
+        const maxLen = 2000;
+        bodyPreview =
+          text.length > maxLen
+            ? text.slice(0, maxLen) + `... [추가 ${text.length - maxLen}자 생략]`
+            : text;
+      }
+
+      requestLogger.info(
+        {
+          method: req.method,
+          url: req.url,
+          statusCode: reply.statusCode,
+          contentType,
+          body: bodyPreview ?? '[바디 로깅 제외]'
+        },
+        '응답 바디'
+      );
+    } catch {
+      // 로깅 중 오류는 무시
+    }
+  }
+  done(null, payload);
 });
 
 app.addHook('onResponse', (req, reply, done) => {
   const requestLogger = createRequestLogger(req.id as string);
-  requestLogger.info({ res: reply }, `요청 처리 완료: ${req.method} ${req.url} - ${reply.statusCode}`);
+  const start = (req as any)._startTime as number | undefined;
+  const latencyMs = start ? Date.now() - start : undefined;
+  requestLogger.info(
+    {
+      method: req.method,
+      url: req.url,
+      statusCode: reply.statusCode,
+      requestId: req.id,
+      latencyMs,
+    },
+    '요청 처리 완료'
+  );
   done();
 });
 
@@ -40,7 +108,7 @@ errorHandler(app);
 app.decorate('authenticateToken', authenticateToken);
 
 // 컨트롤러 등록
-authController(app);
+app.register((instance) => authController(instance), { prefix: '/api/auth' });
 healthController(app);
 staticController(app);
 aiController(app);
@@ -50,13 +118,21 @@ projectsController(app);
 pagesController(app);
 componentsController(app);
 analyticsController(app);
+orchestratorController(app); // New controller registration
 
 // 서버 시작 함수
 const start = async () => {
   try {
+    logger.info({ env: process.env.PORT });
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
     await app.listen({ port, host: '0.0.0.0' });
     logger.info(`서버가 ${port}번 포트에서 실행 중입니다.`);
+
+    // 개발 환경에서는 환경변수를 그대로 한 번 출력
+    logger.info(process.env.NODE_ENV);
+    if (process.env.NODE_ENV === 'development') {
+      logger.info({ env: process.env }, '개발 환경: 환경변수 전체 출력');
+    }
   } catch (err) {
     logger.error(err, '서버 시작 실패');
     process.exit(1);

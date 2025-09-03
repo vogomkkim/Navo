@@ -43,5 +43,5 @@ export const contextManager = {
 
   removeContext(sessionId) {
     return this.contexts.delete(sessionId);
-  }
+  },
 };

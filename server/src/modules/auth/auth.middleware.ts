@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken';
-import { appConfig } from '../../config';
+import { appConfig } from '@/config';
 
 export async function authenticateToken(
   request: FastifyRequest,

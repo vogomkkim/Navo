@@ -84,9 +84,9 @@ describe('EventsService', () => {
       mockRepository.storeEvents.mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(eventsService.storeUserEvents(eventsArray, userId)).rejects.toThrow(
-        '사용자 이벤트 저장에 실패했습니다.'
-      );
+      await expect(
+        eventsService.storeUserEvents(eventsArray, userId)
+      ).rejects.toThrow('사용자 이벤트 저장에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
   });
@@ -143,9 +143,9 @@ describe('EventsService', () => {
       mockRepository.storeEvents.mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(eventsService.storeErrorEvent(errorData, userId)).rejects.toThrow(
-        '에러 이벤트 저장에 실패했습니다.'
-      );
+      await expect(
+        eventsService.storeErrorEvent(errorData, userId)
+      ).rejects.toThrow('에러 이벤트 저장에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
   });
@@ -185,7 +185,9 @@ describe('EventsService', () => {
       // Arrange
       const userId = 'user-123';
 
-      mockRepository.getEventsByUserId.mockRejectedValue(new Error('Database error'));
+      mockRepository.getEventsByUserId.mockRejectedValue(
+        new Error('Database error')
+      );
 
       // Act & Assert
       await expect(eventsService.getUserEvents(userId)).rejects.toThrow(
@@ -216,14 +218,18 @@ describe('EventsService', () => {
 
       // Assert
       expect(result).toEqual(mockEvents);
-      expect(mockRepository.getEventsByProjectId).toHaveBeenCalledWith(projectId);
+      expect(mockRepository.getEventsByProjectId).toHaveBeenCalledWith(
+        projectId
+      );
     });
 
     it('should handle errors during project events retrieval', async () => {
       // Arrange
       const projectId = 'project-123';
 
-      mockRepository.getEventsByProjectId.mockRejectedValue(new Error('Database error'));
+      mockRepository.getEventsByProjectId.mockRejectedValue(
+        new Error('Database error')
+      );
 
       // Act & Assert
       await expect(eventsService.getProjectEvents(projectId)).rejects.toThrow(

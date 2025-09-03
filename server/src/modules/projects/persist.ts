@@ -71,10 +71,10 @@ export async function assignLayoutsForPages(
       Array.isArray(current.components) && current.components.length > 0;
     const synthesizedComponents = !hasComponents
       ? await generateLayoutComponentsForPage({
-        path: page.path || '/',
-        name: (page as any).name,
-        description: (page as any).description,
-      })
+          path: page.path || '/',
+          name: (page as any).name,
+          description: (page as any).description,
+        })
       : undefined;
 
     const nextLayoutJson = {

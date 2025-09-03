@@ -1,24 +1,24 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { db } from '../../db/db.instance';
+import { db } from '@/db';
 import {
   events,
   projects,
   componentDefinitions,
   pages,
   components,
-} from '../../db/schema';
+} from '@/db';
 import { eq, inArray } from 'drizzle-orm';
 import {
   storePages,
   storeComponentDefinitions,
   storePageComponents,
   assignLayoutsForPages,
-} from '../../projects/persist';
+} from '@/modules/projects/persist';
 import { generateProjectPlan } from '../agents/agents.service';
-import { ProjectRequest } from '@/core/masterDeveloper';
+import type { ProjectRequest } from '@/core/types/project';
 import { contextManager, UserContext } from '@/core/contextManager';
-import { intentAnalyzer } from '../core/intentAnalyzer';
+import { intentAnalyzer } from '@/core/intentAnalyzer';
 import { EnhancedPrompt } from '@/core/types/intent';
 import { actionRouter, ActionResult } from '@/core/actionRouter';
 import { safeJsonParse } from '../utils/jsonRefiner';
@@ -326,12 +326,13 @@ export async function handleMultiAgentChat(
     }
 
     // ActionRouter 결과를 기반으로 프로젝트 요청 생성
-    const req: ProjectRequest | null = await buildProjectRequestFromActionResult(
-      actionResult,
-      enhancedPrompt,
-      userContext,
-      sessionId
-    );
+    const req: ProjectRequest | null =
+      await buildProjectRequestFromActionResult(
+        actionResult,
+        enhancedPrompt,
+        userContext,
+        sessionId
+      );
 
     if (req) {
       const start = Date.now();
@@ -438,7 +439,10 @@ export async function handleMultiAgentChat(
       });
     } else {
       // 프로젝트 생성이 필요하지 않은 경우 일반 대화 응답
-      const assistantMessage = generateGeneralResponse(actionResult, enhancedPrompt);
+      const assistantMessage = generateGeneralResponse(
+        actionResult,
+        enhancedPrompt
+      );
       await contextManager.addMessage(
         sessionId,
         userId,
@@ -536,12 +540,7 @@ async function buildProjectRequestFromActionResult(
   const { intent, enhancedMessage } = enhancedPrompt;
 
   // 프로젝트 생성이 필요하지 않은 의도들
-  const nonProjectIntents = [
-    'question',
-    'complaint',
-    'general',
-    'code_review'
-  ];
+  const nonProjectIntents = ['question', 'complaint', 'general', 'code_review'];
 
   // 프로젝트 생성이 필요하지 않은 액션들
   const nonProjectActions = [
@@ -549,13 +548,14 @@ async function buildProjectRequestFromActionResult(
     'clarify_complaint',
     'suggest_improvement',
     'general_conversation',
-    'review_code'
+    'review_code',
   ];
 
   // 프로젝트 생성이 필요하지 않은 경우 null 반환
   if (
     nonProjectIntents.includes(intent.type) ||
-    (actionResult.nextAction && nonProjectActions.includes(actionResult.nextAction))
+    (actionResult.nextAction &&
+      nonProjectActions.includes(actionResult.nextAction))
   ) {
     return null;
   }
@@ -607,8 +607,6 @@ async function buildProjectRequestFromActionResult(
       case 'implement_feature':
         enhancedRequest.description += `\n\n기능 구현 정보: ${JSON.stringify(actionResult.data, null, 2)}`;
         break;
-
-
 
       default:
         enhancedRequest.description += `\n\n처리 정보: ${JSON.stringify(actionResult.data, null, 2)}`;

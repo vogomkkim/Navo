@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   pgTable,
   index,
@@ -12,7 +13,6 @@ import {
   foreignKey,
   boolean,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 
 export const userSessions = pgTable(
   'user_sessions',
@@ -309,7 +309,10 @@ export const virtualPreviews = pgTable(
       foreignColumns: [pages.id],
       name: 'virtual_previews_page_id_fkey',
     }).onDelete('cascade'),
-    unique('virtual_previews_page_id_file_path_key').on(table.pageId, table.filePath),
+    unique('virtual_previews_page_id_file_path_key').on(
+      table.pageId,
+      table.filePath
+    ),
   ]
 );
 
@@ -375,10 +378,22 @@ export const events = pgTable(
       .notNull(),
   },
   (table) => [
-    index('idx_events_user_id').using('btree', table.userId.asc().nullsLast().op('uuid_ops')),
-    index('idx_events_project_id').using('btree', table.projectId.asc().nullsLast().op('uuid_ops')),
-    index('idx_events_event_type').using('btree', table.eventType.asc().nullsLast().op('text_ops')),
-    index('idx_events_timestamp').using('btree', table.timestamp.asc().nullsLast().op('timestamptz_ops')),
+    index('idx_events_user_id').using(
+      'btree',
+      table.userId.asc().nullsLast().op('uuid_ops')
+    ),
+    index('idx_events_project_id').using(
+      'btree',
+      table.projectId.asc().nullsLast().op('uuid_ops')
+    ),
+    index('idx_events_event_type').using(
+      'btree',
+      table.eventType.asc().nullsLast().op('text_ops')
+    ),
+    index('idx_events_timestamp').using(
+      'btree',
+      table.timestamp.asc().nullsLast().op('timestamptz_ops')
+    ),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [users.id],
@@ -407,8 +422,14 @@ export const publishDeploys = pgTable(
       .notNull(),
   },
   (table) => [
-    index('idx_publish_deploys_project_id').using('btree', table.projectId.asc().nullsLast().op('uuid_ops')),
-    index('idx_publish_deploys_status').using('btree', table.status.asc().nullsLast().op('text_ops')),
+    index('idx_publish_deploys_project_id').using(
+      'btree',
+      table.projectId.asc().nullsLast().op('uuid_ops')
+    ),
+    index('idx_publish_deploys_status').using(
+      'btree',
+      table.status.asc().nullsLast().op('text_ops')
+    ),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],

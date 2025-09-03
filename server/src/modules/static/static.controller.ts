@@ -8,10 +8,14 @@ export function staticController(app: FastifyInstance) {
     root,
     prefix: '/',
     wildcard: false,
-    decorateReply: false,
+    // decorateReply defaults to true; keep it enabled so reply.sendFile works
   });
 
   app.get('/*', (req, reply) => {
-    reply.sendFile('index.html', root);
+    if (req.url.startsWith('/api')) {
+      reply.callNotFound();
+      return;
+    }
+    reply.sendFile('index.html');
   });
 }

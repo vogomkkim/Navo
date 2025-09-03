@@ -27,5 +27,5 @@ export const actionRouter = {
       return await handler(context);
     }
     return ActionResult.error(`Unknown action: ${action}`);
-  }
+  },
 };

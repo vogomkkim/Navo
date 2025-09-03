@@ -1,6 +1,0 @@
-{
-  "watch": ["navo/**/*"],
-  "ext": "ts,js,json",
-  "ignore": ["navo/**/*.test.ts", "navo/**/*.spec.ts", "node_modules/**/*"],
-  "exec": "tsx navo/start.ts"
-}

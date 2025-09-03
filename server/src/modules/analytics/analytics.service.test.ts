@@ -25,7 +25,9 @@ describe('AnalyticsService', () => {
     };
     mockProjectsRepo = { getProjectByUserId: jest.fn() };
     jest.mocked(AnalyticsRepositoryImpl).mockImplementation(() => mockRepo);
-    jest.mocked(ProjectsRepositoryImpl).mockImplementation(() => mockProjectsRepo);
+    jest
+      .mocked(ProjectsRepositoryImpl)
+      .mockImplementation(() => mockProjectsRepo);
     service = new AnalyticsService(mockApp);
   });
 
@@ -74,4 +76,3 @@ describe('AnalyticsService', () => {
     expect(result).toEqual({ metrics, topPages, topEvents, trends });
   });
 });
-

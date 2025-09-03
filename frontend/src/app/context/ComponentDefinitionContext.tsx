@@ -1,6 +1,12 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useEffect } from 'react';
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useEffect,
+  useState,
+} from 'react';
 import { useListComponents } from '@/lib/api';
 import { useAuth } from './AuthContext';
 
@@ -35,12 +41,25 @@ export function ComponentDefinitionProvider({
   children: ReactNode;
 }) {
   const { isAuthenticated } = useAuth();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null
+  );
 
-  // 인증된 사용자만 API 호출
-  const { data, isLoading, isError, error } = useListComponents({
-    enabled: isAuthenticated, // 인증된 경우에만 쿼리 실행
-    queryKey: ['componentDefinitions', isAuthenticated], // queryKey 추가
-  });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('navo_selected_projectId');
+      if (stored) setSelectedProjectId(stored);
+    }
+  }, []);
+
+  // 인증된 사용자만 API 호출, 프로젝트 선택된 경우만
+  const { data, isLoading, isError, error } = useListComponents(
+    selectedProjectId || '',
+    {
+      enabled: isAuthenticated && !!selectedProjectId,
+      queryKey: ['componentDefinitions', selectedProjectId, isAuthenticated],
+    } as any
+  );
 
   const componentRegistry = new Map<string, ComponentDef>();
 
@@ -59,9 +78,9 @@ export function ComponentDefinitionProvider({
     <ComponentDefinitionContext.Provider
       value={{
         componentRegistry,
-        isLoading: isAuthenticated ? isLoading : false,
-        isError: isAuthenticated ? isError : false,
-        error: isAuthenticated ? error : null,
+        isLoading: isAuthenticated && !!selectedProjectId ? isLoading : false,
+        isError: isAuthenticated && !!selectedProjectId ? isError : false,
+        error: isAuthenticated && !!selectedProjectId ? error : null,
       }}
     >
       {children}

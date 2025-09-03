@@ -31,7 +31,6 @@ Ensure the `DATABASE_URL` environment variable is correctly set in each environm
 - **Local Development**:
   - You can use a `.env` file at the root of your project.
   - Example `.env` entry: `DATABASE_URL="postgresql://user:password@localhost:5432/navo_db"`
-  - Ensure your application loads environment variables from `.env` (e.g., using `dotenv` package).
 - **Other Environments (e.g., Work Desktop)**: Follow the best practices for setting environment variables in those specific operating systems or development setups.
 
 ## 4. Node.js Version

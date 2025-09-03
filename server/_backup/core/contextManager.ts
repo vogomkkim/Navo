@@ -103,7 +103,7 @@ export class ContextManager {
   private sessionCache: Map<string, UserContext> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5분
 
-  private constructor() { }
+  private constructor() {}
 
   /**
    * 싱글톤 인스턴스 반환
@@ -227,7 +227,9 @@ export class ContextManager {
         version: sessionData.version || 1,
         lastAction: sessionDataJson.lastAction || undefined,
         contextData: sessionDataJson.contextData || {},
-        lastActivity: sessionData.updatedAt ? new Date(sessionData.updatedAt) : new Date(),
+        lastActivity: sessionData.updatedAt
+          ? new Date(sessionData.updatedAt)
+          : new Date(),
       };
 
       // 캐시에 저장
@@ -334,7 +336,9 @@ export class ContextManager {
         status: 'active',
         version: session.version || 1,
         contextData: {},
-        lastActivity: session.updatedAt ? new Date(session.updatedAt) : new Date(),
+        lastActivity: session.updatedAt
+          ? new Date(session.updatedAt)
+          : new Date(),
       };
 
       // 캐시에 저장 (DB에서 생성된 ID 사용)
@@ -409,7 +413,7 @@ export class ContextManager {
     sessionId: string,
     userId: string,
     role: 'user' | 'assistant' | 'system' | 'tool',
-    content: { message: string;[key: string]: any },
+    content: { message: string; [key: string]: any },
     model?: string,
     tokens?: number,
     metadata?: any

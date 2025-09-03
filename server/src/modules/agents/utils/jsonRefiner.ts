@@ -8,4 +8,3 @@ export function refineJsonResponse<T = any>(response: unknown): T | unknown {
   }
   return response as T | unknown;
 }
-

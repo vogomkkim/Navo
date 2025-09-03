@@ -25,7 +25,9 @@ describe('ComponentsService', () => {
     };
     mockProjectsRepo = { getProjectByUserId: jest.fn() };
     jest.mocked(ComponentsRepositoryImpl).mockImplementation(() => mockRepo);
-    jest.mocked(ProjectsRepositoryImpl).mockImplementation(() => mockProjectsRepo);
+    jest
+      .mocked(ProjectsRepositoryImpl)
+      .mockImplementation(() => mockProjectsRepo);
     service = new ComponentsService(mockApp);
   });
 
@@ -50,7 +52,10 @@ describe('ComponentsService', () => {
     mockRepo.getComponentDefinitionByName.mockResolvedValue(null);
     const created = { id: 'c1', projectId: 'p1' } as any;
     mockRepo.createComponentDefinition.mockResolvedValue(created);
-    const result = await service.createComponentDefinition({ name: 'n', projectId: 'p1' } as any, 'u1');
+    const result = await service.createComponentDefinition(
+      { name: 'n', projectId: 'p1' } as any,
+      'u1'
+    );
     expect(result).toEqual(created);
   });
 
@@ -60,7 +65,11 @@ describe('ComponentsService', () => {
     mockProjectsRepo.getProjectByUserId.mockResolvedValue({ id: 'p1' });
     const updated = { ...def, description: 'd' } as any;
     mockRepo.updateComponentDefinition.mockResolvedValue(updated);
-    const result = await service.updateComponentDefinition('c1', { description: 'd' } as any, 'u1');
+    const result = await service.updateComponentDefinition(
+      'c1',
+      { description: 'd' } as any,
+      'u1'
+    );
     expect(result).toEqual(updated);
   });
 
@@ -80,4 +89,3 @@ describe('ComponentsService', () => {
     expect(result).toEqual(seeded as any);
   });
 });
-

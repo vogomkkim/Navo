@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { StatusDisplay } from "@/components/ui/StatusDisplay";
-import { ProfileMenu } from "@/components/ui/ProfileMenu";
-import { SaveButton } from "@/components/ui/SaveButton";
-import { GenerateDummySuggestionButton } from "@/components/ui/GenerateDummySuggestionButton";
-import { ChatSection } from "@/components/ui/ChatSection";
-import { SuggestionsSection } from "@/components/ui/SuggestionsSection";
-import { ProjectGenerationSection } from "@/components/ui/ProjectGenerationSection";
-import { ProjectListSection } from "@/components/ui/ProjectListSection";
-import { ComponentBuilderSection } from "@/components/ui/ComponentBuilderSection";
-import { MobileChat } from "@/components/ui/MobileChat";
-import { LayoutRenderer } from "@/components/LayoutRenderer";
+import { StatusDisplay } from '@/components/ui/StatusDisplay';
+import { ProfileMenu } from '@/components/ui/ProfileMenu';
+import { SaveButton } from '@/components/ui/SaveButton';
+import { GenerateDummySuggestionButton } from '@/components/ui/GenerateDummySuggestionButton';
+import { ChatSection } from '@/components/ui/ChatSection';
+import { SuggestionsSection } from '@/components/ui/SuggestionsSection';
+import { ProjectGenerationSection } from '@/components/ui/ProjectGenerationSection';
+import { ProjectListSection } from '@/components/ui/ProjectListSection';
+import { ComponentBuilderSection } from '@/components/ui/ComponentBuilderSection';
+import { MobileChat } from '@/components/ui/MobileChat';
+import { LayoutRenderer } from '@/components/LayoutRenderer';
 import {
   useListProjects,
   useListProjectPages,
@@ -18,17 +18,17 @@ import {
   fetchApi,
   useRenameProject,
   useDeleteProject,
-} from "@/lib/api";
-import { useAuth } from "@/app/context/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import * as Select from "@radix-ui/react-select";
+} from '@/lib/api';
+import { useAuth } from '@/app/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import * as Select from '@radix-ui/react-select';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
   CheckIcon,
-} from "@radix-ui/react-icons";
+} from '@radix-ui/react-icons';
 
 type ProjectStructure = { pages?: unknown[]; componentDefinitions?: unknown[] };
 
@@ -47,26 +47,26 @@ export default function HomeContent() {
     name: string;
   } | null>(null);
   const [showMessage, setShowMessage] = useState<{
-    type: "success" | "error";
+    type: 'success' | 'error';
     text: string;
   } | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState("");
+  const [renameValue, setRenameValue] = useState('');
 
   // 메시지 표시 함수들
   const showSuccessMessage = (text: string) => {
-    setShowMessage({ type: "success", text });
+    setShowMessage({ type: 'success', text });
     setTimeout(() => setShowMessage(null), 3000);
   };
 
   const showErrorMessage = (text: string) => {
-    setShowMessage({ type: "error", text });
+    setShowMessage({ type: 'error', text });
     setTimeout(() => setShowMessage(null), 5000);
   };
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
-      router.push("/login");
+      router.push('/login');
     }
   }, [isAuthenticated, token, router]);
 
@@ -75,36 +75,36 @@ export default function HomeContent() {
     const handleTabClick = (event: MouseEvent) => {
       try {
         const target = event.target as HTMLElement;
-        if (target && target.classList.contains("panel-tab")) {
-          const tabName = target.getAttribute("data-tab");
+        if (target && target.classList.contains('panel-tab')) {
+          const tabName = target.getAttribute('data-tab');
           if (tabName) {
             // 모든 탭 비활성화
-            document.querySelectorAll(".panel-tab").forEach((tab) => {
-              tab.classList.remove("active");
+            document.querySelectorAll('.panel-tab').forEach((tab) => {
+              tab.classList.remove('active');
             });
             document
-              .querySelectorAll(".panel-tab-content")
+              .querySelectorAll('.panel-tab-content')
               .forEach((content) => {
-                content.classList.remove("active");
+                content.classList.remove('active');
               });
 
             // 선택된 탭 활성화
-            target.classList.add("active");
+            target.classList.add('active');
             const content = document.querySelector(
               `.panel-tab-content[data-tab="${tabName}"]`
             );
             if (content) {
-              content.classList.add("active");
+              content.classList.add('active');
             }
           }
         }
       } catch (error) {
-        console.error("Tab click handler error:", error);
+        console.error('Tab click handler error:', error);
       }
     };
 
-    document.addEventListener("click", handleTabClick);
-    return () => document.removeEventListener("click", handleTabClick);
+    document.addEventListener('click', handleTabClick);
+    return () => document.removeEventListener('click', handleTabClick);
   }, []);
 
   // 선택된 페이지의 레이아웃 로딩
@@ -113,37 +113,83 @@ export default function HomeContent() {
     isLoading: isLoadingPageLayout,
     isError: isErrorPageLayout,
     error: errorPageLayout,
-  } = usePageLayout(selectedPageId || "");
+  } = usePageLayout(selectedPageId || '');
 
   const { data: projectsData } = useListProjects();
 
   const currentProjectName =
-    projectsData?.projects?.find((p) => p.id === selectedProjectId)?.name || "";
+    projectsData?.projects?.find((p) => p.id === selectedProjectId)?.name || '';
 
   const renameMutation = useRenameProject({
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["projects"] });
-      showSuccessMessage("프로젝트 이름이 변경되었습니다.");
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      showSuccessMessage('프로젝트 이름이 변경되었습니다.');
       setIsRenaming(false);
     },
     onError: () => {
-      showErrorMessage("프로젝트 이름 변경에 실패했습니다.");
+      showErrorMessage('프로젝트 이름 변경에 실패했습니다.');
     },
   });
 
   const deleteMutation = useDeleteProject({
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["projects"] });
-      showSuccessMessage("프로젝트가 삭제되었습니다.");
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      showSuccessMessage('프로젝트가 삭제되었습니다.');
       setSelectedProjectId(null);
       setSelectedPageId(null);
     },
-    onError: () => showErrorMessage("프로젝트 삭제에 실패했습니다."),
+    onError: () => showErrorMessage('프로젝트 삭제에 실패했습니다.'),
   });
 
   // 선택된 프로젝트의 페이지들 가져오기
   const { data: projectPagesData, isLoading: isLoadingProjectPages } =
-    useListProjectPages(selectedProjectId || "");
+    useListProjectPages(selectedProjectId || '');
+
+  // 프로젝트 선택 후: 페이지 데이터 기준으로 불완전 여부 판단
+  useEffect(() => {
+    if (!selectedProjectId) return;
+
+    const project = projectsData?.projects?.find(
+      (p) => p.id === selectedProjectId
+    );
+    if (!project) return;
+
+    // 페이지 데이터가 로드된 뒤 판단
+    if (!projectPagesData) return;
+
+    const hasPages =
+      Array.isArray(projectPagesData.pages) &&
+      projectPagesData.pages.length > 0;
+
+    // 페이지가 없으면 컴포넌트 정의 유무를 확인하기 위해 구조 조회
+    if (!hasPages) {
+      (async () => {
+        try {
+          const projectStructure = await fetchApi<ProjectStructure>(
+            `/api/ai/project-structure/${selectedProjectId}`,
+            {
+              method: 'GET',
+              token,
+            }
+          );
+
+          const hasComponentDefinitions =
+            Array.isArray(projectStructure.componentDefinitions) &&
+            projectStructure.componentDefinitions.length > 0;
+
+          const isIncomplete = !hasPages || !hasComponentDefinitions;
+          if (isIncomplete) {
+            setIncompleteProject(project);
+            setShowRecoveryModal(true);
+          }
+        } catch (error) {
+          console.error('프로젝트 구조 확인 중 오류:', error);
+          setIncompleteProject(project);
+          setShowRecoveryModal(true);
+        }
+      })();
+    }
+  }, [selectedProjectId, projectPagesData, projectsData, token]);
 
   // 페이지 선택 핸들러
   const handlePageSelect = (pageId: string) => {
@@ -153,7 +199,7 @@ export default function HomeContent() {
   // 프로젝트 선택 핸들러
   const handleProjectSelect = async (projectId: string) => {
     // 새 프로젝트 생성인 경우 모든 상태 완전 초기화
-    if (projectId === "new") {
+    if (projectId === 'new') {
       setSelectedProjectId(null);
       setSelectedPageId(null);
       setShowRecoveryModal(false);
@@ -169,87 +215,42 @@ export default function HomeContent() {
     }
 
     setSelectedProjectId(projectId);
-
-    // 프로젝트가 미완성인지 확인
-    const project = projectsData?.projects?.find((p) => p.id === projectId);
-    if (project) {
-      try {
-        // 프로젝트의 실제 페이지와 컴포넌트 데이터 확인
-        const projectStructure = await fetchApi<ProjectStructure>(
-          `/api/ai/project-structure/${projectId}`,
-          {
-            method: "GET",
-            token,
-          }
-        );
-
-        console.log("프로젝트 구조:", projectStructure);
-
-        // 미완성 프로젝트 판단 기준:
-        // 1. 페이지가 없거나
-        // 2. 컴포넌트 정의가 없는 경우
-        const hasPages =
-          Array.isArray(projectStructure.pages) &&
-          projectStructure.pages.length > 0;
-        const hasComponentDefinitions =
-          Array.isArray(projectStructure.componentDefinitions) &&
-          projectStructure.componentDefinitions.length > 0;
-
-        const isIncomplete = !hasPages || !hasComponentDefinitions;
-
-        if (isIncomplete) {
-          console.log("미완성 프로젝트 감지:", {
-            projectName: project.name,
-            hasPages,
-            hasComponentDefinitions,
-            pagesCount: projectStructure.pages?.length ?? 0,
-            componentDefinitionsCount:
-              projectStructure.componentDefinitions?.length ?? 0,
-          });
-
-          setIncompleteProject(project);
-          setShowRecoveryModal(true);
-        }
-      } catch (error) {
-        console.error("프로젝트 구조 확인 중 오류:", error);
-        // 오류 발생 시에도 미완성으로 간주
-        setIncompleteProject(project);
-        setShowRecoveryModal(true);
-      }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('navo_selected_projectId', projectId);
     }
   };
 
   // 복구 옵션 핸들러
-  const handleRecoveryOption = async (option: "continue" | "restart") => {
+  const handleRecoveryOption = async (option: 'continue' | 'restart') => {
     if (!incompleteProject) return;
 
     try {
-      if (option === "continue") {
+      if (option === 'continue') {
         // 이어서 완성하기: 기존 요구사항으로 AI가 프로젝트 완성
-        console.log("이어서 완성하기:", incompleteProject.name);
+        console.log('이어서 완성하기:', incompleteProject.name);
 
-        const result = await fetchApi("/api/ai/recover-project", {
-          method: "POST",
+        const result = await fetchApi('/api/ai/recover-project', {
+          method: 'POST',
           token,
           body: JSON.stringify({
             projectId: incompleteProject.id,
-            action: "continue",
+            action: 'continue',
           }),
         });
 
-        console.log("프로젝트 복구 완료:", result);
-        showSuccessMessage("프로젝트가 성공적으로 완성되었습니다!");
-      } else if (option === "restart") {
+        console.log('프로젝트 복구 완료:', result);
+        showSuccessMessage('프로젝트가 성공적으로 완성되었습니다!');
+      } else if (option === 'restart') {
         // 새로 시작하기: 기존 내용 삭제 후 새로 생성
-        console.log("새로 시작하기:", incompleteProject.name);
+        console.log('새로 시작하기:', incompleteProject.name);
         // TODO: 기존 데이터 정리 후 AI 생성 API 호출
       }
 
       setShowRecoveryModal(false);
       setIncompleteProject(null);
     } catch (error) {
-      console.error("복구 프로세스 오류:", error);
-      showErrorMessage("프로젝트 복구 중 오류가 발생했습니다.");
+      console.error('복구 프로세스 오류:', error);
+      showErrorMessage('프로젝트 복구 중 오류가 발생했습니다.');
     }
   };
 
@@ -266,15 +267,15 @@ export default function HomeContent() {
 
           {/* 프로젝트 선택기 */}
           <Select.Root
-            value={selectedProjectId || ""}
+            value={selectedProjectId || ''}
             onValueChange={handleProjectSelect}
           >
             <Select.Trigger className="inline-flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-w-[200px]">
               <Select.Value
                 placeholder={
-                  selectedProjectId === "new"
-                    ? "새 프로젝트 만들기"
-                    : "프로젝트 선택"
+                  selectedProjectId === 'new'
+                    ? '새 프로젝트 만들기'
+                    : '프로젝트 선택'
                 }
               />
               <Select.Icon className="text-gray-400">
@@ -328,7 +329,7 @@ export default function HomeContent() {
             </Select.Portal>
           </Select.Root>
 
-          {selectedProjectId && selectedProjectId !== "new" && (
+          {selectedProjectId && selectedProjectId !== 'new' && (
             <div className="inline-flex items-center gap-2 ml-2">
               {isRenaming ? (
                 <>
@@ -336,18 +337,18 @@ export default function HomeContent() {
                     className="border border-gray-300 rounded px-2 py-1 text-sm"
                     value={renameValue}
                     onChange={(e) => setRenameValue(e.target.value)}
-                    placeholder={currentProjectName || "프로젝트 이름"}
+                    placeholder={currentProjectName || '프로젝트 이름'}
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && renameValue.trim().length >= 2) {
+                      if (e.key === 'Enter' && renameValue.trim().length >= 2) {
                         renameMutation.mutate({
                           projectId: selectedProjectId!,
                           name: renameValue.trim(),
                         });
                       }
-                      if (e.key === "Escape") {
+                      if (e.key === 'Escape') {
                         setIsRenaming(false);
-                        setRenameValue("");
+                        setRenameValue('');
                       }
                     }}
                   />
@@ -368,7 +369,7 @@ export default function HomeContent() {
                     className="btn btn-sm btn-outline"
                     onClick={() => {
                       setIsRenaming(false);
-                      setRenameValue("");
+                      setRenameValue('');
                     }}
                     disabled={renameMutation.isPending}
                   >
@@ -410,7 +411,7 @@ export default function HomeContent() {
                     onClick={() => {
                       if (!selectedProjectId) return;
                       const ok = window.confirm(
-                        "정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+                        '정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'
                       );
                       if (ok)
                         deleteMutation.mutate({ projectId: selectedProjectId });
@@ -457,19 +458,19 @@ export default function HomeContent() {
           id="preview"
           aria-label="프로젝트 미리보기"
         >
-          {!selectedProjectId || selectedProjectId === "new" ? (
+          {!selectedProjectId || selectedProjectId === 'new' ? (
             <div className="preview-placeholder">
               <div className="preview-header">
                 <div className="preview-icon">📁</div>
                 <h2>
-                  {selectedProjectId === "new"
-                    ? "새 프로젝트 만들기"
-                    : "프로젝트를 선택하세요"}
+                  {selectedProjectId === 'new'
+                    ? '새 프로젝트 만들기'
+                    : '프로젝트를 선택하세요'}
                 </h2>
                 <p>
-                  {selectedProjectId === "new"
-                    ? "AI 채팅에서 프로젝트 요구사항을 입력하세요."
-                    : "프로젝트를 선택하면 미리보기가 표시됩니다."}
+                  {selectedProjectId === 'new'
+                    ? 'AI 채팅에서 프로젝트 요구사항을 입력하세요.'
+                    : '프로젝트를 선택하면 미리보기가 표시됩니다.'}
                 </p>
               </div>
             </div>
@@ -478,10 +479,10 @@ export default function HomeContent() {
               {/* 프로젝트 정보 및 라우트 목록 */}
               <div className="mb-4">
                 <h2 className="text-lg font-medium mb-2">
-                  📁{" "}
+                  📁{' '}
                   {projectsData?.projects?.find(
                     (p) => p.id === selectedProjectId
-                  )?.name || "프로젝트"}
+                  )?.name || '프로젝트'}
                 </h2>
 
                 {/* 라우트 목록 */}
@@ -508,8 +509,8 @@ export default function HomeContent() {
                                 onClick={() => handlePageSelect(page.id)}
                                 className={`text-sm px-2 py-1 rounded border transition-colors ${
                                   selectedPageId === page.id
-                                    ? "bg-blue-500 text-white border-blue-500"
-                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                    ? 'bg-blue-500 text-white border-blue-500'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                 }`}
                               >
                                 {page.path}
@@ -523,10 +524,10 @@ export default function HomeContent() {
                     {/* 선택된 페이지 표시 */}
                     {selectedPageId && (
                       <div className="mt-2 text-sm text-gray-600">
-                        📄 현재 페이지:{" "}
+                        📄 현재 페이지:{' '}
                         {projectPagesData?.pages?.find(
                           (p) => p.id === selectedPageId
-                        )?.path || "선택된 페이지"}
+                        )?.path || '선택된 페이지'}
                       </div>
                     )}
 
@@ -593,13 +594,13 @@ export default function HomeContent() {
       </main>
 
       {/* Right Side Panel */}
-      <div className={`side-panel ${isPanelOpen ? "open" : ""}`}>
+      <div className={`side-panel ${isPanelOpen ? 'open' : ''}`}>
         <button
           className="panel-toggle-btn"
           onClick={() => setIsPanelOpen(!isPanelOpen)}
-          aria-label={isPanelOpen ? "패널 닫기" : "패널 열기"}
+          aria-label={isPanelOpen ? '패널 닫기' : '패널 열기'}
         >
-          {isPanelOpen ? "×" : "☰"}
+          {isPanelOpen ? '×' : '☰'}
         </button>
 
         <div className="panel-content">
@@ -644,9 +645,9 @@ export default function HomeContent() {
       {showMessage && (
         <div
           className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-            showMessage.type === "success"
-              ? "bg-green-500 text-white"
-              : "bg-red-500 text-white"
+            showMessage.type === 'success'
+              ? 'bg-green-500 text-white'
+              : 'bg-red-500 text-white'
           }`}
         >
           {showMessage.text}
@@ -691,13 +692,13 @@ export default function HomeContent() {
 
             <div className="flex space-x-3">
               <button
-                onClick={() => handleRecoveryOption("continue")}
+                onClick={() => handleRecoveryOption('continue')}
                 className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 이어서 완성하기
               </button>
               <button
-                onClick={() => handleRecoveryOption("restart")}
+                onClick={() => handleRecoveryOption('restart')}
                 className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
               >
                 새로 시작하기

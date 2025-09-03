@@ -1,5 +1,4 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { FastifyInstance } from 'fastify';
 import { agentsController } from './agents.controller';
 import { AgentsService } from './agents.service';
 
@@ -239,7 +238,9 @@ describe('AgentsController', () => {
         }),
         expect.any(Function)
       );
-      expect(mockAgentsService.getProjectPlan).toHaveBeenCalledWith('project-123');
+      expect(mockAgentsService.getProjectPlan).toHaveBeenCalledWith(
+        'project-123'
+      );
       expect(mockReply.send).toHaveBeenCalledWith({
         ok: true,
         plan: mockPlan,
@@ -266,7 +267,9 @@ describe('AgentsController', () => {
       await routeHandler(mockRequest, mockReply);
 
       // Assert
-      expect(mockAgentsService.getProjectPlan).toHaveBeenCalledWith('project-123');
+      expect(mockAgentsService.getProjectPlan).toHaveBeenCalledWith(
+        'project-123'
+      );
       expect(mockReply.status).toHaveBeenCalledWith(404);
       expect(mockReply.send).toHaveBeenCalledWith({
         ok: false,

@@ -59,7 +59,8 @@ export async function renderPageToHTML(
   baseHref?: string
 ) {
   const { project, pages } = projectData;
-  const componentDefinitions = projectData.componentDefinitions || projectData.components || [];
+  const componentDefinitions =
+    projectData.componentDefinitions || projectData.components || [];
 
   const normalizedPath = pagePath.startsWith('/') ? pagePath : `/${pagePath}`;
   const page = pages.find((p: any) => p.path === normalizedPath);
@@ -94,7 +95,9 @@ export async function renderPageToHTML(
 
   if (page.layoutJson && page.layoutJson.components) {
     for (const comp of page.layoutJson.components) {
-      const def = componentDefinitions.find((c: any) => c.name === comp.type || c.displayName === comp.type);
+      const def = componentDefinitions.find(
+        (c: any) => c.name === comp.type || c.displayName === comp.type
+      );
       html += `<div class="component ${comp.type}">`;
       if (def && def.renderTemplate) {
         let componentHtml = def.renderTemplate as string;

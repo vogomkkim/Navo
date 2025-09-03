@@ -1,5 +1,5 @@
-import { AgentsService } from './agents.service';
 import { AgentsRepository } from './agents.repository';
+import { AgentsService } from './agents.service';
 import { MasterDeveloperAgent } from './masterDeveloperAgent';
 import { VirtualPreviewGeneratorAgent } from './virtualPreviewGeneratorAgent';
 
@@ -30,7 +30,9 @@ describe('AgentsService', () => {
       getVirtualPreview: jest.fn(),
     };
 
-    (AgentsRepository as jest.MockedClass<typeof AgentsRepository>).mockImplementation(() => mockRepository);
+    (
+      AgentsRepository as jest.MockedClass<typeof AgentsRepository>
+    ).mockImplementation(() => mockRepository);
 
     agentsService = new AgentsService(mockApp);
   });
@@ -56,7 +58,9 @@ describe('AgentsService', () => {
         // ... other plan properties
       };
 
-      (MasterDeveloperAgent.prototype.createProject as jest.Mock).mockResolvedValue(mockPlan);
+      (
+        MasterDeveloperAgent.prototype.createProject as jest.Mock
+      ).mockResolvedValue(mockPlan);
       mockRepository.saveProjectPlan.mockResolvedValue('saved-plan-id');
 
       // Act
@@ -64,7 +68,10 @@ describe('AgentsService', () => {
 
       // Assert
       expect(result).toEqual(mockPlan);
-      expect(MasterDeveloperAgent.prototype.createProject).toHaveBeenCalledWith(request, context);
+      expect(MasterDeveloperAgent.prototype.createProject).toHaveBeenCalledWith(
+        request,
+        context
+      );
       expect(mockRepository.saveProjectPlan).toHaveBeenCalledWith({
         projectId: 'project-123',
         userId: 'user-123',
@@ -91,14 +98,19 @@ describe('AgentsService', () => {
         description: 'Test Description',
       };
 
-      (MasterDeveloperAgent.prototype.createProject as jest.Mock).mockResolvedValue(mockPlan);
+      (
+        MasterDeveloperAgent.prototype.createProject as jest.Mock
+      ).mockResolvedValue(mockPlan);
 
       // Act
       const result = await agentsService.generateProjectPlan(request, context);
 
       // Assert
       expect(result).toEqual(mockPlan);
-      expect(MasterDeveloperAgent.prototype.createProject).toHaveBeenCalledWith(request, context);
+      expect(MasterDeveloperAgent.prototype.createProject).toHaveBeenCalledWith(
+        request,
+        context
+      );
       expect(mockRepository.saveProjectPlan).not.toHaveBeenCalled();
     });
 
@@ -112,14 +124,14 @@ describe('AgentsService', () => {
       };
       const context = {};
 
-      (MasterDeveloperAgent.prototype.createProject as jest.Mock).mockRejectedValue(
-        new Error('Agent error')
-      );
+      (
+        MasterDeveloperAgent.prototype.createProject as jest.Mock
+      ).mockRejectedValue(new Error('Agent error'));
 
       // Act & Assert
-      await expect(agentsService.generateProjectPlan(request, context)).rejects.toThrow(
-        '프로젝트 계획 생성에 실패했습니다.'
-      );
+      await expect(
+        agentsService.generateProjectPlan(request, context)
+      ).rejects.toThrow('프로젝트 계획 생성에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
   });
@@ -134,11 +146,17 @@ describe('AgentsService', () => {
       mockRepository.getVirtualPreview.mockResolvedValue(existingHtml);
 
       // Act
-      const result = await agentsService.generateVirtualPreview(pageId, filePath);
+      const result = await agentsService.generateVirtualPreview(
+        pageId,
+        filePath
+      );
 
       // Assert
       expect(result).toEqual(existingHtml);
-      expect(mockRepository.getVirtualPreview).toHaveBeenCalledWith(pageId, filePath);
+      expect(mockRepository.getVirtualPreview).toHaveBeenCalledWith(
+        pageId,
+        filePath
+      );
       expect(mockRepository.saveVirtualPreview).not.toHaveBeenCalled();
     });
 
@@ -149,16 +167,26 @@ describe('AgentsService', () => {
       const newHtml = '<html><body>New Preview</body></html>';
 
       mockRepository.getVirtualPreview.mockResolvedValue(null);
-      (VirtualPreviewGeneratorAgent.prototype.execute as jest.Mock).mockResolvedValue(newHtml);
+      (
+        VirtualPreviewGeneratorAgent.prototype.execute as jest.Mock
+      ).mockResolvedValue(newHtml);
       mockRepository.saveVirtualPreview.mockResolvedValue('preview-id');
 
       // Act
-      const result = await agentsService.generateVirtualPreview(pageId, filePath);
+      const result = await agentsService.generateVirtualPreview(
+        pageId,
+        filePath
+      );
 
       // Assert
       expect(result).toEqual(newHtml);
-      expect(mockRepository.getVirtualPreview).toHaveBeenCalledWith(pageId, filePath);
-      expect(VirtualPreviewGeneratorAgent.prototype.execute).toHaveBeenCalledWith({
+      expect(mockRepository.getVirtualPreview).toHaveBeenCalledWith(
+        pageId,
+        filePath
+      );
+      expect(
+        VirtualPreviewGeneratorAgent.prototype.execute
+      ).toHaveBeenCalledWith({
         pageId,
         filePath,
       });
@@ -175,14 +203,14 @@ describe('AgentsService', () => {
       const filePath = '/test.html';
 
       mockRepository.getVirtualPreview.mockResolvedValue(null);
-      (VirtualPreviewGeneratorAgent.prototype.execute as jest.Mock).mockRejectedValue(
-        new Error('Preview generation error')
-      );
+      (
+        VirtualPreviewGeneratorAgent.prototype.execute as jest.Mock
+      ).mockRejectedValue(new Error('Preview generation error'));
 
       // Act & Assert
-      await expect(agentsService.generateVirtualPreview(pageId, filePath)).rejects.toThrow(
-        '가상 프리뷰 생성에 실패했습니다.'
-      );
+      await expect(
+        agentsService.generateVirtualPreview(pageId, filePath)
+      ).rejects.toThrow('가상 프리뷰 생성에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
   });
@@ -231,7 +259,9 @@ describe('AgentsService', () => {
       // Arrange
       const projectId = 'project-123';
 
-      mockRepository.getProjectPlan.mockRejectedValue(new Error('Database error'));
+      mockRepository.getProjectPlan.mockRejectedValue(
+        new Error('Database error')
+      );
 
       // Act & Assert
       await expect(agentsService.getProjectPlan(projectId)).rejects.toThrow(

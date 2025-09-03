@@ -1,12 +1,12 @@
 import { AuthRepository } from './auth.repository';
-import { hashPassword, verifyPassword } from '../../lib/password';
-import { AppError } from '../../lib/errorHandler';
+import { hashPassword, verifyPassword } from '@/lib/password';
+import { AppError } from '@/lib/errorHandler';
 import jwt from 'jsonwebtoken';
-import { appConfig } from '../../config';
+import { appConfig } from '@/config';
 import type { LoginData, RegisterData } from './auth.types';
 
 export class AuthService {
-  constructor(private readonly authRepository: AuthRepository) { }
+  constructor(private readonly authRepository: AuthRepository) {}
 
   async register(data: RegisterData) {
     console.log('data.email', data.email);
@@ -24,7 +24,11 @@ export class AuthService {
     });
 
     if (!newUser || typeof (newUser as any).id !== 'string') {
-      throw new AppError(500, 'USER_CREATE_FAILED', '사용자 생성에 실패했습니다.');
+      throw new AppError(
+        500,
+        'USER_CREATE_FAILED',
+        '사용자 생성에 실패했습니다.'
+      );
     }
 
     // newUser는 password 필드를 포함하지 않으므로, 직접 필요한 필드만 반환
@@ -38,13 +42,25 @@ export class AuthService {
 
   async login(data: LoginData) {
     const user = await this.authRepository.findUserByEmail(data.email);
-    if (!user || typeof user.password !== 'string' || user.password.length === 0) {
-      throw new AppError(401, 'INVALID_CREDENTIALS', '이메일 또는 비밀번호가 올바르지 않습니다.');
+    if (
+      !user ||
+      typeof user.password !== 'string' ||
+      user.password.length === 0
+    ) {
+      throw new AppError(
+        401,
+        'INVALID_CREDENTIALS',
+        '이메일 또는 비밀번호가 올바르지 않습니다.'
+      );
     }
 
     const isPasswordValid = await verifyPassword(data.password, user.password);
     if (!isPasswordValid || isPasswordValid.ok !== true) {
-      throw new AppError(401, 'INVALID_CREDENTIALS', '이메일 또는 비밀번호가 올바르지 않습니다.');
+      throw new AppError(
+        401,
+        'INVALID_CREDENTIALS',
+        '이메일 또는 비밀번호가 올바르지 않습니다.'
+      );
     }
 
     const token = jwt.sign(

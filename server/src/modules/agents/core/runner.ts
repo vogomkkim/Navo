@@ -4,7 +4,11 @@ export type RunnerOptions = {
   concurrency?: number;
   timeoutMs?: number;
   onNodeStart?: (name: string) => void | Promise<void>;
-  onNodeSuccess?: (name: string, ms: number, result: unknown) => void | Promise<void>;
+  onNodeSuccess?: (
+    name: string,
+    ms: number,
+    result: unknown
+  ) => void | Promise<void>;
   onNodeFailure?: (name: string, error: unknown) => void | Promise<void>;
   defaultRetries?: number;
   defaultRetryDelayMs?: number;

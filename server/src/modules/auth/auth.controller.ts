@@ -8,14 +8,17 @@ export const authController = (app: FastifyInstance) => {
   const authRepository = new AuthRepository();
   const authService = new AuthService(authRepository);
 
-  app.post('/register', async (request: FastifyRequest, reply: FastifyReply) => {
-    // 입력값 검증은 zod 등을 사용하여 추후 추가
-    const result = await authService.register(request.body as any);
-    reply.status(201).send(result);
-  });
+  app.post(
+    '/register',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      // 입력값 검증은 zod 등을 사용하여 추후 추가
+      const result = await authService.register(request.body as any);
+      reply.status(201).send({ ok: true, user: result });
+    }
+  );
 
   app.post('/login', async (request: FastifyRequest, reply: FastifyReply) => {
     const result = await authService.login(request.body as any);
-    reply.send(result);
+    reply.send({ ok: true, ...result });
   });
 };

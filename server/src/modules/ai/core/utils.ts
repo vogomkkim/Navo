@@ -1,5 +1,5 @@
 export function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function retry(fn, maxRetries = 3, delay = 1000) {

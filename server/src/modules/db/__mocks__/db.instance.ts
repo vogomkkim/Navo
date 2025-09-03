@@ -3,7 +3,9 @@
 
 type AnyFn = (...args: any[]) => any;
 
-const returning = async (_args?: any) => [{ id: 'mock-id', htmlContent: '<html></html>' }];
+const returning = async (_args?: any) => [
+  { id: 'mock-id', htmlContent: '<html></html>' },
+];
 
 const whereChain = () => ({
   orderBy: (_arg?: any) => ({
@@ -32,4 +34,3 @@ export const db: any = {
 export const client: any = {};
 
 export default db;
-

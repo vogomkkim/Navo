@@ -20,7 +20,9 @@ logConnectionInfo();
 
 // 연결 문자열 검증
 if (!connectionString) {
-  logger.error('데이터베이스 클라이언트를 생성할 수 없습니다: DATABASE_URL이 비어 있습니다.');
+  logger.error(
+    '데이터베이스 클라이언트를 생성할 수 없습니다: DATABASE_URL이 비어 있습니다.'
+  );
   throw new Error('DATABASE_URL 환경 변수가 필요합니다.');
 }
 
@@ -28,14 +30,14 @@ let client: postgres.Sql;
 try {
   client = postgres(connectionString, {
     prepare: true,
-    onnotice: (notice) => logger.debug('PostgreSQL 알림:', notice),
+    onnotice: (notice) => logger.debug({ notice }, 'PostgreSQL 알림'),
     onparameter: (param) => {
       // 중요한 매개변수만 로깅
       if (
         typeof param === 'string' &&
         (param.includes('server_version') || param.includes('client_encoding'))
       ) {
-        logger.debug('PostgreSQL 매개변수:', param);
+        logger.debug({ param }, 'PostgreSQL 매개변수');
       }
     },
     onclose: () => logger.info('데이터베이스 연결이 종료되었습니다.'),
@@ -43,9 +45,12 @@ try {
   });
   logger.info('데이터베이스 클라이언트가 생성되었습니다.');
 } catch (error) {
-  logger.error('데이터베이스 클라이언트 생성 실패', {
-    error: error instanceof Error ? error.message : String(error),
-  });
+  logger.error(
+    {
+      err: error instanceof Error ? error.message : String(error),
+    },
+    '데이터베이스 클라이언트 생성 실패'
+  );
   throw error;
 }
 
@@ -57,9 +62,12 @@ export async function testConnection(): Promise<void> {
     await client`select 1`;
     // 성공: 호출자가 로깅; 중복 시작 로깅 방지
   } catch (error) {
-    logger.error('데이터베이스 연결 실패', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(
+      {
+        err: error instanceof Error ? error.message : String(error),
+      },
+      '데이터베이스 연결 실패'
+    );
     throw error;
   }
 }

@@ -19,9 +19,15 @@ async function fetchApi<T>(
 ): Promise<T> {
   const { token, ...restOptions } = options;
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
     ...restOptions.headers,
   };
+
+  // 본문이 있을 때만 JSON Content-Type을 기본 설정 (FormData는 제외)
+  const hasBody = restOptions.body !== undefined && restOptions.body !== null;
+  const isFormData = typeof FormData !== 'undefined' && restOptions.body instanceof FormData;
+  if (hasBody && !isFormData) {
+    (headers as Record<string, string>)['Content-Type'] = (headers as any)['Content-Type'] || 'application/json';
+  }
 
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
@@ -277,7 +283,7 @@ export function useDeleteProject(
   return useMutation<DeleteProjectResponse, Error, DeleteProjectPayload>({
     mutationFn: async ({ projectId }: DeleteProjectPayload) => {
       try {
-        await fetchApi<void>(`\u002Fapi\u002Fprojects\u002F${projectId}`, {
+        await fetchApi<void>(`/api/projects/${projectId}`, {
           method: 'DELETE',
           token,
         });
@@ -543,16 +549,20 @@ interface ComponentListResponse {
 }
 
 export function useListComponents(
+  projectId: string,
   options?: UseQueryOptions<ComponentListResponse, Error>
 ) {
   const { token, logout } = useAuth();
   return useQuery<ComponentListResponse, Error>({
-    queryKey: ['componentDefinitions'],
+    queryKey: ['componentDefinitions', projectId],
     queryFn: async () => {
       try {
-        return await fetchApi<ComponentListResponse>('/api/components', {
-          token,
-        });
+        return await fetchApi<ComponentListResponse>(
+          `/api/components/project/${projectId}`,
+          {
+            token,
+          }
+        );
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
@@ -560,7 +570,7 @@ export function useListComponents(
         throw error;
       }
     },
-    enabled: !!token, // 토큰이 있을 때만 쿼리 실행
+    enabled: !!token && !!projectId,
     ...options,
   });
 }
@@ -616,30 +626,25 @@ export function useMultiAgentSystem(
   });
 }
 
-// 새로운 의도 기반 에이전트 시스템 API
-interface SimpleChatRequest {
-  message: string;
+// 새로운 오케스트레이터 시스템 API
+interface OrchestratorRequest {
+  userMessage: string;
 }
 
-interface SimpleChatResponse {
-  success: boolean;
+interface OrchestratorResponse {
+  ok: boolean;
   message: string;
-  type: string;
-  data?: unknown;
-  metadata?: {
-    executionTime: number;
-    model: string;
-    sessionId: string;
-  };
+  data?: any;
+  error?: string;
 }
 
-export function useSimpleChatSystem(
-  options?: UseMutationOptions<SimpleChatResponse, Error, SimpleChatRequest>
+export function useOrchestratorChat(
+  options?: UseMutationOptions<OrchestratorResponse, Error, OrchestratorRequest>
 ) {
   const { token } = useAuth();
   return useMutation({
-    mutationFn: (data: SimpleChatRequest) =>
-      fetchApi<SimpleChatResponse>('/api/ai/simple-chat', {
+    mutationFn: (data: OrchestratorRequest) =>
+      fetchApi<OrchestratorResponse>('/api/orchestrate', {
         method: 'POST',
         body: JSON.stringify(data),
         token,

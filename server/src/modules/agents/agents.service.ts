@@ -1,8 +1,12 @@
 import { FastifyInstance } from 'fastify';
+import {
+  AgentsRepository,
+  ProjectPlanData,
+  VirtualPreviewData,
+} from './agents.repository';
+import { ProjectRequest } from './core/masterDeveloper';
 import { MasterDeveloperAgent, ProjectPlan } from './masterDeveloperAgent';
 import { VirtualPreviewGeneratorAgent } from './virtualPreviewGeneratorAgent';
-import { ProjectRequest } from './core/masterDeveloper';
-import { AgentsRepository, ProjectPlanData, VirtualPreviewData } from './agents.repository';
 
 export interface GenerateProjectPlanContext {
   userId?: string;
@@ -54,7 +58,10 @@ export class AgentsService {
   ): Promise<string> {
     try {
       // 1. 기존 프리뷰 확인
-      const existingPreview = await this.repository.getVirtualPreview(pageId, filePath);
+      const existingPreview = await this.repository.getVirtualPreview(
+        pageId,
+        filePath
+      );
       if (existingPreview) {
         return existingPreview;
       }

@@ -4,7 +4,7 @@ export async function persistProject(projectData) {
     id: 'project-' + Date.now(),
     ...projectData,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -14,6 +14,6 @@ export async function persistProjectPlan(planData) {
     id: 'plan-' + Date.now(),
     ...planData,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 }

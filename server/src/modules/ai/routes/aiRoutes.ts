@@ -1,5 +1,7 @@
+import { and, eq } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
-import { authenticateToken } from '../../auth/auth.middleware';
+import { db, projects } from '@/db';
+import { authenticateToken } from '@/modules/auth/auth.middleware';
 import {
   handleMultiAgentChat,
   handleVirtualPreview,
@@ -8,9 +10,6 @@ import {
 } from '../handlers/aiHandlers';
 import { handleSimpleChat } from '../handlers/simpleChatHandler';
 import { renderProjectToHTML, renderPageToHTML } from '../services/render';
-import { and, eq } from 'drizzle-orm';
-import { projects } from '../../db/schema';
-import { db } from '../../db/db.instance';
 
 export default async function aiRoutes(fastify: FastifyInstance) {
   // AI 멀티 에이전트 채팅 (기존)
@@ -35,7 +34,7 @@ export default async function aiRoutes(fastify: FastifyInstance) {
       try {
         // TODO: Implement AI suggestion generation
         reply.send({ message: 'AI suggestion endpoint' });
-      } catch (error) {
+      } catch {
         reply.status(500).send({ error: 'AI suggestion failed' });
       }
     }
@@ -83,8 +82,7 @@ export default async function aiRoutes(fastify: FastifyInstance) {
         const projectStructure = await getProjectStructure(projectId);
 
         reply.send(projectStructure);
-      } catch (error) {
-        console.error('Error getting project structure:', error);
+      } catch {
         reply.status(500).send({ error: 'Failed to get project structure' });
       }
     }
@@ -106,8 +104,7 @@ export default async function aiRoutes(fastify: FastifyInstance) {
       const html = await renderProjectToHTML(project);
 
       reply.type('text/html').send(html);
-    } catch (error) {
-      console.error('Error rendering site:', error);
+    } catch {
       reply.status(500).send('Internal server error');
     }
   });
@@ -124,8 +121,7 @@ export default async function aiRoutes(fastify: FastifyInstance) {
       }
       const html = await renderPageToHTML(project, '/', `/p/${previewId}/`);
       reply.type('text/html').send(html);
-    } catch (error) {
-      console.error('Error preview root:', error);
+    } catch {
       reply.status(500).send('Internal server error');
     }
   });
@@ -139,10 +135,13 @@ export default async function aiRoutes(fastify: FastifyInstance) {
         return;
       }
       const pagePath = `/${pathSplat || ''}`;
-      const html = await renderPageToHTML(project, pagePath, `/p/${previewId}/`);
+      const html = await renderPageToHTML(
+        project,
+        pagePath,
+        `/p/${previewId}/`
+      );
       reply.type('text/html').send(html);
-    } catch (error) {
-      console.error('Error preview path:', error);
+    } catch {
       reply.status(500).send('Internal server error');
     }
   });

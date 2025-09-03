@@ -32,7 +32,11 @@ export const INTENT_ANALYSIS_SYSTEM_PROMPT = `
 }
 `;
 
-export const buildIntentAnalysisUserPrompt = (message: string, projectName?: string, componentName?: string) => `
+export const buildIntentAnalysisUserPrompt = (
+  message: string,
+  projectName?: string,
+  componentName?: string
+) => `
 사용자 메시지: "${message}"
 현재 프로젝트: ${projectName || '없음'}
 현재 컴포넌트: ${componentName || '없음'}
@@ -88,7 +92,10 @@ export const PROJECT_CREATION_PROMPT = `
 // -----------------------------
 // Component Modification Prompts
 // -----------------------------
-export const buildComponentModificationPrompt = (componentName?: string, projectName?: string) => `
+export const buildComponentModificationPrompt = (
+  componentName?: string,
+  projectName?: string
+) => `
 당신은 컴포넌트 수정 전문가입니다.
 사용자의 요청을 분석하여 컴포넌트를 수정하세요.
 

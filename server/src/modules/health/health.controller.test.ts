@@ -32,4 +32,3 @@ describe('HealthController', () => {
     expect(typeof payload.timestamp).toBe('string');
   });
 });
-
