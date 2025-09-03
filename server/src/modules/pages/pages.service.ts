@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { PagesRepositoryImpl } from './pages.repository';
-import { ProjectsRepositoryImpl } from '../projects/projects.repository';
+import { PagesRepositoryImpl } from '@/modules/pages/pages.repository';
+import { ProjectsRepositoryImpl } from '@/modules/projects/projects.repository';
 import { Page, CreatePageData, UpdatePageData } from './pages.types';
 
 export class PagesService {

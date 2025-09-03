@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { AnalyticsRepositoryImpl } from './analytics.repository';
-import { ProjectsRepositoryImpl } from '../projects/projects.repository';
-import { AnalyticsEvent, AnalyticsMetrics, AnalyticsFilter } from './analytics.types';
+import { AnalyticsRepositoryImpl } from '@/modules/analytics/analytics.repository';
+import { ProjectsRepositoryImpl } from '@/modules/projects/projects.repository';
+import { AnalyticsEvent, AnalyticsMetrics, AnalyticsFilter } from '@/modules/analytics/analytics.types';
 
 export class AnalyticsService {
     private repository: AnalyticsRepositoryImpl;

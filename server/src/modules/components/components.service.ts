@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { ComponentsRepositoryImpl } from './components.repository';
-import { ComponentDefinition, CreateComponentDefinitionData, UpdateComponentDefinitionData } from './components.types';
-import { ProjectsRepositoryImpl } from '../projects/projects.repository';
+import { ComponentsRepositoryImpl } from '@/modules/components/components.repository';
+import { ComponentDefinition, CreateComponentDefinitionData, UpdateComponentDefinitionData } from '@/modules/components/components.types';
+import { ProjectsRepositoryImpl } from '@/modules/projects/projects.repository';
 
 export class ComponentsService {
     private repository: ComponentsRepositoryImpl;
