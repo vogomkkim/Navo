@@ -1,12 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { db } from '@/db/db.instance';
-import { componentDefinitions } from '@/drizzle/schema';
-import { eq, and, asc, desc } from 'drizzle-orm';
+import { componentDefinitions, components } from '@/drizzle/schema';
+import { eq, and, asc, desc, sql } from 'drizzle-orm';
 import {
   ComponentDefinition,
   CreateComponentDefinitionData,
   UpdateComponentDefinitionData,
   ComponentsRepository,
+  ComponentInstance,
+  CreateComponentInstanceData,
 } from './components.types';
 
 export class ComponentsRepositoryImpl implements ComponentsRepository {
@@ -243,12 +245,12 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
 
   async seedComponentDefinitions(
     projectId: string,
-    components: any[]
+    componentsData: any[]
   ): Promise<ComponentDefinition[]> {
     try {
       const result: ComponentDefinition[] = [];
 
-      for (const component of components) {
+      for (const component of componentsData) {
         const existing = await this.getComponentDefinitionByName(
           component.name,
           projectId
@@ -290,6 +292,49 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
     } catch (error) {
       this.app.log.error(error, '컴포넌트 정의 시드 실패');
       throw new Error('컴포넌트 정의 시드에 실패했습니다.');
+    }
+  }
+
+  // --- New Methods for Component Instances ---
+
+  async countComponentsByPageId(pageId: string): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(components)
+        .where(eq(components.pageId, pageId));
+      
+      const count = Number(result[0].count);
+      this.app.log.info({ pageId, count }, '페이지별 컴포넌트 수 조회 완료');
+      return count;
+    } catch (error) {
+      this.app.log.error(error, '페이지별 컴포넌트 수 조회 실패');
+      throw new Error('페이지별 컴포넌트 수 조회에 실패했습니다.');
+    }
+  }
+
+  async createComponentInstance(
+    data: CreateComponentInstanceData
+  ): Promise<ComponentInstance> {
+    try {
+      const result = await db
+        .insert(components)
+        .values({
+          pageId: data.pageId,
+          componentDefinitionId: data.componentDefinitionId,
+          props: data.props,
+          orderIndex: data.orderIndex,
+        })
+        .returning();
+
+      this.app.log.info(
+        { instanceId: result[0].id, pageId: data.pageId },
+        '컴포넌트 인스턴스 생성 완료'
+      );
+      return result[0];
+    } catch (error) {
+      this.app.log.error(error, '컴포넌트 인스턴스 생성 실패');
+      throw new Error('컴포넌트 인스턴스 생성에 실패했습니다.');
     }
   }
 }

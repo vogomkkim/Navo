@@ -12,13 +12,15 @@ export function orchestratorController(app: FastifyInstance) {
     async (request, reply) => {
       try {
         const { userMessage } = request.body as { userMessage: string };
+        const { userId } = request.user as { userId: string }; // Extract userId from authenticated user
+
         if (!userMessage) {
           reply.status(400).send({ ok: false, error: 'userMessage is required' });
           return;
         }
 
-        // Phase 1 MVP: Simple intent recognition and direct response
-        const result = await orchestratorService.processUserRequest(userMessage);
+        // Pass both userMessage and userId to the service
+        const result = await orchestratorService.processUserRequest(userMessage, userId);
 
         reply.send({ ok: true, result });
       } catch (error) {

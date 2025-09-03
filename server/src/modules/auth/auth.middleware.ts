@@ -18,7 +18,8 @@ export async function authenticateToken(
       reply.status(401).send({ ok: false, error: 'Invalid token' });
       return;
     }
-    (request as any).userId = decoded.userId;
+    // Attach user info to request.user for consistency
+    (request as any).user = { userId: decoded.userId, email: decoded.email };
   } catch {
     reply.status(401).send({ ok: false, error: 'Invalid token' });
   }

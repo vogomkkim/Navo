@@ -36,6 +36,30 @@ export interface UpdateComponentDefinitionData {
   isActive?: boolean;
 }
 
+// --- New Types for Component Instances ---
+
+export interface ComponentInstance {
+  id: string;
+  pageId: string;
+  componentDefinitionId: string;
+  props: any;
+  orderIndex: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateComponentInstanceData {
+  pageId: string;
+  componentDefinitionId: string;
+  props: any;
+  orderIndex: number;
+}
+
+export interface UpdateComponentInstanceData {
+  props?: any;
+  orderIndex?: number;
+}
+
 export interface ComponentsRepository {
   listComponentDefinitions(projectId: string): Promise<ComponentDefinition[]>;
   getComponentDefinitionById(id: string): Promise<ComponentDefinition | null>;
@@ -55,4 +79,10 @@ export interface ComponentsRepository {
     projectId: string,
     components: any[]
   ): Promise<ComponentDefinition[]>;
+
+  // --- New Repository Methods for Instances ---
+  countComponentsByPageId(pageId: string): Promise<number>;
+  createComponentInstance(
+    data: CreateComponentInstanceData
+  ): Promise<ComponentInstance>;
 }

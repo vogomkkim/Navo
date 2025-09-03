@@ -1,10 +1,11 @@
 import fastify from 'fastify';
 import { errorHandler } from '@/lib/errorHandler';
-import logger, { createRequestLogger } from '@/lib/logger';
+import pinoLogger, { createRequestLogger } from '@/lib/logger';
 import { authenticateToken } from '@/modules/auth/auth.middleware';
+
 import { authController } from '@/modules/auth/auth.controller';
 import { healthController } from '@/modules/health/health.controller';
-import { staticController } from '@/modules/static/static.controller';
+// import { staticController } from '@/modules/static/static.controller'; // Removed
 import { aiController } from '@/modules/ai/ai.controller';
 import eventRoutes from '@/modules/events/events.controller';
 import { agentsController } from '@/modules/agents/agents.controller';
@@ -12,11 +13,11 @@ import { projectsController } from '@/modules/projects/projects.controller';
 import { pagesController } from '@/modules/pages/pages.controller';
 import { componentsController } from '@/modules/components/components.controller';
 import { analyticsController } from '@/modules/analytics/analytics.controller';
-import { orchestratorController } from '@/modules/orchestrator/orchestrator.controller'; // New import
+import { orchestratorController } from '@/modules/orchestrator/orchestrator.controller';
 
-// Fastify 인스턴스 생성
+// Fastify v4 인스턴스 생성
 const app = fastify({
-  logger: false, // 커스텀 로거를 사용하므로 기본 로거는 비활성화
+  logger: true,
   genReqId: (req) =>
     req.headers['x-request-id'] || createRequestLogger().bindings().requestId,
 });
@@ -33,6 +34,20 @@ app.addHook('onRequest', (req, _reply, done) => {
       requestId: req.id,
     },
     '요청 수신'
+  );
+  done();
+});
+
+// 에러 훅: 스택 포함 에러 상세 로깅
+app.addHook('onError', (req, _reply, err, done) => {
+  const requestLogger = createRequestLogger(req.id as string);
+  requestLogger.error(
+    {
+      method: req.method,
+      url: req.url,
+      err,
+    },
+    '요청 처리 중 오류'
   );
   done();
 });
@@ -110,7 +125,6 @@ app.decorate('authenticateToken', authenticateToken);
 // 컨트롤러 등록
 app.register((instance) => authController(instance), { prefix: '/api/auth' });
 healthController(app);
-staticController(app);
 aiController(app);
 app.register(eventRoutes, { prefix: '/api' });
 agentsController(app);
@@ -118,23 +132,23 @@ projectsController(app);
 pagesController(app);
 componentsController(app);
 analyticsController(app);
-orchestratorController(app); // New controller registration
+orchestratorController(app);
 
 // 서버 시작 함수
 const start = async () => {
   try {
-    logger.info({ env: process.env.PORT });
+    pinoLogger.info({ env: process.env.PORT });
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
     await app.listen({ port, host: '0.0.0.0' });
-    logger.info(`서버가 ${port}번 포트에서 실행 중입니다.`);
+    pinoLogger.info(`서버가 ${port}번 포트에서 실행 중입니다.`);
 
     // 개발 환경에서는 환경변수를 그대로 한 번 출력
-    logger.info(process.env.NODE_ENV);
+    pinoLogger.info(process.env.NODE_ENV);
     if (process.env.NODE_ENV === 'development') {
-      logger.info({ env: process.env }, '개발 환경: 환경변수 전체 출력');
+      pinoLogger.info({ env: process.env }, '개발 환경: 환경변수 전체 출력');
     }
   } catch (err) {
-    logger.error(err, '서버 시작 실패');
+    pinoLogger.error(err, '서버 시작 실패');
     process.exit(1);
   }
 };

@@ -69,19 +69,21 @@ export function buildSystemInstruction() {
   const routingKeys = [
     'GreetingAgent',      // For general greetings and simple conversation
     'FileSystemTool',     // For listing files or other file operations
+    'ShellTool',          // For executing shell commands
+    'ProjectEditorTool',  // For editing project content (e.g., adding components)
     'ProjectCreationAgent', // For creating new projects
     'CodeGenerationAgent',  // For generating code snippets
     'ErrorFixAgent',        // For fixing errors
     'GeneralQuestionAgent'  // For answering general questions
   ];
 
-  return `You are an AI assistant that analyzes user intent.
+  return `You are an AI assistant that analyzes user intent for a project management and website building application. The primary language is Korean.
 Respond in the following JSON format ONLY. Do not add any commentary.
 
 {
-  "type": "A string categorizing the intent (e.g., 'general_greeting', 'file_operation').",
+  "type": "A string categorizing the intent (e.g., 'general_greeting', 'file_operation', 'content_edit').",
   "confidence": "A float between 0.0 and 1.0 representing your confidence.",
-  "description": "A brief description of the user's intent.",
+  "description": "A brief description of the user's intent in Korean.",
   "is_vague": "A boolean indicating if the request is ambiguous.",
   "routing_key": "ONE of the following exact string values: ${routingKeys.join(' | ')}. Choose the most appropriate key.",
   "actions": [
@@ -92,13 +94,15 @@ Respond in the following JSON format ONLY. Do not add any commentary.
       }
     }
   ],
-  "enhanced_message": "An improved version of the user's message."
+  "enhanced_message": "An improved version of the user's message in Korean."
 }
 
-### Routing Key and Action Rules:
-- If the user wants to list files, set routing_key to "FileSystemTool" and actions to [{"type": "execute", "parameters": {"operation": "listFiles", "path": "."}}].
-- If the user provides a greeting, set routing_key to "GreetingAgent" and actions to [{"type": "greet", "parameters": {"message": "User greeting"}}].
-- For all other cases, analyze and determine the most appropriate routing_key and actions.
+### Routing Key and Action Rules (Korean):
+- 사용자가 페이지에 컴포넌트나 섹션을 추가해달라고 요청하면 (예: "홈페이지에 히어로 섹션 추가해줘"), routing_key를 "ProjectEditorTool"로 설정하고, actions를 [{"type": "execute", "parameters": {"operation": "addComponent", "pageName": "<페이지_이름>", "componentType": "<컴포넌트_타입>"}}] 으로 설정하세요. '홈' 또는 '홈페이지'는 '홈'으로 인식하세요. 컴포넌트 타입은 사용자의 표현을 최대한 영문 대문자로 변환하세요 (예: 히어로 -> Hero, 네비게이션 바 -> Navbar).
+- 사용자가 셸 명령어 실행을 요청하면 (예: "pwd 명령어 실행해"), routing_key를 "ShellTool"로 설정하고, actions를 [{"type": "execute", "parameters": {"command": "<실행할_명령어>"}}] 으로 설정하세요.
+- 사용자가 파일 목록을 요청하면, routing_key를 "FileSystemTool"로 설정하고, actions를 [{"type": "execute", "parameters": {"operation": "listFiles", "path": "."}}] 으로 설정하세요.
+- 사용자가 간단한 인사를 하면 (예: "안녕"), routing_key를 "GreetingAgent"로 설정하고, actions를 [{"type": "greet", "parameters": {"message": "사용자 인사"}}] 으로 설정하세요.
+- 그 외의 경우는, 메시지를 분석하여 가장 적절한 routing_key와 actions를 결정하세요.
 `;
 }
 

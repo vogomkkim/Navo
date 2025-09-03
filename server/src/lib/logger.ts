@@ -1,26 +1,41 @@
-import { randomUUID } from 'crypto';
-import pino from 'pino';
+// Simple console-backed logger to replace Pino while preserving the API shape
+// Uses console.log/warn/error consistently, and supports child() with bindings
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+export type SimpleLogger = {
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  debug: (...args: unknown[]) => void;
+  child: (bindings?: Record<string, unknown>) => SimpleLogger;
+  bindings: () => Record<string, unknown>;
+};
 
-// 기본 로거 설정
-const logger = pino({
-  level: isDevelopment ? 'debug' : 'info',
-  transport: isDevelopment
-    ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-        },
-      }
-    : undefined,
-});
+function createConsoleLogger(bindings: Record<string, unknown> = {}): SimpleLogger {
+  const mergeBindings = (args: unknown[]): unknown[] => {
+    if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null) {
+      return [{ ...(args[0] as Record<string, unknown>), ...bindings }, ...args.slice(1)];
+    }
+    if (Object.keys(bindings).length > 0) {
+      return [bindings, ...args];
+    }
+    return args;
+  };
 
-// 요청별 컨텍스트를 포함하는 자식 로거 생성
+  return {
+    info: (...args: unknown[]) => console.log(...mergeBindings(args)),
+    warn: (...args: unknown[]) => console.warn(...mergeBindings(args)),
+    error: (...args: unknown[]) => console.error(...mergeBindings(args)),
+    debug: (...args: unknown[]) => console.log(...mergeBindings(args)),
+    child: (childBindings: Record<string, unknown> = {}) =>
+      createConsoleLogger({ ...bindings, ...childBindings }),
+    bindings: () => ({ ...bindings }),
+  };
+}
+
+const logger: SimpleLogger = createConsoleLogger();
+
 export const createRequestLogger = (requestId?: string) => {
-  return logger.child({ requestId: requestId || randomUUID() });
+  return requestId ? logger.child({ requestId }) : logger.child();
 };
 
 export default logger;

@@ -13,7 +13,7 @@ export function pagesController(app: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const userId = (request as any).userId as string | undefined;
+        const { userId } = request.user as { userId: string };
         if (!userId) {
           reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
           return;
@@ -39,7 +39,7 @@ export function pagesController(app: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const userId = (request as any).userId as string | undefined;
+        const { userId } = request.user as { userId: string };
         if (!userId) {
           reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
           return;
@@ -65,7 +65,7 @@ export function pagesController(app: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const userId = (request as any).userId as string | undefined;
+        const { userId } = request.user as { userId: string };
         if (!userId) {
           reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
           return;
@@ -92,7 +92,7 @@ export function pagesController(app: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const userId = (request as any).userId as string | undefined;
+        const { userId } = request.user as { userId: string };
         if (!userId) {
           reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
           return;
@@ -130,7 +130,7 @@ export function pagesController(app: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const userId = (request as any).userId as string | undefined;
+        const { userId } = request.user as { userId: string };
         if (!userId) {
           reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
           return;
@@ -166,7 +166,7 @@ export function pagesController(app: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const userId = (request as any).userId as string | undefined;
+        const { userId } = request.user as { userId: string };
         if (!userId) {
           reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
           return;
@@ -192,7 +192,7 @@ export function pagesController(app: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const userId = (request as any).userId as string | undefined;
+        const { userId } = request.user as { userId: string };
         if (!userId) {
           reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
           return;
@@ -218,7 +218,7 @@ export function pagesController(app: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const userId = (request as any).userId as string | undefined;
+        const { userId } = request.user as { userId: string };
         if (!userId) {
           reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
           return;
