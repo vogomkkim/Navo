@@ -6,8 +6,10 @@ import {
   publishDeploys,
   components,
   componentDefinitions,
+  usersToOrganizations,
+  organizations,
 } from '@/drizzle/schema';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql, inArray } from 'drizzle-orm';
 import type { Project, ProjectPage } from '@/modules/projects/projects.types';
 
 export interface ProjectsRepository {
@@ -28,18 +30,31 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
 
   async listProjectsByUserId(userId: string): Promise<Project[]> {
     try {
+      // Find organizations that the user belongs to
+      const memberships = await db
+        .select({ organizationId: usersToOrganizations.organizationId })
+        .from(usersToOrganizations)
+        .where(eq(usersToOrganizations.userId, userId));
+
+      const organizationIds = memberships.map((m) => m.organizationId);
+
+      if (organizationIds.length === 0) {
+        this.app.log.info({ userId }, '사용자가 속한 조직이 없습니다. 빈 프로젝트 목록 반환');
+        return [] as any;
+      }
+
       const dbRows = await db
         .select({
           id: projects.id,
           name: projects.name,
           description: projects.description,
-          ownerId: projects.ownerId,
+          organizationId: projects.organizationId,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
           requirements: projects.requirements,
         })
         .from(projects)
-        .where(eq(projects.ownerId, userId))
+        .where(inArray(projects.organizationId, organizationIds))
         .orderBy(projects.name);
 
       const result = dbRows.map((row) => ({
@@ -66,7 +81,7 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
           id: projects.id,
           name: projects.name,
           description: projects.description,
-          ownerId: projects.ownerId,
+          organizationId: projects.organizationId,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
           requirements: projects.requirements,
@@ -99,18 +114,30 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
     userId: string
   ): Promise<Project | null> {
     try {
+      // Verify user has access via organization membership
+      const memberships = await db
+        .select({ organizationId: usersToOrganizations.organizationId })
+        .from(usersToOrganizations)
+        .where(eq(usersToOrganizations.userId, userId));
+
+      const organizationIds = memberships.map((m) => m.organizationId);
+
+      if (organizationIds.length === 0) {
+        return null;
+      }
+
       const dbRows = await db
         .select({
           id: projects.id,
           name: projects.name,
           description: projects.description,
-          ownerId: projects.ownerId,
+          organizationId: projects.organizationId,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
           requirements: projects.requirements,
         })
         .from(projects)
-        .where(and(eq(projects.id, projectId), eq(projects.ownerId, userId)))
+        .where(and(eq(projects.id, projectId), inArray(projects.organizationId, organizationIds)))
         .limit(1);
 
       if (dbRows.length === 0) {
@@ -145,7 +172,7 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
           id: projects.id,
           name: projects.name,
           description: projects.description,
-          ownerId: projects.ownerId,
+          organizationId: projects.organizationId,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
           requirements: projects.requirements,

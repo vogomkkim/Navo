@@ -1,4 +1,5 @@
-import { db, users } from '@/modules/db';
+import { db } from '@/modules/db';
+import { users } from '@/schema';
 import { eq } from 'drizzle-orm';
 
 export class DbRepository {

@@ -23,15 +23,12 @@ export const componentDefinitionsRelations = relations(
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   componentDefinitions: many(componentDefinitions),
-  user: one(users, {
-    fields: [projects.ownerId],
-    references: [users.id],
-  }),
+  // ownerId removed; projects now reference organizations. If needed, define organization relations elsewhere.
   pages: many(pages),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
-  projects: many(projects),
+  // Link to projects via users_to_organizations if needed; direct relation removed.
 }));
 
 export const pagesRelations = relations(pages, ({ one, many }) => ({

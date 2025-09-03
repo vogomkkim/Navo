@@ -11,7 +11,7 @@ export function pagesController(app: FastifyInstance) {
     {
       preHandler: [app.authenticateToken],
     },
-    async (request, reply) => {
+    async (request: any, reply) => {
       try {
         const { userId } = request.user as { userId: string };
         if (!userId) {
@@ -37,7 +37,7 @@ export function pagesController(app: FastifyInstance) {
     {
       preHandler: [app.authenticateToken],
     },
-    async (request, reply) => {
+    async (request: any, reply) => {
       try {
         const { userId } = request.user as { userId: string };
         if (!userId) {
@@ -63,7 +63,7 @@ export function pagesController(app: FastifyInstance) {
     {
       preHandler: [app.authenticateToken],
     },
-    async (request, reply) => {
+    async (request: any, reply) => {
       try {
         const { userId } = request.user as { userId: string };
         if (!userId) {
@@ -90,7 +90,7 @@ export function pagesController(app: FastifyInstance) {
     {
       preHandler: [app.authenticateToken],
     },
-    async (request, reply) => {
+    async (request: any, reply) => {
       try {
         const { userId } = request.user as { userId: string };
         if (!userId) {
@@ -128,7 +128,7 @@ export function pagesController(app: FastifyInstance) {
     {
       preHandler: [app.authenticateToken],
     },
-    async (request, reply) => {
+    async (request: any, reply) => {
       try {
         const { userId } = request.user as { userId: string };
         if (!userId) {
@@ -164,7 +164,7 @@ export function pagesController(app: FastifyInstance) {
     {
       preHandler: [app.authenticateToken],
     },
-    async (request, reply) => {
+    async (request: any, reply) => {
       try {
         const { userId } = request.user as { userId: string };
         if (!userId) {
@@ -190,7 +190,7 @@ export function pagesController(app: FastifyInstance) {
     {
       preHandler: [app.authenticateToken],
     },
-    async (request, reply) => {
+    async (request: any, reply) => {
       try {
         const { userId } = request.user as { userId: string };
         if (!userId) {
@@ -216,7 +216,7 @@ export function pagesController(app: FastifyInstance) {
     {
       preHandler: [app.authenticateToken],
     },
-    async (request, reply) => {
+    async (request: any, reply) => {
       try {
         const { userId } = request.user as { userId: string };
         if (!userId) {
