@@ -81,10 +81,17 @@ export class WorkflowService {
       - Ensure all necessary steps are included to fulfill the user's request.
       - For a "create project" or "create website" request, the plan MUST follow this sequence:
         1. 'create_organization': To create a tenant for the new project. You will need to invent a suitable organization name and assume a placeholder 'ownerId' like "c1b2a3d4-e5f6-7890-1234-567890abcdef".
-        2. 'create_project_architecture': Its 'organizationId' input MUST be a reference to the 'id' of the 'create_organization' step's output.
-        3. 'generate_project_files': Its 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output.
-            - Subsequent 'run_shell_command' steps (like 'npm install') MUST use the 'cwd' parameter, referencing the 'projectPath' output from the file generation step.
-      - The 'generate_project_files' step's 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output.
+        2. 'create_project_in_db': To create the initial project record in the database.
+            - Its 'organizationId' input MUST be a reference to the 'id' of the 'create_organization' step's output.
+            - Its 'name' and 'description' inputs should be derived from the user's prompt.
+            - Its 'userId' input MUST be the same placeholder 'ownerId' used in the 'create_organization' step.
+        3. 'create_project_architecture': To design the detailed structure of the project.
+            - Its 'projectId' input MUST be a reference to the 'id' of the 'create_project_in_db' step's output.
+            - Its 'prompt' input should be the original user request.
+        4. 'update_project_from_architecture': To save the designed architecture to the database.
+            - Its 'projectId' input MUST be a reference to the 'id' of the 'create_project_in_db' step's output.
+            - Its 'architecture' input MUST be a reference to the 'project' property of the 'create_project_architecture' step's output.
+      - After this sequence, you can add other steps like generating components or pages, which would then use the project ID from the 'create_project_in_db' step.
 
       **Output Format (JSON only):**
       {

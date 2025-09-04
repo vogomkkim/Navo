@@ -28,9 +28,9 @@ export function projectsController(app: FastifyInstance) {
     },
   );
 
-  // List project pages
+  // List project VFS nodes
   app.get(
-    '/api/projects/:projectId/pages',
+    '/api/projects/:projectId/vfs',
     {
       preHandler: [app.authenticateToken],
     },
@@ -44,14 +44,20 @@ export function projectsController(app: FastifyInstance) {
 
         const params = request.params as any;
         const projectId = params.projectId as string;
+        const query = request.query as any;
+        const parentId = (query.parentId as string) || null;
 
-        const pages = await projectsService.listProjectPages(projectId, userId);
-        reply.send({ pages });
+        const nodes = await projectsService.listProjectVfsNodes(
+          projectId,
+          parentId,
+          userId,
+        );
+        reply.send({ nodes });
       } catch (error) {
-        app.log.error(error, '프로젝트 페이지 목록 조회 실패');
+        app.log.error(error, '프로젝트 VFS 노드 목록 조회 실패');
         reply
           .status(500)
-          .send({ error: '프로젝트 페이지 목록 조회에 실패했습니다.' });
+          .send({ error: '프로젝트 VFS 노드 목록 조회에 실패했습니다.' });
       }
     },
   );

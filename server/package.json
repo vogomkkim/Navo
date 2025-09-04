@@ -5,9 +5,9 @@
   "type": "module",
   "packageManager": "npm@10",
   "scripts": {
-    "dev": "dotenvx run -o -e .env -e .env.local -- tsx watch src/server.ts",
+    "dev": "dotenvx run -o -e .env -e .env.local -- tsx watch src/bootstrap.ts",
     "build": "tsc -p ./tsconfig.json",
-    "start": "dotenvx run -e .env -- node dist/server.js",
+    "start": "dotenvx run -e .env -- node dist/bootstrap.js",
     "lint": "eslint . --ext .ts --config ../eslint.config.js",
     "test": "jest --config jest.config.ts",
     "db:generate": "cd .. && npx dotenvx run -f .env -f .env.local -- npx drizzle-kit generate",

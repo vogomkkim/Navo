@@ -1,29 +1,37 @@
-import fastify from 'fastify';
+import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import { IncomingMessage, ServerResponse } from 'node:http';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import fastify, { type RawServerDefault } from 'fastify';
 
 import { errorHandler } from '@/lib/errorHandler';
 import pinoLogger, { createRequestLogger } from '@/lib/logger';
 import { analyticsController } from '@/modules/analytics/analytics.controller';
 import { authController } from '@/modules/auth/auth.controller';
 import { authenticateToken } from '@/modules/auth/auth.middleware';
-import { componentsController } from '@/modules/components/components.controller';
 import eventRoutes from '@/modules/events/events.controller';
 import { healthController } from '@/modules/health/health.controller';
-import { pagesController } from '@/modules/pages/pages.controller';
 import { projectsController } from '@/modules/projects/projects.controller';
 import { workflowController } from '@/modules/workflow/workflow.controller';
 
 // Fastify v4 인스턴스 생성
-const app = fastify({
+const app = fastify<RawServerDefault, IncomingMessage, ServerResponse>({
   logger: true,
-  genReqId: (req: any) =>
-    (req.headers['x-request-id'] as string | undefined) ||
-    (createRequestLogger().bindings() as any).requestId,
+  genReqId: (req) => {
+    const header = req.headers['x-request-id'] as string | string[] | undefined;
+    const fromHeader = Array.isArray(header) ? header[0] : header;
+    return fromHeader ?? randomUUID();
+  },
 });
 
 // 커스텀 로거 훅 등록
+app.decorateRequest('_startTime', undefined);
+
 app.addHook('onRequest', (req, _reply, done) => {
   const requestLogger = createRequestLogger(req.id as string);
-  (req as any)._startTime = Date.now();
+  req._startTime = Date.now();
   requestLogger.info(
     {
       method: req.method,
@@ -31,7 +39,7 @@ app.addHook('onRequest', (req, _reply, done) => {
       host: req.headers.host,
       requestId: req.id,
     },
-    '요청 수신',
+    '요청 수신'
   );
   done();
 });
@@ -45,7 +53,7 @@ app.addHook('onError', (req, _reply, err, done) => {
       url: req.url,
       err,
     },
-    '요청 처리 중 오류',
+    '요청 처리 중 오류'
   );
   done();
 });
@@ -90,7 +98,7 @@ app.addHook('onSend', (req, reply, payload, done) => {
           contentType,
           body: bodyPreview ?? '[바디 로깅 제외]',
         },
-        '응답 바디',
+        '응답 바디'
       );
     } catch {
       // 로깅 중 오류는 무시
@@ -101,7 +109,7 @@ app.addHook('onSend', (req, reply, payload, done) => {
 
 app.addHook('onResponse', (req, reply, done) => {
   const requestLogger = createRequestLogger(req.id as string);
-  const start = (req as any)._startTime as number | undefined;
+  const start = req._startTime;
   const latencyMs = start ? Date.now() - start : undefined;
   requestLogger.info(
     {
@@ -111,7 +119,7 @@ app.addHook('onResponse', (req, reply, done) => {
       requestId: req.id,
       latencyMs,
     },
-    '요청 처리 완료',
+    '요청 처리 완료'
   );
   done();
 });
@@ -135,8 +143,6 @@ app.register((instance) => authController(instance), { prefix: '/api/auth' });
 healthController(app);
 app.register(eventRoutes, { prefix: '/api' });
 projectsController(app);
-pagesController(app);
-componentsController(app);
 analyticsController(app);
 workflowController(app);
 
@@ -147,6 +153,16 @@ const start = async () => {
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
     await app.listen({ port, host: '0.0.0.0' });
     pinoLogger.info(`서버가 ${port}번 포트에서 실행 중입니다.`);
+
+    // 정상 기동 시 에러 로그 비우기
+    try {
+      const startupErrFile = path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        '..',
+        'server.err'
+      );
+      fs.writeFileSync(startupErrFile, '');
+    } catch {}
 
     // 개발 환경에서는 환경변수를 그대로 한 번 출력
     pinoLogger.info(process.env.NODE_ENV);
@@ -160,3 +176,28 @@ const start = async () => {
 };
 
 start();
+
+// 전역 예외/거부 처리: 파일로 즉시 기록
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const errFile = path.resolve(__dirname, '..', 'server.err');
+const logUnhandled = (label: string, error: unknown) => {
+  try {
+    const now = new Date().toISOString();
+    const payload =
+      error instanceof Error
+        ? `${error.name} ${error.message}\n${error.stack ?? ''}`
+        : String(error);
+    fs.appendFileSync(errFile, `${now} ${label} ${payload}\n`);
+  } catch {
+    // 무시
+  }
+};
+
+process.on('uncaughtException', (error) => {
+  logUnhandled('[uncaughtException]', error);
+});
+
+process.on('unhandledRejection', (reason) => {
+  logUnhandled('[unhandledRejection]', reason as unknown);
+});

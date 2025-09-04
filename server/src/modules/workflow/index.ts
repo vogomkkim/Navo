@@ -4,6 +4,10 @@
  */
 
 import { toolRegistry } from './toolRegistry';
+import {
+  createProjectInDbTool,
+  updateProjectFromArchitectureTool,
+} from './tools/database.tool';
 import { generateProjectFilesTool } from './tools/codeGenerator.tool';
 import {
   listDirectoryTool,
@@ -19,6 +23,8 @@ import { WorkflowExecutor } from './workflowExecutor';
 // --- Tool Registration ---
 // As we create more tools, we register them here.
 // In a more advanced setup, this could be done dynamically by scanning the 'tools' directory.
+toolRegistry.register(createProjectInDbTool);
+toolRegistry.register(updateProjectFromArchitectureTool);
 toolRegistry.register(runShellCommandTool);
 toolRegistry.register(listDirectoryTool);
 toolRegistry.register(readFileTool);

@@ -88,16 +88,20 @@ export const projects = pgTable(
   ],
 );
 
-export const pages = pgTable(
-  'pages',
+export const vfsNodes = pgTable(
+  'vfs_nodes',
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    projectId: uuid('project_id').notNull(),
-    path: text().notNull(),
-    name: varchar({ length: 255 }).notNull(),
-    description: text(),
-    layoutJson: jsonb('layout_json').default({}).notNull(),
-    isPublished: boolean('is_published').default(false).notNull(),
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    parentId: uuid('parent_id').references(() => vfsNodes.id, {
+      onDelete: 'cascade',
+    }), // Self-referencing for hierarchy
+    nodeType: varchar('node_type', { length: 50 }).notNull(), // 'FILE' or 'DIRECTORY'
+    name: varchar('name', { length: 255 }).notNull(),
+    content: text('content'), // For files
+    metadata: jsonb('metadata').default({}), // For additional info like page routes, component props etc.
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .defaultNow()
       .notNull(),
@@ -106,91 +110,21 @@ export const pages = pgTable(
       .notNull(),
   },
   (table) => [
-    index('idx_pages_project').using(
-      'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops'),
-    ),
-    foreignKey({
-      columns: [table.projectId],
-      foreignColumns: [projects.id],
-      name: 'pages_project_id_fkey',
-    }).onDelete('cascade'),
-    unique('pages_project_id_path_key').on(table.projectId, table.path),
-  ],
-);
-
-export const componentDefinitions = pgTable(
-  'component_definitions',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    projectId: uuid('project_id').notNull(),
-    name: varchar({ length: 255 }).notNull(),
-    displayName: varchar('display_name', { length: 255 }).notNull(),
-    description: text(),
-    category: varchar({ length: 255 }).default('basic').notNull(),
-    propsSchema: jsonb('props_schema').default({}).notNull(),
-    renderTemplate: text('render_template').notNull(),
-    cssStyles: text('css_styles'),
-    isActive: boolean('is_active').default(true).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index('idx_component_definitions_project').using(
-      'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops'),
-    ),
-    foreignKey({
-      columns: [table.projectId],
-      foreignColumns: [projects.id],
-      name: 'component_definitions_project_id_fkey',
-    }).onDelete('cascade'),
-    unique('component_definitions_project_id_name_key').on(
+    index('idx_vfs_nodes_project').using('btree', table.projectId),
+    index('idx_vfs_nodes_parent').using('btree', table.parentId),
+    unique('vfs_nodes_project_id_parent_id_name_key').on(
       table.projectId,
+      table.parentId,
       table.name,
     ),
-  ],
-);
-
-export const components = pgTable(
-  'components',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    pageId: uuid('page_id').notNull(),
-    componentDefinitionId: uuid('component_definition_id').notNull(),
-    props: jsonb().default({}).notNull(),
-    orderIndex: integer('order_index').default(0).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index('idx_components_definition').using(
-      'btree',
-      table.componentDefinitionId.asc().nullsLast().op('uuid_ops'),
+    check(
+      'check_node_type',
+      sql`node_type IN ('FILE', 'DIRECTORY')`,
     ),
-    index('idx_components_page_order').using(
-      'btree',
-      table.pageId.asc().nullsLast().op('uuid_ops'),
-      table.orderIndex.asc().nullsLast().op('int4_ops'),
+    check(
+      'check_content_for_file',
+      sql`(node_type = 'DIRECTORY' AND content IS NULL) OR (node_type = 'FILE')`,
     ),
-    foreignKey({
-      columns: [table.componentDefinitionId],
-      foreignColumns: [componentDefinitions.id],
-      name: 'components_component_definition_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.pageId],
-      foreignColumns: [pages.id],
-      name: 'components_page_id_fkey',
-    }).onDelete('cascade'),
   ],
 );
 
@@ -313,41 +247,6 @@ export const projectPlans = pgTable(
       foreignColumns: [users.id],
       name: 'project_plans_user_id_fkey',
     }),
-  ],
-);
-
-export const virtualPreviews = pgTable(
-  'virtual_previews',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    pageId: uuid('page_id').notNull(),
-    htmlContent: text('html_content').notNull(),
-    filePath: text('file_path').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index('idx_virtual_previews_page').using(
-      'btree',
-      table.pageId.asc().nullsLast().op('uuid_ops'),
-    ),
-    index('idx_virtual_previews_file_path').using(
-      'btree',
-      table.filePath.asc().nullsLast().op('text_ops'),
-    ),
-    foreignKey({
-      columns: [table.pageId],
-      foreignColumns: [pages.id],
-      name: 'virtual_previews_page_id_fkey',
-    }).onDelete('cascade'),
-    unique('virtual_previews_page_id_file_path_key').on(
-      table.pageId,
-      table.filePath,
-    ),
   ],
 );
 

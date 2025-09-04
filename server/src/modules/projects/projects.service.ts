@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 
-import type { Project, ProjectPage } from '@/modules/projects/projects.types';
+import type { Project, VfsNode } from '@/modules/projects/projects.types';
 
 import { ProjectsRepositoryImpl } from './projects.repository';
 
@@ -20,10 +20,11 @@ export class ProjectsService {
     }
   }
 
-  async listProjectPages(
+  async listProjectVfsNodes(
     projectId: string,
+    parentId: string | null,
     userId: string,
-  ): Promise<ProjectPage[]> {
+  ): Promise<VfsNode[]> {
     try {
       // Verify project ownership first
       const project = await this.repository.getProjectByUserId(
@@ -34,10 +35,10 @@ export class ProjectsService {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
       }
 
-      return await this.repository.listPagesByProjectId(projectId);
+      return await this.repository.listVfsNodesByParentId(projectId, parentId);
     } catch (error) {
-      this.app.log.error(error, '프로젝트 페이지 목록 조회 실패');
-      throw new Error('프로젝트 페이지 목록 조회에 실패했습니다.');
+      this.app.log.error(error, '프로젝트 VFS 노드 목록 조회 실패');
+      throw new Error('프로젝트 VFS 노드 목록 조회에 실패했습니다.');
     }
   }
 

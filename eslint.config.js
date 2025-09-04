@@ -27,6 +27,7 @@ export default tseslint.config(
     extends: [...tseslint.configs.recommended, eslintPluginPrettierRecommended],
     rules: {
       'prettier/prettier': 'error',
+      'block-spacing': 'off',
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
       '@typescript-eslint/no-explicit-any': 'warn', // Changed to warn
@@ -55,7 +56,10 @@ export default tseslint.config(
     settings: {
       'import/resolver': {
         typescript: {
-          project: ['./server/tsconfig.json', './packages/shared/tsconfig.json'],
+          project: [
+            './server/tsconfig.json',
+            './packages/shared/tsconfig.json',
+          ],
         },
       },
     },
@@ -142,5 +146,5 @@ export default tseslint.config(
       '**/drizzle/schema.d.ts',
       'frontend/next-env.d.ts',
     ],
-  },
+  }
 );

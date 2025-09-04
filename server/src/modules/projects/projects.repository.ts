@@ -3,17 +3,27 @@ import { FastifyInstance } from 'fastify';
 
 import { db } from '@/db/db.instance';
 import {
-  componentDefinitions,
-  components,
-  organizations,
-  pages,
   projects,
-  publishDeploys,
   usersToOrganizations,
+  vfsNodes,
 } from '@/drizzle/schema';
-import type { Project, ProjectPage } from '@/modules/projects/projects.types';
+import type {
+  Project,
+  ProjectArchitecture,
+  VfsNode,
+} from '@/modules/projects/projects.types';
 
 export interface ProjectsRepository {
+  createProject(
+    name: string,
+    description: string | null,
+    organizationId: string,
+    userId: string,
+  ): Promise<Project>;
+  updateProjectFromArchitecture(
+    projectId: string,
+    architecture: ProjectArchitecture,
+  ): Promise<void>;
   listProjectsByUserId(userId: string): Promise<Project[]>;
   getProjectById(projectId: string): Promise<Project | null>;
   getProjectByUserId(
@@ -22,244 +32,124 @@ export interface ProjectsRepository {
   ): Promise<Project | null>;
   updateProjectName(projectId: string, name: string): Promise<Project>;
   deleteProjectById(projectId: string): Promise<void>;
-  listPagesByProjectId(projectId: string): Promise<ProjectPage[]>;
+  listVfsNodesByParentId(
+    projectId: string,
+    parentId: string | null,
+  ): Promise<VfsNode[]>;
   rollbackProject(projectId: string): Promise<any>;
 }
 
 export class ProjectsRepositoryImpl implements ProjectsRepository {
   constructor(private readonly app: FastifyInstance) {}
 
-  async listProjectsByUserId(userId: string): Promise<Project[]> {
-    try {
-      // Find organizations that the user belongs to
-      const memberships = await db
-        .select({ organizationId: usersToOrganizations.organizationId })
-        .from(usersToOrganizations)
-        .where(eq(usersToOrganizations.userId, userId));
-
-      const organizationIds = memberships.map((m) => m.organizationId);
-
-      if (organizationIds.length === 0) {
-        this.app.log.info(
-          { userId },
-          '사용자가 속한 조직이 없습니다. 빈 프로젝트 목록 반환',
-        );
-        return [] as any;
-      }
-
-      const dbRows = await db
-        .select({
-          id: projects.id,
-          name: projects.name,
-          description: projects.description,
-          organizationId: projects.organizationId,
-          createdAt: projects.createdAt,
-          updatedAt: projects.updatedAt,
-          requirements: projects.requirements,
-        })
-        .from(projects)
-        .where(inArray(projects.organizationId, organizationIds))
-        .orderBy(projects.name);
-
-      const result = dbRows.map((row) => ({
-        ...row,
-        description: row.description ?? null,
-        requirements: row.requirements ?? null,
-      }));
-
-      this.app.log.info(
-        { userId, count: result.length },
-        '사용자 프로젝트 목록 조회 완료',
-      );
-      return result as any;
-    } catch (error) {
-      this.app.log.error(error, '사용자 프로젝트 목록 조회 실패');
-      throw new Error('사용자 프로젝트 목록 조회에 실패했습니다.');
-    }
-  }
-
-  async getProjectById(projectId: string): Promise<Project | null> {
-    try {
-      const dbRows = await db
-        .select({
-          id: projects.id,
-          name: projects.name,
-          description: projects.description,
-          organizationId: projects.organizationId,
-          createdAt: projects.createdAt,
-          updatedAt: projects.updatedAt,
-          requirements: projects.requirements,
-        })
-        .from(projects)
-        .where(eq(projects.id, projectId))
-        .limit(1);
-
-      if (dbRows.length === 0) {
-        return null;
-      }
-
-      const row = dbRows[0];
-      const project = {
-        ...row,
-        description: row.description ?? null,
-        requirements: row.requirements ?? null,
-      };
-
-      this.app.log.info({ projectId }, '프로젝트 조회 완료');
-      return project as any;
-    } catch (error) {
-      this.app.log.error(error, '프로젝트 조회 실패');
-      throw new Error('프로젝트 조회에 실패했습니다.');
-    }
-  }
-
-  async getProjectByUserId(
-    projectId: string,
+  async createProject(
+    name: string,
+    description: string | null,
+    organizationId: string,
     userId: string,
-  ): Promise<Project | null> {
+  ): Promise<Project> {
     try {
-      // Verify user has access via organization membership
-      const memberships = await db
-        .select({ organizationId: usersToOrganizations.organizationId })
-        .from(usersToOrganizations)
-        .where(eq(usersToOrganizations.userId, userId));
+      const newProject = await db.transaction(async (tx) => {
+        // 1. Create the project record
+        const projectRows = await tx
+          .insert(projects)
+          .values({
+            name,
+            description,
+            organizationId,
+          })
+          .returning();
+        const project = projectRows[0];
 
-      const organizationIds = memberships.map((m) => m.organizationId);
+        if (!project) {
+          throw new Error('Project creation failed and did not return a result.');
+        }
 
-      if (organizationIds.length === 0) {
-        return null;
-      }
-
-      const dbRows = await db
-        .select({
-          id: projects.id,
-          name: projects.name,
-          description: projects.description,
-          organizationId: projects.organizationId,
-          createdAt: projects.createdAt,
-          updatedAt: projects.updatedAt,
-          requirements: projects.requirements,
-        })
-        .from(projects)
-        .where(
-          and(
-            eq(projects.id, projectId),
-            inArray(projects.organizationId, organizationIds),
-          ),
-        )
-        .limit(1);
-
-      if (dbRows.length === 0) {
-        return null;
-      }
-
-      const row = dbRows[0];
-      const project = {
-        ...row,
-        description: row.description ?? null,
-        requirements: row.requirements ?? null,
-      };
-
-      this.app.log.info({ projectId, userId }, '사용자 프로젝트 조회 완료');
-      return project as any;
-    } catch (error) {
-      this.app.log.error(error, '사용자 프로젝트 조회 실패');
-      throw new Error('사용자 프로젝트 조회에 실패했습니다.');
-    }
-  }
-
-  async updateProjectName(projectId: string, name: string): Promise<Project> {
-    try {
-      const dbRows = await db
-        .update(projects)
-        .set({
-          name,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(projects.id, projectId))
-        .returning({
-          id: projects.id,
-          name: projects.name,
-          description: projects.description,
-          organizationId: projects.organizationId,
-          createdAt: projects.createdAt,
-          updatedAt: projects.updatedAt,
-          requirements: projects.requirements,
+        // 2. Create a root directory for the project in the VFS
+        await tx.insert(vfsNodes).values({
+          projectId: project.id,
+          parentId: null, // Root node has no parent
+          nodeType: 'DIRECTORY',
+          name: '/',
         });
 
-      if (dbRows.length === 0) {
-        throw new Error('프로젝트를 찾을 수 없습니다.');
-      }
-
-      const row = dbRows[0];
-      const project = {
-        ...row,
-        description: row.description ?? null,
-        requirements: row.requirements ?? null,
-      };
-
-      this.app.log.info({ projectId, name }, '프로젝트 이름 변경 완료');
-      return project as any;
-    } catch (error) {
-      this.app.log.error(error, '프로젝트 이름 변경 실패');
-      throw new Error('프로젝트 이름 변경에 실패했습니다.');
-    }
-  }
-
-  async deleteProjectById(projectId: string): Promise<void> {
-    try {
-      // Cascade delete will handle related records
-      await db.delete(projects).where(eq(projects.id, projectId));
-
-      this.app.log.info({ projectId }, '프로젝트 삭제 완료');
-    } catch (error) {
-      this.app.log.error(error, '프로젝트 삭제 실패');
-      throw new Error('프로젝트 삭제에 실패했습니다.');
-    }
-  }
-
-  async listPagesByProjectId(projectId: string): Promise<ProjectPage[]> {
-    try {
-      const dbRows = await db
-        .select({
-          id: pages.id,
-          path: pages.path,
-          name: pages.name,
-          description: pages.description,
-          layoutJson: pages.layoutJson,
-          isPublished: pages.isPublished,
-          createdAt: pages.createdAt,
-          updatedAt: pages.updatedAt,
-        })
-        .from(pages)
-        .where(eq(pages.projectId, projectId))
-        .orderBy(pages.path);
-
-      const result = dbRows.map((row) => ({
-        ...row,
-        description: row.description ?? null,
-      }));
+        return project;
+      });
 
       this.app.log.info(
-        { projectId, count: result.length },
-        '프로젝트 페이지 목록 조회 완료',
+        {
+          projectId: newProject.id,
+          organizationId,
+          userId,
+        },
+        '새 프로젝트 생성 완료 (VFS 루트 포함)',
       );
-      return result as any;
+
+      return {
+        ...newProject,
+        description: newProject.description ?? null,
+        requirements: newProject.requirements ?? null,
+      } as any;
     } catch (error) {
-      this.app.log.error(error, '프로젝트 페이지 목록 조회 실패');
-      throw new Error('프로젝트 페이지 목록 조회에 실패했습니다.');
+      this.app.log.error(error, '새 프로젝트 생성 실패');
+      throw new Error('새 프로젝트 생성에 실패했습니다.');
     }
   }
 
-  async rollbackProject(projectId: string): Promise<any> {
+  async updateProjectFromArchitecture(
+    projectId: string,
+    architecture: ProjectArchitecture,
+  ): Promise<void> {
     try {
-      // TODO: Implement rollback logic
-      // This would involve restoring from a previous version
-      this.app.log.info({ projectId }, '프로젝트 롤백 완료');
-      return { success: true };
+      await db.transaction(async (tx) => {
+        const rootNodeResult = await tx
+          .select({ id: vfsNodes.id })
+          .from(vfsNodes)
+          .where(
+            and(
+              eq(vfsNodes.projectId, projectId),
+              sql`${vfsNodes.parentId} IS NULL`,
+            ),
+          );
+        const rootId = rootNodeResult[0]?.id;
+
+        if (!rootId) {
+          throw new Error('Project root directory not found.');
+        }
+
+        // Clear existing VFS nodes for this project (except the root)
+        await tx
+          .delete(vfsNodes)
+          .where(
+            and(
+              eq(vfsNodes.projectId, projectId),
+              sql`${vfsNodes.parentId} IS NOT NULL`,
+            ),
+          );
+
+        // Insert new file nodes from the architecture plan
+        if (architecture.pages && architecture.pages.length > 0) {
+          const fileNodes = architecture.pages.map((page) => ({
+            projectId,
+            parentId: rootId,
+            nodeType: 'FILE' as const,
+            name: page.name,
+            content: page.content ?? '',
+            metadata: { path: page.path, description: page.description },
+          }));
+          if (fileNodes.length > 0) {
+            await tx.insert(vfsNodes).values(fileNodes);
+          }
+        }
+      });
+
+      this.app.log.info(
+        { projectId },
+        '프로젝트 아키텍처 DB 반영 완료',
+      );
     } catch (error) {
-      this.app.log.error(error, '프로젝트 롤백 실패');
-      throw new Error('프로젝트 롤백에 실패했습니다.');
+      this.app.log.error(error, '프로젝트 아키텍처 DB 반영 실패');
+      throw new Error('프로젝트 아키텍처를 데이터베이스에 반영하는 데 실패했습니다.');
     }
   }
 }

@@ -10,15 +10,26 @@ export interface Project {
   requirements?: string | null;
 }
 
-export interface ProjectPage {
+export type VfsNodeType = 'FILE' | 'DIRECTORY';
+
+export interface VfsNode {
   id: string;
-  path: string;
+  projectId: string;
+  parentId: string | null;
+  nodeType: VfsNodeType;
   name: string;
-  description?: string | null;
-  layoutJson: any;
-  isPublished: boolean;
+  content: string | null;
+  metadata: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProjectArchitecture {
+  pages: Omit<VfsNode, 'id' | 'projectId' | 'parentId' | 'createdAt' | 'updatedAt'>[];
+  components: Record<
+    string,
+    { props: Record<string, any>; parent?: string }
+  >;
 }
 
 export interface CreateProjectData {
@@ -32,16 +43,4 @@ export interface UpdateProjectData {
   name?: string;
   description?: string | null;
   requirements?: string | null;
-}
-
-export interface ProjectsRepository {
-  listProjectsByOrganizationId(organizationId: string): Promise<Project[]>;
-  getProjectById(projectId: string): Promise<Project | null>;
-  createProject(projectData: CreateProjectData): Promise<Project>;
-  updateProject(
-    projectId: string,
-    projectData: UpdateProjectData,
-  ): Promise<Project>;
-  deleteProject(projectId: string): Promise<void>;
-  getProjectPages(projectId: string): Promise<ProjectPage[]>;
 }
