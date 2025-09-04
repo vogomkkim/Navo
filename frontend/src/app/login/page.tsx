@@ -25,7 +25,7 @@ export default function LoginPage() {
   const [registerPassword, setRegisterPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
 
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
 
   // Add login-page class to body
@@ -38,10 +38,11 @@ export default function LoginPage() {
 
   // Check if user is already logged in
   useEffect(() => {
-    if (isAuthenticated) {
+    // Only redirect if authentication is not loading and user is authenticated
+    if (!isAuthLoading && isAuthenticated) {
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isAuthLoading, router]);
 
   // Generate random funny name
   const generateFunnyName = () => {

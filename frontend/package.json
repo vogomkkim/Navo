@@ -36,7 +36,8 @@
     "jest-environment-jsdom": "^30.0.5",
     "postcss": "^8.5.6",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "typescript": "5.9.2"
   },
   "_comment": "✅ TAILWIND CSS v3.4.17 사용 중 - 안정적인 v3 버전으로 Vercel 빌드 호환성 확보"
 }

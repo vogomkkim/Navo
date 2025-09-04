@@ -1,101 +1,32 @@
 'use client';
 
-import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import React, { createContext, useContext } from 'react';
 
-import { useListComponents } from '@/lib/api';
+// This context is now a placeholder.
+// Component definitions will be managed through the VFS.
+const ComponentDefinitionContext = createContext<any>(null);
 
-import { useAuth } from './AuthContext';
-
-interface ComponentDef {
-  id: string;
-  name: string;
-  display_name?: string;
-  description?: string;
-  category?: string;
-  props_schema?: Record<string, unknown>;
-  render_template?: string;
-  css_styles?: string;
-  is_active?: boolean;
-}
-
-interface ComponentDefinitionContextType {
-  componentRegistry: Map<string, ComponentDef>;
-  isLoading: boolean;
-  isError: boolean;
-  error: Error | null;
-}
-
-const ComponentDefinitionContext = createContext<
-  ComponentDefinitionContextType | undefined
->(undefined);
-
-export { ComponentDefinitionContext };
-
-export function ComponentDefinitionProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const { isAuthenticated } = useAuth();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null,
-  );
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('navo_selected_projectId');
-      if (stored) setSelectedProjectId(stored);
-    }
-  }, []);
-
-  // 인증된 사용자만 API 호출, 프로젝트 선택된 경우만
-  const { data, isLoading, isError, error } = useListComponents(
-    selectedProjectId || '',
-    {
-      enabled: isAuthenticated && !!selectedProjectId,
-      queryKey: ['componentDefinitions', selectedProjectId, isAuthenticated],
-    } as any,
-  );
-
-  const componentRegistry = new Map<string, ComponentDef>();
-
-  useEffect(() => {
-    if (isAuthenticated && data?.components) {
-      data.components.forEach((comp) => {
-        componentRegistry.set(comp.name, comp);
-      });
-      console.log(
-        `Loaded ${data.components.length} component definitions into registry.`,
-      );
-    }
-  }, [data, isAuthenticated]);
-
-  return (
-    <ComponentDefinitionContext.Provider
-      value={{
-        componentRegistry,
-        isLoading: isAuthenticated && !!selectedProjectId ? isLoading : false,
-        isError: isAuthenticated && !!selectedProjectId ? isError : false,
-        error: isAuthenticated && !!selectedProjectId ? error : null,
-      }}
-    >
-      {children}
-    </ComponentDefinitionContext.Provider>
-  );
-}
-
-export function useComponentDefinitions() {
+export const useComponentDefinition = () => {
   const context = useContext(ComponentDefinitionContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error(
-      'useComponentDefinitions must be used within a ComponentDefinitionProvider',
+      'useComponentDefinition must be used within a ComponentDefinitionProvider',
     );
   }
   return context;
-}
+};
+
+export const ComponentDefinitionProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  // The provider now simply renders its children without fetching any data.
+  const value = {};
+
+  return (
+    <ComponentDefinitionContext.Provider value={value}>
+      {children}
+    </ComponentDefinitionContext.Provider>
+  );
+};

@@ -12,6 +12,7 @@ import { authenticateToken } from '@/modules/auth/auth.middleware';
 import { eventsController } from '@/modules/events/events.controller';
 import { healthController } from '@/modules/health/health.controller';
 import { projectsController } from '@/modules/projects/projects.controller';
+import { previewController } from '@/modules/preview/preview.controller';
 import { workflowController } from '@/modules/workflow/workflow.controller';
 
 // Fastify v4 인스턴스 생성
@@ -143,11 +144,11 @@ app.register(eventsController, { prefix: '/api' });
 projectsController(app);
 analyticsController(app);
 workflowController(app);
+previewController(app); // Register the new preview controller
 
 // 서버 시작 함수
 const start = async () => {
   try {
-    pinoLogger.info({ env: process.env.PORT });
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
     await app.listen({ port, host: '0.0.0.0' });
     pinoLogger.info(`서버가 ${port}번 포트에서 실행 중입니다.`);

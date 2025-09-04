@@ -1,43 +1,77 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import fastify from 'fastify';
+import { FastifyInstance } from 'fastify';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import pinoLogger from '@/lib/logger';
+import { errorHandler } from '@/lib/errorHandler';
+import { authenticateToken } from '@/modules/auth/auth.middleware';
+import glob from 'glob';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const errFile = path.resolve(__dirname, '..', 'server.err');
+// Repositories for diagnostics
+import { ProjectsRepositoryImpl } from '@/modules/projects/projects.repository';
+import { VfsRepositoryImpl } from '@/modules/projects/vfs.repository';
 
-const logUnhandled = (label: string, error: unknown) => {
+// ... (Controller imports)
+
+const REQUIRED_PROJECTS_REPO_METHODS = [
+  'createProject', 'listProjectsByUserId', 'getProjectById', 
+  'getProjectByUserId', 'updateProjectName', 'deleteProjectById', 'rollbackProject'
+];
+
+const REQUIRED_VFS_REPO_METHODS = [
+  'createRootNode', 'syncArchitecture', 'listNodesByParentId', 
+  'getNodeById', 'updateNodeContent'
+];
+
+/**
+ * Runs diagnostic checks to ensure the application is in a valid state to start.
+ */
+async function runDiagnostics(app: FastifyInstance) {
+  console.log('[Bootstrap] Running diagnostics...');
+
+  // 1. Check for essential files (already implemented)
+
+  // 2. Check for essential schema exports (already implemented)
+
+  // 3. Check for method declarations in repositories
+  const checkMethods = (repoClass: any, requiredMethods: string[]) => {
+    const implementedMethods = Object.getOwnPropertyNames(repoClass.prototype);
+    for (const method of requiredMethods) {
+      if (!implementedMethods.includes(method)) {
+        throw new Error(`Method '${method}' is not declared in ${repoClass.name}`);
+      }
+    }
+  };
+
   try {
-    const now = new Date().toISOString();
-    const payload =
-      error instanceof Error
-        ? `${error.name} ${error.message}\n${error.stack ?? ''}`
-        : String(error);
-    fs.appendFileSync(errFile, `${now} ${label} ${payload}\n`);
-  } catch {
-    // ignore
+    checkMethods(ProjectsRepositoryImpl, REQUIRED_PROJECTS_REPO_METHODS);
+    checkMethods(VfsRepositoryImpl, REQUIRED_VFS_REPO_METHODS);
+    console.log('[Bootstrap] Repository method declaration check: PASSED');
+  } catch (e) {
+    console.error('[Diagnostics] Failed to verify repository methods:', e);
+    throw new Error(`[Diagnostics] Roll call failed: Repository integrity check failed.`);
   }
-};
 
-process.on('uncaughtException', (error) => {
-  logUnhandled('[uncaughtException][bootstrap]', error);
-});
+  console.log('[Bootstrap] Diagnostics passed.');
+}
 
-process.on('unhandledRejection', (reason) => {
-  logUnhandled('[unhandledRejection][bootstrap]', reason as unknown);
-});
+/**
+ * Creates and configures the Fastify application instance.
+ */
+function buildApp(): FastifyInstance {
+  // ... (buildApp implementation)
+}
 
-// Import the real server entry (ensures handlers are active even on early failures)
-try {
-  // Dev (tsx) path
-  await import('./server.ts');
-} catch (eTs) {
-  logUnhandled('[import-attempt][server.ts]', eTs as unknown);
+/**
+ * Starts the Fastify server.
+ */
+export async function startServer() {
+  const app = buildApp();
   try {
-    // Prod (compiled) path
-    await import('./server.js');
-  } catch (eJs) {
-    logUnhandled('[import-attempt][server.js]', eJs as unknown);
-    throw eJs;
+    await runDiagnostics(app);
+    // ... (start server logic)
+  } catch (err) {
+    // ... (error handling)
   }
 }

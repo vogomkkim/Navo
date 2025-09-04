@@ -19,7 +19,7 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(data.password);
 
-    const newUser = await this.authRepository.createUser({
+    const newUser = await this.authRepository.createUserWithOrganization({
       email: data.email,
       password: hashedPassword,
       name: data.name ?? null,

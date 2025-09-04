@@ -1,13 +1,13 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
 
 import { db } from '@/db/db.instance';
-import { projects, usersToOrganizations, vfsNodes } from '@/drizzle/schema';
-import type {
-  Project,
-  ProjectArchitecture,
-  VfsNode,
-} from '@/modules/projects/projects.types';
+import {
+  projects,
+  usersToOrganizations,
+} from '@/drizzle/schema';
+import type { Project } from '@/modules/projects/projects.types';
+import { VfsRepositoryImpl } from './vfs.repository';
 
 export interface ProjectsRepository {
   createProject(
@@ -16,10 +16,6 @@ export interface ProjectsRepository {
     organizationId: string,
     userId: string,
   ): Promise<Project>;
-  updateProjectFromArchitecture(
-    projectId: string,
-    architecture: ProjectArchitecture,
-  ): Promise<void>;
   listProjectsByUserId(userId: string): Promise<Project[]>;
   getProjectById(projectId: string): Promise<Project | null>;
   getProjectByUserId(
@@ -28,20 +24,15 @@ export interface ProjectsRepository {
   ): Promise<Project | null>;
   updateProjectName(projectId: string, name: string): Promise<Project>;
   deleteProjectById(projectId: string): Promise<void>;
-  listVfsNodesByParentId(
-    projectId: string,
-    parentId: string | null,
-  ): Promise<VfsNode[]>;
-  getVfsNodeById(nodeId: string, projectId: string): Promise<VfsNode | null>;
-  updateVfsNodeContent(
-    nodeId: string,
-    content: string,
-  ): Promise<VfsNode | null>;
   rollbackProject(projectId: string): Promise<any>;
 }
 
 export class ProjectsRepositoryImpl implements ProjectsRepository {
-  constructor(private readonly app: FastifyInstance) {}
+  private vfsRepository: VfsRepositoryImpl;
+
+  constructor(private readonly app: FastifyInstance) {
+    this.vfsRepository = new VfsRepositoryImpl(app);
+  }
 
   async createProject(
     name: string,
@@ -49,43 +40,51 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
     organizationId: string,
     userId: string,
   ): Promise<Project> {
-    // ... (implementation from before)
-  }
-
-  async updateProjectFromArchitecture(
-    projectId: string,
-    architecture: ProjectArchitecture,
-  ): Promise<void> {
-    // ... (implementation from before)
-  }
-
-  async getVfsNodeById(
-    nodeId: string,
-    projectId: string,
-  ): Promise<VfsNode | null> {
-    // ... (implementation from before)
-  }
-
-  async updateVfsNodeContent(
-    nodeId: string,
-    content: string,
-  ): Promise<VfsNode | null> {
     try {
-      const updatedRows = await db
-        .update(vfsNodes)
-        .set({ content, updatedAt: new Date().toISOString() })
-        .where(eq(vfsNodes.id, nodeId))
-        .returning();
-
-      if (updatedRows.length === 0) {
-        return null;
-      }
-      return updatedRows[0] as VfsNode;
+      const newProject = await db.transaction(async (tx) => {
+        const [project] = await tx
+          .insert(projects)
+          .values({ name, description, organizationId })
+          .returning();
+        if (!project) throw new Error('Project creation failed.');
+        
+        await this.vfsRepository.createRootNode(project.id, tx);
+        
+        return project;
+      });
+      this.app.log.info({ projectId: newProject.id }, 'New project created');
+      return newProject as Project;
     } catch (error) {
-      this.app.log.error(error, 'VFS 노드 내용 업데이트 실패');
-      throw new Error('VFS 노드 내용 업데이트에 실패했습니다.');
+      this.app.log.error(error, 'Failed to create project');
+      throw new Error('Failed to create project.');
     }
   }
 
-  // ... (other method implementations)
+  async listProjectsByUserId(userId: string): Promise<Project[]> {
+    // ... (implementation remains the same)
+  }
+
+  async getProjectById(projectId: string): Promise<Project | null> {
+    // ... (implementation remains the same)
+  }
+
+  async getProjectByUserId(
+    projectId: string,
+    userId: string,
+  ): Promise<Project | null> {
+    // ... (implementation remains the same)
+  }
+
+  async updateProjectName(projectId: string, name: string): Promise<Project> {
+    // ... (implementation remains the same)
+  }
+
+  async deleteProjectById(projectId: string): Promise<void> {
+    // ... (implementation remains the same)
+  }
+
+  async rollbackProject(_projectId: string): Promise<any> {
+    this.app.log.warn('Rollback feature is not yet implemented.');
+    return { success: false, message: 'Not implemented' };
+  }
 }

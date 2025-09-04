@@ -565,6 +565,10 @@ All notable changes to this project will be documented in this file.
 - 서버 로깅: 서버 요청 및 핸들러 함수에 대한 상세 로깅 추가.
 - 타입 정의: `BuildPageOutput` 타입 추가로 타입 안정성 향상.
 
+### Added
+
+- 채팅 히스토리 로컬 저장: `ChatSection`과 `MobileChat`의 메시지 히스토리를 사용자별(localStorage)로 영구 저장하여 앱 재시작 후에도 복원.
+
 ### Changed
 
 - **ESLint 구성 업데이트**: 코드 형식 지정 및 일관성 향상.
@@ -579,6 +583,9 @@ All notable changes to this project will be documented in this file.
 - `deploySite` 노드: `undefined` URL 반환 문제 해결.
 - `deploySite` 노드: 중복 선언 문제 해결.
 - AI 제안 저장: `suggestions` 테이블의 외래 키 제약 조건 위반 문제 해결 (더미 사용자 및 프로젝트 시딩).
+ - 홈 진입 시 미인증 상태에서 로그인 페이지로 즉시 리다이렉트되도록 클라이언트 사이드 처리 추가.
+ - 미인증 플레이스홀더 문구를 한국어로 현지화("로그인 페이지로 이동 중...").
+ - 서버 인증 미들웨어가 `request.user`만 설정하고 `request.userId`는 누락했던 문제 수정 → 컨트롤러에서 사용자 ID를 일관되게 인식.
 
 ## [0.1.0] - Initial
 

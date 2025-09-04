@@ -641,51 +641,6 @@ export function useLogError(
   });
 }
 
-// useListComponents
-interface ComponentDef {
-  id: string;
-  name: string;
-  display_name?: string;
-  description?: string;
-  category?: string;
-  props_schema?: Record<string, unknown>;
-  render_template?: string;
-  css_styles?: string;
-  is_active?: boolean;
-}
-
-interface ComponentListResponse {
-  ok: boolean;
-  components: ComponentDef[];
-}
-
-export function useListComponents(
-  projectId: string,
-  options?: UseQueryOptions<ComponentListResponse, Error>,
-) {
-  const { token, logout } = useAuth();
-  return useQuery<ComponentListResponse, Error>({
-    queryKey: ['componentDefinitions', projectId],
-    queryFn: async () => {
-      try {
-        return await fetchApi<ComponentListResponse>(
-          `/api/components/project/${projectId}`,
-          {
-            token,
-          },
-        );
-      } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
-        throw error;
-      }
-    },
-    enabled: !!token && !!projectId,
-    ...options,
-  });
-}
-
 // usePageLayout - 페이지 레이아웃 데이터를 페치하는 훅
 interface PageLayoutResponse {
   layout: {
@@ -737,33 +692,40 @@ export function useMultiAgentSystem(
   });
 }
 
-// 새로운 오케스트레이터 시스템 API
-interface OrchestratorRequest {
-  userMessage: string;
+// useExecuteWorkflow - 워크플로우 실행을 위한 훅
+interface ExecuteWorkflowPayload {
+  prompt: string;
 }
 
-interface OrchestratorResponse {
-  ok: boolean;
-  message: string;
-  data?: any;
-  error?: string;
+interface ExecuteWorkflowResponse {
+  // Define the expected response structure from the workflow execution
+  plan: any;
+  outputs: any;
 }
 
-export function useOrchestratorChat(
+export function useExecuteWorkflow(
   options?: UseMutationOptions<
-    OrchestratorResponse,
+    ExecuteWorkflowResponse,
     Error,
-    OrchestratorRequest
+    ExecuteWorkflowPayload
   >,
 ) {
-  const { token } = useAuth();
-  return useMutation({
-    mutationFn: (data: OrchestratorRequest) =>
-      fetchApi<OrchestratorResponse>('/api/orchestrate', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        token,
-      }),
+  const { token, logout } = useAuth();
+  return useMutation<ExecuteWorkflowResponse, Error, ExecuteWorkflowPayload>({
+    mutationFn: async (data) => {
+      try {
+        return await fetchApi<ExecuteWorkflowResponse>('/api/workflow/execute', {
+          method: 'POST',
+          body: JSON.stringify(data),
+          token,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
     ...options,
   });
 }

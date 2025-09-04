@@ -1,9 +1,11 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/app/context/AuthContext';
 
 import { useInputHistory } from '@/hooks/useInputHistory';
-import { useOrchestratorChat } from '@/lib/api';
+import { useExecuteWorkflow } from '@/lib/api';
 
 import { ChatPlaceholder } from './ChatPlaceholder';
 
@@ -62,13 +64,48 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentWorkflowStep, setCurrentWorkflowStep] = useState(0);
   const [currentStepName, setCurrentStepName] = useState<string>('');
+  const { user } = useAuth();
 
   const { inputValue, setInputValue, handleKeyDown, addToHistory } =
     useInputHistory();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const orchestratorChat = useOrchestratorChat({});
+  const queryClient = useQueryClient();
+
+  const { mutate: executeWorkflow, isPending: isWorkflowRunning } =
+    useExecuteWorkflow({
+      onSuccess: (data) => {
+        // When the workflow is successful, invalidate queries to refetch data
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+        queryClient.invalidateQueries({ queryKey: ['vfsNodes'] });
+
+        const finalOutput = data.outputs[data.plan.steps.slice(-1)[0].id];
+        const responseMessage: AgentMessage = {
+          id: `response-${Date.now()}`,
+          role: 'DevOps Engineer', // Assuming the last step is deployment/finalizing
+          message:
+            '프로젝트 생성이 완료되었습니다! 파일 트리에서 결과를 확인하세요.',
+          status: 'completed',
+          timestamp: new Date(),
+          details: finalOutput,
+        };
+        setChatHistory((prev) => [...prev, responseMessage]);
+      },
+      onError: (error) => {
+        const errorMessage: AgentMessage = {
+          id: `error-${Date.now()}`,
+          role: 'Strategic Planner',
+          message: `❌ 워크플로우 실행 중 오류가 발생했습니다: ${error.message}`,
+          status: 'error',
+          timestamp: new Date(),
+        };
+        setChatHistory((prev) => [...prev, errorMessage]);
+      },
+      onSettled: () => {
+        setIsProcessing(false);
+      },
+    });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -90,83 +127,60 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
     autoResize();
   }, [inputValue]);
 
+  // Persist chat history per user in localStorage
+  useEffect(() => {
+    try {
+      const storageKey = user?.id
+        ? `navo_chat_history_${user.id}`
+        : 'navo_chat_history_guest';
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Array<{
+          id: string;
+          role: string;
+          message: string;
+          timestamp: string | number;
+          status?: string;
+          details?: any;
+          suggestions?: string[];
+        }>;
+        const revived: ChatMessage[] = parsed.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        }));
+        setChatHistory(revived);
+      }
+    } catch (e) {
+      console.warn('Failed to load chat history from localStorage', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  useEffect(() => {
+    try {
+      const storageKey = user?.id
+        ? `navo_chat_history_${user.id}`
+        : 'navo_chat_history_guest';
+      const serializable = chatHistory.map((m) => ({
+        ...m,
+        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
+      }));
+      localStorage.setItem(storageKey, JSON.stringify(serializable));
+    } catch (e) {
+      console.warn('Failed to save chat history to localStorage', e);
+    }
+  }, [chatHistory, user?.id]);
+
   useEffect(() => {
     if (currentWorkflowStep < WORKFLOW_STEPS.length) {
       setCurrentStepName(WORKFLOW_STEPS[currentWorkflowStep]);
     }
   }, [currentWorkflowStep]);
 
-  const executeChat = async (userMessage: string) => {
-    setIsProcessing(true);
-    try {
-      const result = await orchestratorChat.mutateAsync({ userMessage });
-      const payload: any = result as any;
-      const ok: boolean = payload?.ok === true;
-      let text =
-        payload?.data ??
-        payload?.result?.data ??
-        payload?.result?.message ??
-        payload?.message;
-
-      if (ok) {
-        if (text === undefined || text === null) {
-          text = '요청이 성공적으로 처리되었습니다.';
-        }
-        if (typeof text !== 'string') {
-          try {
-            text = JSON.stringify(text);
-          } catch {
-            text = String(text);
-          }
-        }
-        const responseMessage: AgentMessage = {
-          id: `response-${Date.now()}`,
-          role: 'Strategic Planner',
-          message: text,
-          status: 'completed',
-          timestamp: new Date(),
-        };
-        setChatHistory((prev: ChatMessage[]) => [...prev, responseMessage]);
-      } else {
-        const errorText = payload?.error || '백엔드 API 호출 실패';
-        throw new Error(errorText);
-      }
-    } catch (error) {
-      console.error('에이전트 시스템 오류:', error);
-      let errorMessage =
-        '❌ 새로운 에이전트 시스템 실행 중 오류가 발생했습니다.';
-      if (error instanceof Error) {
-        if (error.message.includes('Unauthorized')) {
-          errorMessage = `❌ **인증 오류**\n\n로그인이 필요하거나 인증이 만료되었습니다.\n\n**해결 방법:**\n1. 로그인 상태 확인\n2. 페이지 새로고침 후 재시도\n3. 필요시 재로그인`;
-        } else if (error.message.includes('API 오류')) {
-          errorMessage = `❌ **백엔드 API 호출 오류**\n\n${error.message}\n\n**해결 방법:**\n1. 인터넷 연결 확인\n2. 서버 상태 확인\n3. 잠시 후 재시도`;
-        } else if (
-          error.message.includes('백엔드 API 응답 오류') ||
-          error.message.includes('백엔드 API 호출 실패')
-        ) {
-          errorMessage = `❌ **백엔드 API 응답 오류**\n\n백엔드에서 성공 응답을 받지 못했습니다.\n\n**해결 방법:**\n1. 서버 상태 확인\n2. 잠시 후 재시도\n3. 개발자에게 문의`;
-        } else {
-          errorMessage = `❌ **예상치 못한 오류**\n\n${error.message}\n\n**해결 방법:**\n1. 브라우저 새로고침\n2. 개발자에게 문의`;
-        }
-      }
-      const errorMessageObj: AgentMessage = {
-        id: `error-${Date.now()}`,
-        role: 'Strategic Planner',
-        message: errorMessage,
-        status: 'error',
-        timestamp: new Date(),
-      };
-      setChatHistory((prev: ChatMessage[]) => [...prev, errorMessageObj]);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!inputValue.trim() || isProcessing) return;
 
     addToHistory(inputValue);
-
     const userMessage: UserMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -174,10 +188,20 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
       timestamp: new Date(),
     };
 
-    setChatHistory((prev: ChatMessage[]) => [...prev, userMessage]);
+    setChatHistory((prev) => [...prev, userMessage]);
     setInputValue('');
+    setIsProcessing(true);
 
-    await executeChat(inputValue);
+    const thinkingMessage: AgentMessage = {
+      id: `thinking-${Date.now()}`,
+      role: 'Strategic Planner',
+      message: '요청을 분석하여 실행 계획을 수립하고 있습니다...',
+      status: 'planning',
+      timestamp: new Date(),
+    };
+    setChatHistory((prev) => [...prev, thinkingMessage]);
+
+    executeWorkflow({ prompt: inputValue });
   };
 
   const handleKeyPress = (e: any) => {

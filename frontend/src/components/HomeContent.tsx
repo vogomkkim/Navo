@@ -1,43 +1,31 @@
 'use client';
 
 import {
-  CheckIcon,
   ChevronDownIcon,
-  ChevronUpIcon,
 } from '@radix-ui/react-icons';
 import * as Select from '@radix-ui/react-select';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/app/context/AuthContext';
 import { ChatSection } from '@/components/ui/ChatSection';
 import { CodeEditor } from '@/components/ui/CodeEditor';
-import { ComponentBuilderSection } from '@/components/ui/ComponentBuilderSection';
 import { FileTree } from '@/components/ui/FileTree';
-import { GenerateDummySuggestionButton } from '@/components/ui/GenerateDummySuggestionButton';
-import { MobileChat } from '@/components/ui/MobileChat';
-import { ProfileMenu } from '@/components/ui/ProfileMenu';
-import { ProjectGenerationSection } from '@/components/ui/ProjectGenerationSection';
-import { ProjectListSection } from '@/components/ui/ProjectListSection';
-import { SaveButton } from '@/components/ui/SaveButton';
-import { StatusDisplay } from '@/components/ui/StatusDisplay';
-import { SuggestionsSection } from '@/components/ui/SuggestionsSection';
 import {
-  useDeleteProject,
   useListProjects,
-  useRenameProject,
   useUpdateVfsNodeContent,
   useVfsNodeContent,
 } from '@/lib/api';
+import { ProfileMenu } from './ui/ProfileMenu';
+import { StatusDisplay } from './ui/StatusDisplay';
 
 export default function HomeContent() {
-  const { isAuthenticated, token } = useAuth();
+  const { user, token, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null,
+    null
   );
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string | null>(null);
@@ -47,19 +35,26 @@ export default function HomeContent() {
   } | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
 
   const { data: vfsNodeData, isLoading: isLoadingVfsNode } = useVfsNodeContent(
     selectedProjectId || '',
-    selectedFileId,
+    selectedFileId
   );
 
+  const { data: projectsData, isLoading: isLoadingProjects } = useListProjects({
+    enabled: !isAuthLoading && !!token,
+  });
+
   useEffect(() => {
-    if (vfsNodeData?.node?.content) {
-      setEditedContent(vfsNodeData.node.content);
-    } else {
-      setEditedContent(null);
-    }
+    setEditedContent(vfsNodeData?.node?.content ?? null);
   }, [vfsNodeData]);
+
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isAuthLoading, user, router]);
 
   const showSuccessMessage = (text: string) => {
     setShowMessage({ type: 'success', text });
@@ -74,6 +69,9 @@ export default function HomeContent() {
   const updateMutation = useUpdateVfsNodeContent({
     onSuccess: () => {
       showSuccessMessage('File saved successfully!');
+      if (previewIframeRef.current) {
+        previewIframeRef.current.src = `/api/preview/${selectedProjectId}`;
+      }
     },
     onError: (error) => {
       showErrorMessage(`Error saving file: ${error.message}`);
@@ -90,48 +88,109 @@ export default function HomeContent() {
     }
   };
 
-  // ... (other hooks and handlers from before)
+  const handleProjectSelect = (projectId: string) => {
+    if (projectId === 'new') {
+      setSelectedProjectId(null);
+      setSelectedFileId(null);
+      queryClient.clear();
+      window.location.reload();
+      return;
+    }
+    setSelectedProjectId(projectId);
+    setSelectedFileId(null);
+  };
 
-  if (!isAuthenticated || !token) {
+  const currentProjectName =
+    projectsData?.projects?.find((p) => p.id === selectedProjectId)?.name || '';
+
+  if (isAuthLoading) {
+    return <div>Loading authentication...</div>;
+  }
+
+  if (!user) {
     return <div>Redirecting to login...</div>;
   }
 
   return (
     <>
-      <header className="topbar">{/* ... */}</header>
+      <header className="topbar">
+        <div className="topbar-left">
+          <h1 className="text-2xl font-bold text-gray-900">Navo Editor</h1>
+          <Select.Root
+            value={selectedProjectId || ''}
+            onValueChange={handleProjectSelect}
+          >
+            <Select.Trigger className="inline-flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+              <Select.Value placeholder="Select a Project" />
+              <Select.Icon>
+                <ChevronDownIcon />
+              </Select.Icon>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content className="overflow-hidden rounded-lg bg-white shadow-lg border border-gray-200">
+                <Select.Viewport className="p-1">
+                  {isLoadingProjects ? (
+                    <Select.Item value="loading" disabled>
+                      Loading...
+                    </Select.Item>
+                  ) : (
+                    projectsData?.projects?.map((project) => (
+                      <Select.Item key={project.id} value={project.id}>
+                        <Select.ItemText>{project.name}</Select.ItemText>
+                      </Select.Item>
+                    ))
+                  )}
+                  <Select.Separator />
+                  <Select.Item value="new">Create New Project</Select.Item>
+                </Select.Viewport>
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
+        </div>
+        <div className="topbar-actions">
+          <ProfileMenu />
+          <StatusDisplay />
+        </div>
+      </header>
       <main className="layout">
-        <section className="ai-chat-interface">{/* ... */}</section>
+        <section className="ai-chat-interface">
+          <ChatSection />
+        </section>
         <section className="project-preview">
           {!selectedProjectId ? (
-            <div className="preview-placeholder">{/* ... */}</div>
+            <div className="preview-placeholder">
+              <h2>Select a project to start</h2>
+              <p>Or create a new one using the chat.</p>
+            </div>
           ) : (
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '250px 1fr',
+                gridTemplateColumns: '250px 1fr 1fr',
                 height: '100%',
                 gap: '1rem',
               }}
             >
               <div className="file-tree-panel">
+                <h2 className="text-lg font-medium mb-2">
+                  📁 {currentProjectName}
+                </h2>
                 <FileTree
                   projectId={selectedProjectId}
                   onFileSelect={(nodeId) => setSelectedFileId(nodeId)}
                 />
               </div>
               <div className="code-editor-panel">
-                <div style={{ marginBottom: '0.5rem' }}>
-                  <button
-                    onClick={handleSave}
-                    disabled={
-                      updateMutation.isPending ||
-                      editedContent === vfsNodeData?.node?.content
-                    }
-                    className="btn btn-primary"
-                  >
-                    {updateMutation.isPending ? 'Saving...' : 'Save'}
-                  </button>
-                </div>
+                <button
+                  onClick={handleSave}
+                  disabled={
+                    updateMutation.isPending ||
+                    editedContent === vfsNodeData?.node?.content
+                  }
+                  className="btn btn-primary mb-2"
+                >
+                  {updateMutation.isPending ? 'Saving...' : 'Save'}
+                </button>
                 {isLoadingVfsNode ? (
                   <div>Loading file...</div>
                 ) : (
@@ -141,11 +200,23 @@ export default function HomeContent() {
                   />
                 )}
               </div>
+              <div className="live-preview-panel">
+                <h2 className="text-lg font-medium mb-2">Live Preview</h2>
+                <iframe
+                  ref={previewIframeRef}
+                  src={`/api/preview/${selectedProjectId}`}
+                  title="Live Preview"
+                  style={{
+                    width: '100%',
+                    height: '80vh',
+                    border: '1px solid #ccc',
+                  }}
+                />
+              </div>
             </div>
           )}
         </section>
       </main>
-      {/* ... (side panel and modals) */}
     </>
   );
 }

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/app/context/AuthContext';
 
 import { geminiClient } from '@/lib/gemini';
 
 export function MobileChat() {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<
@@ -87,6 +89,48 @@ export function MobileChat() {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
   }, [chatHistory]);
+
+  // 로컬 저장된 히스토리 불러오기 (사용자별)
+  useEffect(() => {
+    try {
+      const storageKey = user?.id
+        ? `navo_mobile_chat_history_${user.id}`
+        : 'navo_mobile_chat_history_guest';
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Array<{
+          id: string;
+          type: 'user' | 'ai';
+          message: string;
+          timestamp: string;
+        }>;
+        const revived = parsed.map((m) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        }));
+        setChatHistory(revived);
+      }
+    } catch (e) {
+      console.warn('Failed to load mobile chat history from localStorage', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // 히스토리 저장 (사용자별)
+  useEffect(() => {
+    try {
+      const storageKey = user?.id
+        ? `navo_mobile_chat_history_${user.id}`
+        : 'navo_mobile_chat_history_guest';
+      const serializable = chatHistory.map((m) => ({
+        ...m,
+        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
+      }));
+      localStorage.setItem(storageKey, JSON.stringify(serializable));
+    } catch (e) {
+      console.warn('Failed to save mobile chat history to localStorage', e);
+    }
+  }, [chatHistory, user?.id]);
 
   // Mobile chat resize logic
   useEffect(() => {

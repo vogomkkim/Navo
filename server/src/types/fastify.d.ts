@@ -3,6 +3,8 @@ import 'fastify';
 declare module 'fastify' {
   interface FastifyRequest {
     _startTime?: number;
+    userId?: string;
+    user?: { userId: string; email?: string };
   }
 }
 

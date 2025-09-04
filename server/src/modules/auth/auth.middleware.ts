@@ -21,6 +21,8 @@ export async function authenticateToken(
     }
     // Attach user info to request.user for consistency
     (request as any).user = { userId: decoded.userId, email: decoded.email };
+    // Also attach userId directly for legacy access patterns
+    (request as any).userId = decoded.userId;
   } catch {
     reply.status(401).send({ ok: false, error: 'Invalid token' });
   }

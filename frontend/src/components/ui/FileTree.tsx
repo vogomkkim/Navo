@@ -124,7 +124,7 @@ export const FileTree = ({ projectId, onFileSelect }: FileTreeProps) => {
     return <div>Error: {error.message}</div>;
   }
 
-  if (!data || data.nodes.length === 0) {
+  if (!data?.nodes || data.nodes.length === 0) {
     return <div>No files or directories found.</div>;
   }
 

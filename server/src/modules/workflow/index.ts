@@ -25,13 +25,13 @@ import { WorkflowExecutor } from './workflowExecutor';
 // In a more advanced setup, this could be done dynamically by scanning the 'tools' directory.
 toolRegistry.register(createProjectInDbTool);
 toolRegistry.register(updateProjectFromArchitectureTool);
-toolRegistry.register(runShellCommandTool);
-toolRegistry.register(listDirectoryTool);
-toolRegistry.register(readFileTool);
-toolRegistry.register(writeFileTool);
 toolRegistry.register(createProjectArchitectureTool);
-toolRegistry.register(generateProjectFilesTool);
-toolRegistry.register(createOrganizationTool);
+// toolRegistry.register(runShellCommandTool);
+// toolRegistry.register(listDirectoryTool);
+// toolRegistry.register(readFileTool);
+// toolRegistry.register(writeFileTool);
+// toolRegistry.register(generateProjectFilesTool);
+// toolRegistry.register(createOrganizationTool);
 
 // --- Service Instantiation ---
 // Create a singleton instance of the executor to be used by other services.

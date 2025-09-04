@@ -13,6 +13,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: { id: string; email: string; name: string } | null;
   token: string | null;
+  isLoading: boolean;
   login: (
     token: string,
     user: { id: string; email: string; name: string },
@@ -50,42 +51,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     name: string;
   } | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // On mount, check localStorage for token
-    const storedToken = getLocalStorageItem('navo_token');
-    const storedUser = getLocalStorageItem('navo_user');
-    if (storedToken && storedUser) {
-      try {
+    console.log('[AuthContext] Initializing...');
+    try {
+      const storedToken = getLocalStorageItem('navo_token');
+      const storedUser = getLocalStorageItem('navo_user');
+      console.log('[AuthContext] Stored Token:', storedToken);
+      if (storedToken && storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
         setUser(parsedUser);
         setIsAuthenticated(true);
-      } catch (e) {
-        console.error('Failed to parse stored user data:', e);
-        // Clear invalid data
-        removeLocalStorageItem('navo_token');
-        removeLocalStorageItem('navo_user');
-        setIsAuthenticated(false);
-        setUser(null);
-        setToken(null);
+        console.log('[AuthContext] User restored from localStorage');
       }
+    } catch (e) {
+      console.error('[AuthContext] Failed to parse stored user data:', e);
+      removeLocalStorageItem('navo_token');
+      removeLocalStorageItem('navo_user');
+    } finally {
+      setIsLoading(false);
+      console.log('[AuthContext] Initialization complete. isLoading: false');
     }
-    setIsInitialized(true);
   }, []);
 
   const login = (
     newToken: string,
     newUser: { id: string; email: string; name: string },
   ) => {
+    console.log('[AuthContext] login function called.');
     setLocalStorageItem('navo_token', newToken);
     setLocalStorageItem('navo_user', JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
     setIsAuthenticated(true);
-    router.push('/'); // Redirect to home after login
+    console.log('[AuthContext] State updated after login. New token:', newToken);
+    router.push('/');
   };
 
   const logout = () => {
@@ -94,17 +97,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
-    router.push('/login'); // Redirect to login page after logout
+    router.push('/login');
   };
 
-  // 초기화가 완료될 때까지 로딩 상태 표시
-  if (!isInitialized) {
-    return <div>Loading...</div>;
+  console.log(
+    '[AuthContext] Rendering. isLoading:',
+    isLoading,
+    'isAuthenticated:',
+    isAuthenticated,
+    'token:',
+    !!token,
+  );
+
+  if (isLoading) {
+    return <div>Loading authentication...</div>;
   }
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, token, login, logout }}
+      value={{ isAuthenticated, user, token, isLoading, login, logout }}
     >
       {children}
     </AuthContext.Provider>
