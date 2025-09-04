@@ -40,7 +40,7 @@ export interface ProjectsRepository {
   createProject(projectData: CreateProjectData): Promise<Project>;
   updateProject(
     projectId: string,
-    projectData: UpdateProjectData
+    projectData: UpdateProjectData,
   ): Promise<Project>;
   deleteProject(projectId: string): Promise<void>;
   getProjectPages(projectId: string): Promise<ProjectPage[]>;

@@ -1,9 +1,10 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+
 import { EventsService } from './events.service';
 
 export default async function eventRoutes(
   fastify: FastifyInstance,
-  _options: FastifyPluginOptions
+  _options: FastifyPluginOptions,
 ) {
   const eventsService = new EventsService(fastify);
 
@@ -38,7 +39,7 @@ export default async function eventRoutes(
 
           const count = await eventsService.storeUserEvents(
             eventsArray,
-            userId
+            userId,
           );
           reply.send({ success: true, count });
           return;
@@ -51,7 +52,7 @@ export default async function eventRoutes(
         fastify.log.error(error, '이벤트 처리 실패');
         reply.status(500).send({ error: '이벤트 처리에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Error logging endpoint
@@ -82,7 +83,7 @@ export default async function eventRoutes(
         fastify.log.error(error, '에러 로깅 실패');
         reply.status(500).send({ error: '에러 로깅에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Get user events
@@ -103,7 +104,7 @@ export default async function eventRoutes(
         fastify.log.error(error, '사용자 이벤트 조회 실패');
         reply.status(500).send({ error: '사용자 이벤트 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Get project events
@@ -129,6 +130,6 @@ export default async function eventRoutes(
           .status(500)
           .send({ error: '프로젝트 이벤트 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 }

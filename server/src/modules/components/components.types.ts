@@ -65,24 +65,24 @@ export interface ComponentsRepository {
   getComponentDefinitionById(id: string): Promise<ComponentDefinition | null>;
   getComponentDefinitionByName(
     name: string,
-    projectId: string
+    projectId: string,
   ): Promise<ComponentDefinition | null>;
   createComponentDefinition(
-    data: CreateComponentDefinitionData
+    data: CreateComponentDefinitionData,
   ): Promise<ComponentDefinition>;
   updateComponentDefinition(
     id: string,
-    data: UpdateComponentDefinitionData
+    data: UpdateComponentDefinitionData,
   ): Promise<ComponentDefinition>;
   deleteComponentDefinition(id: string): Promise<void>;
   seedComponentDefinitions(
     projectId: string,
-    components: any[]
+    components: any[],
   ): Promise<ComponentDefinition[]>;
 
   // --- New Repository Methods for Instances ---
   countComponentsByPageId(pageId: string): Promise<number>;
   createComponentInstance(
-    data: CreateComponentInstanceData
+    data: CreateComponentInstanceData,
   ): Promise<ComponentInstance>;
 }

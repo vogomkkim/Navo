@@ -1,6 +1,7 @@
+import { eq } from 'drizzle-orm';
+
 import { db } from '@/modules/db';
 import { users } from '@/schema';
-import { eq } from 'drizzle-orm';
 
 export class DbRepository {
   // 예시: 사용자 관련 데이터 접근 메서드

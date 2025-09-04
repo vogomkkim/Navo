@@ -139,6 +139,8 @@ export default tseslint.config(
       '**/out/**',
       'server/_backup/**',
       'eslint.config.js', // Ignore self
+      '**/drizzle/schema.d.ts',
+      'frontend/next-env.d.ts',
     ],
   },
 );

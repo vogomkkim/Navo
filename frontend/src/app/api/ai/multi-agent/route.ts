@@ -17,7 +17,7 @@ class GeminiClient {
 
   async generateText(
     prompt: string,
-    temperature: number = 0.7
+    temperature: number = 0.7,
   ): Promise<string> {
     const request = {
       contents: [
@@ -42,7 +42,7 @@ class GeminiClient {
 
       if (!response.ok) {
         throw new Error(
-          `Gemini API 오류: ${response.status} ${response.statusText}`
+          `Gemini API 오류: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -179,7 +179,7 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
   // Full-Stack Developer
   async generateProjectCode(
     projectPlan: any,
-    userRequest: string
+    userRequest: string,
   ): Promise<any> {
     const prompt = `당신은 Navo의 Full-Stack Developer입니다. Project Manager의 계획을 바탕으로 프로젝트 아키텍처와 코드를 설계해주세요.
 
@@ -347,7 +347,7 @@ export async function POST(request: NextRequest) {
     if (!message) {
       return NextResponse.json(
         { success: false, error: '메시지가 필요합니다.' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -389,7 +389,7 @@ export async function POST(request: NextRequest) {
     console.log('⚡ Full-Stack Developer 시작...');
     const developmentResult = await geminiClient.generateProjectCode(
       projectPlan,
-      message
+      message,
     );
     agents.push({
       success: true,
@@ -454,7 +454,7 @@ export async function POST(request: NextRequest) {
             ? error.message
             : '알 수 없는 오류가 발생했습니다.',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

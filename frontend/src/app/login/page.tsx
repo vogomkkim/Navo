@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { fetchApi } from '@/lib/api';
+
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
@@ -196,7 +198,7 @@ export default function LoginPage() {
             email: registerEmail,
             password: registerPassword,
           }),
-        }
+        },
       );
 
       if (data.ok) {

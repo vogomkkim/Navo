@@ -1,10 +1,11 @@
 import {
-  useQuery,
   useMutation,
-  UseQueryOptions,
   UseMutationOptions,
+  useQuery,
   useQueryClient,
+  UseQueryOptions,
 } from '@tanstack/react-query';
+
 import { useAuth } from '@/app/context/AuthContext'; // Assuming @/app/context/AuthContext is the correct alias
 
 // 상대 경로 사용(Next.js rewrites로 백엔드 프록시) → CORS 회피
@@ -15,7 +16,7 @@ interface FetchApiOptions extends RequestInit {
 
 async function fetchApi<T>(
   url: string,
-  options: FetchApiOptions = {}
+  options: FetchApiOptions = {},
 ): Promise<T> {
   const { token, ...restOptions } = options;
   const headers: HeadersInit = {
@@ -24,9 +25,11 @@ async function fetchApi<T>(
 
   // 본문이 있을 때만 JSON Content-Type을 기본 설정 (FormData는 제외)
   const hasBody = restOptions.body !== undefined && restOptions.body !== null;
-  const isFormData = typeof FormData !== 'undefined' && restOptions.body instanceof FormData;
+  const isFormData =
+    typeof FormData !== 'undefined' && restOptions.body instanceof FormData;
   if (hasBody && !isFormData) {
-    (headers as Record<string, string>)['Content-Type'] = (headers as any)['Content-Type'] || 'application/json';
+    (headers as Record<string, string>)['Content-Type'] =
+      (headers as any)['Content-Type'] || 'application/json';
   }
 
   if (token) {
@@ -82,7 +85,8 @@ async function fetchApi<T>(
     if (process.env.NODE_ENV !== 'production') {
       console.error('API 호출 중 에러 발생:', {
         error: error instanceof Error ? error.message : String(error),
-        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        errorType:
+          error instanceof Error ? error.constructor.name : typeof error,
         fullUrl,
         options: restOptions,
       });
@@ -152,7 +156,7 @@ export function useGenerateProject(
     GenerateProjectResponse,
     Error,
     GenerateProjectPayload
-  >
+  >,
 ) {
   const { token, logout } = useAuth();
   return useMutation<GenerateProjectResponse, Error, GenerateProjectPayload>({
@@ -164,7 +168,7 @@ export function useGenerateProject(
             method: 'POST',
             body: JSON.stringify(data),
             token,
-          }
+          },
         );
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
@@ -189,7 +193,7 @@ interface ProjectListResponse {
 }
 
 export function useListProjects(
-  options?: UseQueryOptions<ProjectListResponse, Error>
+  options?: UseQueryOptions<ProjectListResponse, Error>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<ProjectListResponse, Error>({
@@ -221,7 +225,11 @@ interface RenameProjectResponse {
 }
 
 export function useRenameProject(
-  options?: UseMutationOptions<RenameProjectResponse, Error, RenameProjectPayload>
+  options?: UseMutationOptions<
+    RenameProjectResponse,
+    Error,
+    RenameProjectPayload
+  >,
 ) {
   const { token, logout } = useAuth();
   const queryClient = useQueryClient();
@@ -229,11 +237,14 @@ export function useRenameProject(
   return useMutation<RenameProjectResponse, Error, RenameProjectPayload>({
     mutationFn: async ({ projectId, name }: RenameProjectPayload) => {
       try {
-        return await fetchApi<RenameProjectResponse>(`/api/projects/${projectId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ name }),
-          token,
-        });
+        return await fetchApi<RenameProjectResponse>(
+          `/api/projects/${projectId}`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({ name }),
+            token,
+          },
+        );
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
@@ -244,13 +255,15 @@ export function useRenameProject(
     // Optimistic update for instant UI feedback
     onMutate: async ({ projectId, name }) => {
       await queryClient.cancelQueries({ queryKey: ['projects'] });
-      const previous = queryClient.getQueryData<ProjectListResponse>(['projects']);
+      const previous = queryClient.getQueryData<ProjectListResponse>([
+        'projects',
+      ]);
 
       queryClient.setQueryData<ProjectListResponse>(['projects'], (old) => {
         if (!old) return { projects: [] };
         return {
           projects: old.projects.map((p) =>
-            p.id === projectId ? { ...p, name } : p
+            p.id === projectId ? { ...p, name } : p,
           ),
         };
       });
@@ -258,7 +271,9 @@ export function useRenameProject(
       return { previous } as { previous: ProjectListResponse | undefined };
     },
     onError: (_err, _vars, context) => {
-      const ctx = context as { previous: ProjectListResponse | undefined } | undefined;
+      const ctx = context as
+        | { previous: ProjectListResponse | undefined }
+        | undefined;
       if (ctx?.previous) {
         queryClient.setQueryData(['projects'], ctx.previous);
       }
@@ -271,11 +286,17 @@ export function useRenameProject(
 }
 
 // useDeleteProject - 프로젝트 삭제 훅
-interface DeleteProjectPayload { projectId: string }
+interface DeleteProjectPayload {
+  projectId: string;
+}
 type DeleteProjectResponse = unknown;
 
 export function useDeleteProject(
-  options?: UseMutationOptions<DeleteProjectResponse, Error, DeleteProjectPayload>
+  options?: UseMutationOptions<
+    DeleteProjectResponse,
+    Error,
+    DeleteProjectPayload
+  >,
 ) {
   const { token, logout } = useAuth();
   const queryClient = useQueryClient();
@@ -297,7 +318,9 @@ export function useDeleteProject(
     },
     onMutate: async ({ projectId }) => {
       await queryClient.cancelQueries({ queryKey: ['projects'] });
-      const previous = queryClient.getQueryData<ProjectListResponse>(['projects']);
+      const previous = queryClient.getQueryData<ProjectListResponse>([
+        'projects',
+      ]);
       queryClient.setQueryData<ProjectListResponse>(['projects'], (old) => {
         if (!old) return { projects: [] };
         return { projects: old.projects.filter((p) => p.id !== projectId) };
@@ -305,7 +328,9 @@ export function useDeleteProject(
       return { previous } as { previous: ProjectListResponse | undefined };
     },
     onError: (_err, _vars, context) => {
-      const ctx = context as { previous: ProjectListResponse | undefined } | undefined;
+      const ctx = context as
+        | { previous: ProjectListResponse | undefined }
+        | undefined;
       if (ctx?.previous) {
         queryClient.setQueryData(['projects'], ctx.previous);
       }
@@ -328,7 +353,7 @@ interface ProjectPagesResponse {
 
 export function useListProjectPages(
   projectId: string,
-  options?: UseQueryOptions<ProjectPagesResponse, Error>
+  options?: UseQueryOptions<ProjectPagesResponse, Error>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<ProjectPagesResponse, Error>({
@@ -339,7 +364,7 @@ export function useListProjectPages(
           `/api/projects/${projectId}/pages`,
           {
             token,
-          }
+          },
         );
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
@@ -368,7 +393,7 @@ export function useGenerateComponent(
     GenerateComponentResponse,
     Error,
     GenerateComponentPayload
-  >
+  >,
 ) {
   const { token, logout } = useAuth();
   return useMutation<
@@ -384,7 +409,7 @@ export function useGenerateComponent(
             method: 'POST',
             body: JSON.stringify(data),
             token,
-          }
+          },
         );
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
@@ -398,7 +423,7 @@ export function useGenerateComponent(
 }
 
 export function useSuggestions(
-  options?: UseQueryOptions<SuggestionsResponse, Error>
+  options?: UseQueryOptions<SuggestionsResponse, Error>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<SuggestionsResponse, Error>({
@@ -420,7 +445,7 @@ export function useSuggestions(
 }
 
 export function useGenerateDummySuggestion(
-  options?: UseMutationOptions<GenerateDummySuggestionResponse, Error, void>
+  options?: UseMutationOptions<GenerateDummySuggestionResponse, Error, void>,
 ) {
   const { token, logout } = useAuth();
   return useMutation<GenerateDummySuggestionResponse, Error, void>({
@@ -431,7 +456,7 @@ export function useGenerateDummySuggestion(
           {
             method: 'POST',
             token,
-          }
+          },
         );
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
@@ -460,7 +485,7 @@ interface TrackEventsResponse {
 }
 
 export function useTrackEvents(
-  options?: UseMutationOptions<TrackEventsResponse, Error, EventData[]>
+  options?: UseMutationOptions<TrackEventsResponse, Error, EventData[]>,
 ) {
   const { token, logout } = useAuth();
   return useMutation<TrackEventsResponse, Error, EventData[]>({
@@ -509,7 +534,7 @@ interface LogErrorResponse {
 }
 
 export function useLogError(
-  options?: UseMutationOptions<LogErrorResponse, Error, LogErrorPayload>
+  options?: UseMutationOptions<LogErrorResponse, Error, LogErrorPayload>,
 ) {
   const { token, logout } = useAuth();
   return useMutation<LogErrorResponse, Error, LogErrorPayload>({
@@ -550,7 +575,7 @@ interface ComponentListResponse {
 
 export function useListComponents(
   projectId: string,
-  options?: UseQueryOptions<ComponentListResponse, Error>
+  options?: UseQueryOptions<ComponentListResponse, Error>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<ComponentListResponse, Error>({
@@ -561,7 +586,7 @@ export function useListComponents(
           `/api/components/project/${projectId}`,
           {
             token,
-          }
+          },
         );
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
@@ -588,7 +613,7 @@ interface PageLayoutResponse {
 
 export function usePageLayout(
   pageId: string,
-  options?: UseQueryOptions<PageLayoutResponse, Error>
+  options?: UseQueryOptions<PageLayoutResponse, Error>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<PageLayoutResponse, Error>({
@@ -612,7 +637,7 @@ export function usePageLayout(
 
 // 멀티 에이전트 시스템 API (기존)
 export function useMultiAgentSystem(
-  options?: UseMutationOptions<MultiAgentResponse, Error, MultiAgentRequest>
+  options?: UseMutationOptions<MultiAgentResponse, Error, MultiAgentRequest>,
 ) {
   const { token } = useAuth();
   return useMutation({
@@ -639,7 +664,11 @@ interface OrchestratorResponse {
 }
 
 export function useOrchestratorChat(
-  options?: UseMutationOptions<OrchestratorResponse, Error, OrchestratorRequest>
+  options?: UseMutationOptions<
+    OrchestratorResponse,
+    Error,
+    OrchestratorRequest
+  >,
 ) {
   const { token } = useAuth();
   return useMutation({

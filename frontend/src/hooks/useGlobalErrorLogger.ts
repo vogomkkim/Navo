@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+
 import { useLogError } from '@/lib/api';
 
 export function useGlobalErrorLogger() {

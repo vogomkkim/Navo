@@ -141,7 +141,7 @@ All notable changes to this project will be documented in this file.
     execute(
       enhancedPrompt: EnhancedPrompt,
       userContext: UserContext,
-      sessionId: string
+      sessionId: string,
     ): Promise<ActionResult>;
   }
 
@@ -337,7 +337,7 @@ All notable changes to this project will be documented in this file.
   // 개선: 동적 생성
   message: generateAgentSuccessMessage(
     'Project Architect Agent',
-    '프로젝트 요구사항 분석 및'
+    '프로젝트 요구사항 분석 및',
   );
   ```
 

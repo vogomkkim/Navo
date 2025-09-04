@@ -1,7 +1,8 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { PagesService } from './pages.service';
-import { PagesRepositoryImpl } from './pages.repository';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import { ProjectsRepositoryImpl } from '../projects/projects.repository';
+import { PagesRepositoryImpl } from './pages.repository';
+import { PagesService } from './pages.service';
 
 jest.mock('./pages.repository');
 jest.mock('../projects/projects.repository');
@@ -50,7 +51,7 @@ describe('PagesService', () => {
       expect(result).toEqual(pages);
       expect(mockProjectsRepo.getProjectByUserId).toHaveBeenCalledWith(
         'p1',
-        'u1'
+        'u1',
       );
       expect(mockPagesRepo.listPagesByProjectId).toHaveBeenCalledWith('p1');
     });
@@ -58,7 +59,7 @@ describe('PagesService', () => {
     it('throws when project not found or unauthorized', async () => {
       mockProjectsRepo.getProjectByUserId.mockResolvedValue(null);
       await expect(service.listPages('p1', 'u1')).rejects.toThrow(
-        '페이지 목록 조회에 실패했습니다.'
+        '페이지 목록 조회에 실패했습니다.',
       );
       expect(mockApp.log.error).toHaveBeenCalled();
     });
@@ -77,7 +78,7 @@ describe('PagesService', () => {
     it('throws when page not found', async () => {
       mockPagesRepo.getPageById.mockResolvedValue(null);
       await expect(service.getPage('pg1', 'u1')).rejects.toThrow(
-        '페이지 조회에 실패했습니다.'
+        '페이지 조회에 실패했습니다.',
       );
       expect(mockApp.log.error).toHaveBeenCalled();
     });
@@ -96,7 +97,7 @@ describe('PagesService', () => {
       mockProjectsRepo.getProjectByUserId.mockResolvedValue({ id: 'p1' });
       mockPagesRepo.getPageByPath.mockResolvedValue(null);
       await expect(service.getPageByPath('p1', '/home', 'u1')).rejects.toThrow(
-        '경로별 페이지 조회에 실패했습니다.'
+        '경로별 페이지 조회에 실패했습니다.',
       );
       expect(mockApp.log.error).toHaveBeenCalled();
     });
@@ -111,7 +112,7 @@ describe('PagesService', () => {
 
       const result = await service.createPage(
         { projectId: 'p1', path: '/p', title: 'T' } as any,
-        'u1'
+        'u1',
       );
       expect(result).toEqual(created);
     });
@@ -122,8 +123,8 @@ describe('PagesService', () => {
       await expect(
         service.createPage(
           { projectId: 'p1', path: '/p', title: 'T' } as any,
-          'u1'
-        )
+          'u1',
+        ),
       ).rejects.toThrow('페이지 생성에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
@@ -139,7 +140,7 @@ describe('PagesService', () => {
       const result = await service.updatePage(
         'pg1',
         { title: 'New' } as any,
-        'u1'
+        'u1',
       );
       expect(result).toEqual(updated);
     });
@@ -147,7 +148,7 @@ describe('PagesService', () => {
     it('throws when page missing', async () => {
       mockPagesRepo.getPageById.mockResolvedValue(null);
       await expect(
-        service.updatePage('pg1', { title: 'New' } as any, 'u1')
+        service.updatePage('pg1', { title: 'New' } as any, 'u1'),
       ).rejects.toThrow('페이지 업데이트에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
@@ -165,7 +166,7 @@ describe('PagesService', () => {
     it('throws when page missing', async () => {
       mockPagesRepo.getPageById.mockResolvedValue(null);
       await expect(service.deletePage('pg1', 'u1')).rejects.toThrow(
-        '페이지 삭제에 실패했습니다.'
+        '페이지 삭제에 실패했습니다.',
       );
       expect(mockApp.log.error).toHaveBeenCalled();
     });

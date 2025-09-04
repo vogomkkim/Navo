@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import * as React from 'react';
 
@@ -46,8 +46,9 @@ export function ThemeSwitcherButton() {
       className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border text-fg hover:bg-surface transition-colors"
       aria-label="Toggle theme"
     >
-      <span className="text-xs font-medium">{theme === 'light' ? 'Light' : 'Dark'}</span>
+      <span className="text-xs font-medium">
+        {theme === 'light' ? 'Light' : 'Dark'}
+      </span>
     </button>
   );
 }
-

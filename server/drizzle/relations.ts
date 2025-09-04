@@ -1,13 +1,14 @@
 import { relations } from 'drizzle-orm/relations';
+
 import {
-  projects,
-  componentDefinitions,
-  users,
-  pages,
-  components,
-  userSessions,
   chatMessages,
   chatSessionSummaries,
+  componentDefinitions,
+  components,
+  pages,
+  projects,
+  users,
+  userSessions,
 } from './schema';
 
 export const componentDefinitionsRelations = relations(
@@ -18,7 +19,7 @@ export const componentDefinitionsRelations = relations(
       references: [projects.id],
     }),
     components: many(components),
-  })
+  }),
 );
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -58,7 +59,7 @@ export const chatMessagesRelations = relations(
       references: [userSessions.id],
     }),
     chatSessionSummaries: many(chatSessionSummaries),
-  })
+  }),
 );
 
 export const userSessionsRelations = relations(userSessions, ({ many }) => ({
@@ -77,5 +78,5 @@ export const chatSessionSummariesRelations = relations(
       fields: [chatSessionSummaries.sessionId],
       references: [userSessions.id],
     }),
-  })
+  }),
 );

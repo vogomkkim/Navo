@@ -11,7 +11,7 @@ export interface ActionHandler {
   execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult>;
 }
 
@@ -68,7 +68,7 @@ export class ActionRouter {
     const matchedRule = this.findMatchingRule(
       intent.type,
       target.type,
-      action.type
+      action.type,
     );
 
     if (matchedRule) {
@@ -88,11 +88,11 @@ export class ActionRouter {
   private findMatchingRule(
     intent: string,
     target: string,
-    action: string
+    action: string,
   ): RoutingRule | null {
     // 우선순위가 높은 순서로 정렬
     const sortedRules = [...this.routingRules].sort(
-      (a, b) => b.priority - a.priority
+      (a, b) => b.priority - a.priority,
     );
 
     for (const rule of sortedRules) {
@@ -111,7 +111,7 @@ export class ActionRouter {
     rule: RoutingRule,
     intent: string,
     target: string,
-    action: string
+    action: string,
   ): boolean {
     // 의도 매칭
     if (rule.intent !== intent) {
@@ -237,11 +237,11 @@ export class ActionRouter {
     const matchedRule = this.findMatchingRule(
       enhancedPrompt.intent.type,
       enhancedPrompt.target.type,
-      enhancedPrompt.action.type
+      enhancedPrompt.action.type,
     );
 
     const alternatives = this.routingRules.filter(
-      (rule) => rule.intent === enhancedPrompt.intent.type
+      (rule) => rule.intent === enhancedPrompt.intent.type,
     );
 
     return {
@@ -283,14 +283,14 @@ export class ProjectCreationHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
     try {
       // 향상된 메시지에서 의미있는 프로젝트명 생성
       const projectName = this.generateMeaningfulProjectName(
-        enhancedPrompt.enhancedMessage
+        enhancedPrompt.enhancedMessage,
       );
 
       // 새 프로젝트 생성 로직
@@ -464,7 +464,7 @@ export class PageCreationHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -505,7 +505,7 @@ export class ComponentCreationHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -546,7 +546,7 @@ export class PageModificationHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -586,7 +586,7 @@ export class ComponentModificationHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -629,7 +629,7 @@ export class BugFixHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -670,7 +670,7 @@ export class FeatureRequestHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -711,7 +711,7 @@ export class CodeReviewHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -755,7 +755,7 @@ export class QuestionHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -795,7 +795,7 @@ export class ComplaintHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -857,7 +857,7 @@ export class GeneralHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -917,7 +917,7 @@ export class DefaultHandler implements ActionHandler {
   async execute(
     enhancedPrompt: EnhancedPrompt,
     userContext: UserContext,
-    sessionId: string
+    sessionId: string,
   ): Promise<ActionResult> {
     void userContext;
     void sessionId;
@@ -941,25 +941,25 @@ export const actionRouter = new ActionRouter();
 // 기본 핸들러들 등록
 actionRouter.registerHandler(
   'projectCreationHandler',
-  new ProjectCreationHandler()
+  new ProjectCreationHandler(),
 );
 actionRouter.registerHandler('pageCreationHandler', new PageCreationHandler());
 actionRouter.registerHandler(
   'componentCreationHandler',
-  new ComponentCreationHandler()
+  new ComponentCreationHandler(),
 );
 actionRouter.registerHandler(
   'pageModificationHandler',
-  new PageModificationHandler()
+  new PageModificationHandler(),
 );
 actionRouter.registerHandler(
   'componentModificationHandler',
-  new ComponentModificationHandler()
+  new ComponentModificationHandler(),
 );
 actionRouter.registerHandler('bugFixHandler', new BugFixHandler());
 actionRouter.registerHandler(
   'featureRequestHandler',
-  new FeatureRequestHandler()
+  new FeatureRequestHandler(),
 );
 actionRouter.registerHandler('codeReviewHandler', new CodeReviewHandler());
 actionRouter.registerHandler('questionHandler', new QuestionHandler());

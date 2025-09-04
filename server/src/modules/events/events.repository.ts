@@ -1,7 +1,8 @@
+import { desc, eq } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
+
 import { db } from '@/db/db.instance';
 import { events } from '@/drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
 
 export interface EventData {
   projectId?: string | null;

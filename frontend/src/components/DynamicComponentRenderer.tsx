@@ -1,8 +1,9 @@
 'use client';
 
+import parse, { DOMNode } from 'html-react-parser';
+
 import { useComponentDefinitions } from '@/app/context/ComponentDefinitionContext';
 import { useLayoutContext } from '@/app/context/LayoutContext'; // Import useLayoutContext
-import parse, { DOMNode } from 'html-react-parser';
 import { EditableText } from '@/components/ui/EditableText';
 
 interface LayoutComponent {
@@ -94,7 +95,7 @@ export function DynamicComponentRenderer({
                 <button
                   onClick={() =>
                     navigator.clipboard.writeText(
-                      JSON.stringify(component.props, null, 2)
+                      JSON.stringify(component.props, null, 2),
                     )
                   }
                   className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs"
@@ -114,7 +115,7 @@ export function DynamicComponentRenderer({
                 <button
                   onClick={() =>
                     navigator.clipboard.writeText(
-                      Array.from(componentRegistry.keys()).join(', ') || '없음'
+                      Array.from(componentRegistry.keys()).join(', ') || '없음',
                     )
                   }
                   className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 
 interface PanelProps {
   children: ReactNode;

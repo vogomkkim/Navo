@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+
 import { useTrackEvents } from '@/lib/api';
 
 interface EventData {
@@ -40,7 +41,7 @@ export function useEventTracker() {
         flushTimer.current = setTimeout(flushEvents, FLUSH_INTERVAL);
       }
     },
-    [flushEvents]
+    [flushEvents],
   );
 
   // Clear any pending timer on unmount

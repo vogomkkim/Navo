@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useSuggestions } from '@/lib/api';
 
 export function SuggestionsSection() {

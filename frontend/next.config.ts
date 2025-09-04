@@ -1,6 +1,7 @@
 // frontend/next.config.ts
-import type { NextConfig } from 'next';
 import path from 'node:path';
+
+import type { NextConfig } from 'next';
 
 const origin = process.env.NEXT_PUBLIC_API_ORIGIN || 'http://localhost:3001';
 
@@ -21,9 +22,18 @@ const nextConfig = {
 
       // 비-API 경로 (프리뷰/퍼블릭 사이트)
       { source: '/site/:projectId', destination: `${origin}/site/:projectId` },
-      { source: '/p/:previewId', destination: `${origin}/preview-domain/:previewId` },
-      { source: '/p/:previewId/:path*', destination: `${origin}/preview-domain/:previewId/:path*` },
-      { source: '/preview/:pageId/:path*', destination: `${origin}/preview/:pageId/:path*` },
+      {
+        source: '/p/:previewId',
+        destination: `${origin}/preview-domain/:previewId`,
+      },
+      {
+        source: '/p/:previewId/:path*',
+        destination: `${origin}/preview-domain/:previewId/:path*`,
+      },
+      {
+        source: '/preview/:pageId/:path*',
+        destination: `${origin}/preview/:pageId/:path*`,
+      },
       { source: '/preview/:path*', destination: `${origin}/preview/:path*` },
     ];
   },

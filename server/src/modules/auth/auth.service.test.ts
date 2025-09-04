@@ -1,7 +1,8 @@
-import { AuthService } from './auth.service';
-import { AuthRepository } from './auth.repository';
 import { AppError } from '@/lib/errorHandler';
 import * as passwordModule from '@/lib/password';
+
+import { AuthRepository } from './auth.repository';
+import { AuthService } from './auth.service';
 
 // password.ts의 verifyPassword 함수를 모의
 jest.mock('@/lib/password', () => ({
@@ -28,7 +29,7 @@ describe('AuthService', () => {
   beforeEach(() => {
     // 각 테스트 전에 AuthService 인스턴스를 새로 생성하고 모의 객체를 주입
     authService = new AuthService(
-      mockAuthRepository as unknown as AuthRepository
+      mockAuthRepository as unknown as AuthRepository,
     );
     // 모든 모의 함수 초기화
     jest.clearAllMocks();
@@ -53,7 +54,7 @@ describe('AuthService', () => {
       await expect(p).rejects.toThrow(AppError);
       await expect(p).rejects.toHaveProperty('errorCode', 'USER_EXISTS');
       expect(mockAuthRepository.findUserByEmail).toHaveBeenCalledWith(
-        'mk.kim@vogoplay.com'
+        'mk.kim@vogoplay.com',
       );
       expect(mockAuthRepository.createUser).not.toHaveBeenCalled();
     });
@@ -77,7 +78,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('id', 'new-user-id');
       expect(result).not.toHaveProperty('password'); // 비밀번호는 응답에서 제외되어야 함
       expect(mockAuthRepository.findUserByEmail).toHaveBeenCalledWith(
-        'new@example.com'
+        'new@example.com',
       );
       expect(mockAuthRepository.createUser).toHaveBeenCalled();
     });
@@ -95,10 +96,10 @@ describe('AuthService', () => {
       await expect(authService.login(loginData)).rejects.toThrow(AppError);
       await expect(authService.login(loginData)).rejects.toHaveProperty(
         'errorCode',
-        'INVALID_CREDENTIALS'
+        'INVALID_CREDENTIALS',
       );
       expect(mockAuthRepository.findUserByEmail).toHaveBeenCalledWith(
-        'nonexistent@example.com'
+        'nonexistent@example.com',
       );
     });
 
@@ -125,7 +126,7 @@ describe('AuthService', () => {
       await expect(authService.login(loginData)).rejects.toThrow(AppError);
       await expect(authService.login(loginData)).rejects.toHaveProperty(
         'errorCode',
-        'INVALID_CREDENTIALS'
+        'INVALID_CREDENTIALS',
       );
     });
 
@@ -150,7 +151,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('user');
       expect(result.user).not.toHaveProperty('password');
       expect(mockAuthRepository.findUserByEmail).toHaveBeenCalledWith(
-        'test@example.com'
+        'test@example.com',
       );
     });
   });

@@ -3,10 +3,11 @@
  * This is the first voyage of our new architecture.
  */
 
-import { workflowExecutor } from './index';
-import { Plan } from './types';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+
+import { workflowExecutor } from './index';
+import { Plan } from './types';
 
 describe('WorkflowEngine', () => {
   it('should execute a simple, single-step plan using the run_shell_command tool', async () => {
@@ -46,7 +47,8 @@ describe('WorkflowEngine', () => {
     // 1. Define a more complex Plan
     const multiStepPlan: Plan = {
       name: 'Test Multi-Step Echo',
-      description: 'Tests dependency management by echoing the output of a previous step.',
+      description:
+        'Tests dependency management by echoing the output of a previous step.',
       steps: [
         {
           id: 'first_echo',
@@ -102,7 +104,8 @@ describe('WorkflowEngine', () => {
     it('should write, read, and list files in a sequence', async () => {
       const fsPlan: Plan = {
         name: 'Test FileSystem Tools',
-        description: 'Writes a file, lists the directory, and then reads the file back.',
+        description:
+          'Writes a file, lists the directory, and then reads the file back.',
         steps: [
           {
             id: 'write_file_step',
@@ -164,7 +167,8 @@ describe('WorkflowEngine', () => {
             tool: 'create_project_architecture',
             inputs: {
               name: 'AI Quiz App',
-              description: 'A simple app where users can answer AI-generated quizzes.',
+              description:
+                'A simple app where users can answer AI-generated quizzes.',
               type: 'web-application',
             },
           },
@@ -244,8 +248,6 @@ describe('WorkflowEngine', () => {
       console.log(`Project created at: ${generateResult.projectPath}`);
       console.log(`${generateResult.filesCreated.length} files created.`);
       console.log('------------------------------\n');
-
     }, 40000); // Increase timeout to 40s for AI + File I/O
   });
 });
-

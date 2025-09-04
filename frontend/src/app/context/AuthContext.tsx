@@ -1,13 +1,13 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   ReactNode,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
-import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -15,7 +15,7 @@ interface AuthContextType {
   token: string | null;
   login: (
     token: string,
-    user: { id: string; email: string; name: string }
+    user: { id: string; email: string; name: string },
   ) => void;
   logout: () => void;
 }
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (
     newToken: string,
-    newUser: { id: string; email: string; name: string }
+    newUser: { id: string; email: string; name: string },
   ) => {
     setLocalStorageItem('navo_token', newToken);
     setLocalStorageItem('navo_user', JSON.stringify(newUser));

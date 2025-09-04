@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       console.error('Backend error:', errorData);
       return NextResponse.json(
         { error: '프로젝트 복구 실패' },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     console.error('Proxy error:', error);
     return NextResponse.json(
       { error: '프로젝트 복구 중 오류가 발생했습니다.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   try {
     const { projectId } = await params;
@@ -17,7 +17,7 @@ export async function GET(
           'Content-Type': 'application/json',
           ...(token && { Authorization: token }),
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -25,7 +25,7 @@ export async function GET(
       console.error('Backend error:', errorData);
       return NextResponse.json(
         { error: '프로젝트 구조 가져오기 실패' },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -35,7 +35,7 @@ export async function GET(
     console.error('Proxy error:', error);
     return NextResponse.json(
       { error: '프로젝트 구조 가져오기 중 오류가 발생했습니다.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

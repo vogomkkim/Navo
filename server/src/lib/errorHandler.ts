@@ -1,4 +1,5 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+
 import { createRequestLogger } from './logger';
 
 // 표준 에러 구조 정의
@@ -11,7 +12,7 @@ export class AppError extends Error {
     statusCode: number,
     errorCode: string,
     message: string,
-    isOperational = true
+    isOperational = true,
   ) {
     super(message);
     this.statusCode = statusCode;
@@ -44,6 +45,6 @@ export const errorHandler = (app: FastifyInstance) => {
           message: '서버에서 예상치 못한 오류가 발생했습니다.',
         });
       }
-    }
+    },
   );
 };

@@ -3,8 +3,9 @@
  * from the original ProjectArchitectAgent.
  */
 
-import { Tool, ExecutionContext } from '../types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+import { ExecutionContext, Tool } from '../types';
 import { refineJsonResponse } from '../utils/jsonRefiner';
 
 // This type should be more specific based on the actual request structure.
@@ -20,11 +21,11 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 async function designArchitectureWithAI(request: ProjectRequest): Promise<any> {
-    // This function encapsulates the multi-step design process from the original agent.
-    // For simplicity, we are combining the prompts here. A more advanced version
-    // could still run this as a sequence of internal calls.
+  // This function encapsulates the multi-step design process from the original agent.
+  // For simplicity, we are combining the prompts here. A more advanced version
+  // could still run this as a sequence of internal calls.
 
-    const prompt = `
+  const prompt = `
       You are a Project Architect AI. Based on the user's request, generate a complete project architecture in a single JSON response.
 
       **User Request:**
@@ -72,41 +73,47 @@ async function designArchitectureWithAI(request: ProjectRequest): Promise<any> {
       - For the 'README.md' file, include at least a main heading with the project name.
     `;
 
-    const result = await model.generateContent(prompt);
-    let text = result.response.text();
+  const result = await model.generateContent(prompt);
+  let text = result.response.text();
 
-    // Refine the response to ensure it's a valid JSON string
-    // This is a common step when working with LLMs.
-    const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-    const match = text.match(jsonRegex);
-    if (match && match[1]) {
-      text = match[1];
-    }
+  // Refine the response to ensure it's a valid JSON string
+  // This is a common step when working with LLMs.
+  const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+  const match = text.match(jsonRegex);
+  if (match && match[1]) {
+    text = match[1];
+  }
 
-    // Even after extracting, there might be surrounding text. Let's try to find the start of the JSON.
-    const jsonStartIndex = text.indexOf('{');
-    if (jsonStartIndex > -1) {
-      text = text.substring(jsonStartIndex);
-    }
-    
-    const refinedJson = await refineJsonResponse<string>(text);
+  // Even after extracting, there might be surrounding text. Let's try to find the start of the JSON.
+  const jsonStartIndex = text.indexOf('{');
+  if (jsonStartIndex > -1) {
+    text = text.substring(jsonStartIndex);
+  }
 
-    if (typeof refinedJson === 'object') {
-      return refinedJson; // Already parsed, return directly
-    }
-    return JSON.parse(refinedJson as string);
+  const refinedJson = await refineJsonResponse<string>(text);
+
+  if (typeof refinedJson === 'object') {
+    return refinedJson; // Already parsed, return directly
+  }
+  return JSON.parse(refinedJson as string);
 }
-
 
 export const createProjectArchitectureTool: Tool = {
   name: 'create_project_architecture',
-  description: "Analyzes a user's project request and generates a detailed project architecture, including file structure and technology stack.",
+  description:
+    "Analyzes a user's project request and generates a detailed project architecture, including file structure and technology stack.",
   inputSchema: {
     type: 'object',
     properties: {
       name: { type: 'string', description: 'The name of the project.' },
-      description: { type: 'string', description: 'A description of the project.' },
-      type: { type: 'string', description: 'The type of project (e.g., web-application).' },
+      description: {
+        type: 'string',
+        description: 'A description of the project.',
+      },
+      type: {
+        type: 'string',
+        description: 'The type of project (e.g., web-application).',
+      },
     },
     required: ['name', 'description', 'type'],
   },
@@ -116,15 +123,25 @@ export const createProjectArchitectureTool: Tool = {
       project: { type: 'object' }, // In a real scenario, this would be a detailed schema
     },
   },
-  async execute(context: ExecutionContext, input: ProjectRequest): Promise<any> {
-    console.log(`[create_project_architecture] Starting architecture design for: ${input.name}`);
+  async execute(
+    context: ExecutionContext,
+    input: ProjectRequest,
+  ): Promise<any> {
+    console.log(
+      `[create_project_architecture] Starting architecture design for: ${input.name}`,
+    );
     try {
       const architecture = await designArchitectureWithAI(input);
       // TODO: Add validation logic here, similar to the original agent's validateProjectStructure
-      console.log(`[create_project_architecture] Successfully designed architecture for: ${input.name}`);
+      console.log(
+        `[create_project_architecture] Successfully designed architecture for: ${input.name}`,
+      );
       return architecture;
     } catch (error: any) {
-      console.error(`[create_project_architecture] Failed to design architecture for "${input.name}":`, error);
+      console.error(
+        `[create_project_architecture] Failed to design architecture for "${input.name}":`,
+        error,
+      );
       throw error;
     }
   },

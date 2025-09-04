@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import { geminiClient } from '@/lib/gemini';
 
 export function MobileChat() {
@@ -68,8 +69,8 @@ export function MobileChat() {
                     ...msg,
                     message: `"${chatInput}"에 대한 AI 답변입니다. 더 자세한 정보가 필요하시면 말씀해 주세요.`,
                   }
-                : msg
-            )
+                : msg,
+            ),
           );
           setIsProcessing(false);
         }, 2000);

@@ -1,10 +1,10 @@
-import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
+import { randomBytes, scrypt, timingSafeEqual } from 'crypto';
 
 function scryptAsync(
   password: string,
   salt: Buffer | string,
   keyLength: number,
-  options: { N?: number; r?: number; p?: number; maxmem?: number } = {}
+  options: { N?: number; r?: number; p?: number; maxmem?: number } = {},
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     scrypt(password, salt, keyLength, options, (err, derivedKey) => {
@@ -82,7 +82,7 @@ export interface VerifyResult {
 
 export async function verifyPassword(
   password: string,
-  storedHash: string
+  storedHash: string,
 ): Promise<VerifyResult> {
   if (isScryptPhc(storedHash)) {
     const result = await verifyScryptPhc(password, storedHash);
@@ -95,7 +95,7 @@ export async function verifyPassword(
 
 async function verifyScryptPhc(
   password: string,
-  phc: string
+  phc: string,
 ): Promise<boolean> {
   // $scrypt$ln=..,r=..,p=..$salt$hash
   const parts = phc.split('$');
@@ -113,7 +113,7 @@ async function verifyScryptPhc(
     paramsPart.split(',').map((kv) => {
       const [k, v] = kv.split('=');
       return [k, v];
-    })
+    }),
   ) as Record<string, string>;
 
   const ln = Number(kv['ln']);

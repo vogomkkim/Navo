@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useOrchestratorChat } from '@/lib/api';
+
 import { useInputHistory } from '@/hooks/useInputHistory';
+import { useOrchestratorChat } from '@/lib/api';
+
 import { ChatPlaceholder } from './ChatPlaceholder';
 
 // Agent roles and statuses

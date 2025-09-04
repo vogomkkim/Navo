@@ -1,7 +1,8 @@
-import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import * as schema from '@/schema';
+import postgres from 'postgres';
+
 import logger from '@/lib/logger'; // 새 경로 참조
+import * as schema from '@/schema';
 
 const connectionString = process.env.DATABASE_URL ?? '';
 
@@ -21,7 +22,7 @@ logConnectionInfo();
 // 연결 문자열 검증
 if (!connectionString) {
   logger.error(
-    '데이터베이스 클라이언트를 생성할 수 없습니다: DATABASE_URL이 비어 있습니다.'
+    '데이터베이스 클라이언트를 생성할 수 없습니다: DATABASE_URL이 비어 있습니다.',
   );
   throw new Error('DATABASE_URL 환경 변수가 필요합니다.');
 }
@@ -49,7 +50,7 @@ try {
     {
       err: error instanceof Error ? error.message : String(error),
     },
-    '데이터베이스 클라이언트 생성 실패'
+    '데이터베이스 클라이언트 생성 실패',
   );
   throw error;
 }
@@ -66,7 +67,7 @@ export async function testConnection(): Promise<void> {
       {
         err: error instanceof Error ? error.message : String(error),
       },
-      '데이터베이스 연결 실패'
+      '데이터베이스 연결 실패',
     );
     throw error;
   }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   try {
     const { projectId } = await params;
@@ -17,7 +17,7 @@ export async function GET(
       console.error('Backend error:', errorData);
       return NextResponse.json(
         { error: '사이트 렌더링 실패' },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -31,7 +31,7 @@ export async function GET(
     console.error('Proxy error:', error);
     return NextResponse.json(
       { error: '사이트 렌더링 중 오류가 발생했습니다.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

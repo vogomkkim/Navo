@@ -1,10 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import Home from './page';
-import { AuthProvider } from '@/app/context/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { EventTrackerProvider } from '@/app/context/EventTrackerContext';
+import { render, screen } from '@testing-library/react';
+
+import { AuthProvider } from '@/app/context/AuthContext';
 import { ComponentDefinitionProvider } from '@/app/context/ComponentDefinitionContext';
+import { EventTrackerProvider } from '@/app/context/EventTrackerContext';
 import { LayoutProvider } from '@/app/context/LayoutContext';
+
+import Home from './page';
 
 // Mock the API hooks to avoid actual API calls during tests
 jest.mock('@/lib/api', () => ({
@@ -67,7 +69,7 @@ describe('Home Page', () => {
             </EventTrackerProvider>
           </ComponentDefinitionProvider>
         </LayoutProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(await screen.findByText('Navo — Editor (W1)')).toBeInTheDocument();
@@ -86,11 +88,11 @@ describe('Home Page', () => {
             </EventTrackerProvider>
           </ComponentDefinitionProvider>
         </LayoutProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(
-      await screen.findByRole('button', { name: /toggle panel/i })
+      await screen.findByRole('button', { name: /toggle panel/i }),
     ).toBeInTheDocument();
   });
 
@@ -107,7 +109,7 @@ describe('Home Page', () => {
             </EventTrackerProvider>
           </ComponentDefinitionProvider>
         </LayoutProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(await screen.findByText('대기중')).toBeInTheDocument();

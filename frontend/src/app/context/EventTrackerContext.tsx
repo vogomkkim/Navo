@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, ReactNode, useContext } from 'react';
+
 import { useEventTracker } from '@/hooks/useEventTracker';
 
 interface EventTrackerContextType {
@@ -8,7 +9,7 @@ interface EventTrackerContextType {
 }
 
 const EventTrackerContext = createContext<EventTrackerContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function EventTrackerProvider({ children }: { children: ReactNode }) {
@@ -25,7 +26,7 @@ export function useEventTrackerContext() {
   const context = useContext(EventTrackerContext);
   if (context === undefined) {
     throw new Error(
-      'useEventTrackerContext must be used within an EventTrackerProvider'
+      'useEventTrackerContext must be used within an EventTrackerProvider',
     );
   }
   return context;

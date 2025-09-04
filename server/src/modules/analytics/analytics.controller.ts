@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+
 import { AnalyticsService } from './analytics.service';
 
 export function analyticsController(app: FastifyInstance) {
@@ -33,7 +34,7 @@ export function analyticsController(app: FastifyInstance) {
         const events = await analyticsService.getProjectEvents(
           projectId,
           userId,
-          filter
+          filter,
         );
         reply.send({ events });
       } catch (error) {
@@ -42,7 +43,7 @@ export function analyticsController(app: FastifyInstance) {
           .status(500)
           .send({ error: '프로젝트 이벤트 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // 사용자 이벤트 조회
@@ -74,7 +75,7 @@ export function analyticsController(app: FastifyInstance) {
         app.log.error(error, '사용자 이벤트 조회 실패');
         reply.status(500).send({ error: '사용자 이벤트 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // 프로젝트 메트릭 조회
@@ -106,7 +107,7 @@ export function analyticsController(app: FastifyInstance) {
         const metrics = await analyticsService.getProjectMetrics(
           projectId,
           userId,
-          filter
+          filter,
         );
         reply.send({ metrics });
       } catch (error) {
@@ -115,7 +116,7 @@ export function analyticsController(app: FastifyInstance) {
           .status(500)
           .send({ error: '프로젝트 메트릭 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // 사용자 메트릭 조회
@@ -147,7 +148,7 @@ export function analyticsController(app: FastifyInstance) {
         app.log.error(error, '사용자 메트릭 조회 실패');
         reply.status(500).send({ error: '사용자 메트릭 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // 상위 페이지 조회
@@ -172,14 +173,14 @@ export function analyticsController(app: FastifyInstance) {
         const topPages = await analyticsService.getTopPages(
           projectId,
           userId,
-          limit
+          limit,
         );
         reply.send({ topPages });
       } catch (error) {
         app.log.error(error, '상위 페이지 조회 실패');
         reply.status(500).send({ error: '상위 페이지 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // 상위 이벤트 조회
@@ -204,14 +205,14 @@ export function analyticsController(app: FastifyInstance) {
         const topEvents = await analyticsService.getTopEvents(
           projectId,
           userId,
-          limit
+          limit,
         );
         reply.send({ topEvents });
       } catch (error) {
         app.log.error(error, '상위 이벤트 조회 실패');
         reply.status(500).send({ error: '상위 이벤트 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // 이벤트 트렌드 조회
@@ -236,14 +237,14 @@ export function analyticsController(app: FastifyInstance) {
         const trends = await analyticsService.getEventTrends(
           projectId,
           userId,
-          days
+          days,
         );
         reply.send({ trends });
       } catch (error) {
         app.log.error(error, '이벤트 트렌드 조회 실패');
         reply.status(500).send({ error: '이벤트 트렌드 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // 대시보드 데이터 조회 (통합)
@@ -265,7 +266,7 @@ export function analyticsController(app: FastifyInstance) {
 
         const dashboardData = await analyticsService.getDashboardData(
           projectId,
-          userId
+          userId,
         );
         reply.send(dashboardData);
       } catch (error) {
@@ -274,6 +275,6 @@ export function analyticsController(app: FastifyInstance) {
           .status(500)
           .send({ error: '대시보드 데이터 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 }

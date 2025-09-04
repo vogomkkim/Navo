@@ -32,30 +32,30 @@ export interface AnalyticsFilter {
 export interface AnalyticsRepository {
   getEventsByProjectId(
     projectId: string,
-    filter?: AnalyticsFilter
+    filter?: AnalyticsFilter,
   ): Promise<AnalyticsEvent[]>;
   getEventsByUserId(
     userId: string,
-    filter?: AnalyticsFilter
+    filter?: AnalyticsFilter,
   ): Promise<AnalyticsEvent[]>;
   getProjectMetrics(
     projectId: string,
-    filter?: AnalyticsFilter
+    filter?: AnalyticsFilter,
   ): Promise<AnalyticsMetrics>;
   getUserMetrics(
     userId: string,
-    filter?: AnalyticsFilter
+    filter?: AnalyticsFilter,
   ): Promise<AnalyticsMetrics>;
   getTopPages(
     projectId: string,
-    limit?: number
+    limit?: number,
   ): Promise<Array<{ path: string; views: number }>>;
   getTopEvents(
     projectId: string,
-    limit?: number
+    limit?: number,
   ): Promise<Array<{ eventType: string; count: number }>>;
   getEventTrends(
     projectId: string,
-    days: number
+    days: number,
   ): Promise<Array<{ date: string; count: number }>>;
 }

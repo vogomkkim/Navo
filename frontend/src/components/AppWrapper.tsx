@@ -1,8 +1,8 @@
 'use client';
 
 import { AuthProvider } from '@/app/context/AuthContext';
-import { EventTrackerProvider } from '@/app/context/EventTrackerContext';
 import { ComponentDefinitionProvider } from '@/app/context/ComponentDefinitionContext';
+import { EventTrackerProvider } from '@/app/context/EventTrackerContext';
 import { LayoutProvider } from '@/app/context/LayoutContext';
 import { QueryClientWrapper } from '@/components/QueryClientWrapper';
 

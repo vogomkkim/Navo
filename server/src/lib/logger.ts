@@ -10,10 +10,15 @@ export type SimpleLogger = {
   bindings: () => Record<string, unknown>;
 };
 
-function createConsoleLogger(bindings: Record<string, unknown> = {}): SimpleLogger {
+function createConsoleLogger(
+  bindings: Record<string, unknown> = {},
+): SimpleLogger {
   const mergeBindings = (args: unknown[]): unknown[] => {
     if (args.length > 0 && typeof args[0] === 'object' && args[0] !== null) {
-      return [{ ...(args[0] as Record<string, unknown>), ...bindings }, ...args.slice(1)];
+      return [
+        { ...(args[0] as Record<string, unknown>), ...bindings },
+        ...args.slice(1),
+      ];
     }
     if (Object.keys(bindings).length > 0) {
       return [bindings, ...args];

@@ -2,9 +2,10 @@
  * @file Defines tools for interacting with the file system.
  */
 
-import { Tool, ExecutionContext } from '../types';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+
+import { ExecutionContext, Tool } from '../types';
 
 // --- 1. List Directory Tool ---
 export const listDirectoryTool: Tool = {
@@ -21,18 +22,24 @@ export const listDirectoryTool: Tool = {
     type: 'array',
     items: { type: 'string' },
   },
-  async execute(context: ExecutionContext, input: { path: string }): Promise<string[]> {
+  async execute(
+    context: ExecutionContext,
+    input: { path: string },
+  ): Promise<string[]> {
     console.log(`[list_directory] Listing contents of: ${input.path}`);
     try {
       // Basic security: prevent directory traversal attacks.
       // A real implementation would need a much more robust sandboxing mechanism.
       const resolvedPath = path.resolve(input.path);
       if (!resolvedPath.startsWith(process.cwd())) {
-         throw new Error('Directory traversal is not allowed.');
+        throw new Error('Directory traversal is not allowed.');
       }
       return await fs.readdir(resolvedPath);
     } catch (error: any) {
-      console.error(`[list_directory] Failed to list directory "${input.path}":`, error);
+      console.error(
+        `[list_directory] Failed to list directory "${input.path}":`,
+        error,
+      );
       throw error;
     }
   },
@@ -52,12 +59,15 @@ export const readFileTool: Tool = {
   outputSchema: {
     type: 'string',
   },
-  async execute(context: ExecutionContext, input: { path: string }): Promise<string> {
+  async execute(
+    context: ExecutionContext,
+    input: { path: string },
+  ): Promise<string> {
     console.log(`[read_file] Reading file: ${input.path}`);
     try {
       const resolvedPath = path.resolve(input.path);
-       if (!resolvedPath.startsWith(process.cwd())) {
-         throw new Error('Directory traversal is not allowed.');
+      if (!resolvedPath.startsWith(process.cwd())) {
+        throw new Error('Directory traversal is not allowed.');
       }
       return await fs.readFile(resolvedPath, 'utf-8');
     } catch (error: any) {
@@ -70,12 +80,16 @@ export const readFileTool: Tool = {
 // --- 3. Write File Tool ---
 export const writeFileTool: Tool = {
   name: 'write_file',
-  description: 'Writes content to a specified file, creating it if it does not exist.',
+  description:
+    'Writes content to a specified file, creating it if it does not exist.',
   inputSchema: {
     type: 'object',
     properties: {
       path: { type: 'string', description: 'The path to the file.' },
-      content: { type: 'string', description: 'The content to write to the file.' },
+      content: {
+        type: 'string',
+        description: 'The content to write to the file.',
+      },
     },
     required: ['path', 'content'],
   },
@@ -86,17 +100,23 @@ export const writeFileTool: Tool = {
       path: { type: 'string' },
     },
   },
-  async execute(context: ExecutionContext, input: { path: string; content: string }): Promise<{ success: boolean, path: string }> {
+  async execute(
+    context: ExecutionContext,
+    input: { path: string; content: string },
+  ): Promise<{ success: boolean; path: string }> {
     console.log(`[write_file] Writing to file: ${input.path}`);
     try {
-       const resolvedPath = path.resolve(input.path);
-       if (!resolvedPath.startsWith(process.cwd())) {
-         throw new Error('Directory traversal is not allowed.');
+      const resolvedPath = path.resolve(input.path);
+      if (!resolvedPath.startsWith(process.cwd())) {
+        throw new Error('Directory traversal is not allowed.');
       }
       await fs.writeFile(resolvedPath, input.content, 'utf-8');
       return { success: true, path: resolvedPath };
     } catch (error: any) {
-      console.error(`[write_file] Failed to write to file "${input.path}":`, error);
+      console.error(
+        `[write_file] Failed to write to file "${input.path}":`,
+        error,
+      );
       throw error;
     }
   },

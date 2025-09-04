@@ -2,8 +2,9 @@
  * @file The core service for the workflow engine.
  * This service orchestrates the AI planning and execution process.
  */
-import { FastifyInstance } from 'fastify';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { FastifyInstance } from 'fastify';
+
 import { toolRegistry, workflowExecutor } from './index';
 import { Plan } from './types';
 import { refineJsonResponse } from './utils/jsonRefiner';
@@ -31,13 +32,19 @@ export class WorkflowService {
 
     // Validate the plan immediately after generation
     if (!plan || !Array.isArray(plan.steps)) {
-      this.app.log.error({ plan }, '[WorkflowService] AI Planner returned a plan without a valid "steps" array.');
+      this.app.log.error(
+        { plan },
+        '[WorkflowService] AI Planner returned a plan without a valid "steps" array.',
+      );
       throw new Error('AI Planner returned an invalid plan.');
     }
 
     // 2. Execute the Plan
     const outputs = await workflowExecutor.execute(plan);
-    this.app.log.info({ outputs: Object.fromEntries(outputs) }, '[WorkflowService] Workflow executed successfully');
+    this.app.log.info(
+      { outputs: Object.fromEntries(outputs) },
+      '[WorkflowService] Workflow executed successfully',
+    );
 
     // 3. Return the final result (for now, we return all outputs)
     // In the future, we might have a dedicated "ResultFormatter" tool.
@@ -52,7 +59,7 @@ export class WorkflowService {
    * @param prompt The user's request.
    */
   private async generatePlan(prompt: string): Promise<Plan> {
-    const availableTools = toolRegistry.list().map(tool => ({
+    const availableTools = toolRegistry.list().map((tool) => ({
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,
@@ -119,19 +126,25 @@ export class WorkflowService {
           text = text.substring(startIndex, endIndex + 1);
         }
       }
-      
+
       const refinedJson = await refineJsonResponse<Plan>(text);
-      const planObject = typeof refinedJson === 'string' ? JSON.parse(refinedJson) : refinedJson;
+      const planObject =
+        typeof refinedJson === 'string' ? JSON.parse(refinedJson) : refinedJson;
 
       if (!planObject || !Array.isArray(planObject.steps)) {
-        this.app.log.error({ plan: planObject }, '[WorkflowService] AI Planner returned a plan without a valid "steps" array.');
+        this.app.log.error(
+          { plan: planObject },
+          '[WorkflowService] AI Planner returned a plan without a valid "steps" array.',
+        );
         throw new Error('AI Planner returned an invalid plan.');
       }
 
       return planObject;
-
     } catch (error: any) {
-      this.app.log.error(error, '[WorkflowService] Failed to generate or parse plan from LLM.');
+      this.app.log.error(
+        error,
+        '[WorkflowService] Failed to generate or parse plan from LLM.',
+      );
       throw new Error('Failed to parse JSON from LLM response.');
     }
   }

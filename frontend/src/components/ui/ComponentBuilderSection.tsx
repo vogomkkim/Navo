@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useGenerateComponent } from '@/lib/api';
 
 export function ComponentBuilderSection() {
@@ -46,7 +47,7 @@ export function ComponentBuilderSection() {
           setGenerationStatus(`오류: ${err.message}`);
           console.error('Component generation failed:', err);
         },
-      }
+      },
     );
   };
 

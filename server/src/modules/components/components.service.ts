@@ -1,13 +1,14 @@
 import { FastifyInstance } from 'fastify';
+
 import { ComponentsRepositoryImpl } from '@/modules/components/components.repository';
 import {
   ComponentDefinition,
+  ComponentInstance,
   CreateComponentDefinitionData,
   UpdateComponentDefinitionData,
-  ComponentInstance,
 } from '@/modules/components/components.types';
-import { ProjectsRepositoryImpl } from '@/modules/projects/projects.repository';
 import { PagesRepositoryImpl } from '@/modules/pages/pages.repository';
+import { ProjectsRepositoryImpl } from '@/modules/projects/projects.repository';
 
 export class ComponentsService {
   private repository: ComponentsRepositoryImpl;
@@ -22,12 +23,12 @@ export class ComponentsService {
 
   async listComponentDefinitions(
     projectId: string,
-    userId: string
+    userId: string,
   ): Promise<ComponentDefinition[]> {
     try {
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -41,7 +42,7 @@ export class ComponentsService {
 
   async getComponentDefinition(
     id: string,
-    userId: string
+    userId: string,
   ): Promise<ComponentDefinition> {
     try {
       const component = await this.repository.getComponentDefinitionById(id);
@@ -50,7 +51,7 @@ export class ComponentsService {
       }
       const project = await this.projectRepository.getProjectByUserId(
         component.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -65,19 +66,19 @@ export class ComponentsService {
   async getComponentDefinitionByName(
     name: string,
     projectId: string,
-    userId: string
+    userId: string,
   ): Promise<ComponentDefinition> {
     try {
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
       }
       const component = await this.repository.getComponentDefinitionByName(
         name,
-        projectId
+        projectId,
       );
       if (!component) {
         throw new Error('컴포넌트 정의를 찾을 수 없습니다.');
@@ -91,19 +92,19 @@ export class ComponentsService {
 
   async createComponentDefinition(
     data: CreateComponentDefinitionData,
-    userId: string
+    userId: string,
   ): Promise<ComponentDefinition> {
     try {
       const project = await this.projectRepository.getProjectByUserId(
         data.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
       }
       const existing = await this.repository.getComponentDefinitionByName(
         data.name,
-        data.projectId
+        data.projectId,
       );
       if (existing) {
         throw new Error('이미 존재하는 컴포넌트 이름입니다.');
@@ -118,7 +119,7 @@ export class ComponentsService {
   async updateComponentDefinition(
     id: string,
     data: UpdateComponentDefinitionData,
-    userId: string
+    userId: string,
   ): Promise<ComponentDefinition> {
     try {
       const component = await this.repository.getComponentDefinitionById(id);
@@ -127,7 +128,7 @@ export class ComponentsService {
       }
       const project = await this.projectRepository.getProjectByUserId(
         component.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -147,7 +148,7 @@ export class ComponentsService {
       }
       const project = await this.projectRepository.getProjectByUserId(
         component.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -162,19 +163,19 @@ export class ComponentsService {
   async seedComponentDefinitions(
     projectId: string,
     components: any[],
-    userId: string
+    userId: string,
   ): Promise<ComponentDefinition[]> {
     try {
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
       }
       return await this.repository.seedComponentDefinitions(
         projectId,
-        components
+        components,
       );
     } catch (error) {
       this.app.log.error(error, '컴포넌트 정의 시드 실패');
@@ -185,12 +186,12 @@ export class ComponentsService {
   async generateComponentFromNaturalLanguage(
     description: string,
     projectId: string,
-    userId: string
+    userId: string,
   ): Promise<ComponentDefinition> {
     try {
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -206,7 +207,7 @@ export class ComponentsService {
         projectId,
       };
       return await this.repository.createComponentDefinition(
-        generatedComponent
+        generatedComponent,
       );
     } catch (error) {
       this.app.log.error(error, '자연어 컴포넌트 생성 실패');
@@ -217,7 +218,7 @@ export class ComponentsService {
   async createComponentInstance(
     pageId: string,
     componentDefinitionId: string,
-    userId: string
+    userId: string,
   ): Promise<ComponentInstance> {
     try {
       const page = await this.pageRepository.getPageById(pageId);
@@ -226,14 +227,18 @@ export class ComponentsService {
       }
       const project = await this.projectRepository.getProjectByUserId(
         page.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트에 접근할 권한이 없습니다.');
       }
-      const definition = await this.repository.getComponentDefinitionById(componentDefinitionId);
+      const definition = await this.repository.getComponentDefinitionById(
+        componentDefinitionId,
+      );
       if (!definition || definition.projectId !== page.projectId) {
-        throw new Error('컴포넌트 정의를 찾을 수 없거나 프로젝트에 속하지 않습니다.');
+        throw new Error(
+          '컴포넌트 정의를 찾을 수 없거나 프로젝트에 속하지 않습니다.',
+        );
       }
       const orderIndex = await this.repository.countComponentsByPageId(pageId);
       const newInstance = await this.repository.createComponentInstance({
@@ -242,7 +247,10 @@ export class ComponentsService {
         props: definition.propsSchema || {},
         orderIndex,
       });
-      this.app.log.info({ instanceId: newInstance.id, pageId }, '컴포넌트 인스턴스 생성 성공');
+      this.app.log.info(
+        { instanceId: newInstance.id, pageId },
+        '컴포넌트 인스턴스 생성 성공',
+      );
       return newInstance;
     } catch (error) {
       this.app.log.error(error, '컴포넌트 인스턴스 생성 실패');

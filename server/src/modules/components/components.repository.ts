@@ -1,21 +1,23 @@
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
+
 import { db } from '@/db/db.instance';
 import { componentDefinitions, components } from '@/drizzle/schema';
-import { eq, and, asc, desc, sql } from 'drizzle-orm';
+
 import {
   ComponentDefinition,
-  CreateComponentDefinitionData,
-  UpdateComponentDefinitionData,
-  ComponentsRepository,
   ComponentInstance,
+  ComponentsRepository,
+  CreateComponentDefinitionData,
   CreateComponentInstanceData,
+  UpdateComponentDefinitionData,
 } from './components.types';
 
 export class ComponentsRepositoryImpl implements ComponentsRepository {
   constructor(private readonly app: FastifyInstance) {}
 
   async listComponentDefinitions(
-    projectId: string
+    projectId: string,
   ): Promise<ComponentDefinition[]> {
     try {
       const result = await db
@@ -37,17 +39,17 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
         .where(
           and(
             eq(componentDefinitions.projectId, projectId),
-            eq(componentDefinitions.isActive, true)
-          )
+            eq(componentDefinitions.isActive, true),
+          ),
         )
         .orderBy(
           asc(componentDefinitions.category),
-          asc(componentDefinitions.displayName)
+          asc(componentDefinitions.displayName),
         );
 
       this.app.log.info(
         { projectId, count: result.length },
-        '컴포넌트 정의 목록 조회 완료'
+        '컴포넌트 정의 목록 조회 완료',
       );
       return result;
     } catch (error) {
@@ -57,7 +59,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
   }
 
   async getComponentDefinitionById(
-    id: string
+    id: string,
   ): Promise<ComponentDefinition | null> {
     try {
       const result = await db
@@ -93,7 +95,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
 
   async getComponentDefinitionByName(
     name: string,
-    projectId: string
+    projectId: string,
   ): Promise<ComponentDefinition | null> {
     try {
       const result = await db
@@ -116,8 +118,8 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
           and(
             eq(componentDefinitions.name, name),
             eq(componentDefinitions.projectId, projectId),
-            eq(componentDefinitions.isActive, true)
-          )
+            eq(componentDefinitions.isActive, true),
+          ),
         )
         .limit(1);
 
@@ -134,7 +136,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
   }
 
   async createComponentDefinition(
-    data: CreateComponentDefinitionData
+    data: CreateComponentDefinitionData,
   ): Promise<ComponentDefinition> {
     try {
       const result = await db
@@ -167,7 +169,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
 
       this.app.log.info(
         { id: result[0].id, projectId: data.projectId },
-        '컴포넌트 정의 생성 완료'
+        '컴포넌트 정의 생성 완료',
       );
       return result[0];
     } catch (error) {
@@ -178,7 +180,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
 
   async updateComponentDefinition(
     id: string,
-    data: UpdateComponentDefinitionData
+    data: UpdateComponentDefinitionData,
   ): Promise<ComponentDefinition> {
     try {
       const updateData: any = {
@@ -245,7 +247,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
 
   async seedComponentDefinitions(
     projectId: string,
-    componentsData: any[]
+    componentsData: any[],
   ): Promise<ComponentDefinition[]> {
     try {
       const result: ComponentDefinition[] = [];
@@ -253,7 +255,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
       for (const component of componentsData) {
         const existing = await this.getComponentDefinitionByName(
           component.name,
-          projectId
+          projectId,
         );
 
         if (existing) {
@@ -286,7 +288,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
 
       this.app.log.info(
         { projectId, count: result.length },
-        '컴포넌트 정의 시드 완료'
+        '컴포넌트 정의 시드 완료',
       );
       return result;
     } catch (error) {
@@ -303,7 +305,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
         .select({ count: sql<number>`count(*)` })
         .from(components)
         .where(eq(components.pageId, pageId));
-      
+
       const count = Number(result[0].count);
       this.app.log.info({ pageId, count }, '페이지별 컴포넌트 수 조회 완료');
       return count;
@@ -314,7 +316,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
   }
 
   async createComponentInstance(
-    data: CreateComponentInstanceData
+    data: CreateComponentInstanceData,
   ): Promise<ComponentInstance> {
     try {
       const result = await db
@@ -329,7 +331,7 @@ export class ComponentsRepositoryImpl implements ComponentsRepository {
 
       this.app.log.info(
         { instanceId: result[0].id, pageId: data.pageId },
-        '컴포넌트 인스턴스 생성 완료'
+        '컴포넌트 인스턴스 생성 완료',
       );
       return result[0];
     } catch (error) {

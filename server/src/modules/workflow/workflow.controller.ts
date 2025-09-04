@@ -2,6 +2,7 @@
  * @file Defines the API endpoint for the workflow engine.
  */
 import { FastifyInstance } from 'fastify';
+
 import { WorkflowService } from './workflow.service';
 
 export function workflowController(app: FastifyInstance) {
@@ -21,7 +22,9 @@ export function workflowController(app: FastifyInstance) {
       return reply.send(result);
     } catch (error: any) {
       app.log.error(error, 'Error executing workflow');
-      return reply.status(500).send({ error: 'Failed to execute workflow.', details: error.message });
+      return reply
+        .status(500)
+        .send({ error: 'Failed to execute workflow.', details: error.message });
     }
   });
 }

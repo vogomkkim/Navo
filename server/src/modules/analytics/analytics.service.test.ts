@@ -1,7 +1,8 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { AnalyticsService } from './analytics.service';
-import { AnalyticsRepositoryImpl } from './analytics.repository';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import { ProjectsRepositoryImpl } from '../projects/projects.repository';
+import { AnalyticsRepositoryImpl } from './analytics.repository';
+import { AnalyticsService } from './analytics.service';
 
 jest.mock('./analytics.repository');
 jest.mock('../projects/projects.repository');

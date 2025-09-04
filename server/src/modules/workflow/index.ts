@@ -3,16 +3,18 @@
  * This file initializes and exports the core components of the workflow engine.
  */
 
-import { WorkflowExecutor } from './workflowExecutor';
 import { toolRegistry } from './toolRegistry';
-
+import { generateProjectFilesTool } from './tools/codeGenerator.tool';
+import {
+  listDirectoryTool,
+  readFileTool,
+  writeFileTool,
+} from './tools/fileSystem.tool';
+import { createOrganizationTool } from './tools/organization.tool';
+import { createProjectArchitectureTool } from './tools/projectArchitect.tool';
 // Import all tools and register them
 import { runShellCommandTool } from './tools/runShellCommand.tool';
-import { listDirectoryTool, readFileTool, writeFileTool } from './tools/fileSystem.tool';
-import { createProjectArchitectureTool } from './tools/projectArchitect.tool';
-import { generateProjectFilesTool } from './tools/codeGenerator.tool';
-
-import { createOrganizationTool } from './tools/organization.tool';
+import { WorkflowExecutor } from './workflowExecutor';
 
 // --- Tool Registration ---
 // As we create more tools, we register them here.

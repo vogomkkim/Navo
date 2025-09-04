@@ -1,12 +1,13 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useListProjects, useRenameProject } from "@/lib/api";
+import { useState } from 'react';
+
+import { useListProjects, useRenameProject } from '@/lib/api';
 
 export function ProjectListSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const { data, isLoading, isError, error, refetch } = useListProjects({
-    queryKey: ["projects"],
+    queryKey: ['projects'],
     enabled: isPanelOpen, // Only fetch when panel is open
   });
 
@@ -17,7 +18,7 @@ export function ProjectListSection() {
   });
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [newName, setNewName] = useState<string>("");
+  const [newName, setNewName] = useState<string>('');
 
   const startEdit = (id: string, currentName: string) => {
     setEditingId(id);
@@ -26,7 +27,7 @@ export function ProjectListSection() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setNewName("");
+    setNewName('');
   };
 
   const submitEdit = (id: string) => {
@@ -61,7 +62,7 @@ export function ProjectListSection() {
       </div>
 
       <div
-        className={`project-list-panel ${isPanelOpen ? "open" : ""}`}
+        className={`project-list-panel ${isPanelOpen ? 'open' : ''}`}
         id="projectListPanel"
       >
         <div className="panel-section project-list-section">
@@ -89,8 +90,8 @@ export function ProjectListSection() {
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") submitEdit(project.id);
-                        if (e.key === "Escape") cancelEdit();
+                        if (e.key === 'Enter') submitEdit(project.id);
+                        if (e.key === 'Escape') cancelEdit();
                       }}
                       className="rename-input"
                       autoFocus
@@ -110,9 +111,9 @@ export function ProjectListSection() {
                   </>
                 ) : (
                   <>
-                    <span>{project.name}</span>{" "}
+                    <span>{project.name}</span>{' '}
                     <span>
-                      (생성일:{" "}
+                      (생성일:{' '}
                       {new Date(project.createdAt).toLocaleDateString()})
                     </span>
                     <button
@@ -132,7 +133,7 @@ export function ProjectListSection() {
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        style={{ verticalAlign: "middle" }}
+                        style={{ verticalAlign: 'middle' }}
                       >
                         <path d="M12 20h9" />
                         <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />

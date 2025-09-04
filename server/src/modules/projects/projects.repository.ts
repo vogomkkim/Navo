@@ -1,15 +1,16 @@
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
+
 import { db } from '@/db/db.instance';
 import {
-  projects,
-  pages,
-  publishDeploys,
-  components,
   componentDefinitions,
-  usersToOrganizations,
+  components,
   organizations,
+  pages,
+  projects,
+  publishDeploys,
+  usersToOrganizations,
 } from '@/drizzle/schema';
-import { and, desc, eq, sql, inArray } from 'drizzle-orm';
 import type { Project, ProjectPage } from '@/modules/projects/projects.types';
 
 export interface ProjectsRepository {
@@ -17,7 +18,7 @@ export interface ProjectsRepository {
   getProjectById(projectId: string): Promise<Project | null>;
   getProjectByUserId(
     projectId: string,
-    userId: string
+    userId: string,
   ): Promise<Project | null>;
   updateProjectName(projectId: string, name: string): Promise<Project>;
   deleteProjectById(projectId: string): Promise<void>;
@@ -39,7 +40,10 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
       const organizationIds = memberships.map((m) => m.organizationId);
 
       if (organizationIds.length === 0) {
-        this.app.log.info({ userId }, '사용자가 속한 조직이 없습니다. 빈 프로젝트 목록 반환');
+        this.app.log.info(
+          { userId },
+          '사용자가 속한 조직이 없습니다. 빈 프로젝트 목록 반환',
+        );
         return [] as any;
       }
 
@@ -65,7 +69,7 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
 
       this.app.log.info(
         { userId, count: result.length },
-        '사용자 프로젝트 목록 조회 완료'
+        '사용자 프로젝트 목록 조회 완료',
       );
       return result as any;
     } catch (error) {
@@ -111,7 +115,7 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
 
   async getProjectByUserId(
     projectId: string,
-    userId: string
+    userId: string,
   ): Promise<Project | null> {
     try {
       // Verify user has access via organization membership
@@ -137,7 +141,12 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
           requirements: projects.requirements,
         })
         .from(projects)
-        .where(and(eq(projects.id, projectId), inArray(projects.organizationId, organizationIds)))
+        .where(
+          and(
+            eq(projects.id, projectId),
+            inArray(projects.organizationId, organizationIds),
+          ),
+        )
         .limit(1);
 
       if (dbRows.length === 0) {
@@ -233,7 +242,7 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
 
       this.app.log.info(
         { projectId, count: result.length },
-        '프로젝트 페이지 목록 조회 완료'
+        '프로젝트 페이지 목록 조회 완료',
       );
       return result as any;
     } catch (error) {

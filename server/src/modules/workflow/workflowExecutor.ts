@@ -2,9 +2,10 @@
  * @file Implements the WorkflowExecutor, the engine that runs declarative Plans.
  */
 
-import { Plan, PlanStep, ExecutionContext } from './types';
-import { toolRegistry } from './toolRegistry';
 import { randomUUID } from 'node:crypto';
+
+import { toolRegistry } from './toolRegistry';
+import { ExecutionContext, Plan, PlanStep } from './types';
 
 /**
  * Executes a Plan by resolving dependencies and running the specified Tools.
@@ -17,13 +18,20 @@ export class WorkflowExecutor {
    * @param initialInputs Any initial data to be made available to the workflow.
    * @returns A map of step IDs to their outputs.
    */
-  async execute(plan: Plan, initialInputs: Record<string, any> = {}): Promise<Map<string, any>> {
+  async execute(
+    plan: Plan,
+    initialInputs: Record<string, any> = {},
+  ): Promise<Map<string, any>> {
     if (!plan || !Array.isArray(plan.steps)) {
-      throw new Error('Invalid plan: "steps" array is missing or not an array.');
+      throw new Error(
+        'Invalid plan: "steps" array is missing or not an array.',
+      );
     }
 
     const runId = randomUUID();
-    console.log(`[WorkflowExecutor] Starting execution for plan "${plan.name}" (Run ID: ${runId})`);
+    console.log(
+      `[WorkflowExecutor] Starting execution for plan "${plan.name}" (Run ID: ${runId})`,
+    );
 
     const executionContext: ExecutionContext = { runId };
     const stepOutputs = new Map<string, any>();
@@ -32,30 +40,42 @@ export class WorkflowExecutor {
     // A simple way to handle DAG execution: loop until all steps are complete.
     // A more sophisticated implementation would use a topological sort.
     while (completedSteps.size < plan.steps.length) {
-      const stepsReadyToRun = plan.steps.filter(step =>
-        !completedSteps.has(step.id) &&
-        (step.dependencies ?? []).every(dep => completedSteps.has(dep))
+      const stepsReadyToRun = plan.steps.filter(
+        (step) =>
+          !completedSteps.has(step.id) &&
+          (step.dependencies ?? []).every((dep) => completedSteps.has(dep)),
       );
 
-      if (stepsReadyToRun.length === 0 && completedSteps.size < plan.steps.length) {
+      if (
+        stepsReadyToRun.length === 0 &&
+        completedSteps.size < plan.steps.length
+      ) {
         const remainingSteps = plan.steps
-          .filter(s => !completedSteps.has(s.id))
-          .map(s => s.id);
-        throw new Error(`Workflow stalled. Circular dependency or missing dependency detected. Remaining steps: ${remainingSteps.join(', ')}`);
+          .filter((s) => !completedSteps.has(s.id))
+          .map((s) => s.id);
+        throw new Error(
+          `Workflow stalled. Circular dependency or missing dependency detected. Remaining steps: ${remainingSteps.join(', ')}`,
+        );
       }
 
-      const promises = stepsReadyToRun.map(step =>
-        this.executeStep(step, executionContext, stepOutputs, initialInputs)
-          .then(output => {
-            stepOutputs.set(step.id, output);
-            completedSteps.add(step.id);
-          })
+      const promises = stepsReadyToRun.map((step) =>
+        this.executeStep(
+          step,
+          executionContext,
+          stepOutputs,
+          initialInputs,
+        ).then((output) => {
+          stepOutputs.set(step.id, output);
+          completedSteps.add(step.id);
+        }),
       );
 
       await Promise.all(promises);
     }
 
-    console.log(`[WorkflowExecutor] Plan "${plan.name}" executed successfully.`);
+    console.log(
+      `[WorkflowExecutor] Plan "${plan.name}" executed successfully.`,
+    );
     return stepOutputs;
   }
 
@@ -63,7 +83,7 @@ export class WorkflowExecutor {
     step: PlanStep,
     context: ExecutionContext,
     allOutputs: Map<string, any>,
-    initialInputs: Record<string, any>
+    initialInputs: Record<string, any>,
   ): Promise<any> {
     console.log(`[WorkflowExecutor] Executing step: ${step.id}`);
 
@@ -73,7 +93,11 @@ export class WorkflowExecutor {
     }
 
     // Resolve inputs, replacing placeholders like "${steps.someStep.outputs.result}"
-    const resolvedInputs = this.resolveInputs(step.inputs, allOutputs, initialInputs);
+    const resolvedInputs = this.resolveInputs(
+      step.inputs,
+      allOutputs,
+      initialInputs,
+    );
 
     try {
       // TODO: Add input validation against tool.inputSchema here.
@@ -83,7 +107,10 @@ export class WorkflowExecutor {
       console.log(`[WorkflowExecutor] Step ${step.id} completed successfully.`);
       return output;
     } catch (error) {
-      console.error(`[WorkflowExecutor] Error executing step ${step.id}:`, error);
+      console.error(
+        `[WorkflowExecutor] Error executing step ${step.id}:`,
+        error,
+      );
       // In a real implementation, add more robust error handling, retries, etc.
       throw error;
     }
@@ -99,7 +126,7 @@ export class WorkflowExecutor {
   private resolveInputs(
     inputs: Record<string, any>,
     outputs: Map<string, any>,
-    initialInputs: Record<string, any>
+    initialInputs: Record<string, any>,
   ): Record<string, any> {
     const resolved: Record<string, any> = {};
     for (const key in inputs) {
@@ -113,9 +140,13 @@ export class WorkflowExecutor {
           if (match) {
             const placeholder = match[1].trim();
             const parts = placeholder.split('.');
-            if (parts[0] === 'steps' && parts.length > 2 && parts[2] === 'outputs') {
+            if (
+              parts[0] === 'steps' &&
+              parts.length > 2 &&
+              parts[2] === 'outputs'
+            ) {
               const stepId = parts[1];
-              let stepOutput = outputs.get(stepId);
+              const stepOutput = outputs.get(stepId);
               if (stepOutput !== undefined) {
                 let nestedValue = stepOutput;
                 for (let i = 3; i < parts.length; i++) {
@@ -131,9 +162,13 @@ export class WorkflowExecutor {
         // Handle inline string replacements
         value = value.replace(placeholderRegex, (match, placeholder) => {
           const parts = placeholder.trim().split('.');
-          if (parts[0] === 'steps' && parts.length > 2 && parts[2] === 'outputs') {
+          if (
+            parts[0] === 'steps' &&
+            parts.length > 2 &&
+            parts[2] === 'outputs'
+          ) {
             const stepId = parts[1];
-            let stepOutput = outputs.get(stepId);
+            const stepOutput = outputs.get(stepId);
             if (stepOutput !== undefined) {
               let nestedValue = stepOutput;
               for (let i = 3; i < parts.length; i++) {

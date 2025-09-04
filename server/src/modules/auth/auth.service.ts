@@ -1,8 +1,10 @@
-import { AuthRepository } from './auth.repository';
-import { hashPassword, verifyPassword } from '@/lib/password';
-import { AppError } from '@/lib/errorHandler';
 import jwt from 'jsonwebtoken';
+
 import { appConfig } from '@/config';
+import { AppError } from '@/lib/errorHandler';
+import { hashPassword, verifyPassword } from '@/lib/password';
+
+import { AuthRepository } from './auth.repository';
 import type { LoginData, RegisterData } from './auth.types';
 
 export class AuthService {
@@ -27,7 +29,7 @@ export class AuthService {
       throw new AppError(
         500,
         'USER_CREATE_FAILED',
-        '사용자 생성에 실패했습니다.'
+        '사용자 생성에 실패했습니다.',
       );
     }
 
@@ -50,7 +52,7 @@ export class AuthService {
       throw new AppError(
         401,
         'INVALID_CREDENTIALS',
-        '이메일 또는 비밀번호가 올바르지 않습니다.'
+        '이메일 또는 비밀번호가 올바르지 않습니다.',
       );
     }
 
@@ -59,14 +61,14 @@ export class AuthService {
       throw new AppError(
         401,
         'INVALID_CREDENTIALS',
-        '이메일 또는 비밀번호가 올바르지 않습니다.'
+        '이메일 또는 비밀번호가 올바르지 않습니다.',
       );
     }
 
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       appConfig.jwtSecret,
-      { expiresIn: '24h' }
+      { expiresIn: '24h' },
     );
 
     // userWithoutPassword를 직접 구성

@@ -55,7 +55,7 @@ export class ChatMessage {
   constructor(
     content: any,
     role: 'user' | 'assistant' | 'system' = 'user',
-    metadata: Record<string, unknown> = {}
+    metadata: Record<string, unknown> = {},
   ) {
     this.content = content;
     this.role = role;
@@ -92,7 +92,7 @@ class ContextManager {
     if (!ctx) return [];
     const recent = ctx.messages.slice(-limit);
     return recent.map(
-      (m) => new ChatMessage(m.content, m.role, m.metadata ?? {})
+      (m) => new ChatMessage(m.content, m.role, m.metadata ?? {}),
     );
   }
 
@@ -103,7 +103,7 @@ class ContextManager {
     content: any,
     _traceId?: string,
     _parentId?: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
   ): Promise<void> {
     const ctx =
       this.getContext(sessionId) ?? this.createContext(userId, sessionId);
@@ -115,7 +115,7 @@ class ContextManager {
     userId: string,
     source: string,
     action: string,
-    data?: Record<string, unknown>
+    data?: Record<string, unknown>,
   ): Promise<void> {
     const ctx =
       this.getContext(sessionId) ?? this.createContext(userId, sessionId);
@@ -127,7 +127,7 @@ class ContextManager {
     userId: string,
     projectId: string,
     name?: string,
-    description?: string | null
+    description?: string | null,
   ): Promise<void> {
     const ctx =
       this.getContext(sessionId) ?? this.createContext(userId, sessionId);

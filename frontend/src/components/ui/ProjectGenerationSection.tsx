@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useGenerateProject } from '@/lib/api';
 
 export function ProjectGenerationSection() {
@@ -51,7 +52,7 @@ export function ProjectGenerationSection() {
           setGenerationStatus(`오류: ${err.message}`);
           console.error('Project generation failed:', err);
         },
-      }
+      },
     );
   };
 

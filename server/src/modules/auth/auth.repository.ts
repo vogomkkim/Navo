@@ -1,6 +1,8 @@
+import { eq } from 'drizzle-orm';
+
 import { db } from '@/db/db.instance';
 import { users } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+
 import { NewUser } from './auth.types';
 
 export class AuthRepository {

@@ -33,14 +33,14 @@ class GeminiClient {
 
     if (!this.apiKey) {
       console.warn(
-        'Gemini API 키가 설정되지 않았습니다. 환경변수 GEMINI_API_KEY를 확인해주세요.'
+        'Gemini API 키가 설정되지 않았습니다. 환경변수 GEMINI_API_KEY를 확인해주세요.',
       );
     }
   }
 
   async generateText(
     prompt: string,
-    temperature: number = 0.7
+    temperature: number = 0.7,
   ): Promise<GeminiResponse> {
     if (!this.apiKey) {
       throw new Error('Gemini API 키가 설정되지 않았습니다.');
@@ -75,7 +75,7 @@ class GeminiClient {
 
       if (!response.ok) {
         throw new Error(
-          `Gemini API 오류: ${response.status} ${response.statusText}`
+          `Gemini API 오류: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -226,7 +226,7 @@ ${JSON.stringify(strategicAnalysis, null, 2)}
   // Full-Stack Developer 전용 프롬프트
   async generateProjectCode(
     projectPlan: any,
-    userRequest: string
+    userRequest: string,
   ): Promise<any> {
     const prompt = `당신은 Navo의 Full-Stack Developer입니다. Project Manager의 계획을 바탕으로 프로젝트 아키텍처와 코드를 설계해주세요.
 

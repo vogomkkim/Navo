@@ -1,9 +1,16 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useAuth } from '@/app/context/AuthContext';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { AvatarIcon, ExitIcon, GearIcon, SunIcon, MoonIcon } from '@radix-ui/react-icons';
+import {
+  AvatarIcon,
+  ExitIcon,
+  GearIcon,
+  MoonIcon,
+  SunIcon,
+} from '@radix-ui/react-icons';
+import React, { useEffect, useRef, useState } from 'react';
+
+import { useAuth } from '@/app/context/AuthContext';
 import { ThemeContext } from '@/components/ThemeProvider';
 
 export function ProfileMenu() {

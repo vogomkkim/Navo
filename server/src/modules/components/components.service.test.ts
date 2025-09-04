@@ -1,7 +1,8 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { ComponentsService } from './components.service';
-import { ComponentsRepositoryImpl } from './components.repository';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+
 import { ProjectsRepositoryImpl } from '../projects/projects.repository';
+import { ComponentsRepositoryImpl } from './components.repository';
+import { ComponentsService } from './components.service';
 
 jest.mock('./components.repository');
 jest.mock('../projects/projects.repository');
@@ -54,7 +55,7 @@ describe('ComponentsService', () => {
     mockRepo.createComponentDefinition.mockResolvedValue(created);
     const result = await service.createComponentDefinition(
       { name: 'n', projectId: 'p1' } as any,
-      'u1'
+      'u1',
     );
     expect(result).toEqual(created);
   });
@@ -68,7 +69,7 @@ describe('ComponentsService', () => {
     const result = await service.updateComponentDefinition(
       'c1',
       { description: 'd' } as any,
-      'u1'
+      'u1',
     );
     expect(result).toEqual(updated);
   });

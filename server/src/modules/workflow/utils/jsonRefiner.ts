@@ -8,7 +8,9 @@
  * @param jsonString The potentially malformed JSON string.
  * @returns A cleaner JSON string.
  */
-export async function refineJsonResponse<T>(jsonString: string): Promise<string | T> {
+export async function refineJsonResponse<T>(
+  jsonString: string,
+): Promise<string | T> {
   try {
     // First, try a direct parse
     return JSON.parse(jsonString);
@@ -34,7 +36,7 @@ export async function refineJsonResponse<T>(jsonString: string): Promise<string 
       if (lastIndex > -1) {
         cleanedString = cleanedString.substring(0, lastIndex + 1);
       }
-      
+
       // Remove trailing commas from objects and arrays
       cleanedString = cleanedString.replace(/,\s*([}\]])/g, '$1');
 
@@ -42,8 +44,8 @@ export async function refineJsonResponse<T>(jsonString: string): Promise<string 
     } catch (e2) {
       // If all else fails, return the original string for the caller to handle.
       // In the future, we could use another LLM call to fix the JSON.
-      console.error("Failed to parse JSON even after cleaning:", e2);
-      throw new Error("Failed to parse JSON from LLM response.");
+      console.error('Failed to parse JSON even after cleaning:', e2);
+      throw new Error('Failed to parse JSON from LLM response.');
     }
   }
 }

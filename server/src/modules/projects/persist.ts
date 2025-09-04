@@ -1,9 +1,14 @@
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { InferSelectModel } from 'drizzle-orm';
 import { eq } from 'drizzle-orm';
-import { pages, components, componentDefinitions } from '@/schema';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+
+import { componentDefinitions, components, pages } from '@/schema';
 // Temporary stub: replace with real AI generation
-async function generateLayoutComponentsForPage(_args: { path: string; name?: string; description?: string | null }) {
+async function generateLayoutComponentsForPage(_args: {
+  path: string;
+  name?: string;
+  description?: string | null;
+}) {
   return [] as any[];
 }
 
@@ -24,7 +29,7 @@ function inferLayoutFromPath(path?: string): string {
 export async function storePages(
   tx: PostgresJsDatabase<any>,
   projectId: string,
-  pageData: any[]
+  pageData: any[],
 ): Promise<InferSelectModel<typeof pages>[]> {
   const savedPages: InferSelectModel<typeof pages>[] = [];
 
@@ -59,7 +64,7 @@ export async function storePages(
 // Step 2 in DAG: assign layout after pages exist
 export async function assignLayoutsForPages(
   tx: PostgresJsDatabase<any>,
-  savedPages: InferSelectModel<typeof pages>[]
+  savedPages: InferSelectModel<typeof pages>[],
 ): Promise<void> {
   for (const page of savedPages) {
     const current = (page.layoutJson as any) || {};
@@ -97,7 +102,7 @@ export async function assignLayoutsForPages(
 export async function storeComponentDefinitions(
   tx: PostgresJsDatabase<any>,
   projectId: string,
-  componentData: any[]
+  componentData: any[],
 ): Promise<InferSelectModel<typeof componentDefinitions>[]> {
   const savedDefs: InferSelectModel<typeof componentDefinitions>[] = [];
 
@@ -125,7 +130,7 @@ export async function storeComponentDefinitions(
 export async function storePageComponents(
   tx: PostgresJsDatabase<any>,
   savedPages: InferSelectModel<typeof pages>[],
-  savedDefs: InferSelectModel<typeof componentDefinitions>[]
+  savedDefs: InferSelectModel<typeof componentDefinitions>[],
 ): Promise<InferSelectModel<typeof components>[]> {
   const savedInst: InferSelectModel<typeof components>[] = [];
 
@@ -135,7 +140,7 @@ export async function storePageComponents(
       for (let i = 0; i < comps.length; i++) {
         const pageComponent = comps[i];
         const componentDef = savedDefs.find(
-          (def) => def.name === pageComponent.type
+          (def) => def.name === pageComponent.type,
         );
 
         if (componentDef) {
@@ -164,7 +169,7 @@ export async function storePageComponents(
       .from(components)
       .innerJoin(
         componentDefinitions,
-        eq(components.componentDefinitionId, componentDefinitions.id)
+        eq(components.componentDefinitionId, componentDefinitions.id),
       )
       .where(eq(components.pageId, page.id))
       .orderBy(components.orderIndex);

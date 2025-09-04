@@ -1,34 +1,35 @@
 'use client';
 
-import { StatusDisplay } from '@/components/ui/StatusDisplay';
-import { ProfileMenu } from '@/components/ui/ProfileMenu';
-import { SaveButton } from '@/components/ui/SaveButton';
-import { GenerateDummySuggestionButton } from '@/components/ui/GenerateDummySuggestionButton';
-import { ChatSection } from '@/components/ui/ChatSection';
-import { SuggestionsSection } from '@/components/ui/SuggestionsSection';
-import { ProjectGenerationSection } from '@/components/ui/ProjectGenerationSection';
-import { ProjectListSection } from '@/components/ui/ProjectListSection';
-import { ComponentBuilderSection } from '@/components/ui/ComponentBuilderSection';
-import { MobileChat } from '@/components/ui/MobileChat';
-import { LayoutRenderer } from '@/components/LayoutRenderer';
 import {
-  useListProjects,
-  useListProjectPages,
-  usePageLayout,
-  fetchApi,
-  useRenameProject,
-  useDeleteProject,
-} from '@/lib/api';
-import { useAuth } from '@/app/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import * as Select from '@radix-ui/react-select';
-import {
+  CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  CheckIcon,
 } from '@radix-ui/react-icons';
+import * as Select from '@radix-ui/react-select';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+import { useAuth } from '@/app/context/AuthContext';
+import { LayoutRenderer } from '@/components/LayoutRenderer';
+import { ChatSection } from '@/components/ui/ChatSection';
+import { ComponentBuilderSection } from '@/components/ui/ComponentBuilderSection';
+import { GenerateDummySuggestionButton } from '@/components/ui/GenerateDummySuggestionButton';
+import { MobileChat } from '@/components/ui/MobileChat';
+import { ProfileMenu } from '@/components/ui/ProfileMenu';
+import { ProjectGenerationSection } from '@/components/ui/ProjectGenerationSection';
+import { ProjectListSection } from '@/components/ui/ProjectListSection';
+import { SaveButton } from '@/components/ui/SaveButton';
+import { StatusDisplay } from '@/components/ui/StatusDisplay';
+import { SuggestionsSection } from '@/components/ui/SuggestionsSection';
+import {
+  fetchApi,
+  useDeleteProject,
+  useListProjectPages,
+  useListProjects,
+  usePageLayout,
+  useRenameProject,
+} from '@/lib/api';
 
 type ProjectStructure = { pages?: unknown[]; componentDefinitions?: unknown[] };
 
@@ -38,7 +39,7 @@ export default function HomeContent() {
   const queryClient = useQueryClient();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null
+    null,
   );
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -91,7 +92,7 @@ export default function HomeContent() {
             // 선택된 탭 활성화
             target.classList.add('active');
             const content = document.querySelector(
-              `.panel-tab-content[data-tab="${tabName}"]`
+              `.panel-tab-content[data-tab="${tabName}"]`,
             );
             if (content) {
               content.classList.add('active');
@@ -150,7 +151,7 @@ export default function HomeContent() {
     if (!selectedProjectId) return;
 
     const project = projectsData?.projects?.find(
-      (p) => p.id === selectedProjectId
+      (p) => p.id === selectedProjectId,
     );
     if (!project) return;
 
@@ -170,7 +171,7 @@ export default function HomeContent() {
             {
               method: 'GET',
               token,
-            }
+            },
           );
 
           const hasComponentDefinitions =
@@ -411,7 +412,7 @@ export default function HomeContent() {
                     onClick={() => {
                       if (!selectedProjectId) return;
                       const ok = window.confirm(
-                        '정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'
+                        '정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
                       );
                       if (ok)
                         deleteMutation.mutate({ projectId: selectedProjectId });
@@ -481,7 +482,7 @@ export default function HomeContent() {
                 <h2 className="text-lg font-medium mb-2">
                   📁{' '}
                   {projectsData?.projects?.find(
-                    (p) => p.id === selectedProjectId
+                    (p) => p.id === selectedProjectId,
                   )?.name || '프로젝트'}
                 </h2>
 
@@ -526,7 +527,7 @@ export default function HomeContent() {
                       <div className="mt-2 text-sm text-gray-600">
                         📄 현재 페이지:{' '}
                         {projectPagesData?.pages?.find(
-                          (p) => p.id === selectedPageId
+                          (p) => p.id === selectedPageId,
                         )?.path || '선택된 페이지'}
                       </div>
                     )}
@@ -545,7 +546,7 @@ export default function HomeContent() {
                             <button
                               onClick={() =>
                                 navigator.clipboard.writeText(
-                                  JSON.stringify(pageLayoutData, null, 2)
+                                  JSON.stringify(pageLayoutData, null, 2),
                                 )
                               }
                               className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"

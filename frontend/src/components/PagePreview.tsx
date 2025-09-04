@@ -1,8 +1,9 @@
 'use client';
 
-import { usePageLayout } from '@/lib/api';
-import { LayoutRenderer } from './LayoutRenderer';
 import { LayoutProvider } from '@/app/context/LayoutContext';
+import { usePageLayout } from '@/lib/api';
+
+import { LayoutRenderer } from './LayoutRenderer';
 
 interface PagePreviewProps {
   pageId: string;

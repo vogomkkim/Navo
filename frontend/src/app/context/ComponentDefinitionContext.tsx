@@ -2,12 +2,14 @@
 
 import {
   createContext,
-  useContext,
   ReactNode,
+  useContext,
   useEffect,
   useState,
 } from 'react';
+
 import { useListComponents } from '@/lib/api';
+
 import { useAuth } from './AuthContext';
 
 interface ComponentDef {
@@ -42,7 +44,7 @@ export function ComponentDefinitionProvider({
 }) {
   const { isAuthenticated } = useAuth();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export function ComponentDefinitionProvider({
     {
       enabled: isAuthenticated && !!selectedProjectId,
       queryKey: ['componentDefinitions', selectedProjectId, isAuthenticated],
-    } as any
+    } as any,
   );
 
   const componentRegistry = new Map<string, ComponentDef>();
@@ -69,7 +71,7 @@ export function ComponentDefinitionProvider({
         componentRegistry.set(comp.name, comp);
       });
       console.log(
-        `Loaded ${data.components.length} component definitions into registry.`
+        `Loaded ${data.components.length} component definitions into registry.`,
       );
     }
   }, [data, isAuthenticated]);
@@ -92,7 +94,7 @@ export function useComponentDefinitions() {
   const context = useContext(ComponentDefinitionContext);
   if (context === undefined) {
     throw new Error(
-      'useComponentDefinitions must be used within a ComponentDefinitionProvider'
+      'useComponentDefinitions must be used within a ComponentDefinitionProvider',
     );
   }
   return context;

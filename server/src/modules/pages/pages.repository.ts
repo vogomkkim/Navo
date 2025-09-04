@@ -1,12 +1,14 @@
+import { and, desc, eq } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
+
 import { db } from '@/db/db.instance';
 import { pages, projects } from '@/drizzle/schema';
-import { eq, and, desc } from 'drizzle-orm';
+
 import {
-  Page,
   CreatePageData,
-  UpdatePageData,
+  Page,
   PagesRepository,
+  UpdatePageData,
 } from './pages.types';
 
 export class PagesRepositoryImpl implements PagesRepository {
@@ -32,7 +34,7 @@ export class PagesRepositoryImpl implements PagesRepository {
 
       this.app.log.info(
         { projectId, count: result.length },
-        '프로젝트 페이지 목록 조회 완료'
+        '프로젝트 페이지 목록 조회 완료',
       );
       return result;
     } catch (error) {
@@ -73,7 +75,7 @@ export class PagesRepositoryImpl implements PagesRepository {
 
   async getPageByProjectId(
     pageId: string,
-    projectId: string
+    projectId: string,
   ): Promise<Page | null> {
     try {
       const result = await db
@@ -130,7 +132,7 @@ export class PagesRepositoryImpl implements PagesRepository {
 
       this.app.log.info(
         { pageId: result[0].id, projectId: pageData.projectId },
-        '페이지 생성 완료'
+        '페이지 생성 완료',
       );
       return result[0];
     } catch (error) {

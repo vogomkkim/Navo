@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+
 import { PagesService } from './pages.service';
 import { CreatePageData, UpdatePageData } from './pages.types';
 
@@ -28,7 +29,7 @@ export function pagesController(app: FastifyInstance) {
         app.log.error(error, '페이지 목록 조회 실패');
         reply.status(500).send({ error: '페이지 목록 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Get page by ID
@@ -54,7 +55,7 @@ export function pagesController(app: FastifyInstance) {
         app.log.error(error, '페이지 조회 실패');
         reply.status(500).send({ error: '페이지 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Get page by path
@@ -81,7 +82,7 @@ export function pagesController(app: FastifyInstance) {
         app.log.error(error, '경로별 페이지 조회 실패');
         reply.status(500).send({ error: '경로별 페이지 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Create page
@@ -119,7 +120,7 @@ export function pagesController(app: FastifyInstance) {
         app.log.error(error, '페이지 생성 실패');
         reply.status(500).send({ error: '페이지 생성에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Update page
@@ -155,7 +156,7 @@ export function pagesController(app: FastifyInstance) {
         app.log.error(error, '페이지 업데이트 실패');
         reply.status(500).send({ error: '페이지 업데이트에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Delete page
@@ -181,7 +182,7 @@ export function pagesController(app: FastifyInstance) {
         app.log.error(error, '페이지 삭제 실패');
         reply.status(500).send({ error: '페이지 삭제에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Publish page
@@ -207,7 +208,7 @@ export function pagesController(app: FastifyInstance) {
         app.log.error(error, '페이지 발행 실패');
         reply.status(500).send({ error: '페이지 발행에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Unpublish page
@@ -233,6 +234,6 @@ export function pagesController(app: FastifyInstance) {
         app.log.error(error, '페이지 발행 해제 실패');
         reply.status(500).send({ error: '페이지 발행 해제에 실패했습니다.' });
       }
-    }
+    },
   );
 }

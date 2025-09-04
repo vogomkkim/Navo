@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { LayoutRenderer } from './LayoutRenderer';
-import { LayoutProvider } from '@/app/context/LayoutContext';
+
 import { ComponentDefinitionContext } from '@/app/context/ComponentDefinitionContext';
+import { LayoutProvider } from '@/app/context/LayoutContext';
+
+import { LayoutRenderer } from './LayoutRenderer';
 
 // Mock component definitions for demo
 const mockComponentDefinitions = [
@@ -199,7 +201,7 @@ export function PreviewDemo() {
 
   // Mock component registry
   const mockComponentRegistry = new Map(
-    mockComponentDefinitions.map((def) => [def.name, def])
+    mockComponentDefinitions.map((def) => [def.name, def]),
   );
 
   return (

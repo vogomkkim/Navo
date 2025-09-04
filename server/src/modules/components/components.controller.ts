@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+
 import { ComponentsService } from './components.service';
 import {
   CreateComponentDefinitionData,
@@ -27,7 +28,7 @@ export function componentsController(app: FastifyInstance) {
 
         const components = await componentsService.listComponentDefinitions(
           projectId,
-          userId
+          userId,
         );
         reply.send({ components });
       } catch (error) {
@@ -36,7 +37,7 @@ export function componentsController(app: FastifyInstance) {
           .status(500)
           .send({ error: '컴포넌트 정의 목록 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Get component definition by ID
@@ -58,14 +59,14 @@ export function componentsController(app: FastifyInstance) {
 
         const component = await componentsService.getComponentDefinition(
           id,
-          userId
+          userId,
         );
         reply.send({ component });
       } catch (error) {
         app.log.error(error, '컴포넌트 정의 조회 실패');
         reply.status(500).send({ error: '컴포넌트 정의 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Get component definition by name
@@ -89,7 +90,7 @@ export function componentsController(app: FastifyInstance) {
         const component = await componentsService.getComponentDefinitionByName(
           name,
           projectId,
-          userId
+          userId,
         );
         reply.send({ component });
       } catch (error) {
@@ -98,7 +99,7 @@ export function componentsController(app: FastifyInstance) {
           .status(500)
           .send({ error: '이름별 컴포넌트 정의 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Create component definition
@@ -141,14 +142,14 @@ export function componentsController(app: FastifyInstance) {
 
         const component = await componentsService.createComponentDefinition(
           componentData,
-          userId
+          userId,
         );
         reply.status(201).send({ component });
       } catch (error) {
         app.log.error(error, '컴포넌트 정의 생성 실패');
         reply.status(500).send({ error: '컴포넌트 정의 생성에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Update component definition
@@ -186,7 +187,7 @@ export function componentsController(app: FastifyInstance) {
         const component = await componentsService.updateComponentDefinition(
           id,
           componentData,
-          userId
+          userId,
         );
         reply.send({ component });
       } catch (error) {
@@ -195,7 +196,7 @@ export function componentsController(app: FastifyInstance) {
           .status(500)
           .send({ error: '컴포넌트 정의 업데이트에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Delete component definition
@@ -221,7 +222,7 @@ export function componentsController(app: FastifyInstance) {
         app.log.error(error, '컴포넌트 정의 삭제 실패');
         reply.status(500).send({ error: '컴포넌트 정의 삭제에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Seed component definitions
@@ -247,14 +248,14 @@ export function componentsController(app: FastifyInstance) {
           await componentsService.seedComponentDefinitions(
             projectId,
             components,
-            userId
+            userId,
           );
         reply.send({ components: seededComponents });
       } catch (error) {
         app.log.error(error, '컴포넌트 정의 시드 실패');
         reply.status(500).send({ error: '컴포넌트 정의 시드에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Generate component from natural language
@@ -285,7 +286,7 @@ export function componentsController(app: FastifyInstance) {
           await componentsService.generateComponentFromNaturalLanguage(
             description,
             projectId,
-            userId
+            userId,
           );
         reply.status(201).send({ component });
       } catch (error) {
@@ -294,6 +295,6 @@ export function componentsController(app: FastifyInstance) {
           .status(500)
           .send({ error: '자연어 컴포넌트 생성에 실패했습니다.' });
       }
-    }
+    },
   );
 }

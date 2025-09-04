@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+
 import { ProjectsService } from './projects.service';
 
 export function projectsController(app: FastifyInstance) {
@@ -24,7 +25,7 @@ export function projectsController(app: FastifyInstance) {
         app.log.error(error, '프로젝트 목록 조회 실패');
         reply.status(500).send({ error: '프로젝트 목록 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // List project pages
@@ -52,7 +53,7 @@ export function projectsController(app: FastifyInstance) {
           .status(500)
           .send({ error: '프로젝트 페이지 목록 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Rename project
@@ -84,14 +85,14 @@ export function projectsController(app: FastifyInstance) {
         const project = await projectsService.renameProject(
           projectId,
           name,
-          userId
+          userId,
         );
         reply.send({ project });
       } catch (error) {
         app.log.error(error, '프로젝트 이름 변경 실패');
         reply.status(500).send({ error: '프로젝트 이름 변경에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Delete project
@@ -117,7 +118,7 @@ export function projectsController(app: FastifyInstance) {
         app.log.error(error, '프로젝트 삭제 실패');
         reply.status(500).send({ error: '프로젝트 삭제에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Rollback project
@@ -143,6 +144,6 @@ export function projectsController(app: FastifyInstance) {
         app.log.error(error, '프로젝트 롤백 실패');
         reply.status(500).send({ error: '프로젝트 롤백에 실패했습니다.' });
       }
-    }
+    },
   );
 }

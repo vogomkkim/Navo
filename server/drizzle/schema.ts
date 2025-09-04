@@ -1,18 +1,18 @@
 import { sql } from 'drizzle-orm';
 import {
-  pgTable,
-  index,
-  check,
-  uuid,
-  jsonb,
-  timestamp,
-  integer,
-  varchar,
-  unique,
-  text,
-  foreignKey,
   boolean,
+  check,
+  foreignKey,
+  index,
+  integer,
+  jsonb,
+  pgTable,
   primaryKey,
+  text,
+  timestamp,
+  unique,
+  uuid,
+  varchar,
 } from 'drizzle-orm/pg-core';
 
 // --- Core Multi-Tenant and User Tables ---
@@ -42,7 +42,7 @@ export const users = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [unique('users_email_key').on(table.email)]
+  (table) => [unique('users_email_key').on(table.email)],
 );
 
 // Junction table for many-to-many relationship between users and organizations
@@ -58,7 +58,7 @@ export const usersToOrganizations = pgTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.userId, t.organizationId] }),
-  })
+  }),
 );
 
 // --- Project and Content Tables (Now Tenant-Aware) ---
@@ -83,9 +83,9 @@ export const projects = pgTable(
   (table) => [
     index('idx_projects_organization').using(
       'btree',
-      table.organizationId.asc().nullsLast().op('uuid_ops')
+      table.organizationId.asc().nullsLast().op('uuid_ops'),
     ),
-  ]
+  ],
 );
 
 export const pages = pgTable(
@@ -108,7 +108,7 @@ export const pages = pgTable(
   (table) => [
     index('idx_pages_project').using(
       'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops')
+      table.projectId.asc().nullsLast().op('uuid_ops'),
     ),
     foreignKey({
       columns: [table.projectId],
@@ -116,7 +116,7 @@ export const pages = pgTable(
       name: 'pages_project_id_fkey',
     }).onDelete('cascade'),
     unique('pages_project_id_path_key').on(table.projectId, table.path),
-  ]
+  ],
 );
 
 export const componentDefinitions = pgTable(
@@ -142,7 +142,7 @@ export const componentDefinitions = pgTable(
   (table) => [
     index('idx_component_definitions_project').using(
       'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops')
+      table.projectId.asc().nullsLast().op('uuid_ops'),
     ),
     foreignKey({
       columns: [table.projectId],
@@ -151,9 +151,9 @@ export const componentDefinitions = pgTable(
     }).onDelete('cascade'),
     unique('component_definitions_project_id_name_key').on(
       table.projectId,
-      table.name
+      table.name,
     ),
-  ]
+  ],
 );
 
 export const components = pgTable(
@@ -174,12 +174,12 @@ export const components = pgTable(
   (table) => [
     index('idx_components_definition').using(
       'btree',
-      table.componentDefinitionId.asc().nullsLast().op('uuid_ops')
+      table.componentDefinitionId.asc().nullsLast().op('uuid_ops'),
     ),
     index('idx_components_page_order').using(
       'btree',
       table.pageId.asc().nullsLast().op('uuid_ops'),
-      table.orderIndex.asc().nullsLast().op('int4_ops')
+      table.orderIndex.asc().nullsLast().op('int4_ops'),
     ),
     foreignKey({
       columns: [table.componentDefinitionId],
@@ -191,9 +191,8 @@ export const components = pgTable(
       foreignColumns: [pages.id],
       name: 'components_page_id_fkey',
     }).onDelete('cascade'),
-  ]
+  ],
 );
-
 
 // --- User-Specific and Session Tables (Not directly tenant-aware) ---
 
@@ -223,25 +222,25 @@ export const userSessions = pgTable(
   (table) => [
     index('idx_user_sessions_created_at').using(
       'btree',
-      table.createdAt.asc().nullsLast().op('timestamptz_ops')
+      table.createdAt.asc().nullsLast().op('timestamptz_ops'),
     ),
     index('idx_user_sessions_last_activity').using(
       'btree',
-      table.lastActivity.asc().nullsLast().op('timestamptz_ops')
+      table.lastActivity.asc().nullsLast().op('timestamptz_ops'),
     ),
     index('idx_user_sessions_status').using(
       'btree',
-      table.status.asc().nullsLast().op('text_ops')
+      table.status.asc().nullsLast().op('text_ops'),
     ),
     index('idx_user_sessions_user_id').using(
       'btree',
-      table.userId.asc().nullsLast().op('uuid_ops')
+      table.userId.asc().nullsLast().op('uuid_ops'),
     ),
     check(
       'check_session_data_json',
-      sql`jsonb_typeof(session_data) = 'object'::text`
+      sql`jsonb_typeof(session_data) = 'object'::text`,
     ),
-  ]
+  ],
 );
 
 export const chatMessages = pgTable(
@@ -259,18 +258,18 @@ export const chatMessages = pgTable(
   (table) => [
     index('idx_chat_messages_session').using(
       'btree',
-      table.sessionId.asc().nullsLast().op('uuid_ops')
+      table.sessionId.asc().nullsLast().op('uuid_ops'),
     ),
     index('idx_chat_messages_user').using(
       'btree',
-      table.userId.asc().nullsLast().op('uuid_ops')
+      table.userId.asc().nullsLast().op('uuid_ops'),
     ),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [users.id],
       name: 'chat_messages_user_id_fkey',
     }),
-  ]
+  ],
 );
 
 // --- Deprecated Agent Tables (To be removed or refactored) ---
@@ -294,15 +293,15 @@ export const projectPlans = pgTable(
   (table) => [
     index('idx_project_plans_project').using(
       'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops')
+      table.projectId.asc().nullsLast().op('uuid_ops'),
     ),
     index('idx_project_plans_user').using(
       'btree',
-      table.userId.asc().nullsLast().op('uuid_ops')
+      table.userId.asc().nullsLast().op('uuid_ops'),
     ),
     index('idx_project_plans_status').using(
       'btree',
-      table.status.asc().nullsLast().op('text_ops')
+      table.status.asc().nullsLast().op('text_ops'),
     ),
     foreignKey({
       columns: [table.projectId],
@@ -314,7 +313,7 @@ export const projectPlans = pgTable(
       foreignColumns: [users.id],
       name: 'project_plans_user_id_fkey',
     }),
-  ]
+  ],
 );
 
 export const virtualPreviews = pgTable(
@@ -334,11 +333,11 @@ export const virtualPreviews = pgTable(
   (table) => [
     index('idx_virtual_previews_page').using(
       'btree',
-      table.pageId.asc().nullsLast().op('uuid_ops')
+      table.pageId.asc().nullsLast().op('uuid_ops'),
     ),
     index('idx_virtual_previews_file_path').using(
       'btree',
-      table.filePath.asc().nullsLast().op('text_ops')
+      table.filePath.asc().nullsLast().op('text_ops'),
     ),
     foreignKey({
       columns: [table.pageId],
@@ -347,9 +346,9 @@ export const virtualPreviews = pgTable(
     }).onDelete('cascade'),
     unique('virtual_previews_page_id_file_path_key').on(
       table.pageId,
-      table.filePath
+      table.filePath,
     ),
-  ]
+  ],
 );
 
 export const chatSessionSummaries = pgTable(
@@ -374,11 +373,11 @@ export const chatSessionSummaries = pgTable(
   (table) => [
     index('idx_chat_session_summaries_last_msg').using(
       'btree',
-      table.lastMsgId.asc().nullsLast().op('uuid_ops')
+      table.lastMsgId.asc().nullsLast().op('uuid_ops'),
     ),
     index('idx_chat_session_summaries_session_id').using(
       'btree',
-      table.sessionId.asc().nullsLast().op('uuid_ops')
+      table.sessionId.asc().nullsLast().op('uuid_ops'),
     ),
     foreignKey({
       columns: [table.lastMsgId],
@@ -392,9 +391,9 @@ export const chatSessionSummaries = pgTable(
     }).onDelete('cascade'),
     check(
       'check_key_points_json',
-      sql`jsonb_typeof(key_points) = 'array'::text`
+      sql`jsonb_typeof(key_points) = 'array'::text`,
     ),
-  ]
+  ],
 );
 
 export const events = pgTable(
@@ -416,19 +415,19 @@ export const events = pgTable(
   (table) => [
     index('idx_events_user_id').using(
       'btree',
-      table.userId.asc().nullsLast().op('uuid_ops')
+      table.userId.asc().nullsLast().op('uuid_ops'),
     ),
     index('idx_events_project_id').using(
       'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops')
+      table.projectId.asc().nullsLast().op('uuid_ops'),
     ),
     index('idx_events_event_type').using(
       'btree',
-      table.eventType.asc().nullsLast().op('text_ops')
+      table.eventType.asc().nullsLast().op('text_ops'),
     ),
     index('idx_events_timestamp').using(
       'btree',
-      table.timestamp.asc().nullsLast().op('timestamptz_ops')
+      table.timestamp.asc().nullsLast().op('timestamptz_ops'),
     ),
     foreignKey({
       columns: [table.userId],
@@ -440,7 +439,7 @@ export const events = pgTable(
       foreignColumns: [projects.id],
       name: 'events_project_id_fkey',
     }).onDelete('cascade'),
-  ]
+  ],
 );
 
 export const publishDeploys = pgTable(
@@ -460,16 +459,16 @@ export const publishDeploys = pgTable(
   (table) => [
     index('idx_publish_deploys_project_id').using(
       'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops')
+      table.projectId.asc().nullsLast().op('uuid_ops'),
     ),
     index('idx_publish_deploys_status').using(
       'btree',
-      table.status.asc().nullsLast().op('text_ops')
+      table.status.asc().nullsLast().op('text_ops'),
     ),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],
       name: 'publish_deploys_project_id_fkey',
     }).onDelete('cascade'),
-  ]
+  ],
 );

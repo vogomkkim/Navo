@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { UserContext, ChatMessage } from '@/core/contextManager';
+
+import { ChatMessage, UserContext } from '@/core/contextManager';
 // Fallback stub until ai/utils are available
 const parseJsonFromMarkdown = (raw: string): any => {
   try {
@@ -11,13 +12,13 @@ const parseJsonFromMarkdown = (raw: string): any => {
   } catch {}
   return {};
 };
-import { IntentAnalysis, EnhancedPrompt } from '@/core/types/intent';
 import {
-  normalizeModelAnalysis,
-  decideExecution,
   buildSystemInstruction,
   buildUserPrompt,
+  decideExecution,
+  normalizeModelAnalysis,
 } from '@/core/intentUtils.fallback';
+import { EnhancedPrompt, IntentAnalysis } from '@/core/types/intent';
 
 export class IntentAnalyzer {
   private genAI: GoogleGenerativeAI;
@@ -30,7 +31,7 @@ export class IntentAnalyzer {
 
   public async analyzeIntent(
     message: string,
-    contextInfo: any
+    contextInfo: any,
   ): Promise<IntentAnalysis> {
     const systemInstruction = buildSystemInstruction();
     const userPrompt = buildUserPrompt(message, contextInfo);
@@ -79,7 +80,7 @@ export class IntentAnalyzer {
   public async enhance(
     message: string,
     userContext: UserContext,
-    recentMessages?: ChatMessage[]
+    recentMessages?: ChatMessage[],
   ): Promise<EnhancedPrompt> {
     const startTime = Date.now();
     const contextInfo = this.buildContextInfo(userContext, recentMessages);
@@ -125,7 +126,7 @@ export class IntentAnalyzer {
 
   private buildContextInfo(
     userContext: UserContext,
-    recentMessages?: ChatMessage[]
+    recentMessages?: ChatMessage[],
   ) {
     const contextInfo: any = {};
 
@@ -150,5 +151,5 @@ export class IntentAnalyzer {
 }
 
 export const intentAnalyzer = new IntentAnalyzer(
-  process.env.GEMINI_API_KEY || ''
+  process.env.GEMINI_API_KEY || '',
 );

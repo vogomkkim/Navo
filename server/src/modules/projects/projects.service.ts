@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { ProjectsRepositoryImpl } from './projects.repository';
+
 import type { Project, ProjectPage } from '@/modules/projects/projects.types';
+
+import { ProjectsRepositoryImpl } from './projects.repository';
 
 export class ProjectsService {
   private repository: ProjectsRepositoryImpl;
@@ -20,13 +22,13 @@ export class ProjectsService {
 
   async listProjectPages(
     projectId: string,
-    userId: string
+    userId: string,
   ): Promise<ProjectPage[]> {
     try {
       // Verify project ownership first
       const project = await this.repository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -42,13 +44,13 @@ export class ProjectsService {
   async renameProject(
     projectId: string,
     name: string,
-    userId: string
+    userId: string,
   ): Promise<Project> {
     try {
       // Verify project ownership first
       const project = await this.repository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -66,7 +68,7 @@ export class ProjectsService {
       // Verify project ownership first
       const project = await this.repository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -84,7 +86,7 @@ export class ProjectsService {
       // Verify project ownership first
       const project = await this.repository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');

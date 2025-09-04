@@ -1,7 +1,9 @@
 import { FastifyInstance } from 'fastify';
+
 import { PagesRepositoryImpl } from '@/modules/pages/pages.repository';
 import { ProjectsRepositoryImpl } from '@/modules/projects/projects.repository';
-import { Page, CreatePageData, UpdatePageData } from './pages.types';
+
+import { CreatePageData, Page, UpdatePageData } from './pages.types';
 
 export class PagesService {
   private repository: PagesRepositoryImpl;
@@ -17,7 +19,7 @@ export class PagesService {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -40,7 +42,7 @@ export class PagesService {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         page.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -56,13 +58,13 @@ export class PagesService {
   async getPageByPath(
     projectId: string,
     path: string,
-    userId: string
+    userId: string,
   ): Promise<Page> {
     try {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -85,7 +87,7 @@ export class PagesService {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         pageData.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -94,7 +96,7 @@ export class PagesService {
       // 경로 중복 확인
       const existingPage = await this.repository.getPageByPath(
         pageData.projectId,
-        pageData.path
+        pageData.path,
       );
       if (existingPage) {
         throw new Error('이미 존재하는 경로입니다.');
@@ -110,7 +112,7 @@ export class PagesService {
   async updatePage(
     pageId: string,
     pageData: UpdatePageData,
-    userId: string
+    userId: string,
   ): Promise<Page> {
     try {
       const page = await this.repository.getPageById(pageId);
@@ -121,7 +123,7 @@ export class PagesService {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         page.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -144,7 +146,7 @@ export class PagesService {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         page.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -167,7 +169,7 @@ export class PagesService {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         page.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -190,7 +192,7 @@ export class PagesService {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         page.projectId,
-        userId
+        userId,
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');

@@ -2,10 +2,10 @@
 
 import {
   createContext,
-  useContext,
-  useState,
   ReactNode,
   useCallback,
+  useContext,
+  useState,
 } from 'react';
 
 interface LayoutComponent {
@@ -24,7 +24,7 @@ interface LayoutContextType {
   updateComponentProp: (
     componentId: string,
     propName: string,
-    newValue: any
+    newValue: any,
   ) => void;
 }
 
@@ -53,7 +53,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
         return { ...prevLayout, components: newComponents };
       });
     },
-    []
+    [],
   );
 
   return (
