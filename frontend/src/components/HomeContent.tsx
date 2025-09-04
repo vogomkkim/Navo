@@ -34,6 +34,10 @@ export default function HomeContent() {
   }));
 
   const { activeFile, setActiveFile } = useIdeStore();
+  const [editedContent, setEditedContent] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<ActiveView>('editor');
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  const [showMessage, setShowMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const { data: vfsNodeData, isLoading: isLoadingVfsNode } = useVfsNodeContent(
     selectedProjectId || '',

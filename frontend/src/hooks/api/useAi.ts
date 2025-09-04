@@ -35,6 +35,11 @@ interface SuggestionsResponse {
   suggestions: Suggestion[];
 }
 
+interface GenerateDummySuggestionResponse {
+  ok: boolean;
+  suggestion: Record<string, unknown>;
+}
+
 // --- Hooks ---
 
 export function useGenerateProject(
@@ -102,7 +107,7 @@ export function useGenerateComponent(
 }
 
 export function useSuggestions(
-  options?: UseQueryOptions<SuggestionsResponse, Error>,
+  options?: Omit<UseQueryOptions<SuggestionsResponse, Error>, 'queryKey' | 'queryFn'>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<SuggestionsResponse, Error>({
@@ -119,6 +124,31 @@ export function useSuggestions(
       }
     },
     enabled: !!token,
+    ...options,
+  });
+}
+
+export function useGenerateDummySuggestion(
+  options?: UseMutationOptions<GenerateDummySuggestionResponse, Error, void>,
+) {
+  const { token, logout } = useAuth();
+  return useMutation<GenerateDummySuggestionResponse, Error, void>({
+    mutationFn: async () => {
+      try {
+        return await fetchApi<GenerateDummySuggestionResponse>(
+          '/api/ai/suggestions/dummy',
+          {
+            method: 'POST',
+            token,
+          },
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
     ...options,
   });
 }

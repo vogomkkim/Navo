@@ -39,7 +39,10 @@ type DeleteProjectResponse = unknown;
 // --- Hooks ---
 
 export function useListProjects(
-  options?: UseQueryOptions<ProjectListResponse, Error>,
+  options?: Omit<
+    UseQueryOptions<ProjectListResponse, Error>,
+    'queryKey' | 'queryFn'
+  >,
 ) {
   const { token, logout } = useAuth();
   return useQuery<ProjectListResponse, Error>({
