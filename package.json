@@ -12,6 +12,9 @@
     "dev": "npm run dev -w @navo/server",
     "build": "npm run build -w @navo/server",
     "start": "npm run start -w @navo/server",
+    "fe": "npm run dev -w frontend",
+    "fe:build": "npm run build -w frontend",
+    "fe:start": "npm run start -w frontend",
     "lint": "eslint . --ext .ts --config eslint.config.js",
     "format": "prettier --write . --config .prettierrc"
   },
