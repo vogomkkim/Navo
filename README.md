@@ -67,63 +67,103 @@ export default {
    cd Navo
    ```
 
-2. **Install dependencies**
+2. **Install dependencies (monorepo workspaces)**
 
    ```bash
+   # Installs root + all workspaces (server, frontend, packages)
    npm install
-   cd frontend && npm install
-   cd ..
    ```
 
 3. **Environment setup**
 
+   - Server env (create `server/.env` or `server/.env.local`):
+
+     ```env
+     # PostgreSQL
+     DB_HOST=localhost
+     DB_PORT=5432
+     DB_USER=postgres
+     DB_PASSWORD=
+     DB_NAME=navo
+
+     # Server
+     PORT=3001
+
+     # AI
+     GEMINI_API_KEY=your_gemini_api_key_here
+     ```
+
+   - Frontend env (create `frontend/.env.local`):
+
+     ```env
+     NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+     ```
+
+4. **Database setup (Drizzle ORM)**
+
+   From the repo root:
+
    ```bash
-   cp .env.example .env
-   # Edit .env with your database and API credentials
+   npm run db:generate -w @navo/server
+   npm run db:push -w @navo/server
+   # (Alternatively) cd server && npm run db:generate && npm run db:push
    ```
 
-4. **Database setup**
+5. **Run in development**
 
    ```bash
-   npm run db:generate
-   npm run db:push
+   # Terminal 1: backend (Fastify)
+   npm run dev             # runs @navo/server
+
+   # Terminal 2: frontend (Next.js)
+   cd frontend && npm run dev
    ```
 
-5. **Build and run**
+6. **Production build and start**
 
    ```bash
-   # Build everything (server + React frontend)
-   npm run build:full
+   # Backend
+   npm run build           # build @navo/server
+   npm start               # start @navo/server
 
-   # Start the server
-   npm start
+   # Frontend
+   cd frontend && npm run build
+   cd frontend && npm start
    ```
 
 ## 📚 Available Scripts
 
-### Build Commands
+### Root (monorepo)
 
 ```bash
-npm run build:server      # Build TypeScript server only
-npm run build:react       # Build React frontend only
-npm run build:full        # Build both server and React frontend
-npm run build             # Build TypeScript backend
+npm run dev                 # Start backend dev server (@navo/server)
+npm run build               # Build backend (@navo/server)
+npm start                   # Start backend in production (@navo/server)
+
+npm run lint                # Lint repo
+npm run format              # Format repo
 ```
 
-### Development Commands
+### Server workspace (`@navo/server`)
 
 ```bash
-npm run dev               # Start backend dev server
-npm run dev:react         # Next.js development server (recommended)
-npm start                 # Start production server
+# From repo root with workspace flag
+npm run db:generate -w @navo/server   # Generate Drizzle migrations
+npm run db:push -w @navo/server       # Push schema to DB
+npm run db:pull -w @navo/server       # Introspect database
+
+# Or inside server/
+cd server && npm run dev
+cd server && npm run build
+cd server && npm start
 ```
 
-### Database Commands
+### Frontend workspace (`frontend`)
 
 ```bash
-npm run db:generate       # Generate database migrations
-npm run db:push           # Push schema changes to database
-npm run db:pull           # Introspect database schema
+cd frontend && npm run dev             # Next.js dev server (http://localhost:3000)
+cd frontend && npm run build
+cd frontend && npm start
 ```
 
 ## 🏛️ Project Structure
@@ -134,21 +174,21 @@ navo/
 │   ├── src/
 │   │   ├── app/             # Next.js App Router
 │   │   ├── components/      # React components
-│   │   ├── context/         # React contexts
-│   │   ├── hooks/           # Custom hooks
-│   │   └── lib/             # Utilities and API
+│   │   ├── lib/             # Utilities and API
+│   │   └── (ui, hooks, etc.)
 │   ├── postcss.config.mjs   # Tailwind CSS v3 PostCSS 설정
 │   └── package.json
-├── navo/                     # Backend source code
-│   ├── agents/              # AI agents
-│   ├── auth/                # Authentication
-│   ├── core/                # Core functionality
-│   ├── db/                  # Database layer
-│   ├── handlers/            # API handlers
-│   ├── middleware/          # Express middleware
-│   ├── nodes/               # Workflow nodes
-│   └── routes/              # API routes
-├── config/                   # Configuration files
+├── server/                   # Fastify + TypeScript backend
+│   ├── src/
+│   │   ├── server.ts        # Entry point
+│   │   ├── core/            # Core logic (routers, utilities)
+│   │   ├── lib/             # Logger, error handling, helpers
+│   │   ├── modules/         # Features (auth, projects, pages, components, ...)
+│   │   └── types/           # Shared types
+│   ├── drizzle/             # Drizzle schema and migrations
+│   └── package.json
+├── packages/
+│   └── shared/              # Shared utilities (if any)
 ├── docs/                     # Documentation
 └── package.json              # Root package.json
 ```
@@ -157,28 +197,33 @@ navo/
 
 ### Environment Variables
 
+Server (`server/.env` or `server/.env.local`):
+
 ```env
-# Database
-DATABASE_URL=postgresql://username:password@localhost:5432/navo
+# Database (Drizzle + PostgreSQL)
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=
+DB_NAME=navo
 
 # Server
 PORT=3001
-HOST=0.0.0.0
 
 # AI Integration
 GEMINI_API_KEY=your_gemini_api_key_here
+```
 
-# Frontend (Client-side accessible)
+Frontend (`frontend/.env.local`):
+
+```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
-
-# Backend (Server-side only)
-API_BASE_URL=http://localhost:3001
 ```
 
 **중요**: API URL 환경 변수 사용 가이드라인
 
 - **Frontend**: `NEXT_PUBLIC_API_BASE_URL` 사용 (클라이언트에서 접근 가능)
-- **Backend**: `API_BASE_URL` 사용 (서버에서만 접근)
+- **Backend**: 별도 API URL 환경변수는 필요하지 않으며 서버는 `PORT`로 구동됩니다
 
 ### Tailwind CSS v3 Configuration
 
