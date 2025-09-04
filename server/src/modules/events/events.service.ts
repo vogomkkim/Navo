@@ -29,7 +29,7 @@ export class EventsService {
 
   async storeUserEvents(
     eventsArray: EventRequest[],
-    userId: string,
+    userId: string
   ): Promise<number> {
     try {
       const eventData: EventData[] = eventsArray.map((event) => ({
@@ -49,7 +49,7 @@ export class EventsService {
 
   async storeErrorEvent(
     errorData: ErrorEventRequest,
-    userId: string,
+    userId: string
   ): Promise<void> {
     try {
       const errorEvent: EventData = {

@@ -43,11 +43,11 @@ export const runShellCommandTool: Tool = {
   },
   async execute(
     context: ExecutionContext,
-    input: { command: string; cwd?: string },
+    input: { command: string; cwd?: string }
   ): Promise<{ stdout: string; stderr: string }> {
     const cwd = input.cwd || process.cwd();
     console.log(
-      `[run_shell_command] Executing command: "${input.command}" in "${cwd}"`,
+      `[run_shell_command] Executing command: "${input.command}" in "${cwd}"`
     );
     try {
       const { stdout, stderr } = await execAsync(input.command, { cwd });
@@ -55,7 +55,7 @@ export const runShellCommandTool: Tool = {
     } catch (error: any) {
       console.error(
         `[run_shell_command] Command failed: ${input.command}`,
-        error,
+        error
       );
       // For shell commands, errors often include stdout and stderr, so we return them.
       return {

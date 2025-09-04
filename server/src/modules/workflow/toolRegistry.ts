@@ -19,7 +19,7 @@ export class ToolRegistry {
     if (this.tools.has(tool.name)) {
       // In a real scenario, you might want a more sophisticated logger.
       console.warn(
-        `[ToolRegistry] Warning: Tool "${tool.name}" is being overwritten.`,
+        `[ToolRegistry] Warning: Tool "${tool.name}" is being overwritten.`
       );
     }
     this.tools.set(tool.name, tool);

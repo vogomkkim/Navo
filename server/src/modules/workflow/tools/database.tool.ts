@@ -8,7 +8,9 @@ import { FastifyInstance } from 'fastify';
 
 // This is a simplified way to get the repository. In a real app,
 // this would likely come from a dependency injection container.
-function getProjectsRepository(context: ExecutionContext): ProjectsRepositoryImpl {
+function getProjectsRepository(
+  context: ExecutionContext
+): ProjectsRepositoryImpl {
   const app = context.app as FastifyInstance;
   return new ProjectsRepositoryImpl(app);
 }
@@ -55,7 +57,7 @@ export const createProjectInDbTool: Tool = {
       description?: string;
       organizationId: string;
       userId: string;
-    },
+    }
   ): Promise<any> {
     console.log(`[create_project_in_db] Creating project '${input.name}'`);
     try {
@@ -64,13 +66,13 @@ export const createProjectInDbTool: Tool = {
         input.name,
         input.description ?? null,
         input.organizationId,
-        input.userId,
+        input.userId
       );
       return newProject;
     } catch (error: any) {
       console.error(
         `[create_project_in_db] Failed to create project "${input.name}":`,
-        error,
+        error
       );
       throw error;
     }
@@ -124,22 +126,22 @@ export const updateProjectFromArchitectureTool: Tool = {
     input: {
       projectId: string;
       architecture: any; // In a real app, this would be a strongly typed ProjectArchitecture object
-    },
+    }
   ): Promise<any> {
     console.log(
-      `[update_project_from_architecture] Updating project '${input.projectId}'`,
+      `[update_project_from_architecture] Updating project '${input.projectId}'`
     );
     try {
       const projectsRepo = getProjectsRepository(context);
       await projectsRepo.updateProjectFromArchitecture(
         input.projectId,
-        input.architecture,
+        input.architecture
       );
       return { success: true, projectId: input.projectId };
     } catch (error: any) {
       console.error(
         `[update_project_from_architecture] Failed to update project "${input.projectId}":`,
-        error,
+        error
       );
       throw error;
     }

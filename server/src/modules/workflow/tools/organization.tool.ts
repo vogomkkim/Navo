@@ -61,7 +61,7 @@ export const createOrganizationTool: Tool = {
   },
   async execute(
     context: ExecutionContext,
-    input: { name: string; ownerId: string },
+    input: { name: string; ownerId: string }
   ): Promise<any> {
     console.log(`[create_organization] Creating organization: ${input.name}`);
     try {
@@ -70,7 +70,7 @@ export const createOrganizationTool: Tool = {
       if (ownerId === 'c1b2a3d4-e5f6-7890-1234-567890abcdef') {
         ownerId = await getOrCreateDummyUser();
         console.log(
-          `[create_organization] Created dummy user with id: ${ownerId}`,
+          `[create_organization] Created dummy user with id: ${ownerId}`
         );
       }
 
@@ -86,7 +86,7 @@ export const createOrganizationTool: Tool = {
     } catch (error) {
       console.error(
         `[create_organization] Failed to create organization:`,
-        error,
+        error
       );
       throw error;
     }

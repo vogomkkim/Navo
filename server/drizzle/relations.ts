@@ -19,7 +19,7 @@ export const componentDefinitionsRelations = relations(
       references: [projects.id],
     }),
     components: many(components),
-  }),
+  })
 );
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -59,7 +59,7 @@ export const chatMessagesRelations = relations(
       references: [userSessions.id],
     }),
     chatSessionSummaries: many(chatSessionSummaries),
-  }),
+  })
 );
 
 export const userSessionsRelations = relations(userSessions, ({ many }) => ({
@@ -78,5 +78,5 @@ export const chatSessionSummariesRelations = relations(
       fields: [chatSessionSummaries.sessionId],
       references: [userSessions.id],
     }),
-  }),
+  })
 );

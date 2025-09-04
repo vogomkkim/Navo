@@ -125,22 +125,22 @@ export const createProjectArchitectureTool: Tool = {
   },
   async execute(
     context: ExecutionContext,
-    input: ProjectRequest,
+    input: ProjectRequest
   ): Promise<any> {
     console.log(
-      `[create_project_architecture] Starting architecture design for: ${input.name}`,
+      `[create_project_architecture] Starting architecture design for: ${input.name}`
     );
     try {
       const architecture = await designArchitectureWithAI(input);
       // TODO: Add validation logic here, similar to the original agent's validateProjectStructure
       console.log(
-        `[create_project_architecture] Successfully designed architecture for: ${input.name}`,
+        `[create_project_architecture] Successfully designed architecture for: ${input.name}`
       );
       return architecture;
     } catch (error: any) {
       console.error(
         `[create_project_architecture] Failed to design architecture for "${input.name}":`,
-        error,
+        error
       );
       throw error;
     }

@@ -24,7 +24,7 @@ export const listDirectoryTool: Tool = {
   },
   async execute(
     context: ExecutionContext,
-    input: { path: string },
+    input: { path: string }
   ): Promise<string[]> {
     console.log(`[list_directory] Listing contents of: ${input.path}`);
     try {
@@ -38,7 +38,7 @@ export const listDirectoryTool: Tool = {
     } catch (error: any) {
       console.error(
         `[list_directory] Failed to list directory "${input.path}":`,
-        error,
+        error
       );
       throw error;
     }
@@ -61,7 +61,7 @@ export const readFileTool: Tool = {
   },
   async execute(
     context: ExecutionContext,
-    input: { path: string },
+    input: { path: string }
   ): Promise<string> {
     console.log(`[read_file] Reading file: ${input.path}`);
     try {
@@ -102,7 +102,7 @@ export const writeFileTool: Tool = {
   },
   async execute(
     context: ExecutionContext,
-    input: { path: string; content: string },
+    input: { path: string; content: string }
   ): Promise<{ success: boolean; path: string }> {
     console.log(`[write_file] Writing to file: ${input.path}`);
     try {
@@ -115,7 +115,7 @@ export const writeFileTool: Tool = {
     } catch (error: any) {
       console.error(
         `[write_file] Failed to write to file "${input.path}":`,
-        error,
+        error
       );
       throw error;
     }

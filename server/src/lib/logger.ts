@@ -15,7 +15,7 @@ export type SimpleLogger = {
 };
 
 function createConsoleLogger(
-  bindings: Record<string, unknown> = {},
+  bindings: Record<string, unknown> = {}
 ): SimpleLogger {
   const fileDir = resolve(fileURLToPath(new URL('.', import.meta.url)));
   // Place logs under the server directory, regardless of CWD or build output path

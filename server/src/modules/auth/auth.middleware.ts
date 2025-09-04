@@ -5,7 +5,7 @@ import { appConfig } from '@/config';
 
 export async function authenticateToken(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ): Promise<void> {
   const authHeader = request.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];

@@ -15,7 +15,7 @@ export const authController = (app: FastifyInstance) => {
       // 입력값 검증은 zod 등을 사용하여 추후 추가
       const result = await authService.register(request.body as any);
       reply.status(201).send({ ok: true, user: result });
-    },
+    }
   );
 
   app.post('/login', async (request: FastifyRequest, reply: FastifyReply) => {

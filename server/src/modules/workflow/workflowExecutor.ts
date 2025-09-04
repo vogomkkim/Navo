@@ -20,17 +20,17 @@ export class WorkflowExecutor {
    */
   async execute(
     plan: Plan,
-    initialInputs: Record<string, any> = {},
+    initialInputs: Record<string, any> = {}
   ): Promise<Map<string, any>> {
     if (!plan || !Array.isArray(plan.steps)) {
       throw new Error(
-        'Invalid plan: "steps" array is missing or not an array.',
+        'Invalid plan: "steps" array is missing or not an array.'
       );
     }
 
     const runId = randomUUID();
     console.log(
-      `[WorkflowExecutor] Starting execution for plan "${plan.name}" (Run ID: ${runId})`,
+      `[WorkflowExecutor] Starting execution for plan "${plan.name}" (Run ID: ${runId})`
     );
 
     const executionContext: ExecutionContext = { runId };
@@ -43,7 +43,7 @@ export class WorkflowExecutor {
       const stepsReadyToRun = plan.steps.filter(
         (step) =>
           !completedSteps.has(step.id) &&
-          (step.dependencies ?? []).every((dep) => completedSteps.has(dep)),
+          (step.dependencies ?? []).every((dep) => completedSteps.has(dep))
       );
 
       if (
@@ -54,7 +54,7 @@ export class WorkflowExecutor {
           .filter((s) => !completedSteps.has(s.id))
           .map((s) => s.id);
         throw new Error(
-          `Workflow stalled. Circular dependency or missing dependency detected. Remaining steps: ${remainingSteps.join(', ')}`,
+          `Workflow stalled. Circular dependency or missing dependency detected. Remaining steps: ${remainingSteps.join(', ')}`
         );
       }
 
@@ -63,18 +63,18 @@ export class WorkflowExecutor {
           step,
           executionContext,
           stepOutputs,
-          initialInputs,
+          initialInputs
         ).then((output) => {
           stepOutputs.set(step.id, output);
           completedSteps.add(step.id);
-        }),
+        })
       );
 
       await Promise.all(promises);
     }
 
     console.log(
-      `[WorkflowExecutor] Plan "${plan.name}" executed successfully.`,
+      `[WorkflowExecutor] Plan "${plan.name}" executed successfully.`
     );
     return stepOutputs;
   }
@@ -83,7 +83,7 @@ export class WorkflowExecutor {
     step: PlanStep,
     context: ExecutionContext,
     allOutputs: Map<string, any>,
-    initialInputs: Record<string, any>,
+    initialInputs: Record<string, any>
   ): Promise<any> {
     console.log(`[WorkflowExecutor] Executing step: ${step.id}`);
 
@@ -96,7 +96,7 @@ export class WorkflowExecutor {
     const resolvedInputs = this.resolveInputs(
       step.inputs,
       allOutputs,
-      initialInputs,
+      initialInputs
     );
 
     try {
@@ -109,7 +109,7 @@ export class WorkflowExecutor {
     } catch (error) {
       console.error(
         `[WorkflowExecutor] Error executing step ${step.id}:`,
-        error,
+        error
       );
       // In a real implementation, add more robust error handling, retries, etc.
       throw error;
@@ -126,7 +126,7 @@ export class WorkflowExecutor {
   private resolveInputs(
     inputs: Record<string, any>,
     outputs: Map<string, any>,
-    initialInputs: Record<string, any>,
+    initialInputs: Record<string, any>
   ): Record<string, any> {
     const resolved: Record<string, any> = {};
     for (const key in inputs) {

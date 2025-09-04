@@ -9,7 +9,7 @@
  * @returns A cleaner JSON string.
  */
 export async function refineJsonResponse<T>(
-  jsonString: string,
+  jsonString: string
 ): Promise<string | T> {
   try {
     // First, try a direct parse

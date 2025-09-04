@@ -3,15 +3,13 @@ import fs from 'node:fs';
 import { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import fastify, { type RawServerDefault } from 'fastify';
-
 import { errorHandler } from '@/lib/errorHandler';
 import pinoLogger, { createRequestLogger } from '@/lib/logger';
 import { analyticsController } from '@/modules/analytics/analytics.controller';
 import { authController } from '@/modules/auth/auth.controller';
 import { authenticateToken } from '@/modules/auth/auth.middleware';
-import eventRoutes from '@/modules/events/events.controller';
+import { eventsController } from '@/modules/events/events.controller';
 import { healthController } from '@/modules/health/health.controller';
 import { projectsController } from '@/modules/projects/projects.controller';
 import { workflowController } from '@/modules/workflow/workflow.controller';
@@ -141,7 +139,7 @@ app.decorate('authenticateToken', authenticateToken);
 // 컨트롤러 등록
 app.register((instance) => authController(instance), { prefix: '/api/auth' });
 healthController(app);
-app.register(eventRoutes, { prefix: '/api' });
+app.register(eventsController, { prefix: '/api' });
 projectsController(app);
 analyticsController(app);
 workflowController(app);

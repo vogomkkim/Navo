@@ -12,7 +12,7 @@ export class AppError extends Error {
     statusCode: number,
     errorCode: string,
     message: string,
-    isOperational = true,
+    isOperational = true
   ) {
     super(message);
     this.statusCode = statusCode;
@@ -45,6 +45,6 @@ export const errorHandler = (app: FastifyInstance) => {
           message: '서버에서 예상치 못한 오류가 발생했습니다.',
         });
       }
-    },
+    }
   );
 };

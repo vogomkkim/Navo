@@ -342,26 +342,70 @@ export function useDeleteProject(
   });
 }
 
-// useListProjectPages - 프로젝트의 페이지 목록을 가져오는 훅
-interface ProjectPagesResponse {
-  pages: Array<{
-    id: string;
-    path: string;
-    updated_at: string;
-  }>;
+// useListVfsNodes - 프로젝트의 VFS 노드 목록을 가져오는 훅
+interface VfsNode {
+  id: string;
+  name: string;
+  nodeType: 'FILE' | 'DIRECTORY';
+  updatedAt: string;
+  metadata: {
+    path?: string;
+  };
 }
 
-export function useListProjectPages(
+interface VfsNodesResponse {
+  nodes: VfsNode[];
+}
+
+export function useListVfsNodes(
   projectId: string,
-  options?: UseQueryOptions<ProjectPagesResponse, Error>,
+  parentId: string | null = null,
+  options?: UseQueryOptions<VfsNodesResponse, Error>,
 ) {
   const { token, logout } = useAuth();
-  return useQuery<ProjectPagesResponse, Error>({
-    queryKey: ['projectPages', projectId],
+  return useQuery<VfsNodesResponse, Error>({
+    queryKey: ['vfsNodes', projectId, parentId],
     queryFn: async () => {
       try {
-        return await fetchApi<ProjectPagesResponse>(
-          `/api/projects/${projectId}/pages`,
+        const url = parentId
+          ? `/api/projects/${projectId}/vfs?parentId=${parentId}`
+          : `/api/projects/${projectId}/vfs`;
+        return await fetchApi<VfsNodesResponse>(url, {
+          token,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    enabled: !!projectId && !!token, // projectId와 토큰이 모두 존재할 때만 쿼리 실행
+    ...options,
+  });
+}
+
+// useVfsNodeContent - 특정 VFS 노드의 내용을 가져오는 훅
+interface VfsNodeResponse {
+  node: VfsNode;
+}
+
+export function useVfsNodeContent(
+  projectId: string,
+  nodeId: string | null,
+  options?: UseQueryOptions<VfsNodeResponse, Error>,
+) {
+  const { token, logout } = useAuth();
+  return useQuery<VfsNodeResponse, Error>({
+    queryKey: ['vfsNode', projectId, nodeId],
+    queryFn: async () => {
+      if (!nodeId) {
+        // Return a default empty state if no node is selected
+        return { node: null } as any;
+      }
+      try {
+        return await fetchApi<VfsNodeResponse>(
+          `/api/projects/${projectId}/vfs/${nodeId}`,
           {
             token,
           },
@@ -373,7 +417,7 @@ export function useListProjectPages(
         throw error;
       }
     },
-    enabled: !!projectId && !!token, // projectId와 토큰이 모두 존재할 때만 쿼리 실행
+    enabled: !!projectId && !!nodeId && !!token,
     ...options,
   });
 }

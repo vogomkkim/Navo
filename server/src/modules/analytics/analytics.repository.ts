@@ -16,7 +16,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getEventsByProjectId(
     projectId: string,
-    filter?: AnalyticsFilter,
+    filter?: AnalyticsFilter
   ): Promise<AnalyticsEvent[]> {
     try {
       const conditions: any[] = [eq(events.projectId, projectId)];
@@ -32,7 +32,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       const whereExpr = conditions.reduce(
         (acc, cond) => (acc ? and(acc, cond) : cond),
-        undefined as any,
+        undefined as any
       );
 
       const rows = await db
@@ -59,7 +59,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       this.app.log.info(
         { projectId, count: result.length },
-        '프로젝트 이벤트 조회 완료',
+        '프로젝트 이벤트 조회 완료'
       );
       return result as any;
     } catch (error) {
@@ -70,7 +70,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getEventsByUserId(
     userId: string,
-    filter?: AnalyticsFilter,
+    filter?: AnalyticsFilter
   ): Promise<AnalyticsEvent[]> {
     try {
       const conditions: any[] = [eq(events.userId, userId)];
@@ -86,7 +86,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       const whereExpr = conditions.reduce(
         (acc, cond) => (acc ? and(acc, cond) : cond),
-        undefined as any,
+        undefined as any
       );
 
       const rows = await db
@@ -113,7 +113,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       this.app.log.info(
         { userId, count: result.length },
-        '사용자 이벤트 조회 완료',
+        '사용자 이벤트 조회 완료'
       );
       return result as any;
     } catch (error) {
@@ -124,7 +124,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getProjectMetrics(
     projectId: string,
-    filter?: AnalyticsFilter,
+    filter?: AnalyticsFilter
   ): Promise<AnalyticsMetrics> {
     try {
       const conditions: any[] = [eq(events.projectId, projectId)];
@@ -136,22 +136,22 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
       }
       const whereExpr = conditions.reduce(
         (acc, cond) => (acc ? and(acc, cond) : cond),
-        undefined as any,
+        undefined as any
       );
 
       const allEvents = await db.select().from(events).where(whereExpr);
 
       const totalViews = allEvents.filter(
-        (e) => e.eventType === 'view:page',
+        (e) => e.eventType === 'view:page'
       ).length;
       const totalClicks = allEvents.filter(
-        (e) => e.eventType === 'click:cta',
+        (e) => e.eventType === 'click:cta'
       ).length;
       const uniqueVisitors = new Set(allEvents.map((e) => e.userId)).size;
 
       // 평균 세션 지속 시간 계산 (간단한 구현)
       const sessionEvents = allEvents.filter(
-        (e) => e.eventType === 'view:page',
+        (e) => e.eventType === 'view:page'
       );
       const averageSessionDuration = sessionEvents.length > 0 ? 300 : 0; // 기본값 5분
 
@@ -167,7 +167,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
           acc[path] = (acc[path] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>,
+        {} as Record<string, number>
       );
 
       const topPages = Object.entries(pageCounts)
@@ -181,7 +181,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
           acc[event.eventType] = (acc[event.eventType] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>,
+        {} as Record<string, number>
       );
 
       const topEvents = Object.entries(eventCounts)
@@ -209,7 +209,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getUserMetrics(
     userId: string,
-    filter?: AnalyticsFilter,
+    filter?: AnalyticsFilter
   ): Promise<AnalyticsMetrics> {
     try {
       const conditions: any[] = [eq(events.userId, userId)];
@@ -221,16 +221,16 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
       }
       const whereExpr = conditions.reduce(
         (acc, cond) => (acc ? and(acc, cond) : cond),
-        undefined as any,
+        undefined as any
       );
 
       const allEvents = await db.select().from(events).where(whereExpr);
 
       const totalViews = allEvents.filter(
-        (e) => e.eventType === 'view:page',
+        (e) => e.eventType === 'view:page'
       ).length;
       const totalClicks = allEvents.filter(
-        (e) => e.eventType === 'click:cta',
+        (e) => e.eventType === 'click:cta'
       ).length;
       const uniqueVisitors = 1; // 사용자별 메트릭이므로 항상 1
       const averageSessionDuration = allEvents.length > 0 ? 300 : 0;
@@ -244,7 +244,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
           acc[path] = (acc[path] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>,
+        {} as Record<string, number>
       );
 
       const topPages = Object.entries(pageCounts)
@@ -257,7 +257,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
           acc[event.eventType] = (acc[event.eventType] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>,
+        {} as Record<string, number>
       );
 
       const topEvents = Object.entries(eventCounts)
@@ -285,7 +285,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getTopPages(
     projectId: string,
-    limit: number = 10,
+    limit: number = 10
   ): Promise<Array<{ path: string; views: number }>> {
     try {
       const pageViews = await db
@@ -297,8 +297,8 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .where(
           and(
             eq(events.projectId, projectId),
-            eq(events.eventType, 'view:page'),
-          ),
+            eq(events.eventType, 'view:page')
+          )
         )
         .groupBy(sql`${events.eventData}->>'path'`)
         .orderBy(desc(sql`COUNT(*)`))
@@ -306,7 +306,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       this.app.log.info(
         { projectId, count: pageViews.length },
-        '상위 페이지 조회 완료',
+        '상위 페이지 조회 완료'
       );
       return pageViews;
     } catch (error) {
@@ -317,7 +317,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getTopEvents(
     projectId: string,
-    limit: number = 10,
+    limit: number = 10
   ): Promise<Array<{ eventType: string; count: number }>> {
     try {
       const eventCounts = await db
@@ -333,7 +333,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       this.app.log.info(
         { projectId, count: eventCounts.length },
-        '상위 이벤트 조회 완료',
+        '상위 이벤트 조회 완료'
       );
       return eventCounts;
     } catch (error) {
@@ -344,7 +344,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getEventTrends(
     projectId: string,
-    days: number = 30,
+    days: number = 30
   ): Promise<Array<{ date: string; count: number }>> {
     try {
       const startDate = new Date();
@@ -359,15 +359,15 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .where(
           and(
             eq(events.projectId, projectId),
-            gte(events.timestamp, startDate.toISOString()),
-          ),
+            gte(events.timestamp, startDate.toISOString())
+          )
         )
         .groupBy(sql`DATE(${events.timestamp})`)
         .orderBy(asc(sql`DATE(${events.timestamp})`));
 
       this.app.log.info(
         { projectId, days, count: trends.length },
-        '이벤트 트렌드 조회 완료',
+        '이벤트 트렌드 조회 완료'
       );
       return trends;
     } catch (error) {

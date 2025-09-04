@@ -32,7 +32,7 @@ type ProjectStructure = FolderNode;
 async function createStructure(
   currentNode: FileNode | FolderNode,
   currentPath: string,
-  createdFiles: string[],
+  createdFiles: string[]
 ): Promise<void> {
   const newPath = path.join(currentPath, currentNode.name);
 
@@ -87,18 +87,18 @@ export const generateProjectFilesTool: Tool = {
   },
   async execute(
     context: ExecutionContext,
-    input: { architecture: any; basePath?: string },
+    input: { architecture: any; basePath?: string }
   ): Promise<any> {
     const fileStructure = input.architecture?.file_structure;
     if (!fileStructure || fileStructure.type !== 'folder') {
       throw new Error(
-        'Invalid or missing file_structure in the input architecture.',
+        'Invalid or missing file_structure in the input architecture.'
       );
     }
 
     const projectRoot = path.resolve(input.basePath || '.');
     console.log(
-      `[generate_project_files] Creating project structure in: ${projectRoot}`,
+      `[generate_project_files] Creating project structure in: ${projectRoot}`
     );
 
     try {
@@ -109,7 +109,7 @@ export const generateProjectFilesTool: Tool = {
       const finalProjectPath = path.join(projectRoot, fileStructure.name);
 
       console.log(
-        `[generate_project_files] Successfully created ${createdFiles.length} files.`,
+        `[generate_project_files] Successfully created ${createdFiles.length} files.`
       );
       return {
         success: true,
@@ -119,7 +119,7 @@ export const generateProjectFilesTool: Tool = {
     } catch (error: any) {
       console.error(
         `[generate_project_files] Failed to create project structure:`,
-        error,
+        error
       );
       throw error;
     }

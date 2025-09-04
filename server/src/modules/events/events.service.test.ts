@@ -86,7 +86,7 @@ describe('EventsService', () => {
 
       // Act & Assert
       await expect(
-        eventsService.storeUserEvents(eventsArray, userId),
+        eventsService.storeUserEvents(eventsArray, userId)
       ).rejects.toThrow('사용자 이벤트 저장에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
@@ -145,7 +145,7 @@ describe('EventsService', () => {
 
       // Act & Assert
       await expect(
-        eventsService.storeErrorEvent(errorData, userId),
+        eventsService.storeErrorEvent(errorData, userId)
       ).rejects.toThrow('에러 이벤트 저장에 실패했습니다.');
       expect(mockApp.log.error).toHaveBeenCalled();
     });
@@ -187,12 +187,12 @@ describe('EventsService', () => {
       const userId = 'user-123';
 
       mockRepository.getEventsByUserId.mockRejectedValue(
-        new Error('Database error'),
+        new Error('Database error')
       );
 
       // Act & Assert
       await expect(eventsService.getUserEvents(userId)).rejects.toThrow(
-        '사용자 이벤트 조회에 실패했습니다.',
+        '사용자 이벤트 조회에 실패했습니다.'
       );
       expect(mockApp.log.error).toHaveBeenCalled();
     });
@@ -220,7 +220,7 @@ describe('EventsService', () => {
       // Assert
       expect(result).toEqual(mockEvents);
       expect(mockRepository.getEventsByProjectId).toHaveBeenCalledWith(
-        projectId,
+        projectId
       );
     });
 
@@ -229,12 +229,12 @@ describe('EventsService', () => {
       const projectId = 'project-123';
 
       mockRepository.getEventsByProjectId.mockRejectedValue(
-        new Error('Database error'),
+        new Error('Database error')
       );
 
       // Act & Assert
       await expect(eventsService.getProjectEvents(projectId)).rejects.toThrow(
-        '프로젝트 이벤트 조회에 실패했습니다.',
+        '프로젝트 이벤트 조회에 실패했습니다.'
       );
       expect(mockApp.log.error).toHaveBeenCalled();
     });

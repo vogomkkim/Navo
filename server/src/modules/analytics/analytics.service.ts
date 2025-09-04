@@ -20,13 +20,13 @@ export class AnalyticsService {
   async getProjectEvents(
     projectId: string,
     userId: string,
-    filter?: AnalyticsFilter,
+    filter?: AnalyticsFilter
   ): Promise<AnalyticsEvent[]> {
     try {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -41,7 +41,7 @@ export class AnalyticsService {
 
   async getUserEvents(
     userId: string,
-    filter?: AnalyticsFilter,
+    filter?: AnalyticsFilter
   ): Promise<AnalyticsEvent[]> {
     try {
       return await this.repository.getEventsByUserId(userId, filter);
@@ -54,13 +54,13 @@ export class AnalyticsService {
   async getProjectMetrics(
     projectId: string,
     userId: string,
-    filter?: AnalyticsFilter,
+    filter?: AnalyticsFilter
   ): Promise<AnalyticsMetrics> {
     try {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -75,7 +75,7 @@ export class AnalyticsService {
 
   async getUserMetrics(
     userId: string,
-    filter?: AnalyticsFilter,
+    filter?: AnalyticsFilter
   ): Promise<AnalyticsMetrics> {
     try {
       return await this.repository.getUserMetrics(userId, filter);
@@ -88,13 +88,13 @@ export class AnalyticsService {
   async getTopPages(
     projectId: string,
     userId: string,
-    limit?: number,
+    limit?: number
   ): Promise<Array<{ path: string; views: number }>> {
     try {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -110,13 +110,13 @@ export class AnalyticsService {
   async getTopEvents(
     projectId: string,
     userId: string,
-    limit?: number,
+    limit?: number
   ): Promise<Array<{ eventType: string; count: number }>> {
     try {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -132,13 +132,13 @@ export class AnalyticsService {
   async getEventTrends(
     projectId: string,
     userId: string,
-    days: number = 30,
+    days: number = 30
   ): Promise<Array<{ date: string; count: number }>> {
     try {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -153,7 +153,7 @@ export class AnalyticsService {
 
   async getDashboardData(
     projectId: string,
-    userId: string,
+    userId: string
   ): Promise<{
     metrics: AnalyticsMetrics;
     topPages: Array<{ path: string; views: number }>;
@@ -164,7 +164,7 @@ export class AnalyticsService {
       // 프로젝트 소유권 확인
       const project = await this.projectRepository.getProjectByUserId(
         projectId,
-        userId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');

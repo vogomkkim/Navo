@@ -34,7 +34,7 @@ export class WorkflowService {
     if (!plan || !Array.isArray(plan.steps)) {
       this.app.log.error(
         { plan },
-        '[WorkflowService] AI Planner returned a plan without a valid "steps" array.',
+        '[WorkflowService] AI Planner returned a plan without a valid "steps" array.'
       );
       throw new Error('AI Planner returned an invalid plan.');
     }
@@ -43,7 +43,7 @@ export class WorkflowService {
     const outputs = await workflowExecutor.execute(plan);
     this.app.log.info(
       { outputs: Object.fromEntries(outputs) },
-      '[WorkflowService] Workflow executed successfully',
+      '[WorkflowService] Workflow executed successfully'
     );
 
     // 3. Return the final result (for now, we return all outputs)
@@ -141,7 +141,7 @@ export class WorkflowService {
       if (!planObject || !Array.isArray(planObject.steps)) {
         this.app.log.error(
           { plan: planObject },
-          '[WorkflowService] AI Planner returned a plan without a valid "steps" array.',
+          '[WorkflowService] AI Planner returned a plan without a valid "steps" array.'
         );
         throw new Error('AI Planner returned an invalid plan.');
       }
@@ -150,7 +150,7 @@ export class WorkflowService {
     } catch (error: any) {
       this.app.log.error(
         error,
-        '[WorkflowService] Failed to generate or parse plan from LLM.',
+        '[WorkflowService] Failed to generate or parse plan from LLM.'
       );
       throw new Error('Failed to parse JSON from LLM response.');
     }

@@ -23,13 +23,13 @@ export class ProjectsService {
   async listProjectVfsNodes(
     projectId: string,
     parentId: string | null,
-    userId: string,
+    userId: string
   ): Promise<VfsNode[]> {
     try {
       // Verify project ownership first
       const project = await this.repository.getProjectByUserId(
         projectId,
-        userId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -42,16 +42,38 @@ export class ProjectsService {
     }
   }
 
-  async renameProject(
+  async getVfsNode(
+    nodeId: string,
     projectId: string,
-    name: string,
     userId: string,
-  ): Promise<Project> {
+  ): Promise<VfsNode | null> {
     try {
       // Verify project ownership first
       const project = await this.repository.getProjectByUserId(
         projectId,
         userId,
+      );
+      if (!project) {
+        throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
+      }
+
+      return await this.repository.getVfsNodeById(nodeId, projectId);
+    } catch (error) {
+      this.app.log.error(error, 'VFS 노드 조회 실패');
+      throw new Error('VFS 노드 조회에 실패했습니다.');
+    }
+  }
+
+  async renameProject(
+    projectId: string,
+    name: string,
+    userId: string
+  ): Promise<Project> {
+    try {
+      // Verify project ownership first
+      const project = await this.repository.getProjectByUserId(
+        projectId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -69,7 +91,7 @@ export class ProjectsService {
       // Verify project ownership first
       const project = await this.repository.getProjectByUserId(
         projectId,
-        userId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
@@ -87,7 +109,7 @@ export class ProjectsService {
       // Verify project ownership first
       const project = await this.repository.getProjectByUserId(
         projectId,
-        userId,
+        userId
       );
       if (!project) {
         throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');

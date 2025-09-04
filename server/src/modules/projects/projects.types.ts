@@ -25,11 +25,11 @@ export interface VfsNode {
 }
 
 export interface ProjectArchitecture {
-  pages: Omit<VfsNode, 'id' | 'projectId' | 'parentId' | 'createdAt' | 'updatedAt'>[];
-  components: Record<
-    string,
-    { props: Record<string, any>; parent?: string }
-  >;
+  pages: Omit<
+    VfsNode,
+    'id' | 'projectId' | 'parentId' | 'createdAt' | 'updatedAt'
+  >[];
+  components: Record<string, { props: Record<string, any>; parent?: string }>;
 }
 
 export interface CreateProjectData {

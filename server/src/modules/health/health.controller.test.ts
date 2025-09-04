@@ -26,7 +26,7 @@ describe('HealthController', () => {
 
     // Assert
     expect(mockReply.send).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: true, status: 'healthy' }),
+      expect.objectContaining({ ok: true, status: 'healthy' })
     );
     const payload = mockReply.send.mock.calls[0][0];
     expect(typeof payload.uptime).toBe('number');

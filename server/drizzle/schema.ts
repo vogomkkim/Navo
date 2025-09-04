@@ -42,7 +42,7 @@ export const users = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [unique('users_email_key').on(table.email)],
+  (table) => [unique('users_email_key').on(table.email)]
 );
 
 // Junction table for many-to-many relationship between users and organizations
@@ -58,7 +58,7 @@ export const usersToOrganizations = pgTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.userId, t.organizationId] }),
-  }),
+  })
 );
 
 // --- Project and Content Tables (Now Tenant-Aware) ---
@@ -83,9 +83,9 @@ export const projects = pgTable(
   (table) => [
     index('idx_projects_organization').using(
       'btree',
-      table.organizationId.asc().nullsLast().op('uuid_ops'),
+      table.organizationId.asc().nullsLast().op('uuid_ops')
     ),
-  ],
+  ]
 );
 
 export const vfsNodes = pgTable(
@@ -115,17 +115,14 @@ export const vfsNodes = pgTable(
     unique('vfs_nodes_project_id_parent_id_name_key').on(
       table.projectId,
       table.parentId,
-      table.name,
+      table.name
     ),
-    check(
-      'check_node_type',
-      sql`node_type IN ('FILE', 'DIRECTORY')`,
-    ),
+    check('check_node_type', sql`node_type IN ('FILE', 'DIRECTORY')`),
     check(
       'check_content_for_file',
-      sql`(node_type = 'DIRECTORY' AND content IS NULL) OR (node_type = 'FILE')`,
+      sql`(node_type = 'DIRECTORY' AND content IS NULL) OR (node_type = 'FILE')`
     ),
-  ],
+  ]
 );
 
 // --- User-Specific and Session Tables (Not directly tenant-aware) ---
@@ -156,25 +153,25 @@ export const userSessions = pgTable(
   (table) => [
     index('idx_user_sessions_created_at').using(
       'btree',
-      table.createdAt.asc().nullsLast().op('timestamptz_ops'),
+      table.createdAt.asc().nullsLast().op('timestamptz_ops')
     ),
     index('idx_user_sessions_last_activity').using(
       'btree',
-      table.lastActivity.asc().nullsLast().op('timestamptz_ops'),
+      table.lastActivity.asc().nullsLast().op('timestamptz_ops')
     ),
     index('idx_user_sessions_status').using(
       'btree',
-      table.status.asc().nullsLast().op('text_ops'),
+      table.status.asc().nullsLast().op('text_ops')
     ),
     index('idx_user_sessions_user_id').using(
       'btree',
-      table.userId.asc().nullsLast().op('uuid_ops'),
+      table.userId.asc().nullsLast().op('uuid_ops')
     ),
     check(
       'check_session_data_json',
-      sql`jsonb_typeof(session_data) = 'object'::text`,
+      sql`jsonb_typeof(session_data) = 'object'::text`
     ),
-  ],
+  ]
 );
 
 export const chatMessages = pgTable(
@@ -192,18 +189,18 @@ export const chatMessages = pgTable(
   (table) => [
     index('idx_chat_messages_session').using(
       'btree',
-      table.sessionId.asc().nullsLast().op('uuid_ops'),
+      table.sessionId.asc().nullsLast().op('uuid_ops')
     ),
     index('idx_chat_messages_user').using(
       'btree',
-      table.userId.asc().nullsLast().op('uuid_ops'),
+      table.userId.asc().nullsLast().op('uuid_ops')
     ),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [users.id],
       name: 'chat_messages_user_id_fkey',
     }),
-  ],
+  ]
 );
 
 // --- Deprecated Agent Tables (To be removed or refactored) ---
@@ -227,15 +224,15 @@ export const projectPlans = pgTable(
   (table) => [
     index('idx_project_plans_project').using(
       'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops'),
+      table.projectId.asc().nullsLast().op('uuid_ops')
     ),
     index('idx_project_plans_user').using(
       'btree',
-      table.userId.asc().nullsLast().op('uuid_ops'),
+      table.userId.asc().nullsLast().op('uuid_ops')
     ),
     index('idx_project_plans_status').using(
       'btree',
-      table.status.asc().nullsLast().op('text_ops'),
+      table.status.asc().nullsLast().op('text_ops')
     ),
     foreignKey({
       columns: [table.projectId],
@@ -247,7 +244,7 @@ export const projectPlans = pgTable(
       foreignColumns: [users.id],
       name: 'project_plans_user_id_fkey',
     }),
-  ],
+  ]
 );
 
 export const chatSessionSummaries = pgTable(
@@ -272,11 +269,11 @@ export const chatSessionSummaries = pgTable(
   (table) => [
     index('idx_chat_session_summaries_last_msg').using(
       'btree',
-      table.lastMsgId.asc().nullsLast().op('uuid_ops'),
+      table.lastMsgId.asc().nullsLast().op('uuid_ops')
     ),
     index('idx_chat_session_summaries_session_id').using(
       'btree',
-      table.sessionId.asc().nullsLast().op('uuid_ops'),
+      table.sessionId.asc().nullsLast().op('uuid_ops')
     ),
     foreignKey({
       columns: [table.lastMsgId],
@@ -290,9 +287,9 @@ export const chatSessionSummaries = pgTable(
     }).onDelete('cascade'),
     check(
       'check_key_points_json',
-      sql`jsonb_typeof(key_points) = 'array'::text`,
+      sql`jsonb_typeof(key_points) = 'array'::text`
     ),
-  ],
+  ]
 );
 
 export const events = pgTable(
@@ -314,19 +311,19 @@ export const events = pgTable(
   (table) => [
     index('idx_events_user_id').using(
       'btree',
-      table.userId.asc().nullsLast().op('uuid_ops'),
+      table.userId.asc().nullsLast().op('uuid_ops')
     ),
     index('idx_events_project_id').using(
       'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops'),
+      table.projectId.asc().nullsLast().op('uuid_ops')
     ),
     index('idx_events_event_type').using(
       'btree',
-      table.eventType.asc().nullsLast().op('text_ops'),
+      table.eventType.asc().nullsLast().op('text_ops')
     ),
     index('idx_events_timestamp').using(
       'btree',
-      table.timestamp.asc().nullsLast().op('timestamptz_ops'),
+      table.timestamp.asc().nullsLast().op('timestamptz_ops')
     ),
     foreignKey({
       columns: [table.userId],
@@ -338,7 +335,7 @@ export const events = pgTable(
       foreignColumns: [projects.id],
       name: 'events_project_id_fkey',
     }).onDelete('cascade'),
-  ],
+  ]
 );
 
 export const publishDeploys = pgTable(
@@ -358,16 +355,16 @@ export const publishDeploys = pgTable(
   (table) => [
     index('idx_publish_deploys_project_id').using(
       'btree',
-      table.projectId.asc().nullsLast().op('uuid_ops'),
+      table.projectId.asc().nullsLast().op('uuid_ops')
     ),
     index('idx_publish_deploys_status').using(
       'btree',
-      table.status.asc().nullsLast().op('text_ops'),
+      table.status.asc().nullsLast().op('text_ops')
     ),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],
       name: 'publish_deploys_project_id_fkey',
     }).onDelete('cascade'),
-  ],
+  ]
 );
