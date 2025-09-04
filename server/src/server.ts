@@ -1,23 +1,23 @@
 import fastify from 'fastify';
+
 import { errorHandler } from '@/lib/errorHandler';
 import pinoLogger, { createRequestLogger } from '@/lib/logger';
-import { authenticateToken } from '@/modules/auth/auth.middleware';
-
-import { authController } from '@/modules/auth/auth.controller';
-import { healthController } from '@/modules/health/health.controller';
-// import { staticController } from '@/modules/static/static.controller'; // Removed
-import eventRoutes from '@/modules/events/events.controller';
-import { projectsController } from '@/modules/projects/projects.controller';
-import { pagesController } from '@/modules/pages/pages.controller';
-import { componentsController } from '@/modules/components/components.controller';
 import { analyticsController } from '@/modules/analytics/analytics.controller';
+import { authController } from '@/modules/auth/auth.controller';
+import { authenticateToken } from '@/modules/auth/auth.middleware';
+import { componentsController } from '@/modules/components/components.controller';
+import eventRoutes from '@/modules/events/events.controller';
+import { healthController } from '@/modules/health/health.controller';
+import { pagesController } from '@/modules/pages/pages.controller';
+import { projectsController } from '@/modules/projects/projects.controller';
 import { workflowController } from '@/modules/workflow/workflow.controller';
 
 // Fastify v4 인스턴스 생성
 const app = fastify({
   logger: true,
   genReqId: (req: any) =>
-    (req.headers['x-request-id'] as string | undefined) || (createRequestLogger().bindings() as any).requestId,
+    (req.headers['x-request-id'] as string | undefined) ||
+    (createRequestLogger().bindings() as any).requestId,
 });
 
 // 커스텀 로거 훅 등록
@@ -31,7 +31,7 @@ app.addHook('onRequest', (req, _reply, done) => {
       host: req.headers.host,
       requestId: req.id,
     },
-    '요청 수신'
+    '요청 수신',
   );
   done();
 });
@@ -45,7 +45,7 @@ app.addHook('onError', (req, _reply, err, done) => {
       url: req.url,
       err,
     },
-    '요청 처리 중 오류'
+    '요청 처리 중 오류',
   );
   done();
 });
@@ -57,7 +57,8 @@ app.addHook('onSend', (req, reply, payload, done) => {
       const requestLogger = createRequestLogger(req.id as string);
       const contentType = String(reply.getHeader('content-type') || '');
       const shouldLogBody =
-        contentType.includes('application/json') || contentType.startsWith('text/');
+        contentType.includes('application/json') ||
+        contentType.startsWith('text/');
 
       let bodyPreview: string | undefined;
       if (shouldLogBody) {
@@ -76,7 +77,8 @@ app.addHook('onSend', (req, reply, payload, done) => {
         const maxLen = 2000;
         bodyPreview =
           text.length > maxLen
-            ? text.slice(0, maxLen) + `... [추가 ${text.length - maxLen}자 생략]`
+            ? text.slice(0, maxLen) +
+              `... [추가 ${text.length - maxLen}자 생략]`
             : text;
       }
 
@@ -86,9 +88,9 @@ app.addHook('onSend', (req, reply, payload, done) => {
           url: req.url,
           statusCode: reply.statusCode,
           contentType,
-          body: bodyPreview ?? '[바디 로깅 제외]'
+          body: bodyPreview ?? '[바디 로깅 제외]',
         },
-        '응답 바디'
+        '응답 바디',
       );
     } catch {
       // 로깅 중 오류는 무시
@@ -109,7 +111,7 @@ app.addHook('onResponse', (req, reply, done) => {
       requestId: req.id,
       latencyMs,
     },
-    '요청 처리 완료'
+    '요청 처리 완료',
   );
   done();
 });

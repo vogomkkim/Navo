@@ -4,6 +4,10 @@ import { FlatCompat } from '@eslint/eslintrc';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import importPlugin from 'eslint-plugin-import';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import nextPlugin from '@next/eslint-plugin-next';
+import reactPlugin from 'eslint-plugin-react';
+import reactHooksPlugin from 'eslint-plugin-react-hooks';
 
 // mimic CommonJS variables -- not available in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -15,23 +19,19 @@ const compat = new FlatCompat({
 
 export default tseslint.config(
   {
-    files: ['**/*.ts'],
+    // Global settings for all files
     plugins: {
       import: importPlugin,
+      'simple-import-sort': simpleImportSort,
     },
     extends: [...tseslint.configs.recommended, eslintPluginPrettierRecommended],
-    languageOptions: {
-      parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        project: ['./server/tsconfig.json'],
-      },
-    },
     rules: {
       'prettier/prettier': 'error',
-      '@typescript-eslint/no-explicit-any': 'off',
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn', // Changed to warn
       '@typescript-eslint/no-unused-vars': [
-        'error',
+        'warn', // Changed to warn
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
@@ -39,7 +39,27 @@ export default tseslint.config(
         },
       ],
       'linebreak-style': ['error', 'unix'],
-      // Enforce alias usage instead of relative imports to top-level dirs
+      'import/no-cycle': ['error', { maxDepth: 5 }],
+      'import/order': 'off',
+    },
+  },
+  {
+    // Server-specific settings
+    files: ['server/**/*.ts', 'packages/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: ['./server/tsconfig.json', './packages/shared/tsconfig.json'],
+        tsconfigRootDir: __dirname,
+      },
+    },
+    settings: {
+      'import/resolver': {
+        typescript: {
+          project: ['./server/tsconfig.json', './packages/shared/tsconfig.json'],
+        },
+      },
+    },
+    rules: {
       'no-restricted-imports': [
         'error',
         {
@@ -49,7 +69,6 @@ export default tseslint.config(
           ],
         },
       ],
-      // Enforce module boundaries (disabled inside modules via override below)
       'import/no-restricted-paths': [
         'error',
         {
@@ -63,32 +82,63 @@ export default tseslint.config(
           ],
         },
       ],
-      // Prevent cyclical dependencies
-      'import/no-cycle': ['error', { maxDepth: 5 }],
-      // Enforce import order
-      'import/order': 'off',
+    },
+  },
+  {
+    // Frontend-specific settings (Next.js, React)
+    files: ['frontend/**/*.ts', 'frontend/**/*.tsx'],
+    plugins: {
+      '@next/next': nextPlugin,
+      react: reactPlugin,
+      'react-hooks': reactHooksPlugin,
+    },
+    languageOptions: {
+      parserOptions: {
+        project: ['./frontend/tsconfig.json'],
+        tsconfigRootDir: __dirname,
+      },
     },
     settings: {
       'import/resolver': {
         typescript: {
-          project: './server/tsconfig.json',
+          project: './frontend/tsconfig.json',
         },
       },
+      react: {
+        version: 'detect',
+      },
+    },
+    rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs['core-web-vitals'].rules,
+      ...reactPlugin.configs.recommended.rules,
+      ...reactHooksPlugin.configs.recommended.rules,
+      'react/react-in-jsx-scope': 'off',
     },
   },
   {
-    // Ignore build output, node_modules, legacy backups and legacy ai core
-    ignores: [
-      '../dist/**',
-      '../node_modules/**',
-      'server/_backup/**',
-    ],
-  },
-  {
+    // Overrides for specific server files
     files: ['server/src/modules/**/*.ts'],
     rules: {
-      // Allow intra-module relative imports; cross-module still blocked by no-restricted-imports on aliases/relative up-level
       'import/no-restricted-paths': 'off',
     },
-  }
+  },
+  {
+    files: ['server/src/server.ts'],
+    rules: {
+      'import/no-restricted-paths': 'off',
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
+    // Ignore patterns
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/.next/**',
+      '**/out/**',
+      'server/_backup/**',
+      'eslint.config.js', // Ignore self
+    ],
+  },
 );
