@@ -1,24 +1,24 @@
 /**
- * @file Defines tools for interacting with the database repositories.
+ * @file Defines tools for interacting with the database via services.
  */
 
 import { ExecutionContext, Tool } from '../types';
-import { ProjectsRepositoryImpl } from '../../projects/projects.repository';
+import { ProjectsService } from '../../projects/projects.service';
 import { FastifyInstance } from 'fastify';
 
-// This is a simplified way to get the repository. In a real app,
-// this would likely come from a dependency injection container.
-function getProjectsRepository(
+// Helper to get the service from the execution context
+function getProjectsService(
   context: ExecutionContext
-): ProjectsRepositoryImpl {
+): ProjectsService {
   const app = context.app as FastifyInstance;
-  return new ProjectsRepositoryImpl(app);
+  // In a real DI setup, we'd resolve this from a container
+  return new ProjectsService(app);
 }
 
 export const createProjectInDbTool: Tool = {
   name: 'create_project_in_db',
   description:
-    'Creates a new project record in the database, including a default home page.',
+    'Creates a new project record in the database.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -59,20 +59,22 @@ export const createProjectInDbTool: Tool = {
       userId: string;
     }
   ): Promise<any> {
-    console.log(`[create_project_in_db] Creating project '${input.name}'`);
+    context.app.log.info(`[create_project_in_db] Creating project '${input.name}'`);
     try {
-      const projectsRepo = getProjectsRepository(context);
-      const newProject = await projectsRepo.createProject(
-        input.name,
-        input.description ?? null,
-        input.organizationId,
+      const projectsService = getProjectsService(context);
+      const newProject = await projectsService.createProject(
+        {
+          name: input.name,
+          description: input.description,
+          organizationId: input.organizationId,
+        },
         input.userId
       );
       return newProject;
     } catch (error: any) {
-      console.error(
-        `[create_project_in_db] Failed to create project "${input.name}":`,
-        error
+      context.app.log.error(
+        error,
+        `[create_project_in_db] Failed to create project "${input.name}"`
       );
       throw error;
     }
@@ -111,8 +113,12 @@ export const updateProjectFromArchitectureTool: Tool = {
           },
         },
       },
+       userId: {
+        type: 'string',
+        description: 'The ID of the user performing the update.',
+      },
     },
-    required: ['projectId', 'architecture'],
+    required: ['projectId', 'architecture', 'userId'],
   },
   outputSchema: {
     type: 'object',
@@ -125,23 +131,25 @@ export const updateProjectFromArchitectureTool: Tool = {
     context: ExecutionContext,
     input: {
       projectId: string;
-      architecture: any; // In a real app, this would be a strongly typed ProjectArchitecture object
+      architecture: any; 
+      userId: string;
     }
   ): Promise<any> {
-    console.log(
+    context.app.log.info(
       `[update_project_from_architecture] Updating project '${input.projectId}'`
     );
     try {
-      const projectsRepo = getProjectsRepository(context);
-      await projectsRepo.updateProjectFromArchitecture(
+      const projectsService = getProjectsService(context);
+      await projectsService.updateProjectFromArchitecture(
         input.projectId,
-        input.architecture
+        input.architecture,
+        input.userId
       );
       return { success: true, projectId: input.projectId };
     } catch (error: any) {
-      console.error(
-        `[update_project_from_architecture] Failed to update project "${input.projectId}":`,
-        error
+      context.app.log.error(
+        error,
+        `[update_project_from_architecture] Failed to update project "${input.projectId}"`
       );
       throw error;
     }

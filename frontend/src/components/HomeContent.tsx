@@ -15,7 +15,7 @@ import {
   useListProjects,
   useUpdateVfsNodeContent,
   useVfsNodeContent,
-} from '@/lib/api';
+} from '@/hooks/api';
 import { useIdeStore } from '@/store/ideStore';
 import { NoProjectsPlaceholder } from './ui/NoProjectsPlaceholder';
 import { ProfileMenu } from './ui/ProfileMenu';
@@ -27,18 +27,12 @@ export default function HomeContent() {
   const { user, token, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null
-  );
-  const [editedContent, setEditedContent] = useState<string | null>(null);
-  const [showMessage, setShowMessage] = useState<{
-    type: 'success' | 'error';
-    text: string;
-  } | null>(null);
-  const previewIframeRef = useRef<HTMLIFrameElement>(null);
-  const [activeView, setActiveView] = useState<ActiveView>('preview');
+  // Zustand store integration for project context
+  const { selectedProjectId, setSelectedProjectId } = useIdeStore((state) => ({
+    selectedProjectId: state.selectedProjectId,
+    setSelectedProjectId: state.setSelectedProjectId,
+  }));
 
-  // Zustand store integration
   const { activeFile, setActiveFile } = useIdeStore();
 
   const { data: vfsNodeData, isLoading: isLoadingVfsNode } = useVfsNodeContent(
@@ -49,6 +43,13 @@ export default function HomeContent() {
   const { data: projectsData, isLoading: isLoadingProjects } = useListProjects({
     enabled: !isAuthLoading && !!token,
   });
+
+  useEffect(() => {
+    // Automatically select the first project on initial load if none is selected
+    if (!selectedProjectId && projectsData?.projects?.length) {
+      setSelectedProjectId(projectsData.projects[0].id);
+    }
+  }, [projectsData, selectedProjectId, setSelectedProjectId]);
 
   useEffect(() => {
     setEditedContent(vfsNodeData?.node?.content ?? null);
@@ -94,14 +95,12 @@ export default function HomeContent() {
 
   const handleProjectSelect = (projectId: string) => {
     if (projectId === 'new') {
-      setSelectedProjectId(null);
-      setActiveFile(null); // Reset active file
+      // This would ideally be a route to a new project page or a modal
       queryClient.clear();
-      window.location.reload();
+      window.location.reload(); // Simple way to reset for now
       return;
     }
     setSelectedProjectId(projectId);
-    setActiveFile(null); // Reset active file on new project selection
   };
 
   const currentProjectName =

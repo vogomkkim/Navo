@@ -1,6 +1,6 @@
 'use client';
 
-import { useGenerateDummySuggestion } from '@/lib/api';
+import { useGenerateDummySuggestion } from '@/hooks/api';
 
 interface GenerateDummySuggestionButtonProps {
   onGenerateSuccess?: (data: any) => void;

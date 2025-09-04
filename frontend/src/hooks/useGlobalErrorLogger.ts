@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { useLogError } from '@/lib/api';
+import { useLogError } from '@/hooks/api';
 
 export function useGlobalErrorLogger() {
   const { mutate: logError } = useLogError();

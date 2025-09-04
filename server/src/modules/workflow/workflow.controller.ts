@@ -2,11 +2,10 @@
  * @file Defines the API endpoint for the workflow engine.
  */
 import { FastifyInstance } from 'fastify';
-
-import { WorkflowService } from './workflow.service';
+import { OrchestratorService } from '@/core/orchestrator/orchestrator.service';
 
 export function workflowController(app: FastifyInstance) {
-  const workflowService = new WorkflowService(app);
+  const orchestratorService = new OrchestratorService(app);
 
   app.post(
     '/api/workflow/execute',
@@ -20,20 +19,20 @@ export function workflowController(app: FastifyInstance) {
           return reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
         }
 
-        const { prompt } = request.body as { prompt: string };
+        const { prompt, chatHistory } = request.body as { prompt: string, chatHistory: any[] };
 
         if (!prompt) {
           return reply.status(400).send({ error: 'Prompt is required.' });
         }
 
-        // Pass the user information to the service
-        const result = await workflowService.run(prompt, { id: userId });
+        // Pass the request to the orchestrator
+        const result = await orchestratorService.handleRequest(prompt, { id: userId }, chatHistory || []);
 
         return reply.send(result);
       } catch (error: any) {
-        app.log.error(error, 'Error executing workflow');
+        app.log.error(error, 'Error in orchestrator service');
         return reply.status(500).send({
-          error: 'Failed to execute workflow.',
+          error: 'Failed to handle request.',
           details: error.message,
         });
       }

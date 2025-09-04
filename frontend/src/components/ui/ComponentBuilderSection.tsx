@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { useGenerateComponent } from '@/lib/api';
+import { useGenerateComponent } from '@/hooks/api';
 
 export function ComponentBuilderSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);

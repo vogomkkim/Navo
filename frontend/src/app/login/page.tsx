@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { fetchApi } from '@/lib/api';
+import { fetchApi } from '@/lib/apiClient';
 
 import { useAuth } from '../context/AuthContext';
 

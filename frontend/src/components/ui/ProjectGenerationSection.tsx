@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { useGenerateProject } from '@/lib/api';
+import { useGenerateProject } from '@/hooks/api';
 
 export function ProjectGenerationSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);

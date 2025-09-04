@@ -9,8 +9,8 @@ import { LayoutProvider } from '@/app/context/LayoutContext';
 import Home from './page';
 
 // Mock the API hooks to avoid actual API calls during tests
-jest.mock('@/lib/api', () => ({
-  ...jest.requireActual('@/lib/api'), // Import and retain default behavior
+jest.mock('@/hooks/api', () => ({
+  ...jest.requireActual('@/hooks/api'), // Import and retain default behavior
   useListProjects: jest.fn(() => ({
     data: { projects: [] },
     isLoading: false,

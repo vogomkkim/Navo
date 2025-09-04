@@ -12,10 +12,8 @@ import { bootstrapLogger } from './logger';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// __dirname이 'src'로 끝나면 server 디렉토리에서 실행 중
-// __dirname이 'server/src'로 끝나면 프로젝트 루트에서 실행 중
-const isServerDir = __dirname.endsWith('src');
-const errFile = path.resolve(__dirname, isServerDir ? '..' : '.', 'server.err');
+// bootstrap 디렉토리에서 server 디렉토리로 올라가기
+const errFile = path.resolve(__dirname, '..', '..', 'server.err');
 
 /**
  * 초기 에러 로깅 함수

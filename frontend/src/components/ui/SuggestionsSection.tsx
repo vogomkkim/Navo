@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { useSuggestions } from '@/lib/api';
+import { useSuggestions } from '@/hooks/api';
 
 export function SuggestionsSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);

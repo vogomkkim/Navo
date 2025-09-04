@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useListVfsNodes } from '@/lib/api';
+import { useListVfsNodes } from '@/hooks/api';
 import { useIdeStore } from '@/store/ideStore';
 
 // Define icons for file and directory

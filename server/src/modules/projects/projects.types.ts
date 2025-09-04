@@ -44,3 +44,12 @@ export interface UpdateProjectData {
   description?: string | null;
   requirements?: string | null;
 }
+
+export interface CreateChatMessage {
+  projectId: string;
+  userId: string;
+  role: string;
+  content: string;
+  payload?: any;
+  createdAt?: Date;
+}

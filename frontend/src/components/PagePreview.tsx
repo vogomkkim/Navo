@@ -1,7 +1,7 @@
 'use client';
 
 import { LayoutProvider } from '@/app/context/LayoutContext';
-import { usePageLayout } from '@/lib/api';
+import { usePageLayout } from '@/hooks/api';
 
 import { LayoutRenderer } from './LayoutRenderer';
 

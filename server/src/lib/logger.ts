@@ -19,8 +19,8 @@ function createConsoleLogger(
 ): SimpleLogger {
   const fileDir = resolve(fileURLToPath(new URL('.', import.meta.url)));
   // Place logs under the server directory, regardless of CWD or build output path
-  const LOG_FILE = resolve(fileDir, '..', '..', '..', 'server.log');
-  const ERR_FILE = resolve(fileDir, '..', '..', '..', 'server.err');
+  const LOG_FILE = resolve(fileDir, '..', '..', '..', 'server', 'server.log');
+  const ERR_FILE = resolve(fileDir, '..', '..', '..', 'server', 'server.err');
 
   const serializeValue = (value: unknown): string => {
     if (value instanceof Error) {
@@ -44,8 +44,12 @@ function createConsoleLogger(
     try {
       const now = new Date().toISOString();
       const line = [now, ...args.map(serializeValue)].join(' ') + '\n';
+      console.log('[Debug] Writing to file:', filePath);
+      console.log('[Debug] Content:', line);
       appendFileSync(filePath, line);
-    } catch {
+      console.log('[Debug] Write successful');
+    } catch (error) {
+      console.error('[Debug] Write failed:', error);
       // 파일 기록 실패는 무시 (콘솔 출력은 그대로 수행)
     }
   };
@@ -65,22 +69,22 @@ function createConsoleLogger(
   return {
     info: (...args: unknown[]) => {
       const merged = mergeBindings(args);
-      console.log(...merged);
+      console.log('[Navo]', ...merged);
       writeLine(LOG_FILE, merged);
     },
     warn: (...args: unknown[]) => {
       const merged = mergeBindings(args);
-      console.warn(...merged);
+      console.warn('[Navo]', ...merged);
       writeLine(ERR_FILE, merged);
     },
     error: (...args: unknown[]) => {
       const merged = mergeBindings(args);
-      console.error(...merged);
+      console.error('[Navo]', ...merged);
       writeLine(ERR_FILE, merged);
     },
     debug: (...args: unknown[]) => {
       const merged = mergeBindings(args);
-      console.log(...merged);
+      console.log('[Navo]', ...merged);
       writeLine(LOG_FILE, merged);
     },
     child: (childBindings: Record<string, unknown> = {}) =>

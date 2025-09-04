@@ -1,9 +1,73 @@
 import { FastifyInstance } from 'fastify';
-
+import { OrchestratorService } from '@/core/orchestrator/orchestrator.service';
 import { ProjectsService } from './projects.service';
 
 export function projectsController(app: FastifyInstance) {
   const projectsService = new ProjectsService(app);
+  const orchestratorService = new OrchestratorService(app);
+
+  // --- Chat Endpoints ---
+
+  app.get(
+    '/api/projects/:projectId/messages',
+    { preHandler: [app.authenticateToken] },
+    async (request, reply) => {
+      try {
+        const { projectId } = request.params as { projectId: string };
+        const { cursor, limit = 20 } = request.query as { cursor?: string; limit?: number };
+        const userId = (request as any).userId;
+
+        const messages = await projectsService.getMessages(projectId, userId, { cursor, limit });
+        reply.send(messages);
+      } catch (error) {
+        app.log.error(error, '메시지 조회 실패');
+        reply.status(500).send({ error: '메시지 조회에 실패했습니다.' });
+      }
+    }
+  );
+
+  app.post(
+    '/api/projects/:projectId/messages',
+    { preHandler: [app.authenticateToken] },
+    async (request, reply) => {
+      try {
+        const { projectId } = request.params as { projectId: string };
+        const { prompt, chatHistory } = request.body as { prompt: string; chatHistory: any[] };
+        const userId = (request as any).userId;
+
+        if (!prompt) {
+          return reply.status(400).send({ error: 'Prompt is required.' });
+        }
+        
+        // 1. Save user's message to DB
+        await projectsService.createMessage(projectId, userId, {
+          role: 'user',
+          content: prompt,
+        });
+
+        // 2. Get AI response from orchestrator
+        const result = await orchestratorService.handleRequest(prompt, { id: userId }, chatHistory || []);
+
+        // 3. Save AI's response to DB
+        const aiRole = result.type === 'WORKFLOW_RESULT' ? 'DevOps Engineer' : 'Strategic Planner';
+        const aiContent = result.type === 'WORKFLOW_RESULT' ? result.payload.summaryMessage : result.payload.message;
+        
+        await projectsService.createMessage(projectId, userId, {
+          role: aiRole,
+          content: aiContent,
+          payload: result.payload,
+        });
+        
+        return reply.send(result);
+      } catch (error: any) {
+        app.log.error(error, 'Error in orchestrator service');
+        return reply.status(500).send({
+          error: 'Failed to handle request.',
+          details: error.message,
+        });
+      }
+    }
+  );
 
   // List projects
   app.get(

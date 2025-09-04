@@ -3,9 +3,6 @@
  * 서버 구동 전 진단 및 초기화를 담당하는 진입점
  */
 
-// Import the server app
-import './server';
-
 // Bootstrap modules
 import { bootstrapLogger } from './bootstrap/logger';
 import { setupBootstrapErrorHandlers, logBootstrapError } from './bootstrap/errorHandler';
@@ -33,6 +30,10 @@ export async function startServer() {
     await runDiagnostics();
 
     bootstrapLogger.info('서버 시작 준비 완료');
+
+    // 서버 시작
+    await import('./server');
+
   } catch (err) {
     bootstrapLogger.error('진단 실패', err);
     logBootstrapError('[Bootstrap] 진단 실패', err);

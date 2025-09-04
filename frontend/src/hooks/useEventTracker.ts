@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 
-import { useTrackEvents } from '@/lib/api';
+import { useTrackEvents } from '@/hooks/api';
 
 interface EventData {
   type: string;

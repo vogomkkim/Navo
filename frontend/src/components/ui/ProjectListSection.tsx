@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { useListProjects, useRenameProject } from '@/lib/api';
+import { useListProjects, useRenameProject } from '@/hooks/api';
 
 export function ProjectListSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);

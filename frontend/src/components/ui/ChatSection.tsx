@@ -1,213 +1,95 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-
 import { useInputHistory } from '@/hooks/useInputHistory';
-import { useExecuteWorkflow } from '@/lib/api';
-
+import { useGetMessages, useSendMessage } from '@/hooks/api';
+import { useIdeStore } from '@/store/ideStore';
+import { useEffect, useMemo, useRef } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { ChatPlaceholder } from './ChatPlaceholder';
 import './ChatSection.css';
 
-// Agent roles and statuses
-type AgentRole =
-  | 'Strategic Planner'
-  | 'Project Manager'
-  | 'Full-Stack Developer'
-  | 'Quality Assurance Engineer'
-  | 'DevOps Engineer';
+export function ChatSection() {
+  const { selectedProjectId, isProcessing, setIsProcessing } = useIdeStore(
+    (state) => ({
+      selectedProjectId: state.selectedProjectId,
+      isProcessing: state.isProcessing,
+      setIsProcessing: state.setIsProcessing,
+    })
+  );
 
-type AgentStatus =
-  | 'waiting'
-  | 'analyzing'
-  | 'planning'
-  | 'developing'
-  | 'testing'
-  | 'deploying'
-  | 'completed'
-  | 'error';
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch,
+  } = useGetMessages(selectedProjectId);
 
-interface AgentMessage {
-  id: string;
-  role: AgentRole;
-  message: string;
-  status: AgentStatus;
-  timestamp: Date;
-  details?: any;
-  suggestions?: string[];
-}
+  // Refetch messages when project changes
+  useEffect(() => {
+    if (selectedProjectId) {
+      refetch();
+    }
+  }, [selectedProjectId, refetch]);
 
-interface UserMessage {
-  id: string;
-  role: 'user';
-  message: string;
-  timestamp: Date;
-}
+  const { ref: topOfChatRef, inView: isTopOfChatVisible } = useInView({
+    threshold: 0,
+  });
 
-type ChatMessage = UserMessage | AgentMessage;
+  useEffect(() => {
+    if (isTopOfChatVisible && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [isTopOfChatVisible, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-const WORKFLOW_STEPS: AgentRole[] = [
-  'Strategic Planner',
-  'Project Manager',
-  'Full-Stack Developer',
-  'Quality Assurance Engineer',
-  'DevOps Engineer',
-];
+  const chatHistory = useMemo(() => {
+    return data?.pages.flatMap((page) => page.messages).reverse() ?? [];
+  }, [data]);
 
-interface ChatSectionProps {
-  onReset?: () => void;
-  onProjectCreated?: (projectId: string) => void;
-}
-
-export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentWorkflowStep, setCurrentWorkflowStep] = useState(0);
-  const [currentStepName, setCurrentStepName] = useState<string>('');
   const { user } = useAuth();
-
   const { inputValue, setInputValue, handleKeyDown, addToHistory } =
     useInputHistory();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const queryClient = useQueryClient();
 
-  const { mutate: executeWorkflow, isPending: isWorkflowRunning } =
-    useExecuteWorkflow({
-      onSuccess: (data) => {
-        // When the workflow is successful, invalidate queries to refetch data
-        queryClient.invalidateQueries({ queryKey: ['projects'] });
-        queryClient.invalidateQueries({ queryKey: ['vfsNodes'] });
-
-        const finalOutput = data.outputs[data.plan.steps.slice(-1)[0].id];
-        const responseMessage: AgentMessage = {
-          id: `response-${Date.now()}`,
-          role: 'DevOps Engineer', // Assuming the last step is deployment/finalizing
-          message:
-            '프로젝트 생성이 완료되었습니다! 파일 트리에서 결과를 확인하세요.',
-          status: 'completed',
-          timestamp: new Date(),
-          details: finalOutput,
-        };
-        setChatHistory((prev) => [...prev, responseMessage]);
-      },
-      onError: (error) => {
-        const errorMessage: AgentMessage = {
-          id: `error-${Date.now()}`,
-          role: 'Strategic Planner',
-          message: `❌ 워크플로우 실행 중 오류가 발생했습니다: ${error.message}`,
-          status: 'error',
-          timestamp: new Date(),
-        };
-        setChatHistory((prev) => [...prev, errorMessage]);
-      },
-      onSettled: () => {
-        setIsProcessing(false);
-      },
-    });
+  const { mutate: sendMessage } = useSendMessage({
+    onError: (error) => {
+      console.error("Failed to send message:", error);
+      // Here you could add a temporary error message to the UI
+    },
+    onSettled: () => {
+      setIsProcessing(false);
+    },
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const autoResize = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      const scrollHeight = textareaRef.current.scrollHeight;
-      // 120px is the max-height from CSS
-      if (scrollHeight < 120) {
-        textareaRef.current.style.height = scrollHeight + 'px';
-      } else {
-        textareaRef.current.style.height = '120px';
+  useEffect(() => {
+    const chatContainer = messagesEndRef.current?.parentElement;
+    if (chatContainer) {
+      const { scrollHeight, scrollTop, clientHeight } = chatContainer;
+      if (scrollHeight - scrollTop < clientHeight + 400) { // Increased threshold
+        scrollToBottom();
       }
     }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
   }, [chatHistory]);
-
-  useEffect(() => {
-    autoResize();
-  }, [inputValue]);
-
-  // Persist chat history per user in localStorage
-  useEffect(() => {
-    try {
-      const storageKey = user?.id
-        ? `navo_chat_history_${user.id}`
-        : 'navo_chat_history_guest';
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved) as Array<{
-          id: string;
-          role: string;
-          message: string;
-          timestamp: string | number;
-          status?: string;
-          details?: any;
-          suggestions?: string[];
-        }>;
-        const revived: ChatMessage[] = parsed.map((m: any) => ({
-          ...m,
-          timestamp: new Date(m.timestamp),
-        }));
-        setChatHistory(revived);
-      }
-    } catch (e) {
-      console.warn('Failed to load chat history from localStorage', e);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  useEffect(() => {
-    try {
-      const storageKey = user?.id
-        ? `navo_chat_history_${user.id}`
-        : 'navo_chat_history_guest';
-      const serializable = chatHistory.map((m) => ({
-        ...m,
-        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
-      }));
-      localStorage.setItem(storageKey, JSON.stringify(serializable));
-    } catch (e) {
-      console.warn('Failed to save chat history to localStorage', e);
-    }
-  }, [chatHistory, user?.id]);
-
-  useEffect(() => {
-    if (currentWorkflowStep < WORKFLOW_STEPS.length) {
-      setCurrentStepName(WORKFLOW_STEPS[currentWorkflowStep]);
-    }
-  }, [currentWorkflowStep]);
 
   const handleSendMessage = () => {
     if (!inputValue.trim() || isProcessing) return;
 
-    addToHistory(inputValue);
-    const userMessage: UserMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      message: inputValue,
-      timestamp: new Date(),
-    };
+    const messageToSend = inputValue;
+    const recentHistory = chatHistory.slice(-10);
 
-    setChatHistory((prev) => [...prev, userMessage]);
-    setInputValue('');
+    addToHistory(messageToSend);
     setIsProcessing(true);
 
-    const thinkingMessage: AgentMessage = {
-      id: `thinking-${Date.now()}`,
-      role: 'Strategic Planner',
-      message: '요청을 분석하여 실행 계획을 수립하고 있습니다...',
-      status: 'planning',
-      timestamp: new Date(),
-    };
-    setChatHistory((prev) => [...prev, thinkingMessage]);
-
-    executeWorkflow({ prompt: inputValue });
+    sendMessage({ prompt: messageToSend, chatHistory: recentHistory });
+    setInputValue('');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -219,41 +101,18 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
 
   return (
     <div className="chat-container">
-      {/* 채팅 메시지 영역 */}
       <div className="chat-messages">
-        {chatHistory.length === 0 ? (
-          <ChatPlaceholder
-            onExampleClick={(message) => {
-              setInputValue(message);
-              // Use a small timeout to allow state to update before sending
-              setTimeout(() => {
-                // We need to manually trigger send because state updates are async
-                // and handleSendMessage will see the old state.
-                // A better approach might be a useEffect, but this is simpler for now.
-                const userMessage: UserMessage = {
-                  id: Date.now().toString(),
-                  role: 'user',
-                  message: message,
-                  timestamp: new Date(),
-                };
-                setChatHistory((prev) => [...prev, userMessage]);
-                setInputValue('');
-                setIsProcessing(true);
-                const thinkingMessage: AgentMessage = {
-                  id: `thinking-${Date.now()}`,
-                  role: 'Strategic Planner',
-                  message: '요청을 분석하여 실행 계획을 수립하고 있습니다...',
-                  status: 'planning',
-                  timestamp: new Date(),
-                };
-                setChatHistory((prev) => [...prev, thinkingMessage]);
-                executeWorkflow({ prompt: message });
-              }, 50);
-            }}
-          />
+        {hasNextPage && (
+          <div ref={topOfChatRef} style={{ height: '1px', visibility: 'hidden' }} />
+        )}
+        {isLoading && <div className="loading-more">대화 기록을 불러오는 중...</div>}
+        {isFetchingNextPage && <div className="loading-more">이전 대화를 불러오는 중...</div>}
+        
+        {chatHistory.length === 0 && !isLoading && !isFetchingNextPage ? (
+          <ChatPlaceholder onExampleClick={setInputValue} />
         ) : (
-          chatHistory.map((message) => {
-            const isUser = (message as any).role === 'user';
+          chatHistory.map((message: any) => {
+            const isUser = message.role === 'user';
             return (
               <div
                 key={message.id}
@@ -262,22 +121,20 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
                 <div className="message-avatar">{isUser ? '👤' : '🤖'}</div>
                 <div className={`message-bubble ${isUser ? 'user' : 'ai'}`}>
                   <div className="message-sender">
-                    {isUser ? '사용자' : (message as any).role}
+                    {isUser ? '사용자' : message.role}
                   </div>
-                  <div className="message-text">{message.message}</div>
+                  <div className="message-text">{message.content}</div>
                   <div className="message-timestamp">
-                    {message.timestamp.toLocaleTimeString()}
+                    {new Date(message.createdAt).toLocaleTimeString()}
                   </div>
                 </div>
               </div>
             );
           })
         )}
-
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 입력 영역 */}
       <div className="chat-input-area">
         <div className="input-wrapper">
           <textarea
@@ -286,16 +143,16 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             onKeyDown={handleKeyDown}
-            placeholder="새로운 프로젝트에 대한 아이디어를 입력하세요..."
-            disabled={isProcessing}
+            placeholder={selectedProjectId ? "아이디어를 입력하여 프로젝트를 발전시키세요..." : "먼저 프로젝트를 선택해주세요."}
+            disabled={isProcessing || !selectedProjectId}
             rows={1}
             className="chat-textarea"
           />
           <button
             onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isProcessing}
+            disabled={!inputValue.trim() || isProcessing || !selectedProjectId}
             className="send-button-new"
-            title={isProcessing ? `AI 에이전트 작업 중...` : '전송'}
+            title={isProcessing ? 'AI 에이전트 작업 중...' : '전송'}
           >
             {isProcessing ? (
               <div className="loading-spinner-new" />

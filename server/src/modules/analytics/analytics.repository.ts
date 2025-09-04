@@ -288,7 +288,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
     limit: number = 10
   ): Promise<Array<{ path: string; views: number }>> {
     try {
-      const pageViews = await db()
+      const pageViews = await db
         .select({
           path: sql<string>`${events.eventData}->>'path'`,
           views: sql<number>`COUNT(*)`,
@@ -320,7 +320,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
     limit: number = 10
   ): Promise<Array<{ eventType: string; count: number }>> {
     try {
-      const eventCounts = await db()
+      const eventCounts = await db
         .select({
           eventType: events.eventType,
           count: sql<number>`COUNT(*)`,
@@ -350,7 +350,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      const trends = await db()
+      const trends = await db
         .select({
           date: sql<string>`DATE(${events.timestamp})`,
           count: sql<number>`COUNT(*)`,

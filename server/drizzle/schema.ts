@@ -177,29 +177,23 @@ export const userSessions = pgTable(
 export const chatMessages = pgTable(
   'chat_messages',
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    sessionId: uuid('session_id').notNull(),
-    userId: uuid('user_id').notNull(),
-    message: text().notNull(),
-    response: text(),
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: varchar('role', { length: 50 }).notNull(), // 'user' or AI role
+    content: text('content').notNull(),
+    payload: jsonb('payload'), // For AI messages with extra data
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .defaultNow()
       .notNull(),
   },
   (table) => [
-    index('idx_chat_messages_session').using(
-      'btree',
-      table.sessionId.asc().nullsLast().op('uuid_ops')
-    ),
-    index('idx_chat_messages_user').using(
-      'btree',
-      table.userId.asc().nullsLast().op('uuid_ops')
-    ),
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [users.id],
-      name: 'chat_messages_user_id_fkey',
-    }),
+    index('idx_chat_messages_project').using('btree', table.projectId),
+    index('idx_chat_messages_created_at').using('btree', table.createdAt),
   ]
 );
 

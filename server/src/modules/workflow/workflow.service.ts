@@ -21,9 +21,9 @@ export class WorkflowService {
     this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
-  async run(prompt: string, user: { id: string }): Promise<any> {
-    this.app.log.info(`[WorkflowService] Received prompt: "${prompt}"`);
-    const plan = await this.generatePlan(prompt, user);
+  async run(prompt: string, user: { id: string }, chatHistory: any[]): Promise<any> {
+    this.app.log.info(`[WorkflowService] Received prompt: "${prompt}" with history.`);
+    const plan = await this.generatePlan(prompt, user, chatHistory);
     this.app.log.info({ plan }, '[WorkflowService] Generated Plan');
 
     if (!plan || !Array.isArray(plan.steps)) {
@@ -36,14 +36,14 @@ export class WorkflowService {
     return { plan, outputs: Object.fromEntries(outputs) };
   }
 
-  private async generatePlan(prompt: string, user: { id: string }): Promise<Plan> {
+  private async generatePlan(prompt: string, user: { id: string }, chatHistory: any[]): Promise<Plan> {
     const availableTools = toolRegistry.list().map((tool) => ({
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,
     }));
 
-    const memberships = await db()
+    const memberships = await db
       .select({ organizationId: usersToOrganizations.organizationId })
       .from(usersToOrganizations)
       .where(eq(usersToOrganizations.userId, user.id))
@@ -55,9 +55,12 @@ export class WorkflowService {
     }
 
     const plannerPrompt = `
-      You are an expert AI Planner. Your job is to take a user's request and create a detailed, step-by-step execution plan using ONLY the available tools.
+      You are an expert AI Planner. Your job is to take a user's request and create a detailed, step-by-step execution plan using ONLY the available tools, based on the full conversation context.
 
-      **User Request:**
+      **Conversation History:**
+      ${JSON.stringify(chatHistory, null, 2)}
+
+      **Latest User Request:**
       "${prompt}"
 
       **Context (Use these exact values):**
