@@ -1,7 +1,6 @@
 import { eq } from 'drizzle-orm';
-
 import { db } from '@/db/db.instance';
-import { organizations, users, usersToOrganizations } from '@/drizzle/schema';
+import { users, organizations, usersToOrganizations } from '@/schema';
 
 import { NewUser } from './auth.types';
 

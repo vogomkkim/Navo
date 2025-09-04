@@ -1,11 +1,8 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
 
 import { db } from '@/db/db.instance';
-import {
-  projects,
-  usersToOrganizations,
-} from '@/drizzle/schema';
+import { projects } from '@/schema';
 import type { Project } from '@/modules/projects/projects.types';
 import { VfsRepositoryImpl } from './vfs.repository';
 
@@ -47,9 +44,9 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
           .values({ name, description, organizationId })
           .returning();
         if (!project) throw new Error('Project creation failed.');
-        
+
         await this.vfsRepository.createRootNode(project.id, tx);
-        
+
         return project;
       });
       this.app.log.info({ projectId: newProject.id }, 'New project created');

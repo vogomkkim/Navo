@@ -1,8 +1,6 @@
 'use client';
 
-import {
-  ChevronDownIcon,
-} from '@radix-ui/react-icons';
+import { ChevronDownIcon } from '@radix-ui/react-icons';
 import * as Select from '@radix-ui/react-select';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -11,14 +9,18 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { ChatSection } from '@/components/ui/ChatSection';
 import { CodeEditor } from '@/components/ui/CodeEditor';
+import { FileTabs } from '@/components/ui/FileTabs';
 import { FileTree } from '@/components/ui/FileTree';
 import {
   useListProjects,
   useUpdateVfsNodeContent,
   useVfsNodeContent,
 } from '@/lib/api';
+import { useIdeStore } from '@/store/ideStore';
 import { ProfileMenu } from './ui/ProfileMenu';
 import { StatusDisplay } from './ui/StatusDisplay';
+
+type ActiveView = 'editor' | 'preview';
 
 export default function HomeContent() {
   const { user, token, isLoading: isAuthLoading } = useAuth();
@@ -27,19 +29,20 @@ export default function HomeContent() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null
   );
-  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<string | null>(null);
   const [showMessage, setShowMessage] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState('');
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  const [activeView, setActiveView] = useState<ActiveView>('editor');
+
+  // Zustand store integration
+  const { activeFile, setActiveFile } = useIdeStore();
 
   const { data: vfsNodeData, isLoading: isLoadingVfsNode } = useVfsNodeContent(
     selectedProjectId || '',
-    selectedFileId
+    activeFile // Use activeFile from store
   );
 
   const { data: projectsData, isLoading: isLoadingProjects } = useListProjects({
@@ -79,10 +82,10 @@ export default function HomeContent() {
   });
 
   const handleSave = () => {
-    if (selectedProjectId && selectedFileId && editedContent !== null) {
+    if (selectedProjectId && activeFile && editedContent !== null) {
       updateMutation.mutate({
         projectId: selectedProjectId,
-        nodeId: selectedFileId,
+        nodeId: activeFile,
         content: editedContent,
       });
     }
@@ -91,13 +94,13 @@ export default function HomeContent() {
   const handleProjectSelect = (projectId: string) => {
     if (projectId === 'new') {
       setSelectedProjectId(null);
-      setSelectedFileId(null);
+      setActiveFile(null); // Reset active file
       queryClient.clear();
       window.location.reload();
       return;
     }
     setSelectedProjectId(projectId);
-    setSelectedFileId(null);
+    setActiveFile(null); // Reset active file on new project selection
   };
 
   const currentProjectName =
@@ -163,56 +166,67 @@ export default function HomeContent() {
               <p>Or create a new one using the chat.</p>
             </div>
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '250px 1fr 1fr',
-                height: '100%',
-                gap: '1rem',
-              }}
-            >
-              <div className="file-tree-panel">
-                <h2 className="text-lg font-medium mb-2">
-                  📁 {currentProjectName}
-                </h2>
-                <FileTree
-                  projectId={selectedProjectId}
-                  onFileSelect={(nodeId) => setSelectedFileId(nodeId)}
-                />
+            <div>
+              <div className="view-switcher" style={{ marginBottom: '1rem' }}>
+                <button onClick={() => setActiveView('editor')} disabled={activeView === 'editor'} className="btn btn-secondary mr-2">Editor</button>
+                <button onClick={() => setActiveView('preview')} disabled={activeView === 'preview'} className="btn btn-secondary">Preview</button>
               </div>
-              <div className="code-editor-panel">
-                <button
-                  onClick={handleSave}
-                  disabled={
-                    updateMutation.isPending ||
-                    editedContent === vfsNodeData?.node?.content
-                  }
-                  className="btn btn-primary mb-2"
-                >
-                  {updateMutation.isPending ? 'Saving...' : 'Save'}
-                </button>
-                {isLoadingVfsNode ? (
-                  <div>Loading file...</div>
-                ) : (
-                  <CodeEditor
-                    content={editedContent}
-                    onChange={(value) => setEditedContent(value || '')}
-                  />
-                )}
-              </div>
-              <div className="live-preview-panel">
-                <h2 className="text-lg font-medium mb-2">Live Preview</h2>
-                <iframe
-                  ref={previewIframeRef}
-                  src={`/api/preview/${selectedProjectId}`}
-                  title="Live Preview"
+
+              {activeView === 'editor' ? (
+                <div
                   style={{
-                    width: '100%',
-                    height: '80vh',
-                    border: '1px solid #ccc',
+                    display: 'grid',
+                    gridTemplateColumns: '250px 1fr',
+                    height: '100%',
+                    gap: '1rem',
                   }}
-                />
-              </div>
+                >
+                  <div className="file-tree-panel">
+                    <h2 className="text-lg font-medium mb-2">
+                      📁 {currentProjectName}
+                    </h2>
+                    <FileTree projectId={selectedProjectId} />
+                  </div>
+                  <div className="code-editor-panel">
+                    <FileTabs />
+                    <button
+                      onClick={handleSave}
+                      disabled={
+                        !activeFile ||
+                        updateMutation.isPending ||
+                        editedContent === vfsNodeData?.node?.content
+                      }
+                      className="btn btn-primary my-2"
+                    >
+                      {updateMutation.isPending ? 'Saving...' : 'Save'}
+                    </button>
+                    {!activeFile ? (
+                      <div>Select a file to start editing.</div>
+                    ) : isLoadingVfsNode ? (
+                      <div>Loading file...</div>
+                    ) : (
+                      <CodeEditor
+                        content={editedContent}
+                        onChange={(value) => setEditedContent(value || '')}
+                      />
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="live-preview-panel">
+                  <h2 className="text-lg font-medium mb-2">Live Preview</h2>
+                  <iframe
+                    ref={previewIframeRef}
+                    src={`/api/preview/${selectedProjectId}`}
+                    title="Live Preview"
+                    style={{
+                      width: '100%',
+                      height: '80vh',
+                      border: '1px solid #ccc',
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </section>

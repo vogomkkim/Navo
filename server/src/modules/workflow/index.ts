@@ -26,12 +26,12 @@ import { WorkflowExecutor } from './workflowExecutor';
 toolRegistry.register(createProjectInDbTool);
 toolRegistry.register(updateProjectFromArchitectureTool);
 toolRegistry.register(createProjectArchitectureTool);
-// toolRegistry.register(runShellCommandTool);
-// toolRegistry.register(listDirectoryTool);
-// toolRegistry.register(readFileTool);
-// toolRegistry.register(writeFileTool);
-// toolRegistry.register(generateProjectFilesTool);
-// toolRegistry.register(createOrganizationTool);
+toolRegistry.register(runShellCommandTool); // CMS 샌드박스에서 패키지 설치 및 빌드 필요
+toolRegistry.register(listDirectoryTool); // CMS에서 템플릿 구조 및 생성된 파일 확인 필요
+toolRegistry.register(readFileTool); // CMS에서 템플릿 파일 읽기 및 동적 콘텐츠 조합 필요
+toolRegistry.register(writeFileTool); // CMS에서 사용자 입력 기반 동적 콘텐츠 파일 생성 필요
+toolRegistry.register(generateProjectFilesTool);
+toolRegistry.register(createOrganizationTool);
 
 // --- Service Instantiation ---
 // Create a singleton instance of the executor to be used by other services.

@@ -32,7 +32,7 @@ export class WorkflowService {
 
     const outputs = await workflowExecutor.execute(this.app, plan);
     this.app.log.info({ outputs: Object.fromEntries(outputs) }, '[WorkflowService] Workflow executed successfully');
-    
+
     return { plan, outputs: Object.fromEntries(outputs) };
   }
 
@@ -43,7 +43,7 @@ export class WorkflowService {
       inputSchema: tool.inputSchema,
     }));
 
-    const memberships = await db
+    const memberships = await db()
       .select({ organizationId: usersToOrganizations.organizationId })
       .from(usersToOrganizations)
       .where(eq(usersToOrganizations.userId, user.id))
@@ -96,7 +96,7 @@ export class WorkflowService {
     try {
       const result = await this.model.generateContent(plannerPrompt);
       let text = result.response.text();
-      
+
       const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
       const match = text.match(jsonRegex);
       if (match && match[1]) {

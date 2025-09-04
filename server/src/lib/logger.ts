@@ -19,8 +19,8 @@ function createConsoleLogger(
 ): SimpleLogger {
   const fileDir = resolve(fileURLToPath(new URL('.', import.meta.url)));
   // Place logs under the server directory, regardless of CWD or build output path
-  const LOG_FILE = resolve(fileDir, '..', '..', 'server.log');
-  const ERR_FILE = resolve(fileDir, '..', '..', 'server.err');
+  const LOG_FILE = resolve(fileDir, '..', '..', '..', 'server.log');
+  const ERR_FILE = resolve(fileDir, '..', '..', '..', 'server.err');
 
   const serializeValue = (value: unknown): string => {
     if (value instanceof Error) {

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useListVfsNodes } from '@/lib/api';
+import { useIdeStore } from '@/store/ideStore';
 
 // Define icons for file and directory
 const FolderIcon = () => (
@@ -18,17 +19,14 @@ const FileIcon = () => (
 
 interface FileTreeProps {
   projectId: string;
-  onFileSelect: (nodeId: string) => void;
 }
 
 const DirectoryNode = ({
   node,
   projectId,
-  onFileSelect,
 }: {
   node: any;
   projectId: string;
-  onFileSelect: (nodeId: string) => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const {
@@ -61,7 +59,6 @@ const DirectoryNode = ({
               key={childNode.id}
               node={childNode}
               projectId={projectId}
-              onFileSelect={onFileSelect}
             />
           ))}
         </div>
@@ -72,14 +69,14 @@ const DirectoryNode = ({
 
 const FileNode = ({
   node,
-  onFileSelect,
 }: {
   node: any;
-  onFileSelect: (nodeId: string) => void;
 }) => {
+  const addOpenFile = useIdeStore((state) => state.addOpenFile);
+
   return (
     <div
-      onClick={() => onFileSelect(node.id)}
+      onClick={() => addOpenFile(node.id)} // Use store action on click
       style={{
         cursor: 'pointer',
         display: 'flex',
@@ -95,25 +92,22 @@ const FileNode = ({
 const Node = ({
   node,
   projectId,
-  onFileSelect,
 }: {
   node: any;
   projectId: string;
-  onFileSelect: (nodeId: string) => void;
 }) => {
   if (node.nodeType === 'DIRECTORY') {
     return (
       <DirectoryNode
         node={node}
         projectId={projectId}
-        onFileSelect={onFileSelect}
       />
     );
   }
-  return <FileNode node={node} onFileSelect={onFileSelect} />;
+  return <FileNode node={node} />;
 };
 
-export const FileTree = ({ projectId, onFileSelect }: FileTreeProps) => {
+export const FileTree = ({ projectId }: FileTreeProps) => {
   const { data, isLoading, isError, error } = useListVfsNodes(projectId, null); // Fetch root nodes
 
   if (isLoading) {
@@ -135,7 +129,6 @@ export const FileTree = ({ projectId, onFileSelect }: FileTreeProps) => {
           key={node.id}
           node={node}
           projectId={projectId}
-          onFileSelect={onFileSelect}
         />
       ))}
     </div>

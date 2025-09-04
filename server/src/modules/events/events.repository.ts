@@ -1,8 +1,8 @@
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
 
 import { db } from '@/db/db.instance';
-import { events } from '@/drizzle/schema';
+import { events } from '@/schema';
 
 export interface EventData {
   projectId?: string | null;
@@ -43,7 +43,7 @@ export class EventsRepositoryImpl implements EventsRepository {
         .select()
         .from(events)
         .where(eq(events.userId, userId))
-        .orderBy(desc(events.createdAt));
+        .orderBy(events.createdAt);
 
       return result;
     } catch (error) {
@@ -58,7 +58,7 @@ export class EventsRepositoryImpl implements EventsRepository {
         .select()
         .from(events)
         .where(eq(events.projectId, projectId))
-        .orderBy(desc(events.createdAt));
+        .orderBy(events.createdAt);
 
       return result;
     } catch (error) {

@@ -2,7 +2,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
 
 import { db } from '@/db/db.instance';
-import { vfsNodes } from '@/drizzle/schema';
+import { vfsNodes } from '@/schema';
 import type {
   ProjectArchitecture,
   VfsNode,
