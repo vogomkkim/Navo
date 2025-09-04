@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useListVfsNodes } from '@/lib/api';
+import { useListVfsNodes, VfsNode } from '@/lib/api';
 
 // Define icons for file and directory
 const FolderIcon = () => (
@@ -26,7 +26,7 @@ const DirectoryNode = ({
   projectId,
   onFileSelect,
 }: {
-  node: any;
+  node: VfsNode;
   projectId: string;
   onFileSelect: (nodeId: string) => void;
 }) => {
@@ -74,7 +74,7 @@ const FileNode = ({
   node,
   onFileSelect,
 }: {
-  node: any;
+  node: VfsNode;
   onFileSelect: (nodeId: string) => void;
 }) => {
   return (
@@ -97,7 +97,7 @@ const Node = ({
   projectId,
   onFileSelect,
 }: {
-  node: any;
+  node: VfsNode;
   projectId: string;
   onFileSelect: (nodeId: string) => void;
 }) => {

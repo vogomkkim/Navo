@@ -193,7 +193,10 @@ interface ProjectListResponse {
 }
 
 export function useListProjects(
-  options?: UseQueryOptions<ProjectListResponse, Error>,
+  options?: Omit<
+    UseQueryOptions<ProjectListResponse, Error, ProjectListResponse, readonly unknown[]>,
+    'queryKey' | 'queryFn'
+  >,
 ) {
   const { token, logout } = useAuth();
   return useQuery<ProjectListResponse, Error>({
@@ -343,7 +346,7 @@ export function useDeleteProject(
 }
 
 // useListVfsNodes - 프로젝트의 VFS 노드 목록을 가져오는 훅
-interface VfsNode {
+export interface VfsNode {
   id: string;
   name: string;
   nodeType: 'FILE' | 'DIRECTORY';
@@ -351,16 +354,20 @@ interface VfsNode {
   metadata: {
     path?: string;
   };
+  content?: string | null;
 }
 
-interface VfsNodesResponse {
+export interface VfsNodesResponse {
   nodes: VfsNode[];
 }
 
 export function useListVfsNodes(
   projectId: string,
   parentId: string | null = null,
-  options?: UseQueryOptions<VfsNodesResponse, Error>,
+  options?: Omit<
+    UseQueryOptions<VfsNodesResponse, Error, VfsNodesResponse, readonly unknown[]>,
+    'queryKey' | 'queryFn'
+  >,
 ) {
   const { token, logout } = useAuth();
   return useQuery<VfsNodesResponse, Error>({
@@ -386,23 +393,22 @@ export function useListVfsNodes(
 }
 
 // useVfsNodeContent - 특정 VFS 노드의 내용을 가져오는 훅
-interface VfsNodeResponse {
+export interface VfsNodeResponse {
   node: VfsNode;
 }
 
 export function useVfsNodeContent(
   projectId: string,
   nodeId: string | null,
-  options?: UseQueryOptions<VfsNodeResponse, Error>,
+  options?: Omit<
+    UseQueryOptions<VfsNodeResponse, Error, VfsNodeResponse, readonly unknown[]>,
+    'queryKey' | 'queryFn'
+  >,
 ) {
   const { token, logout } = useAuth();
   return useQuery<VfsNodeResponse, Error>({
     queryKey: ['vfsNode', projectId, nodeId],
     queryFn: async () => {
-      if (!nodeId) {
-        // Return a default empty state if no node is selected
-        return { node: null } as any;
-      }
       try {
         return await fetchApi<VfsNodeResponse>(
           `/api/projects/${projectId}/vfs/${nodeId}`,
@@ -453,10 +459,9 @@ export function useUpdateVfsNodeContent(
         throw error;
       }
     },
-    onSuccess: (data) => {
-      // Update the specific node's query cache with the new content
+    onSuccess: (data, variables) => {
       queryClient.setQueryData(
-        ['vfsNode', data.node.projectId, data.node.id],
+        ['vfsNode', variables.projectId, variables.nodeId],
         { node: data.node },
       );
     },
@@ -654,7 +659,10 @@ interface PageLayoutResponse {
 
 export function usePageLayout(
   pageId: string,
-  options?: UseQueryOptions<PageLayoutResponse, Error>,
+  options?: Omit<
+    UseQueryOptions<PageLayoutResponse, Error, PageLayoutResponse, readonly unknown[]>,
+    'queryKey' | 'queryFn'
+  >,
 ) {
   const { token, logout } = useAuth();
   return useQuery<PageLayoutResponse, Error>({
