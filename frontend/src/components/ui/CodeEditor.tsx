@@ -25,7 +25,7 @@ export const CodeEditor = ({
           color: '#888',
         }}
       >
-        Select a file to view its content.
+                파일을 선택하여 내용을 확인하세요.
       </div>
     );
   }

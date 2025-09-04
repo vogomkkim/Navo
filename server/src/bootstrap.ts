@@ -1,4 +1,3 @@
-import { FastifyInstance } from 'fastify';
 import pinoLogger from '@/lib/logger';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,10 +23,14 @@ const REQUIRED_VFS_REPO_METHODS = [
   'getNodeById', 'updateNodeContent'
 ];
 
-// 에러 로그 파일 경로
+// 에러 로그 파일 경로 (동적 결정)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const errFile = path.resolve(__dirname, '..', 'server.err');
+
+// __dirname이 'src'로 끝나면 server 디렉토리에서 실행 중
+// __dirname이 'server/src'로 끝나면 프로젝트 루트에서 실행 중
+const isServerDir = __dirname.endsWith('src');
+const errFile = path.resolve(__dirname, isServerDir ? '..' : '.', 'server.err');
 
 /**
  * 초기 에러 로깅 함수

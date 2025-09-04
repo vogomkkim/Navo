@@ -52,8 +52,8 @@ const DirectoryNode = ({
       </div>
       {isOpen && (
         <div style={{ marginLeft: '20px' }}>
-          {isLoading && <div>Loading...</div>}
-          {isError && <div>Error loading directory.</div>}
+          {isLoading && <div>불러오는 중...</div>}
+          {isError && <div>디렉토리를 불러오는 중 오류가 발생했습니다.</div>}
           {childrenData?.nodes.map((childNode) => (
             <Node
               key={childNode.id}
@@ -111,15 +111,15 @@ export const FileTree = ({ projectId }: FileTreeProps) => {
   const { data, isLoading, isError, error } = useListVfsNodes(projectId, null); // Fetch root nodes
 
   if (isLoading) {
-    return <div>Loading file tree...</div>;
+    return <div>파일 트리를 불러오는 중...</div>;
   }
 
   if (isError) {
-    return <div>Error: {error.message}</div>;
+    return <div>오류: {error.message}</div>;
   }
 
   if (!data?.nodes || data.nodes.length === 0) {
-    return <div>No files or directories found.</div>;
+    return <div>파일이나 디렉토리가 없습니다.</div>;
   }
 
   return (

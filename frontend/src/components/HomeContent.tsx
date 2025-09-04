@@ -17,6 +17,7 @@ import {
   useVfsNodeContent,
 } from '@/lib/api';
 import { useIdeStore } from '@/store/ideStore';
+import { NoProjectsPlaceholder } from './ui/NoProjectsPlaceholder';
 import { ProfileMenu } from './ui/ProfileMenu';
 import { StatusDisplay } from './ui/StatusDisplay';
 
@@ -35,7 +36,7 @@ export default function HomeContent() {
     text: string;
   } | null>(null);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
-  const [activeView, setActiveView] = useState<ActiveView>('editor');
+  const [activeView, setActiveView] = useState<ActiveView>('preview');
 
   // Zustand store integration
   const { activeFile, setActiveFile } = useIdeStore();
@@ -71,13 +72,13 @@ export default function HomeContent() {
 
   const updateMutation = useUpdateVfsNodeContent({
     onSuccess: () => {
-      showSuccessMessage('File saved successfully!');
+      showSuccessMessage('파일이 성공적으로 저장되었습니다!');
       if (previewIframeRef.current) {
         previewIframeRef.current.src = `/api/preview/${selectedProjectId}`;
       }
     },
     onError: (error) => {
-      showErrorMessage(`Error saving file: ${error.message}`);
+      showErrorMessage(`파일 저장 오류: ${error.message}`);
     },
   });
 
@@ -107,48 +108,52 @@ export default function HomeContent() {
     projectsData?.projects?.find((p) => p.id === selectedProjectId)?.name || '';
 
   if (isAuthLoading) {
-    return <div>Loading authentication...</div>;
+    return <div>인증 정보를 불러오는 중...</div>;
   }
 
   if (!user) {
-    return <div>Redirecting to login...</div>;
+    return <div>로그인 페이지로 이동 중...</div>;
   }
+
+  const hasProjects = projectsData && projectsData.projects && projectsData.projects.length > 0;
 
   return (
     <>
       <header className="topbar">
         <div className="topbar-left">
-          <h1 className="text-2xl font-bold text-gray-900">Navo Editor</h1>
-          <Select.Root
-            value={selectedProjectId || ''}
-            onValueChange={handleProjectSelect}
-          >
-            <Select.Trigger className="inline-flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-              <Select.Value placeholder="Select a Project" />
-              <Select.Icon>
-                <ChevronDownIcon />
-              </Select.Icon>
-            </Select.Trigger>
-            <Select.Portal>
-              <Select.Content className="overflow-hidden rounded-lg bg-white shadow-lg border border-gray-200">
-                <Select.Viewport className="p-1">
-                  {isLoadingProjects ? (
-                    <Select.Item value="loading" disabled>
-                      Loading...
-                    </Select.Item>
-                  ) : (
-                    projectsData?.projects?.map((project) => (
-                      <Select.Item key={project.id} value={project.id}>
-                        <Select.ItemText>{project.name}</Select.ItemText>
+          <h1 className="text-2xl font-bold text-gray-900">Navo 에디터</h1>
+          {hasProjects && (
+            <Select.Root
+              value={selectedProjectId || ''}
+              onValueChange={handleProjectSelect}
+            >
+              <Select.Trigger className="inline-flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                <Select.Value placeholder="프로젝트 선택" />
+                <Select.Icon>
+                  <ChevronDownIcon />
+                </Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Content className="overflow-hidden rounded-lg bg-white shadow-lg border border-gray-200">
+                  <Select.Viewport className="p-1">
+                    {isLoadingProjects ? (
+                      <Select.Item value="loading" disabled>
+                        불러오는 중...
                       </Select.Item>
-                    ))
-                  )}
-                  <Select.Separator />
-                  <Select.Item value="new">Create New Project</Select.Item>
-                </Select.Viewport>
-              </Select.Content>
-            </Select.Portal>
-          </Select.Root>
+                    ) : (
+                      projectsData?.projects?.map((project) => (
+                        <Select.Item key={project.id} value={project.id}>
+                          <Select.ItemText>{project.name}</Select.ItemText>
+                        </Select.Item>
+                      ))
+                    )}
+                    <Select.Separator />
+                    <Select.Item value="new">새 프로젝트 만들기</Select.Item>
+                  </Select.Viewport>
+                </Select.Content>
+              </Select.Portal>
+            </Select.Root>
+          )}
         </div>
         <div className="topbar-actions">
           <ProfileMenu />
@@ -160,16 +165,17 @@ export default function HomeContent() {
           <ChatSection />
         </section>
         <section className="project-preview">
-          {!selectedProjectId ? (
+          {!hasProjects ? (
+            <NoProjectsPlaceholder />
+          ) : !selectedProjectId ? (
             <div className="preview-placeholder">
-              <h2>Select a project to start</h2>
-              <p>Or create a new one using the chat.</p>
+              <h2>프로젝트를 선택하여 시작하세요</h2>
             </div>
           ) : (
             <div>
               <div className="view-switcher" style={{ marginBottom: '1rem' }}>
-                <button onClick={() => setActiveView('editor')} disabled={activeView === 'editor'} className="btn btn-secondary mr-2">Editor</button>
-                <button onClick={() => setActiveView('preview')} disabled={activeView === 'preview'} className="btn btn-secondary">Preview</button>
+                <button onClick={() => setActiveView('editor')} disabled={activeView === 'editor'} className="btn btn-secondary mr-2">에디터</button>
+                <button onClick={() => setActiveView('preview')} disabled={activeView === 'preview'} className="btn btn-secondary">미리보기</button>
               </div>
 
               {activeView === 'editor' ? (
@@ -198,12 +204,12 @@ export default function HomeContent() {
                       }
                       className="btn btn-primary my-2"
                     >
-                      {updateMutation.isPending ? 'Saving...' : 'Save'}
+                      {updateMutation.isPending ? '저장 중...' : '저장'}
                     </button>
                     {!activeFile ? (
-                      <div>Select a file to start editing.</div>
+                      <div>파일을 선택하여 편집을 시작하세요.</div>
                     ) : isLoadingVfsNode ? (
-                      <div>Loading file...</div>
+                      <div>파일을 불러오는 중...</div>
                     ) : (
                       <CodeEditor
                         content={editedContent}
@@ -214,7 +220,7 @@ export default function HomeContent() {
                 </div>
               ) : (
                 <div className="live-preview-panel">
-                  <h2 className="text-lg font-medium mb-2">Live Preview</h2>
+                  <h2 className="text-lg font-medium mb-2">실시간 미리보기</h2>
                   <iframe
                     ref={previewIframeRef}
                     src={`/api/preview/${selectedProjectId}`}

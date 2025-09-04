@@ -8,6 +8,7 @@ import { useInputHistory } from '@/hooks/useInputHistory';
 import { useExecuteWorkflow } from '@/lib/api';
 
 import { ChatPlaceholder } from './ChatPlaceholder';
+import './ChatSection.css';
 
 // Agent roles and statuses
 type AgentRole =
@@ -114,8 +115,13 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
   const autoResize = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height =
-        textareaRef.current.scrollHeight + 'px';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      // 120px is the max-height from CSS
+      if (scrollHeight < 120) {
+        textareaRef.current.style.height = scrollHeight + 'px';
+      } else {
+        textareaRef.current.style.height = '120px';
+      }
     }
   };
 
@@ -204,7 +210,7 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
     executeWorkflow({ prompt: inputValue });
   };
 
-  const handleKeyPress = (e: any) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -219,7 +225,30 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
           <ChatPlaceholder
             onExampleClick={(message) => {
               setInputValue(message);
-              setTimeout(() => handleSendMessage(), 100);
+              // Use a small timeout to allow state to update before sending
+              setTimeout(() => {
+                // We need to manually trigger send because state updates are async
+                // and handleSendMessage will see the old state.
+                // A better approach might be a useEffect, but this is simpler for now.
+                const userMessage: UserMessage = {
+                  id: Date.now().toString(),
+                  role: 'user',
+                  message: message,
+                  timestamp: new Date(),
+                };
+                setChatHistory((prev) => [...prev, userMessage]);
+                setInputValue('');
+                setIsProcessing(true);
+                const thinkingMessage: AgentMessage = {
+                  id: `thinking-${Date.now()}`,
+                  role: 'Strategic Planner',
+                  message: '요청을 분석하여 실행 계획을 수립하고 있습니다...',
+                  status: 'planning',
+                  timestamp: new Date(),
+                };
+                setChatHistory((prev) => [...prev, thinkingMessage]);
+                executeWorkflow({ prompt: message });
+              }, 50);
             }}
           />
         ) : (
@@ -250,37 +279,43 @@ export function ChatSection({ onReset, onProjectCreated }: ChatSectionProps) {
 
       {/* 입력 영역 */}
       <div className="chat-input-area">
-        <div className="input-container">
+        <div className="input-wrapper">
           <textarea
             ref={textareaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             onKeyDown={handleKeyDown}
-            placeholder="메시지를 입력하세요... (↑↓ 방향키로 이전 메시지 탐색)"
+            placeholder="새로운 프로젝트에 대한 아이디어를 입력하세요..."
             disabled={isProcessing}
-            rows={2}
+            rows={1}
+            className="chat-textarea"
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isProcessing}
-            className="send-button"
-            title={
-              isProcessing
-                ? `AI Agent 작업 중... (${currentStepName})`
-                : '프로젝트 시작'
-            }
+            className="send-button-new"
+            title={isProcessing ? `AI 에이전트 작업 중...` : '전송'}
           >
             {isProcessing ? (
-              <span className="loading-spinner">⏳</span>
+              <div className="loading-spinner-new" />
             ) : (
-              <span className="send-icon">✈️</span>
+              <svg
+                className="send-icon-new"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2 .01 7z"
+                  fill="currentColor"
+                />
+              </svg>
             )}
           </button>
         </div>
-        <div className="input-hint">
-          💡 **AI Project Orchestrator Agent**가 기획자, PM, 개발자, QA,
-          엔지니어 역할을 모두 수행하여 프로젝트를 완성합니다!
+        <div className="input-hint-new">
+          Navo AI가 아이디어를 현실로 만듭니다.
         </div>
       </div>
     </div>

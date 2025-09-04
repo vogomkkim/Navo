@@ -1,0 +1,103 @@
+/* ChatSection.css */
+
+.chat-input-area {
+  padding: 1rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+  background-color: var(--background-light, #f9f9f9);
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: var(--background-white, #ffffff);
+  border-radius: 24px; /* Fully rounded corners */
+  padding: 4px;
+  border: 1px solid var(--border-color, #e0e0e0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.input-wrapper:focus-within {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+.chat-textarea {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  padding: 10px 16px;
+  font-size: 1rem;
+  background-color: transparent;
+  resize: none;
+  max-height: 120px;
+  overflow-y: auto;
+  color: var(--text-primary, #333);
+}
+
+.chat-textarea::placeholder {
+  color: var(--text-secondary, #999);
+}
+
+.send-button-new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.send-button-new:hover:not(:disabled) {
+  background-color: #0056b3;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+}
+
+.send-button-new:disabled {
+  background-color: #c0c0c0;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.send-icon-new {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.2s ease;
+}
+
+.send-button-new:hover:not(:disabled) .send-icon-new {
+  transform: rotate(-15deg) translateX(1px);
+}
+
+
+.loading-spinner-new {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.input-hint-new {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #777);
+  text-align: center;
+  margin-top: 0.75rem;
+  padding: 0 1rem;
+}
