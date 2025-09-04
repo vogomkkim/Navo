@@ -64,6 +64,38 @@ export class ProjectsService {
     }
   }
 
+  async updateVfsNodeContent(
+    nodeId: string,
+    projectId: string,
+    userId: string,
+    content: string,
+  ): Promise<VfsNode | null> {
+    try {
+      // Verify project ownership first
+      const project = await this.repository.getProjectByUserId(
+        projectId,
+        userId,
+      );
+      if (!project) {
+        throw new Error('프로젝트를 찾을 수 없거나 접근 권한이 없습니다.');
+      }
+
+      // Additional check: ensure the node belongs to the project
+      const node = await this.repository.getVfsNodeById(nodeId, projectId);
+      if (!node) {
+        throw new Error('해당 파일이 프로젝트에 존재하지 않습니다.');
+      }
+      if (node.nodeType !== 'FILE') {
+        throw new Error('디렉토리의 내용은 수정할 수 없습니다.');
+      }
+
+      return await this.repository.updateVfsNodeContent(nodeId, content);
+    } catch (error) {
+      this.app.log.error(error, 'VFS 노드 내용 업데이트 실패');
+      throw new Error('VFS 노드 내용 업데이트에 실패했습니다.');
+    }
+  }
+
   async renameProject(
     projectId: string,
     name: string,

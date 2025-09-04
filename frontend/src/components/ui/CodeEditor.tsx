@@ -6,11 +6,13 @@ import Editor from '@monaco-editor/react';
 interface CodeEditorProps {
   content: string | null;
   language?: string;
+  onChange?: (value: string | undefined) => void;
 }
 
 export const CodeEditor = ({
   content,
   language = 'typescript',
+  onChange,
 }: CodeEditorProps) => {
   if (content === null) {
     return (
@@ -34,8 +36,9 @@ export const CodeEditor = ({
       language={language}
       value={content}
       theme="vs-dark"
+      onChange={onChange}
       options={{
-        readOnly: false, // For now, let's make it editable
+        readOnly: false,
         minimap: { enabled: true },
         fontSize: 14,
       }}

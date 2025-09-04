@@ -97,6 +97,47 @@ export function projectsController(app: FastifyInstance) {
     },
   );
 
+  // Update a VFS node's content
+  app.patch(
+    '/api/projects/:projectId/vfs/:nodeId',
+    {
+      preHandler: [app.authenticateToken],
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request as any).userId as string | undefined;
+        if (!userId) {
+          reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
+          return;
+        }
+
+        const params = request.params as any;
+        const { projectId, nodeId } = params;
+        const { content } = request.body as { content: string };
+
+        if (typeof content !== 'string') {
+          return reply.status(400).send({ error: 'Content must be a string.' });
+        }
+
+        const updatedNode = await projectsService.updateVfsNodeContent(
+          nodeId,
+          projectId,
+          userId,
+          content,
+        );
+
+        if (!updatedNode) {
+          return reply.status(404).send({ error: '파일을 찾을 수 없습니다.' });
+        }
+
+        reply.send({ node: updatedNode });
+      } catch (error) {
+        app.log.error(error, 'VFS 노드 내용 업데이트 실패');
+        reply.status(500).send({ error: 'VFS 노드 내용 업데이트에 실패했습니다.' });
+      }
+    },
+  );
+
   // Rename project
   app.patch(
     '/api/projects/:projectId',

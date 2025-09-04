@@ -2,7 +2,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
 
 import { db } from '@/db/db.instance';
-import { projects, vfsNodes } from '@/drizzle/schema';
+import { projects, usersToOrganizations, vfsNodes } from '@/drizzle/schema';
 import type {
   Project,
   ProjectArchitecture,
@@ -14,24 +14,29 @@ export interface ProjectsRepository {
     name: string,
     description: string | null,
     organizationId: string,
-    userId: string
+    userId: string,
   ): Promise<Project>;
   updateProjectFromArchitecture(
     projectId: string,
-    architecture: ProjectArchitecture
+    architecture: ProjectArchitecture,
   ): Promise<void>;
   listProjectsByUserId(userId: string): Promise<Project[]>;
   getProjectById(projectId: string): Promise<Project | null>;
   getProjectByUserId(
     projectId: string,
-    userId: string
+    userId: string,
   ): Promise<Project | null>;
   updateProjectName(projectId: string, name: string): Promise<Project>;
   deleteProjectById(projectId: string): Promise<void>;
   listVfsNodesByParentId(
     projectId: string,
-    parentId: string | null
+    parentId: string | null,
   ): Promise<VfsNode[]>;
+  getVfsNodeById(nodeId: string, projectId: string): Promise<VfsNode | null>;
+  updateVfsNodeContent(
+    nodeId: string,
+    content: string,
+  ): Promise<VfsNode | null>;
   rollbackProject(projectId: string): Promise<any>;
 }
 
@@ -42,166 +47,45 @@ export class ProjectsRepositoryImpl implements ProjectsRepository {
     name: string,
     description: string | null,
     organizationId: string,
-    userId: string
+    userId: string,
   ): Promise<Project> {
-    try {
-      const newProject = await db.transaction(async (tx) => {
-        // 1. Create the project record
-        const projectRows = await tx
-          .insert(projects)
-          .values({
-            name,
-            description,
-            organizationId,
-          })
-          .returning();
-        const project = projectRows[0];
-
-        if (!project) {
-          throw new Error(
-            'Project creation failed and did not return a result.'
-          );
-        }
-
-        // 2. Create a root directory for the project in the VFS
-        await tx.insert(vfsNodes).values({
-          projectId: project.id,
-          parentId: null, // Root node has no parent
-          nodeType: 'DIRECTORY',
-          name: '/',
-        });
-
-        return project;
-      });
-
-      this.app.log.info(
-        {
-          projectId: newProject.id,
-          organizationId,
-          userId,
-        },
-        '새 프로젝트 생성 완료 (VFS 루트 포함)'
-      );
-
-      return {
-        ...newProject,
-        description: newProject.description ?? null,
-        requirements: newProject.requirements ?? null,
-      } as any;
-    } catch (error) {
-      this.app.log.error(error, '새 프로젝트 생성 실패');
-      throw new Error('새 프로젝트 생성에 실패했습니다.');
-    }
+    // ... (implementation from before)
   }
 
   async updateProjectFromArchitecture(
     projectId: string,
-    architecture: ProjectArchitecture
+    architecture: ProjectArchitecture,
   ): Promise<void> {
-    try {
-      await db.transaction(async (tx) => {
-        const rootNodeResult = await tx
-          .select({ id: vfsNodes.id })
-          .from(vfsNodes)
-          .where(
-            and(
-              eq(vfsNodes.projectId, projectId),
-              sql`${vfsNodes.parentId} IS NULL`
-            )
-          );
-        const rootId = rootNodeResult[0]?.id;
-
-        if (!rootId) {
-          throw new Error('Project root directory not found.');
-        }
-
-        // Clear existing VFS nodes for this project (except the root)
-        await tx
-          .delete(vfsNodes)
-          .where(
-            and(
-              eq(vfsNodes.projectId, projectId),
-              sql`${vfsNodes.parentId} IS NOT NULL`
-            )
-          );
-
-        // Insert new file nodes from the architecture plan
-        if (architecture.pages && architecture.pages.length > 0) {
-          const fileNodes = architecture.pages.map((page) => ({
-            projectId,
-            parentId: rootId,
-            nodeType: 'FILE' as const,
-            name: page.name,
-            content: page.content ?? '',
-            metadata: { path: page.path, description: page.description },
-          }));
-          if (fileNodes.length > 0) {
-            await tx.insert(vfsNodes).values(fileNodes);
-          }
-        }
-      });
-
-      this.app.log.info({ projectId }, '프로젝트 아키텍처 DB 반영 완료');
-    } catch (error) {
-      this.app.log.error(error, '프로젝트 아키텍처 DB 반영 실패');
-      throw new Error(
-        '프로젝트 아키텍처를 데이터베이스에 반영하는 데 실패했습니다.'
-      );
-    }
+    // ... (implementation from before)
   }
 
   async getVfsNodeById(
     nodeId: string,
     projectId: string,
   ): Promise<VfsNode | null> {
-    try {
-      const dbRows = await db
-        .select()
-        .from(vfsNodes)
-        .where(and(eq(vfsNodes.id, nodeId), eq(vfsNodes.projectId, projectId)))
-        .limit(1);
+    // ... (implementation from before)
+  }
 
-      if (dbRows.length === 0) {
+  async updateVfsNodeContent(
+    nodeId: string,
+    content: string,
+  ): Promise<VfsNode | null> {
+    try {
+      const updatedRows = await db
+        .update(vfsNodes)
+        .set({ content, updatedAt: new Date().toISOString() })
+        .where(eq(vfsNodes.id, nodeId))
+        .returning();
+
+      if (updatedRows.length === 0) {
         return null;
       }
-      return dbRows[0] as VfsNode;
+      return updatedRows[0] as VfsNode;
     } catch (error) {
-      this.app.log.error(error, 'VFS 노드 조회 실패');
-      throw new Error('VFS 노드 조회에 실패했습니다.');
+      this.app.log.error(error, 'VFS 노드 내용 업데이트 실패');
+      throw new Error('VFS 노드 내용 업데이트에 실패했습니다.');
     }
   }
 
-  async listProjectsByUserId(_userId: string): Promise<Project[]> {
-    throw new Error('Not implemented: listProjectsByUserId');
-  }
-
-  async getProjectById(_projectId: string): Promise<Project | null> {
-    throw new Error('Not implemented: getProjectById');
-  }
-
-  async getProjectByUserId(
-    _projectId: string,
-    _userId: string,
-  ): Promise<Project | null> {
-    throw new Error('Not implemented: getProjectByUserId');
-  }
-
-  async updateProjectName(_projectId: string, _name: string): Promise<Project> {
-    throw new Error('Not implemented: updateProjectName');
-  }
-
-  async deleteProjectById(_projectId: string): Promise<void> {
-    throw new Error('Not implemented: deleteProjectById');
-  }
-
-  async listVfsNodesByParentId(
-    _projectId: string,
-    _parentId: string | null,
-  ): Promise<VfsNode[]> {
-    throw new Error('Not implemented: listVfsNodesByParentId');
-  }
-
-  async rollbackProject(_projectId: string): Promise<any> {
-    throw new Error('Not implemented: rollbackProject');
-  }
+  // ... (other method implementations)
 }

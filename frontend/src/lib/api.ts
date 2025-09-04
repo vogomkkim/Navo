@@ -422,6 +422,48 @@ export function useVfsNodeContent(
   });
 }
 
+// useUpdateVfsNodeContent - VFS 노드의 내용을 업데이트하는 훅
+interface UpdateVfsNodePayload {
+  projectId: string;
+  nodeId: string;
+  content: string;
+}
+
+export function useUpdateVfsNodeContent(
+  options?: UseMutationOptions<VfsNodeResponse, Error, UpdateVfsNodePayload>,
+) {
+  const { token, logout } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation<VfsNodeResponse, Error, UpdateVfsNodePayload>({
+    mutationFn: async ({ projectId, nodeId, content }) => {
+      try {
+        return await fetchApi<VfsNodeResponse>(
+          `/api/projects/${projectId}/vfs/${nodeId}`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({ content }),
+            token,
+          },
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+          logout();
+        }
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      // Update the specific node's query cache with the new content
+      queryClient.setQueryData(
+        ['vfsNode', data.node.projectId, data.node.id],
+        { node: data.node },
+      );
+    },
+    ...options,
+  });
+}
+
 // useGenerateComponent
 interface GenerateComponentPayload {
   description: string;
