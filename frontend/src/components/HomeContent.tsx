@@ -33,7 +33,7 @@ export default function HomeContent() {
     setSelectedProjectId: state.setSelectedProjectId,
   }));
 
-  const { activeFile, setActiveFile } = useIdeStore();
+  const { activeFile } = useIdeStore();
   const [editedContent, setEditedContent] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<ActiveView>('editor');
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
@@ -76,10 +76,11 @@ export default function HomeContent() {
   };
 
   const updateMutation = useUpdateVfsNodeContent({
-    onSuccess: () => {
+    onSuccess: (data) => {
       showSuccessMessage('파일이 성공적으로 저장되었습니다!');
       if (previewIframeRef.current) {
-        previewIframeRef.current.src = `/api/preview/${selectedProjectId}`;
+        // Use projectId from the mutation response data to avoid stale closures
+        previewIframeRef.current.src = `/api/preview/${data.node.projectId}`;
       }
     },
     onError: (error) => {

@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query';
 import { useAuth } from '@/app/context/AuthContext';
 import { fetchApi } from '@/lib/apiClient';
+import { handleUnauthorizedError } from '@/lib/handleApiError';
 
 // --- Types ---
 
@@ -62,9 +63,7 @@ export function useGenerateProject(
           },
         );
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
@@ -96,9 +95,7 @@ export function useGenerateComponent(
           },
         );
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
@@ -117,9 +114,7 @@ export function useSuggestions(
         const url = `/api/ai/suggestions?limit=3`;
         return await fetchApi<SuggestionsResponse>(url, { token });
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
@@ -143,9 +138,7 @@ export function useGenerateDummySuggestion(
           },
         );
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
