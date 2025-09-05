@@ -13,6 +13,7 @@ import {
   unique,
   uuid,
   varchar,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 // --- Core Multi-Tenant and User Tables ---
@@ -95,13 +96,13 @@ export const vfsNodes = pgTable(
     projectId: uuid('project_id')
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
-    parentId: uuid('parent_id').references(() => vfsNodes.id, {
+    parentId: uuid('parent_id').references((): AnyPgColumn => vfsNodes.id, { // Use AnyPgColumn for self-reference
       onDelete: 'cascade',
-    }), // Self-referencing for hierarchy
-    nodeType: varchar('node_type', { length: 50 }).notNull(), // 'FILE' or 'DIRECTORY'
+    }),
+    nodeType: varchar('node_type', { length: 50 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
-    content: text('content'), // For files
-    metadata: jsonb('metadata').default({}), // For additional info like page routes, component props etc.
+    content: text('content'),
+    metadata: jsonb('metadata').default({}),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .defaultNow()
       .notNull(),
@@ -109,20 +110,20 @@ export const vfsNodes = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (table) => [
-    index('idx_vfs_nodes_project').using('btree', table.projectId),
-    index('idx_vfs_nodes_parent').using('btree', table.parentId),
-    unique('vfs_nodes_project_id_parent_id_name_key').on(
+  (table) => ({
+    projectIdx: index('idx_vfs_nodes_project').using('btree', table.projectId),
+    parentIdx: index('idx_vfs_nodes_parent').using('btree', table.parentId),
+    uniqueName: unique('vfs_nodes_project_id_parent_id_name_key').on(
       table.projectId,
       table.parentId,
       table.name
     ),
-    check('check_node_type', sql`node_type IN ('FILE', 'DIRECTORY')`),
-    check(
+    nodeTypeCheck: check('check_node_type', sql`node_type IN ('FILE', 'DIRECTORY')`),
+    contentCheck: check(
       'check_content_for_file',
       sql`(node_type = 'DIRECTORY' AND content IS NULL) OR (node_type = 'FILE')`
     ),
-  ]
+  })
 );
 
 // --- User-Specific and Session Tables (Not directly tenant-aware) ---

@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { WorkflowService } from '@/modules/workflow/workflow.service';
-import { logger } from '@/lib/logger';
+import logger from '@/lib/logger';
 
 interface AnalysisResult {
   intent: 'simple_chat' | 'create_project' | 'file_operation' | 'unknown';

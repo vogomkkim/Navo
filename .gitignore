@@ -13,8 +13,11 @@ pnpm-debug.log*
 
 # Build outputs
 /dist/
+**/dist
 /build/
+**/build
 /out/
+**/out
 /coverage/
 .nyc_output/
 

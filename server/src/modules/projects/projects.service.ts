@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 
-import type { Project, VfsNode, ProjectArchitecture, CreateChatMessage } from '@/modules/projects/projects.types';
+import type { Project, VfsNode, ProjectArchitecture, CreateChatMessage, CreateProjectData } from '@/modules/projects/projects.types';
 import { ProjectsRepositoryImpl } from './projects.repository';
 import { VfsRepositoryImpl } from './vfs.repository';
 import { ChatRepository } from './chat.repository'; // Import the new repository

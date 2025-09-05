@@ -51,29 +51,23 @@ export class VfsRepositoryImpl implements VfsRepository {
         const rootId = rootNodeResult[0]?.id;
         if (!rootId) throw new Error('Project root directory not found.');
 
+        // Delete old nodes except the root
         await tx.delete(vfsNodes).where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NOT NULL`));
 
-        const createNodesRecursive = async (parentId: string, children: any[]) => {
-          if (!children || children.length === 0) return;
-          for (const child of children) {
-            const [newNode] = await tx
+        // Create new nodes based on the 'pages' array
+        if (architecture.pages && architecture.pages.length > 0) {
+          for (const page of architecture.pages) {
+            await tx
               .insert(vfsNodes)
               .values({
                 projectId,
-                parentId,
-                nodeType: child.type === 'folder' ? 'DIRECTORY' : 'FILE',
-                name: child.name,
-                content: child.content ?? null,
-              })
-              .returning();
-            if (child.type === 'folder' && child.children) {
-              await createNodesRecursive(newNode.id, child.children);
-            }
+                parentId: rootId, // Assuming all pages are at the root level for now
+                nodeType: 'FILE',
+                name: page.name,
+                content: page.content ?? '',
+                metadata: page.metadata ?? {},
+              });
           }
-        };
-
-        if (architecture.file_structure?.children) {
-          await createNodesRecursive(rootId, architecture.file_structure.children);
         }
       });
       this.app.log.info({ projectId }, 'Project architecture applied to VFS.');
