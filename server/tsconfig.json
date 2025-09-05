@@ -21,7 +21,7 @@
       "@/config": ["src/config"],
       "@/config/*": ["src/config/*"]
     },
-    "types": ["node", "jest"]
+    "types": ["node", "vitest/globals"]
   },
   "include": [
     "src/**/*.ts",

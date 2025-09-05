@@ -1,59 +1,239 @@
-'use client';
-
-import { ChevronDownIcon } from '@radix-ui/react-icons';
-import * as Select from '@radix-ui/react-select';
-import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-
 import { useAuth } from '@/app/context/AuthContext';
-import { ChatSection } from '@/components/ui/ChatSection';
-import { CodeEditor } from '@/components/ui/CodeEditor';
-import { FileTabs } from '@/components/ui/FileTabs';
-import { FileTree } from '@/components/ui/FileTree';
-import {
-  useListProjects,
-  useUpdateVfsNodeContent,
-  useVfsNodeContent,
-} from '@/hooks/api';
+import { useRouter } from 'next/navigation';
+import { useQueryClient, UseMutationResult } from '@tanstack/react-query';
 import { useIdeStore } from '@/store/ideStore';
-import { NoProjectsPlaceholder } from './ui/NoProjectsPlaceholder';
-import { ProfileMenu } from './ui/ProfileMenu';
-import { StatusDisplay } from './ui/StatusDisplay';
+import { useState, useEffect, useRef, Dispatch, SetStateAction } from 'react';
+import { useVfsNodeContent, useUpdateVfsNodeContent } from '@/hooks/api/useVfs';
+import { useListProjects } from '@/hooks/api/useProject';
+import * as Select from '@radix-ui/react-select';
+import {
+  ChevronDownIcon,
+  CubeIcon,
+  EyeOpenIcon,
+  Pencil2Icon,
+  CheckIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+} from '@radix-ui/react-icons';
+import { ProfileMenu } from '@/components/ui/ProfileMenu';
+import { StatusDisplay } from '@/components/ui/StatusDisplay';
+import { ChatSection } from '@/components/ui/ChatSection';
+import { NoProjectsPlaceholder } from '@/components/ui/NoProjectsPlaceholder';
+import { FileTree } from '@/components/ui/FileTree';
+import { FileTabs } from '@/components/ui/FileTabs';
+import { CodeEditor } from '@/components/ui/CodeEditor';
+import clsx from 'clsx';
 
 type ActiveView = 'editor' | 'preview';
+
+// VFS-related types from useVfs.ts to ensure type safety
+interface VfsNode {
+  id: string;
+  name: string;
+  nodeType: 'FILE' | 'DIRECTORY';
+  updatedAt: string;
+  metadata: {
+    path?: string;
+  };
+  content?: string;
+  projectId: string;
+}
+
+interface VfsNodeResponse {
+  node: VfsNode | null;
+}
+
+interface UpdateVfsNodePayload {
+  projectId: string;
+  nodeId: string;
+  content: string;
+}
+
+// Props interface for EditorPanel
+interface EditorPanelProps {
+  currentProjectName: string;
+  selectedProjectId: string;
+  handleSave: () => void;
+  updateMutation: UseMutationResult<
+    VfsNodeResponse,
+    Error,
+    UpdateVfsNodePayload,
+    unknown
+  >;
+  activeFile: string | null;
+  isLoadingVfsNode: boolean;
+  editedContent: string | null;
+  setEditedContent: Dispatch<SetStateAction<string | null>>;
+  vfsNodeData: VfsNodeResponse | undefined;
+}
+
+// Props interface for PreviewPanel
+interface PreviewPanelProps {
+  previewIframeRef: React.RefObject<HTMLIFrameElement | null>;
+  selectedProjectId: string;
+}
+
+// EditorPanel Component
+const EditorPanel: React.FC<EditorPanelProps> = ({
+  currentProjectName,
+  selectedProjectId,
+  handleSave,
+  updateMutation,
+  activeFile,
+  isLoadingVfsNode,
+  editedContent,
+  setEditedContent,
+  vfsNodeData,
+}) => (
+  <div className="grid grid-cols-[250px_1fr] h-full gap-4">
+    <div className="file-tree-panel bg-gray-50/50 rounded-lg border border-gray-200/80">
+      <h2 className="text-md font-medium mb-2 text-gray-700 px-3 pt-3">
+        {currentProjectName}
+      </h2>
+      <FileTree projectId={selectedProjectId} />
+    </div>
+    <div className="code-editor-panel flex flex-col h-full">
+      <div className="flex items-center justify-between">
+        <FileTabs />
+        <button
+          onClick={handleSave}
+          disabled={
+            !activeFile ||
+            updateMutation.isPending ||
+            editedContent === vfsNodeData?.node?.content
+          }
+          className="flex items-center gap-2 btn btn-ghost btn-sm text-gray-600 hover:bg-gray-200"
+        >
+          {updateMutation.isPending ? (
+            '저장 중...'
+          ) : (
+            <>
+              <CheckIcon />
+              저장
+            </>
+          )}
+        </button>
+      </div>
+      <div className="flex-grow mt-2 relative">
+        {!activeFile ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+            <Pencil2Icon className="w-12 h-12 mb-4" />
+            <span className="text-lg">파일을 선택하여 편집을 시작하세요.</span>
+          </div>
+        ) : isLoadingVfsNode ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            파일을 불러오는 중...
+          </div>
+        ) : (
+          <CodeEditor
+            content={editedContent ?? ''}
+            onChange={(value) => setEditedContent(value || '')}
+          />
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// PreviewPanel Component
+const PreviewPanel: React.FC<PreviewPanelProps> = ({
+  previewIframeRef,
+  selectedProjectId,
+}) => (
+  <div className="live-preview-panel h-full">
+    <iframe
+      ref={previewIframeRef}
+      src={`/api/preview/${selectedProjectId}`}
+      title="Live Preview"
+      className="w-full h-full border border-gray-300 rounded-lg"
+    />
+  </div>
+);
+
+const ViewSwitcher = ({
+  activeView,
+  setActiveView,
+}: {
+  activeView: ActiveView;
+  setActiveView: Dispatch<SetStateAction<ActiveView>>;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div
+      className="absolute top-2 right-2 z-10 flex items-center p-1 bg-gray-200/80 rounded-lg transition-all duration-300"
+      onMouseLeave={() => setIsExpanded(false)}
+    >
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="p-1 text-gray-600 hover:text-gray-900"
+      >
+        {isExpanded ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+      </button>
+      <div
+        className={clsx(
+          'flex items-center transition-all duration-300 overflow-hidden',
+          isExpanded ? 'max-w-xs' : 'max-w-0',
+        )}
+      >
+        <button
+          onClick={() => setActiveView('editor')}
+          className={clsx(
+            'px-3 py-1 text-sm font-semibold rounded-md flex items-center gap-2 whitespace-nowrap',
+            activeView === 'editor'
+              ? 'bg-white text-gray-800 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700',
+          )}
+        >
+          <Pencil2Icon className="w-4 h-4" />
+          에디터
+        </button>
+        <button
+          onClick={() => setActiveView('preview')}
+          className={clsx(
+            'px-3 py-1 text-sm font-semibold rounded-md flex items-center gap-2 whitespace-nowrap',
+            activeView === 'preview'
+              ? 'bg-white text-gray-800 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700',
+          )}
+        >
+          <EyeOpenIcon className="w-4 h-4" />
+          미리보기
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function HomeContent() {
   const { user, token, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   // Zustand store integration for project context
-  const { selectedProjectId, setSelectedProjectId } = useIdeStore((state) => ({
-    selectedProjectId: state.selectedProjectId,
-    setSelectedProjectId: state.setSelectedProjectId,
-  }));
+  const selectedProjectId = useIdeStore((state) => state.selectedProjectId);
+  const setSelectedProjectId = useIdeStore(
+    (state) => state.setSelectedProjectId,
+  );
 
-  const { activeFile } = useIdeStore();
+  const activeFile = useIdeStore((state) => state.activeFile);
   const [editedContent, setEditedContent] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<ActiveView>('editor');
-  const previewIframeRef = useRef<HTMLIFrameElement>(null);
-  const [showMessage, setShowMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [activeView, setActiveView] = useState<ActiveView>('preview');
+  const previewIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [showMessage, setShowMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   const { data: vfsNodeData, isLoading: isLoadingVfsNode } = useVfsNodeContent(
     selectedProjectId || '',
-    activeFile // Use activeFile from store
+    activeFile, // Use activeFile from store
   );
 
-  const { data: projectsData, isLoading: isLoadingProjects } = useListProjects({
-    enabled: !isAuthLoading && !!token,
-  });
-
-  useEffect(() => {
-    // Automatically select the first project on initial load if none is selected
-    if (!selectedProjectId && projectsData?.projects?.length) {
-      setSelectedProjectId(projectsData.projects[0].id);
-    }
-  }, [projectsData, selectedProjectId, setSelectedProjectId]);
+  const { data: projectsData, isLoading: isLoadingProjects } = useListProjects(
+    {
+      enabled: !isAuthLoading && !!token,
+    },
+  );
 
   useEffect(() => {
     setEditedContent(vfsNodeData?.node?.content ?? null);
@@ -119,7 +299,8 @@ export default function HomeContent() {
     return <div>로그인 페이지로 이동 중...</div>;
   }
 
-  const hasProjects = projectsData && projectsData.projects && projectsData.projects.length > 0;
+  const hasProjects =
+    projectsData && projectsData.projects && projectsData.projects.length > 0;
 
   return (
     <>
@@ -169,74 +350,34 @@ export default function HomeContent() {
           <ChatSection />
         </section>
         <section className="project-preview">
-          {!hasProjects ? (
+          {!hasProjects || !selectedProjectId ? (
             <NoProjectsPlaceholder />
-          ) : !selectedProjectId ? (
-            <div className="preview-placeholder">
-              <h2>프로젝트를 선택하여 시작하세요</h2>
-            </div>
           ) : (
-            <div>
-              <div className="view-switcher" style={{ marginBottom: '1rem' }}>
-                <button onClick={() => setActiveView('editor')} disabled={activeView === 'editor'} className="btn btn-secondary mr-2">에디터</button>
-                <button onClick={() => setActiveView('preview')} disabled={activeView === 'preview'} className="btn btn-secondary">미리보기</button>
-              </div>
-
-              {activeView === 'editor' ? (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '250px 1fr',
-                    height: '100%',
-                    gap: '1rem',
-                  }}
-                >
-                  <div className="file-tree-panel">
-                    <h2 className="text-lg font-medium mb-2">
-                      📁 {currentProjectName}
-                    </h2>
-                    <FileTree projectId={selectedProjectId} />
-                  </div>
-                  <div className="code-editor-panel">
-                    <FileTabs />
-                    <button
-                      onClick={handleSave}
-                      disabled={
-                        !activeFile ||
-                        updateMutation.isPending ||
-                        editedContent === vfsNodeData?.node?.content
-                      }
-                      className="btn btn-primary my-2"
-                    >
-                      {updateMutation.isPending ? '저장 중...' : '저장'}
-                    </button>
-                    {!activeFile ? (
-                      <div>파일을 선택하여 편집을 시작하세요.</div>
-                    ) : isLoadingVfsNode ? (
-                      <div>파일을 불러오는 중...</div>
-                    ) : (
-                      <CodeEditor
-                        content={editedContent}
-                        onChange={(value) => setEditedContent(value || '')}
-                      />
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="live-preview-panel">
-                  <h2 className="text-lg font-medium mb-2">실시간 미리보기</h2>
-                  <iframe
-                    ref={previewIframeRef}
-                    src={`/api/preview/${selectedProjectId}`}
-                    title="Live Preview"
-                    style={{
-                      width: '100%',
-                      height: '80vh',
-                      border: '1px solid #ccc',
-                    }}
+            <div className="flex flex-col h-full gap-4">
+              <div className="flex-grow relative">
+                <ViewSwitcher
+                  activeView={activeView}
+                  setActiveView={setActiveView}
+                />
+                {activeView === 'editor' ? (
+                  <EditorPanel
+                    currentProjectName={currentProjectName}
+                    selectedProjectId={selectedProjectId}
+                    handleSave={handleSave}
+                    updateMutation={updateMutation}
+                    activeFile={activeFile}
+                    isLoadingVfsNode={isLoadingVfsNode}
+                    editedContent={editedContent}
+                    setEditedContent={setEditedContent}
+                    vfsNodeData={vfsNodeData}
                   />
-                </div>
-              )}
+                ) : (
+                  <PreviewPanel
+                    previewIframeRef={previewIframeRef}
+                    selectedProjectId={selectedProjectId}
+                  />
+                )}
+              </div>
             </div>
           )}
         </section>

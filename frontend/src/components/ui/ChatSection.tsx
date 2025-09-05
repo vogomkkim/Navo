@@ -10,13 +10,9 @@ import { ChatPlaceholder } from './ChatPlaceholder';
 import './ChatSection.css';
 
 export function ChatSection() {
-  const { selectedProjectId, isProcessing, setIsProcessing } = useIdeStore(
-    (state) => ({
-      selectedProjectId: state.selectedProjectId,
-      isProcessing: state.isProcessing,
-      setIsProcessing: state.setIsProcessing,
-    })
-  );
+  const selectedProjectId = useIdeStore((state) => state.selectedProjectId);
+  const isProcessing = useIdeStore((state) => state.isProcessing);
+  const setIsProcessing = useIdeStore((state) => state.setIsProcessing);
 
   const {
     data,
