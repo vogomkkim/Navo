@@ -41,7 +41,7 @@ interface UpdateVfsNodePayload {
 export function useListVfsNodes(
   projectId: string | null,
   parentId: string | null = null,
-  options?: UseQueryOptions<VfsNodesResponse, Error>,
+  options?: Omit<UseQueryOptions<VfsNodesResponse, Error>, 'queryKey' | 'queryFn'>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<VfsNodesResponse, Error>({
@@ -68,7 +68,7 @@ export function useListVfsNodes(
 export function useVfsNodeContent(
   projectId: string | null,
   nodeId: string | null,
-  options?: UseQueryOptions<VfsNodeResponse, Error>,
+  options?: Omit<UseQueryOptions<VfsNodeResponse, Error>, 'queryKey' | 'queryFn'>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<VfsNodeResponse, Error>({

@@ -16,7 +16,7 @@ export class ChatRepository {
       .where(
         and(
           eq(chatMessages.projectId, projectId),
-          cursor ? lt(chatMessages.createdAt, new Date(cursor)) : undefined
+          cursor ? lt(chatMessages.createdAt, new Date(cursor).toISOString()) : undefined
         )
       )
       .orderBy(desc(chatMessages.createdAt))
@@ -36,9 +36,13 @@ export class ChatRepository {
   }
 
   async createMessage(message: CreateChatMessage) {
+    const valuesToInsert = {
+      ...message,
+      createdAt: message.createdAt ? new Date(message.createdAt).toISOString() : new Date().toISOString(),
+    };
     const [newMessage] = await db
       .insert(chatMessages)
-      .values(message)
+      .values(valuesToInsert)
       .returning();
     return newMessage;
   }

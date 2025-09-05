@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query';
 import { useAuth } from '@/app/context/AuthContext';
 import { fetchApi } from '@/lib/apiClient';
+import { handleUnauthorizedError } from '@/lib/handleApiError';
 
 // --- Types ---
 
@@ -35,6 +36,11 @@ interface SuggestionsResponse {
   suggestions: Suggestion[];
 }
 
+interface GenerateDummySuggestionResponse {
+  ok: boolean;
+  suggestion: Record<string, unknown>;
+}
+
 // --- Hooks ---
 
 export function useGenerateProject(
@@ -57,9 +63,7 @@ export function useGenerateProject(
           },
         );
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
@@ -91,9 +95,7 @@ export function useGenerateComponent(
           },
         );
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
@@ -102,7 +104,7 @@ export function useGenerateComponent(
 }
 
 export function useSuggestions(
-  options?: UseQueryOptions<SuggestionsResponse, Error>,
+  options?: Omit<UseQueryOptions<SuggestionsResponse, Error>, 'queryKey' | 'queryFn'>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<SuggestionsResponse, Error>({
@@ -112,13 +114,34 @@ export function useSuggestions(
         const url = `/api/ai/suggestions?limit=3`;
         return await fetchApi<SuggestionsResponse>(url, { token });
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
     enabled: !!token,
+    ...options,
+  });
+}
+
+export function useGenerateDummySuggestion(
+  options?: UseMutationOptions<GenerateDummySuggestionResponse, Error, void>,
+) {
+  const { token, logout } = useAuth();
+  return useMutation<GenerateDummySuggestionResponse, Error, void>({
+    mutationFn: async () => {
+      try {
+        return await fetchApi<GenerateDummySuggestionResponse>(
+          '/api/ai/suggestions/dummy',
+          {
+            method: 'POST',
+            token,
+          },
+        );
+      } catch (error) {
+        handleUnauthorizedError(error, logout);
+        throw error;
+      }
+    },
     ...options,
   });
 }

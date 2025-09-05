@@ -4,7 +4,7 @@ import React, { createContext, useContext } from 'react';
 
 // This context is now a placeholder.
 // Component definitions will be managed through the VFS.
-const ComponentDefinitionContext = createContext<any>(null);
+export const ComponentDefinitionContext = createContext<any>(null);
 
 export const useComponentDefinition = () => {
   const context = useContext(ComponentDefinitionContext);

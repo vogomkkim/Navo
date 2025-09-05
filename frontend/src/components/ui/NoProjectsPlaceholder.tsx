@@ -5,7 +5,7 @@ import './NoProjectsPlaceholder.css';
 
 export const NoProjectsPlaceholder = () => {
   const title = "새로운 프로젝트 생성";
-  const subtitle = "채팅을 통해 창조를 시작하세요";
+  const subtitle = "Navo AI가 아이디어를 현실로 만듭니다";
 
   return (
     <div className="placeholder-container">

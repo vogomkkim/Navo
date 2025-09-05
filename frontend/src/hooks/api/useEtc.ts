@@ -58,7 +58,7 @@ export function useLogError(
 
 export function usePageLayout(
   pageId: string,
-  options?: UseQueryOptions<any, Error>,
+  options?: Omit<UseQueryOptions<any, Error>, 'queryKey' | 'queryFn'>,
 ) {
   const { token, logout } = useAuth();
   return useQuery<any, Error>({

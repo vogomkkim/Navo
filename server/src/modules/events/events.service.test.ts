@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
+
+import { vi, type Mock } from 'vitest';
 import { EventsRepositoryImpl } from './events.repository';
 import { EventsService } from './events.service';
 
 // Mock dependencies
-jest.mock('./events.repository');
+vi.mock('./events.repository');
 
 describe('EventsService', () => {
   let eventsService: EventsService;
@@ -15,19 +16,19 @@ describe('EventsService', () => {
     // Mock Fastify app
     mockApp = {
       log: {
-        info: jest.fn(),
-        error: jest.fn(),
+        info: vi.fn(),
+        error: vi.fn(),
       },
     };
 
     // Mock repository
     mockRepository = {
-      storeEvents: jest.fn(),
-      getEventsByUserId: jest.fn(),
-      getEventsByProjectId: jest.fn(),
+      storeEvents: vi.fn(),
+      getEventsByUserId: vi.fn(),
+      getEventsByProjectId: vi.fn(),
     };
 
-    jest.mocked(EventsRepositoryImpl).mockImplementation(() => mockRepository);
+    (EventsRepositoryImpl as Mock).mockImplementation(() => mockRepository);
 
     eventsService = new EventsService(mockApp);
   });

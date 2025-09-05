@@ -51,5 +51,5 @@ export interface CreateChatMessage {
   role: string;
   content: string;
   payload?: any;
-  createdAt?: Date;
+  createdAt?: string; // Changed to string
 }

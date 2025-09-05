@@ -1,11 +1,12 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
+
+import { vi, type Mock } from 'vitest';
 import { ProjectsRepositoryImpl } from '../projects/projects.repository';
 import { AnalyticsRepositoryImpl } from './analytics.repository';
 import { AnalyticsService } from './analytics.service';
 
-jest.mock('./analytics.repository');
-jest.mock('../projects/projects.repository');
+vi.mock('./analytics.repository');
+vi.mock('../projects/projects.repository');
 
 describe('AnalyticsService', () => {
   let service: AnalyticsService;
@@ -14,21 +15,19 @@ describe('AnalyticsService', () => {
   let mockProjectsRepo: any;
 
   beforeEach(() => {
-    mockApp = { log: { error: jest.fn() } } as any;
+    mockApp = { log: { error: vi.fn() } } as any;
     mockRepo = {
-      getEventsByProjectId: jest.fn(),
-      getEventsByUserId: jest.fn(),
-      getProjectMetrics: jest.fn(),
-      getUserMetrics: jest.fn(),
-      getTopPages: jest.fn(),
-      getTopEvents: jest.fn(),
-      getEventTrends: jest.fn(),
+      getEventsByProjectId: vi.fn(),
+      getEventsByUserId: vi.fn(),
+      getProjectMetrics: vi.fn(),
+      getUserMetrics: vi.fn(),
+      getTopPages: vi.fn(),
+      getTopEvents: vi.fn(),
+      getEventTrends: vi.fn(),
     };
-    mockProjectsRepo = { getProjectByUserId: jest.fn() };
-    jest.mocked(AnalyticsRepositoryImpl).mockImplementation(() => mockRepo);
-    jest
-      .mocked(ProjectsRepositoryImpl)
-      .mockImplementation(() => mockProjectsRepo);
+    mockProjectsRepo = { getProjectByUserId: vi.fn() };
+    (AnalyticsRepositoryImpl as Mock).mockImplementation(() => mockRepo);
+    (ProjectsRepositoryImpl as Mock).mockImplementation(() => mockProjectsRepo);
     service = new AnalyticsService(mockApp);
   });
 

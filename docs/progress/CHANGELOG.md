@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025-09-05] - pnpm Migration and Type System Stabilization
+
+### Added
+- **pnpm Workspaces**: Introduced `pnpm` as the package manager for the monorepo to improve dependency management efficiency and speed. Created `pnpm-workspace.yaml` to define the workspace structure.
+- **Error Handling Utility**: Added a new utility function `handleUnauthorizedError` in `frontend/src/lib/handleApiError.ts` to centralize and simplify the handling of authentication errors in API hooks.
+
+### Changed
+- **Package Manager Switch**: Replaced `npm` with `pnpm` across the entire project. All `package-lock.json` files have been removed and replaced with a single root `pnpm-lock.yaml`.
+- **Root Scripts**: Updated root `package.json` scripts to use `pnpm -r` for running commands across all workspaces (e.g., `pnpm -r run build`).
+- **Server Type System Refactoring**: Conducted a major refactoring of the server-side codebase to resolve numerous TypeScript errors that surfaced during the migration.
+  - **Drizzle Schema & Relations**: Synchronized `drizzle/schema.ts` and `drizzle/relations.ts` with the actual database DDL, fixing incorrect table references and relationships.
+  - **Type Definitions**: Corrected and updated various type definitions across the server, including `ExecutionContext`, `CreateChatMessage`, and `ProjectArchitecture`, to ensure type safety.
+  - **Repositories & Controllers**: Refactored `vfs.repository.ts`, `chat.repository.ts`, and `preview.controller.ts` to align with the updated types and fix logic errors.
+- **API Hooks Refactoring**: Refactored all API hooks in `frontend/src/hooks/api/useAi.ts` to use the new `handleUnauthorizedError` utility, significantly reducing code duplication.
+- **Component Stability**: Improved the stability of `HomeContent.tsx` by refactoring the `useUpdateVfsNodeContent` hook's `onSuccess` callback to use mutation response data, preventing potential stale state issues.
+
+### Fixed
+- **Build Failures**: Resolved all build-breaking TypeScript errors in the `server` workspace, enabling the project to be successfully built with `tsc`.
+- **Dependency Issues**: Explicitly added necessary `devDependencies` like `typescript` and `@types/jest` to each workspace's `package.json`, fixing the "command not found" errors caused by pnpm's stricter dependency isolation.
+- **Frontend Build Error**: Fixed a type export issue in `AuthContext.tsx` that was causing the Next.js build to fail.
+
+### Removed
+- All `package-lock.json` files from the repository.
+
 ## [2025-09-03] - Architectural Revolution: The Autonomous Workflow Engine
 
 ### Added

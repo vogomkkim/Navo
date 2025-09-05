@@ -16,3 +16,8 @@ export interface LoginData {
   email: string;
   password: string;
 }
+
+// Simple utility function for testing purposes
+export function add(a: number, b: number): number {
+  return a + b;
+}

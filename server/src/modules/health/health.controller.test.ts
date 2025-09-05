@@ -1,35 +1,40 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
+
+import { vi } from 'vitest';
 import { healthController } from './health.controller';
 
 describe('HealthController', () => {
   let mockApp: any;
+  let mockReply: any;
 
   beforeEach(() => {
     mockApp = {
-      get: jest.fn(),
+      get: vi.fn(),
+    };
+    mockReply = {
+      send: vi.fn(),
     };
   });
 
-  it('should register GET /health route and return health payload', async () => {
-    // Arrange
+  it('should register GET /health route and return health payload', () => {
     healthController(mockApp);
-    expect(mockApp.get).toHaveBeenCalledWith('/health', expect.any(Function));
 
-    const routeHandler = mockApp.get.mock.calls[0][1];
-    const mockReply = {
-      send: jest.fn(),
-    } as any;
-
-    // Act
-    await routeHandler({} as any, mockReply);
-
-    // Assert
-    expect(mockReply.send).toHaveBeenCalledWith(
-      expect.objectContaining({ ok: true, status: 'healthy' })
+    // Check if the route was registered
+    expect(mockApp.get).toHaveBeenCalledWith(
+      '/health',
+      expect.any(Function)
     );
-    const payload = mockReply.send.mock.calls[0][0];
-    expect(typeof payload.uptime).toBe('number');
-    expect(typeof payload.timestamp).toBe('string');
+
+    // Manually invoke the handler to test its behavior
+    const handler = mockApp.get.mock.calls[0][1];
+    handler(null, mockReply);
+
+    // Check if the reply was correct
+    expect(mockReply.send).toHaveBeenCalledWith({
+      ok: true,
+      status: 'healthy',
+      timestamp: expect.any(String),
+      uptime: expect.any(Number),
+    });
   });
 });

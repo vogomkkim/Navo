@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react';
 
-interface AuthContextType {
+export interface AuthContextType {
   isAuthenticated: boolean;
   user: { id: string; email: string; name: string } | null;
   token: string | null;

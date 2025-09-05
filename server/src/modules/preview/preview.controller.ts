@@ -1,10 +1,13 @@
 import { FastifyInstance } from 'fastify';
-import { ProjectsRepositoryImpl } from '../projects/projects.repository';
+import { VfsRepositoryImpl } from '../projects/vfs.repository';
 
 // A very basic renderer to convert VFS nodes to an HTML page.
 // In a real application, this would be a sophisticated engine (e.g., using a virtual DOM).
 function renderToHtml(nodes: any[]): string {
   const root = nodes.find((n) => n.name === '/');
+  if (!root) {
+    return `<html><body><h1>Project root not found.</h1></body></html>`;
+  }
   const files = nodes.filter((n) => n.parentId === root.id);
 
   // For this MVP, we'll just find a file that looks like an entry point.
@@ -42,7 +45,7 @@ function renderToHtml(nodes: any[]): string {
 }
 
 export function previewController(app: FastifyInstance) {
-  const projectsRepository = new ProjectsRepositoryImpl(app);
+  const vfsRepository = new VfsRepositoryImpl(app);
 
   app.get('/api/preview/:projectId', async (request, reply) => {
     try {
@@ -52,19 +55,20 @@ export function previewController(app: FastifyInstance) {
       // In a real app, we'd also need to verify user permissions to view the preview.
       // For now, we assume public access for simplicity.
 
-      const rootNode = await projectsRepository.listVfsNodesByParentId(
+      const rootNodes = await vfsRepository.listNodesByParentId(
         projectId,
         null,
       );
-      if (!rootNode || rootNode.length === 0) {
+      if (!rootNodes || rootNodes.length === 0) {
         return reply.status(404).send('Project not found or has no root directory.');
       }
+      const rootNode = rootNodes[0];
 
-      const allNodes = await projectsRepository.listVfsNodesByParentId(
+      const allNodes = await vfsRepository.listNodesByParentId(
         projectId,
-        rootNode[0].id,
+        rootNode.id,
       );
-      const nodes = [...rootNode, ...allNodes];
+      const nodes = [rootNode, ...allNodes];
 
       const html = renderToHtml(nodes);
 

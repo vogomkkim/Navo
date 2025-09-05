@@ -1,3 +1,5 @@
+import { FastifyInstance } from 'fastify';
+
 /**
  * @file Defines the core types for the declarative, tool-based workflow engine.
  * This file is the foundation of our autonomous AI architecture.
@@ -101,6 +103,9 @@ export interface ExecutionContext {
 
   // A unique ID for the entire workflow execution run.
   runId: string;
+
+  // The Fastify application instance
+  app: FastifyInstance;
 
   // Potentially, access to other services or configuration.
 }
