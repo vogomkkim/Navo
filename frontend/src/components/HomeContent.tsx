@@ -312,28 +312,57 @@ export default function HomeContent() {
               value={selectedProjectId || ''}
               onValueChange={handleProjectSelect}
             >
-              <Select.Trigger className="inline-flex items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-                <Select.Value placeholder="프로젝트 선택" />
-                <Select.Icon>
-                  <ChevronDownIcon />
+              <Select.Trigger
+                className="group inline-flex items-center justify-center gap-2.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="Project"
+              >
+                <CubeIcon className="h-4 w-4 text-gray-500 transition-colors group-hover:text-blue-500" />
+                <Select.Value placeholder="프로젝트 선택..." />
+                <Select.Icon className="text-gray-500">
+                  <ChevronDownIcon className="h-5 w-5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                 </Select.Icon>
               </Select.Trigger>
               <Select.Portal>
-                <Select.Content className="overflow-hidden rounded-lg bg-white shadow-lg border border-gray-200">
-                  <Select.Viewport className="p-1">
-                    {isLoadingProjects ? (
-                      <Select.Item value="loading" disabled>
-                        불러오는 중...
-                      </Select.Item>
-                    ) : (
-                      projectsData?.projects?.map((project) => (
-                        <Select.Item key={project.id} value={project.id}>
-                          <Select.ItemText>{project.name}</Select.ItemText>
+                <Select.Content
+                  position="popper"
+                  sideOffset={5}
+                  className="z-50 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg animate-in fade-in-75"
+                >
+                  <Select.Viewport className="p-1.5">
+                    <Select.Group>
+                      <Select.Label className="px-2 py-1.5 text-xs font-semibold text-gray-500">
+                        프로젝트 목록
+                      </Select.Label>
+                      {isLoadingProjects ? (
+                        <Select.Item
+                          value="loading"
+                          disabled
+                          className="relative flex cursor-default select-none items-center rounded-md py-2 pl-8 pr-4 text-sm text-gray-400 outline-none"
+                        >
+                          불러오는 중...
                         </Select.Item>
-                      ))
-                    )}
-                    <Select.Separator />
-                    <Select.Item value="new">새 프로젝트 만들기</Select.Item>
+                      ) : (
+                        projectsData?.projects?.map((project) => (
+                          <Select.Item
+                            key={project.id}
+                            value={project.id}
+                            className="relative flex cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-4 text-sm text-gray-800 outline-none transition-colors hover:bg-blue-50 focus:bg-blue-50"
+                          >
+                            <Select.ItemIndicator className="absolute left-2.5 inline-flex items-center justify-center">
+                              <CheckIcon className="h-4 w-4 text-blue-500" />
+                            </Select.ItemIndicator>
+                            <Select.ItemText>{project.name}</Select.ItemText>
+                          </Select.Item>
+                        ))
+                      )}
+                    </Select.Group>
+                    <Select.Separator className="my-1.5 h-px bg-gray-100" />
+                    <Select.Item
+                      value="new"
+                      className="relative flex cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-4 text-sm text-blue-500 outline-none transition-colors hover:bg-blue-50 focus:bg-blue-50"
+                    >
+                      <Select.ItemText>+ 새 프로젝트 만들기</Select.ItemText>
+                    </Select.Item>
                   </Select.Viewport>
                 </Select.Content>
               </Select.Portal>
