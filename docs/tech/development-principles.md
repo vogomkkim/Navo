@@ -18,6 +18,7 @@
 - **역할**: 프론트엔드와 서버가 공유하는 순수한 '계약'만을 포함합니다.
 - **포함 대상**: 타입 정의(interfaces, types), DTO, 유효성 검사 스키마(zod), 표준 에러 코드 등.
 - **금지 대상**: 런타임 의존성을 가진 코드, 비즈니스 로직, 특정 프레임워크에 종속적인 코드를 포함하지 않습니다.
+- **Deep Import 금지**: 공유 패키지를 사용할 때는 반드시 패키지 진입점(`@navo/shared`)을 통해 `import` 해야 합니다. 내부 파일 경로에 직접 접근하는 것(예: `@navo/shared/src/some/file`)은 금지됩니다. 이는 `package.json`의 `exports` 필드로 강제되며, 모듈 해석의 일관성을 보장합니다.
 
 ## 4. 에러 및 로깅
 
@@ -29,3 +30,14 @@
 
 - **트랜잭션 경계**: 트랜잭션은 비즈니스 로직의 단위인 `Service` 계층에서 시작하고 종료하는 것을 원칙으로 합니다.
 - **리포지토리 역할**: `Repository`는 데이터베이스에 대한 CRUD 작업만을 담당하며, 어떠한 비즈니스 로직도 포함해서는 안 됩니다.
+
+## 6. 패키지 관리 및 스크립트
+
+- **패키지 매니저**: 프로젝트는 `pnpm` 워크스페이스를 사용하여 모노레포를 관리합니다. `npm`이나 `yarn`의 사용은 금지됩니다.
+- **의존성 설치**: `pnpm install` 명령을 사용하여 모든 워크스페이스의 의존성을 설치합니다.
+- **스크립트 실행**:
+  - 전체 워크스페이스 대상: `pnpm -r run <script_name>` (예: `pnpm -r run build`)
+  - 특정 워크스페이스 대상: `pnpm --filter <package_name> run <script_name>` (예: `pnpm --filter @navo/server run dev`)
+- **의존성 추가**:
+  - 특정 워크스페이스에 추가: `pnpm add <package> --filter <package_name>`
+  - 루트(개발용): `pnpm add <package> -wD`

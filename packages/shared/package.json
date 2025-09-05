@@ -15,9 +15,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm exec tsc -p tsconfig.json"
+    "build": "pnpm exec tsc -p tsconfig.json",
+    "test": "vitest"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }

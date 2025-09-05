@@ -1,17 +1,18 @@
-import { AppError } from '@/lib/errorHandler';
-import * as passwordModule from '@/lib/password';
+import { vi, type Mock } from 'vitest';
+import { AppError } from '../../lib/errorHandler';
+import * as passwordModule from '../../lib/password';
 
 import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
 
 // password.ts의 verifyPassword 함수를 모의
-jest.mock('@/lib/password', () => ({
-  hashPassword: jest.fn().mockResolvedValue('hashedpassword'),
-  verifyPassword: jest.fn().mockResolvedValue({ ok: true }),
+vi.mock('../../lib/password', () => ({
+  hashPassword: vi.fn().mockResolvedValue('hashedpassword'),
+  verifyPassword: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 // config 모듈도 모의
-jest.mock('@/config', () => ({
+vi.mock('@/config', () => ({
   appConfig: {
     jwtSecret: process.env.JWT_SECRET || 'test_jwt_secret',
   },
@@ -19,8 +20,8 @@ jest.mock('@/config', () => ({
 
 // AuthRepository 모의(Mock) 객체 생성
 const mockAuthRepository = {
-  findUserByEmail: jest.fn(),
-  createUser: jest.fn(),
+  findUserByEmail: vi.fn(),
+  createUserWithOrganization: vi.fn(),
 };
 
 describe('AuthService', () => {
@@ -32,7 +33,7 @@ describe('AuthService', () => {
       mockAuthRepository as unknown as AuthRepository
     );
     // 모든 모의 함수 초기화
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('register', () => {
@@ -56,12 +57,12 @@ describe('AuthService', () => {
       expect(mockAuthRepository.findUserByEmail).toHaveBeenCalledWith(
         'mk.kim@vogoplay.com'
       );
-      expect(mockAuthRepository.createUser).not.toHaveBeenCalled();
+      expect(mockAuthRepository.createUserWithOrganization).not.toHaveBeenCalled();
     });
 
     it('새로운 사용자는 성공적으로 회원가입되어야 한다', async () => {
       mockAuthRepository.findUserByEmail.mockResolvedValueOnce(undefined);
-      mockAuthRepository.createUser.mockResolvedValueOnce({
+      mockAuthRepository.createUserWithOrganization.mockResolvedValueOnce({
         id: 'new-user-id',
         email: 'new@example.com',
         name: null,
@@ -80,7 +81,7 @@ describe('AuthService', () => {
       expect(mockAuthRepository.findUserByEmail).toHaveBeenCalledWith(
         'new@example.com'
       );
-      expect(mockAuthRepository.createUser).toHaveBeenCalled();
+      expect(mockAuthRepository.createUserWithOrganization).toHaveBeenCalled();
     });
   });
 
@@ -113,7 +114,7 @@ describe('AuthService', () => {
       });
 
       // password.ts의 verifyPassword 함수를 모의
-      const verifyPasswordMock = jest.spyOn(passwordModule, 'verifyPassword');
+      const verifyPasswordMock = vi.spyOn(passwordModule, 'verifyPassword');
       verifyPasswordMock.mockResolvedValueOnce({
         ok: false,
       } as passwordModule.VerifyResult);

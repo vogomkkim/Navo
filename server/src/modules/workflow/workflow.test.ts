@@ -10,6 +10,15 @@ import { workflowExecutor } from './index';
 import { Plan } from './types';
 
 describe('WorkflowEngine', () => {
+  const mockApp = {
+    log: {
+      info: console.log,
+      error: console.error,
+      warn: console.warn,
+      debug: console.log,
+    },
+  };
+
   it('should execute a simple, single-step plan using the run_shell_command tool', async () => {
     // 1. Define the Plan (The AI's instruction)
     const simplePlan: Plan = {
@@ -28,7 +37,7 @@ describe('WorkflowEngine', () => {
     };
 
     // 2. Execute the Plan
-    const outputs = await workflowExecutor.execute(simplePlan);
+    const outputs = await workflowExecutor.execute(mockApp, simplePlan);
 
     // 3. Verify the result
     const stepResult = outputs.get('list_files_step');
@@ -70,7 +79,7 @@ describe('WorkflowEngine', () => {
     };
 
     // 2. Execute the Plan
-    const outputs = await workflowExecutor.execute(multiStepPlan);
+    const outputs = await workflowExecutor.execute(mockApp, multiStepPlan);
 
     // 3. Verify the results
     const firstStepResult = outputs.get('first_echo');
@@ -134,7 +143,7 @@ describe('WorkflowEngine', () => {
         ],
       };
 
-      const outputs = await workflowExecutor.execute(fsPlan);
+      const outputs = await workflowExecutor.execute(mockApp, fsPlan);
 
       // Verify write step
       const writeResult = outputs.get('write_file_step');
@@ -175,7 +184,7 @@ describe('WorkflowEngine', () => {
         ],
       };
 
-      const outputs = await workflowExecutor.execute(architectPlan);
+      const outputs = await workflowExecutor.execute(mockApp, architectPlan);
       const architectResult = outputs.get('architect_step');
 
       console.log('\n--- Project Architect Output ---');
@@ -224,7 +233,7 @@ describe('WorkflowEngine', () => {
         ],
       };
 
-      const outputs = await workflowExecutor.execute(e2ePlan);
+      const outputs = await workflowExecutor.execute(mockApp, e2ePlan);
 
       // Verify design step output
       const designResult = outputs.get('design_step');
