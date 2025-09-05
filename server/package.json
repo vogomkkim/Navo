@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "dotenvx run -o -e .env -e .env.local -- npx tsx watch src/bootstrap.ts",
     "build": "pnpm exec tsc -p ./tsconfig.json",
-    "start": "dotenvx run -e .env -- node dist/bootstrap.js",
+    "start": "dotenvx run -o -e .env -e .env.local -- node dist/bootstrap.js",
     "lint": "eslint . --ext .ts --config ../eslint.config.js",
     "test": "vitest",
     "db:generate": "cd .. && npx dotenvx run -f .env -f .env.local -- npx drizzle-kit generate",
