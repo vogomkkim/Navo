@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useListVfsNodes } from '@/hooks/api';
 import { useIdeStore } from '@/store/ideStore';
+import clsx from 'clsx';
 
 interface FileTreeProps {
   projectId: string;
