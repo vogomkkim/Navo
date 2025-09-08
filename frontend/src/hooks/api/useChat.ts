@@ -19,18 +19,21 @@ interface GetMessagesResponse {
 interface SendMessagePayload {
   prompt: string;
   chatHistory: ChatMessage[];
+  projectId?: string; // Allow explicitly passing projectId
 }
 
 // --- Hooks ---
 
 export function useGetMessages(projectId: string | null) {
   const { token, logout } = useAuth();
-  return useInfiniteQuery<GetMessagesResponse, Error>({
+  return useInfiniteQuery<GetMessages-Response, Error>({
     queryKey: ['messages', projectId],
     queryFn: async ({ pageParam = undefined }) => {
       if (!projectId) return { messages: [], nextCursor: null };
       try {
-        const url = `/api/projects/${projectId}/messages?limit=20${pageParam ? `&cursor=${pageParam}` : ''}`;
+        const url = `/api/projects/${projectId}/messages?limit=20${
+          pageParam ? `&cursor=${pageParam}` : ''
+        }`;
         return await fetchApi<GetMessagesResponse>(url, { token });
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
@@ -50,15 +53,23 @@ export function useSendMessage(
 ) {
   const { token, logout } = useAuth();
   const queryClient = useQueryClient();
-  const { selectedProjectId } = useIdeStore.getState();
 
   return useMutation<any, Error, SendMessagePayload>({
     mutationFn: async (data) => {
-      if (!selectedProjectId) throw new Error('No project selected');
+      // 1. Use projectId from payload if provided, otherwise get from store at runtime.
+      const projectId = data.projectId || useIdeStore.getState().selectedProjectId;
+
+      if (!projectId) {
+        // This error will be caught by react-query's onError handler
+        throw new Error('No project selected');
+      }
+
       try {
-        return await fetchApi(`/api/projects/${selectedProjectId}/messages`, {
+        // 2. Remove projectId from the data sent to the backend to avoid duplication.
+        const { projectId: _p, ...payload } = data;
+        return await fetchApi(`/api/projects/${projectId}/messages`, {
           method: 'POST',
-          body: JSON.stringify(data),
+          body: JSON.stringify(payload),
           token,
         });
       } catch (error) {
@@ -68,8 +79,13 @@ export function useSendMessage(
         throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', selectedProjectId] });
+    onSuccess: (_data, variables) => {
+      // 3. Invalidate queries using the same logic to ensure consistency.
+      const projectId =
+        variables.projectId || useIdeStore.getState().selectedProjectId;
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: ['messages', projectId] });
+      }
     },
     ...options,
   });

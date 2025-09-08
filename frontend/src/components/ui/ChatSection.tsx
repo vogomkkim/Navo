@@ -3,16 +3,22 @@
 import { useAuth } from '@/app/context/AuthContext';
 import { useInputHistory } from '@/hooks/useInputHistory';
 import { useGetMessages, useSendMessage } from '@/hooks/api';
+import { useGenerateProject } from '@/hooks/api/useAi';
 import { useIdeStore } from '@/store/ideStore';
 import { useEffect, useMemo, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { ChatPlaceholder } from './ChatPlaceholder';
 import './ChatSection.css';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function ChatSection() {
   const selectedProjectId = useIdeStore((state) => state.selectedProjectId);
+  const setSelectedProjectId = useIdeStore(
+    (state) => state.setSelectedProjectId,
+  );
   const isProcessing = useIdeStore((state) => state.isProcessing);
   const setIsProcessing = useIdeStore((state) => state.setIsProcessing);
+  const queryClient = useQueryClient();
 
   const {
     data,
@@ -53,11 +59,31 @@ export function ChatSection() {
 
   const { mutate: sendMessage } = useSendMessage({
     onError: (error) => {
-      console.error("Failed to send message:", error);
-      // Here you could add a temporary error message to the UI
+      console.error('Failed to send message:', error);
+      // TODO: Show error toast to user
     },
     onSettled: () => {
       setIsProcessing(false);
+    },
+  });
+
+  const { mutate: generateProject } = useGenerateProject({
+    onSuccess: (data, variables) => {
+      // 1. Set the new project ID in the global store
+      setSelectedProjectId(data.projectId);
+      // 2. Invalidate project list to refetch and show the new project in UI
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      // 3. Immediately send the initial message to the new project
+      sendMessage({
+        prompt: variables.projectDescription, // The original user message
+        chatHistory: [], // No history for the first message
+        projectId: data.projectId, // Explicitly pass the new project ID
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to generate project:', error);
+      // TODO: Show error toast to user
+      setIsProcessing(false); // Stop processing on error
     },
   });
 
@@ -69,7 +95,8 @@ export function ChatSection() {
     const chatContainer = messagesEndRef.current?.parentElement;
     if (chatContainer) {
       const { scrollHeight, scrollTop, clientHeight } = chatContainer;
-      if (scrollHeight - scrollTop < clientHeight + 400) { // Increased threshold
+      if (scrollHeight - scrollTop < clientHeight + 400) {
+        // Increased threshold
         scrollToBottom();
       }
     }
@@ -79,13 +106,20 @@ export function ChatSection() {
     if (!inputValue.trim() || isProcessing) return;
 
     const messageToSend = inputValue;
-    const recentHistory = chatHistory.slice(-10);
-
-    addToHistory(messageToSend);
+    // Don't add to history here, let the message stream update it
+    // addToHistory(messageToSend);
     setIsProcessing(true);
+    setInputValue(''); // Clear input immediately
 
-    sendMessage({ prompt: messageToSend, chatHistory: recentHistory });
-    setInputValue('');
+    if (!selectedProjectId) {
+      generateProject({
+        projectName: `AI Project - ${new Date().toLocaleTimeString()}`,
+        projectDescription: messageToSend,
+      });
+    } else {
+      const recentHistory = chatHistory.slice(-10);
+      sendMessage({ prompt: messageToSend, chatHistory: recentHistory });
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -99,11 +133,18 @@ export function ChatSection() {
     <div className="chat-container">
       <div className="chat-messages">
         {hasNextPage && (
-          <div ref={topOfChatRef} style={{ height: '1px', visibility: 'hidden' }} />
+          <div
+            ref={topOfChatRef}
+            style={{ height: '1px', visibility: 'hidden' }}
+          />
         )}
-        {isLoading && <div className="loading-more">대화 기록을 불러오는 중...</div>}
-        {isFetchingNextPage && <div className="loading-more">이전 대화를 불러오는 중...</div>}
-        
+        {isLoading && (
+          <div className="loading-more">대화 기록을 불러오는 중...</div>
+        )}
+        {isFetchingNextPage && (
+          <div className="loading-more">이전 대화를 불러오는 중...</div>
+        )}
+
         {chatHistory.length === 0 && !isLoading && !isFetchingNextPage ? (
           <ChatPlaceholder onExampleClick={setInputValue} />
         ) : (
@@ -139,14 +180,18 @@ export function ChatSection() {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             onKeyDown={handleKeyDown}
-            placeholder={selectedProjectId ? "아이디어를 입력하여 프로젝트를 발전시키세요..." : "먼저 프로젝트를 선택해주세요."}
-            disabled={isProcessing || !selectedProjectId}
+            placeholder={
+              selectedProjectId
+                ? '아이디어를 입력하여 프로젝트를 발전시키세요...'
+                : '아이디어를 입력하여 새 AI 프로젝트를 시작하세요...'
+            }
+            disabled={isProcessing}
             rows={1}
             className="chat-textarea"
           />
           <button
             onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isProcessing || !selectedProjectId}
+            disabled={!inputValue.trim() || isProcessing}
             className="send-button-new"
             title={isProcessing ? 'AI 에이전트 작업 중...' : '전송'}
           >
