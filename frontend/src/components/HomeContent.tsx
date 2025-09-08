@@ -276,9 +276,9 @@ export default function HomeContent() {
 
   const handleProjectSelect = (projectId: string) => {
     if (projectId === 'new') {
-      // This would ideally be a route to a new project page or a modal
-      queryClient.clear();
-      window.location.reload(); // Simple way to reset for now
+      setSelectedProjectId(null); // Reset the selected project
+      // This will cause the UI to re-render with NoProjectsPlaceholder
+      // and an empty chat, ready for a new project idea.
       return;
     }
     setSelectedProjectId(projectId);

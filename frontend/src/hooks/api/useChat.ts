@@ -26,7 +26,7 @@ interface SendMessagePayload {
 
 export function useGetMessages(projectId: string | null) {
   const { token, logout } = useAuth();
-  return useInfiniteQuery<GetMessages-Response, Error>({
+  return useInfiniteQuery<GetMessagesResponse, Error>({
     queryKey: ['messages', projectId],
     queryFn: async ({ pageParam = undefined }) => {
       if (!projectId) return { messages: [], nextCursor: null };
