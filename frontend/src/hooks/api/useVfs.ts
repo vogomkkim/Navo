@@ -7,10 +7,12 @@ import {
 } from '@tanstack/react-query';
 import { useAuth } from '@/app/context/AuthContext';
 import { fetchApi } from '@/lib/apiClient';
+import { handleUnauthorizedError } from '@/lib/handleApiError';
+import { useIdeStore } from '@/store/ideStore';
 
 // --- Types ---
 
-interface VfsNode {
+export interface VfsNode {
   id: string;
   name: string;
   nodeType: 'FILE' | 'DIRECTORY';
@@ -18,8 +20,9 @@ interface VfsNode {
   metadata: {
     path?: string;
   };
-  content?: string; // content can be optional
+  content?: string;
   projectId: string;
+  parentId: string | null;
 }
 
 interface VfsNodesResponse {
@@ -36,7 +39,32 @@ interface UpdateVfsNodePayload {
   content: string;
 }
 
+// --- New Types for CRUD ---
+interface CreateVfsNodePayload {
+  projectId: string;
+  parentId: string | null;
+  name: string;
+  nodeType: 'FILE' | 'DIRECTORY';
+}
+
+interface RenameVfsNodePayload {
+  projectId: string;
+  nodeId: string;
+  name: string;
+}
+
+interface DeleteVfsNodePayload {
+  projectId: string;
+  nodeId: string;
+  parentId: string | null; // Needed for cache invalidation
+}
+
 // --- Hooks ---
+
+const vfsNodesQueryKey = (projectId: string | null, parentId: string | null = null) => [
+  'vfsNodes',
+  { projectId, parentId },
+];
 
 export function useListVfsNodes(
   projectId: string | null,
@@ -45,7 +73,7 @@ export function useListVfsNodes(
 ) {
   const { token, logout } = useAuth();
   return useQuery<VfsNodesResponse, Error>({
-    queryKey: ['vfsNodes', projectId, parentId],
+    queryKey: vfsNodesQueryKey(projectId, parentId),
     queryFn: async () => {
       if (!projectId) return { nodes: [] };
       try {
@@ -54,9 +82,7 @@ export function useListVfsNodes(
           : `/api/projects/${projectId}/vfs`;
         return await fetchApi<VfsNodesResponse>(url, { token });
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
@@ -72,20 +98,16 @@ export function useVfsNodeContent(
 ) {
   const { token, logout } = useAuth();
   return useQuery<VfsNodeResponse, Error>({
-    queryKey: ['vfsNode', projectId, nodeId],
+    queryKey: ['vfsNode', { projectId, nodeId }],
     queryFn: async () => {
-      if (!projectId || !nodeId) {
-        return { node: null } as any;
-      }
+      if (!projectId || !nodeId) return { node: null } as any;
       try {
         return await fetchApi<VfsNodeResponse>(
           `/api/projects/${projectId}/vfs/${nodeId}`,
-          { token }
+          { token },
         );
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
@@ -112,17 +134,112 @@ export function useUpdateVfsNodeContent(
           },
         );
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
-        }
+        handleUnauthorizedError(error, logout);
         throw error;
       }
     },
     onSuccess: (data) => {
       queryClient.setQueryData(
-        ['vfsNode', data.node.projectId, data.node.id],
-        { node: data.node }
+        ['vfsNode', { projectId: data.node.projectId, nodeId: data.node.id }],
+        { node: data.node },
       );
+    },
+    ...options,
+  });
+}
+
+// --- New CRUD Hooks ---
+
+export function useCreateVfsNode(
+  options?: UseMutationOptions<VfsNodeResponse, Error, CreateVfsNodePayload>,
+) {
+  const { token, logout } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation<VfsNodeResponse, Error, CreateVfsNodePayload>({
+    mutationFn: async ({ projectId, ...body }) => {
+      try {
+        return await fetchApi<VfsNodeResponse>(
+          `/api/projects/${projectId}/vfs`,
+          {
+            method: 'POST',
+            body: JSON.stringify(body),
+            token,
+          },
+        );
+      } catch (error) {
+        handleUnauthorizedError(error, logout);
+        throw error;
+      }
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: vfsNodesQueryKey(variables.projectId, variables.parentId),
+      });
+    },
+    ...options,
+  });
+}
+
+export function useRenameVfsNode(
+  options?: UseMutationOptions<VfsNodeResponse, Error, RenameVfsNodePayload>,
+) {
+  const { token, logout } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation<VfsNodeResponse, Error, RenameVfsNodePayload>({
+    mutationFn: async ({ projectId, nodeId, name }) => {
+      try {
+        return await fetchApi<VfsNodeResponse>(
+          `/api/projects/${projectId}/vfs/${nodeId}`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({ name }),
+            token,
+          },
+        );
+      } catch (error) {
+        handleUnauthorizedError(error, logout);
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      // Invalidate all nodes as parentId is not available here
+      queryClient.invalidateQueries({ queryKey: ['vfsNodes'] });
+    },
+    ...options,
+  });
+}
+
+export function useDeleteVfsNode(
+  options?: UseMutationOptions<void, Error, DeleteVfsNodePayload>,
+) {
+  const { token, logout } = useAuth();
+  const queryClient = useQueryClient();
+  const { closeFile, activeFile, setActiveFile } = useIdeStore.getState();
+
+  return useMutation<void, Error, DeleteVfsNodePayload>({
+    mutationFn: async ({ projectId, nodeId }) => {
+      try {
+        await fetchApi<void>(`/api/projects/${projectId}/vfs/${nodeId}`, {
+          method: 'DELETE',
+          token,
+        });
+      } catch (error) {
+        handleUnauthorizedError(error, logout);
+        throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: vfsNodesQueryKey(variables.projectId, variables.parentId),
+      });
+
+      // Sync with IDE state
+      closeFile(variables.nodeId);
+      if (activeFile === variables.nodeId) {
+        setActiveFile(null);
+      }
     },
     ...options,
   });
