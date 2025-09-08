@@ -93,26 +93,24 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
       <FileTree projectId={selectedProjectId} />
     </div>
     <div className="code-editor-panel flex flex-col h-full">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center">
         <FileTabs />
-        <button
-          onClick={handleSave}
-          disabled={
-            !activeFile ||
-            updateMutation.isPending ||
-            editedContent === vfsNodeData?.node?.content
-          }
-          className="flex items-center gap-2 btn btn-ghost btn-sm text-gray-600 hover:bg-gray-200"
-        >
-          {updateMutation.isPending ? (
-            '저장 중...'
-          ) : (
-            <>
-              <CheckIcon />
-              저장
-            </>
-          )}
-        </button>
+        {activeFile && editedContent !== vfsNodeData?.node?.content && (
+          <button
+            onClick={handleSave}
+            disabled={!activeFile || updateMutation.isPending}
+            className="ml-auto flex items-center gap-2 btn btn-ghost btn-sm text-gray-600 hover:bg-gray-200"
+          >
+            {updateMutation.isPending ? (
+              '저장 중...'
+            ) : (
+              <>
+                <CheckIcon />
+                저장
+              </>
+            )}
+          </button>
+        )}
       </div>
       <div className="flex-grow mt-2 relative">
         {!activeFile ? (
@@ -173,7 +171,7 @@ const ViewSwitcher = ({
       <div
         className={clsx(
           'flex items-center transition-all duration-300 overflow-hidden',
-          isExpanded ? 'max-w-xs' : 'max-w-0',
+          isExpanded ? 'max-w-xs' : 'max-w-0'
         )}
       >
         <button
@@ -182,7 +180,7 @@ const ViewSwitcher = ({
             'px-3 py-1 text-sm font-semibold rounded-md flex items-center gap-2 whitespace-nowrap',
             activeView === 'editor'
               ? 'bg-white text-gray-800 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700',
+              : 'text-gray-500 hover:text-gray-700'
           )}
         >
           <Pencil2Icon className="w-4 h-4" />
@@ -194,7 +192,7 @@ const ViewSwitcher = ({
             'px-3 py-1 text-sm font-semibold rounded-md flex items-center gap-2 whitespace-nowrap',
             activeView === 'preview'
               ? 'bg-white text-gray-800 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700',
+              : 'text-gray-500 hover:text-gray-700'
           )}
         >
           <EyeOpenIcon className="w-4 h-4" />
@@ -212,7 +210,7 @@ export default function HomeContent() {
   // Zustand store integration for project context
   const selectedProjectId = useIdeStore((state) => state.selectedProjectId);
   const setSelectedProjectId = useIdeStore(
-    (state) => state.setSelectedProjectId,
+    (state) => state.setSelectedProjectId
   );
 
   const activeFile = useIdeStore((state) => state.activeFile);
@@ -226,14 +224,12 @@ export default function HomeContent() {
 
   const { data: vfsNodeData, isLoading: isLoadingVfsNode } = useVfsNodeContent(
     selectedProjectId || '',
-    activeFile, // Use activeFile from store
+    activeFile // Use activeFile from store
   );
 
-  const { data: projectsData, isLoading: isLoadingProjects } = useListProjects(
-    {
-      enabled: !isAuthLoading && !!token,
-    },
-  );
+  const { data: projectsData, isLoading: isLoadingProjects } = useListProjects({
+    enabled: !isAuthLoading && !!token,
+  });
 
   useEffect(() => {
     setEditedContent(vfsNodeData?.node?.content ?? null);

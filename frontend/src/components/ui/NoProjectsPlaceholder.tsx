@@ -9,7 +9,7 @@ export const NoProjectsPlaceholder = () => {
   const subtitle = 'Navo AI가 아이디어를 현실로 만듭니다';
 
   return (
-    <StarfieldWarp>
+    <StarfieldWarp count={30} speed={0.5} milkyWayOpacity={0.6}>
       <div className="pulsating-orb" />
       <h2 className="glitch-text" data-text={title}>
         {title}
