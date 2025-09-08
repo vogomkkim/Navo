@@ -235,11 +235,8 @@ export function useDeleteVfsNode(
       });
 
       // Sync with IDE state at runtime
-      const { activeFile, closeOpenFile, setActiveFile } = useIdeStore.getState();
+      const { closeOpenFile } = useIdeStore.getState();
       closeOpenFile(variables.nodeId);
-      if (activeFile === variables.nodeId) {
-        setActiveFile(null);
-      }
     },
     ...options,
   });

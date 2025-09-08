@@ -30,16 +30,27 @@ const InlineInput = ({
 }) => {
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
+  const submittedRef = useRef(false); // Ref to prevent double submission
 
   useEffect(() => {
     inputRef.current?.focus();
     inputRef.current?.select();
   }, []);
 
+  const handleSubmit = () => {
+    if (submittedRef.current) return;
+    if (value.trim()) {
+      submittedRef.current = true;
+      onConfirm(value.trim());
+    } else {
+      onCancel();
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (value.trim()) onConfirm(value.trim());
+      handleSubmit();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       onCancel();
@@ -53,7 +64,7 @@ const InlineInput = ({
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}
-      onBlur={() => (value.trim() ? onConfirm(value.trim()) : onCancel())}
+      onBlur={handleSubmit} // Use the same handler for blur
       className="w-full px-1 py-0.5 text-sm border border-blue-500 rounded focus:outline-none"
     />
   );
