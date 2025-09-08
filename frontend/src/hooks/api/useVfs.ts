@@ -216,7 +216,6 @@ export function useDeleteVfsNode(
 ) {
   const { token, logout } = useAuth();
   const queryClient = useQueryClient();
-  const { closeFile, activeFile, setActiveFile } = useIdeStore.getState();
 
   return useMutation<void, Error, DeleteVfsNodePayload>({
     mutationFn: async ({ projectId, nodeId }) => {
@@ -235,8 +234,9 @@ export function useDeleteVfsNode(
         queryKey: vfsNodesQueryKey(variables.projectId, variables.parentId),
       });
 
-      // Sync with IDE state
-      closeFile(variables.nodeId);
+      // Sync with IDE state at runtime
+      const { activeFile, closeOpenFile, setActiveFile } = useIdeStore.getState();
+      closeOpenFile(variables.nodeId);
       if (activeFile === variables.nodeId) {
         setActiveFile(null);
       }

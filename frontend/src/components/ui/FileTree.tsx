@@ -53,7 +53,7 @@ const InlineInput = ({
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}
-      onBlur={() => onCancel()} // Cancel on blur to prevent accidental empty names
+      onBlur={() => (value.trim() ? onConfirm(value.trim()) : onCancel())}
       className="w-full px-1 py-0.5 text-sm border border-blue-500 rounded focus:outline-none"
     />
   );
@@ -209,7 +209,9 @@ export const FileTree = ({ projectId }: { projectId: string }) => {
   const handleCreate = (name: string) => {
     if (!creatingType) return;
     const parentId =
-      selectedNode?.nodeType === 'DIRECTORY' ? selectedNode.id : null;
+      selectedNode?.nodeType === 'DIRECTORY'
+        ? selectedNode.id
+        : selectedNode?.parentId ?? null;
     createNode(
       { projectId, parentId, name, nodeType: creatingType },
       { onSuccess: () => setCreatingType(null) },
