@@ -21,9 +21,9 @@ export class WorkflowService {
     this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
-  async run(prompt: string, user: { id: string }, chatHistory: any[]): Promise<any> {
-    this.app.log.info(`[WorkflowService] Received prompt: "${prompt}" with history.`);
-    const plan = await this.generatePlan(prompt, user, chatHistory);
+  async run(prompt: string, user: { id: string }, chatHistory: any[], projectId?: string): Promise<any> {
+    this.app.log.info(`[WorkflowService] Received prompt: "${prompt}" for project ${projectId} with history.`);
+    const plan = await this.generatePlan(prompt, user, chatHistory, projectId);
     this.app.log.info({ plan }, '[WorkflowService] Generated Plan');
 
     if (!plan || !Array.isArray(plan.steps)) {
@@ -36,7 +36,7 @@ export class WorkflowService {
     return { plan, outputs: Object.fromEntries(outputs) };
   }
 
-  private async generatePlan(prompt: string, user: { id: string }, chatHistory: any[]): Promise<Plan> {
+  private async generatePlan(prompt: string, user: { id: string }, chatHistory: any[], projectId?: string): Promise<Plan> {
     const availableTools = toolRegistry.list().map((tool) => ({
       name: tool.name,
       description: tool.description,
@@ -66,19 +66,32 @@ export class WorkflowService {
       **Context (Use these exact values):**
       - User ID: "${user.id}"
       - Organization ID: "${organizationId}"
+      ${projectId ? `- Project ID: "${projectId}"` : ''}
 
       **Available Tools:**
       ${JSON.stringify(availableTools, null, 2)}
 
       **Your Task:**
       Generate a JSON object that represents a valid "Plan".
-      - For a "create project" request, you MUST use the "User ID" and "Organization ID" provided in the Context.
-      - The sequence MUST be:
-        1. 'create_project_in_db': Use the real 'organizationId' and 'userId' from the Context.
-        2. 'create_project_architecture': Its 'projectId' input MUST reference the 'id' of the 'create_project_in_db' step's output.
-        3. 'update_project_from_architecture': Saves the architecture.
-            - Its 'projectId' input MUST reference the 'id' from 'create_project_in_db'.
-            - Its 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output. Example: "\${steps.create_project_architecture_step.outputs.project}"
+      - **If a "Project ID" is provided in the Context, you MUST NOT use the 'create_project_in_db' tool.** Your plan should modify the existing project.
+      - **If no "Project ID" is provided**, your plan should start with the 'create_project_in_db' tool.
+      
+      **Tool Specific Instructions:**
+      - **'create_project_architecture'**: The 'architecture' object this tool outputs MUST have a top-level key named "structure". The value of "structure" MUST be an array of nodes.
+        - Each node MUST have a "type" ('FILE' or 'DIRECTORY') and a "name".
+        - Directories can optionally have a "children" property, which is an array of nodes following the same schema.
+        - **Example of a valid 'architecture' object:**
+          {
+            "structure": [
+              { "type": "DIRECTORY", "name": "src", "children": [
+                { "type": "FILE", "name": "index.js" }
+              ]}
+            ]
+          }
+      - **'update_project_from_architecture'**:
+        - When modifying an existing project, this step MUST use the "Project ID" from the Context.
+        - When creating a new project, its 'projectId' input MUST reference the 'id' from the 'create_project_in_db' step's output.
+        - Its 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output.
 
       **Output Format (JSON only):**
       {
@@ -93,7 +106,7 @@ export class WorkflowService {
         ]
       }
 
-      Respond with ONLY the JSON object.
+      Respond with ONLY the raw JSON object, without any markdown formatting.
     `;
 
     try {

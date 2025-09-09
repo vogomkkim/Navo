@@ -108,12 +108,18 @@
 
 .chat-message {
   display: flex;
-  align-items: flex-start;
-  margin-bottom: 1rem;
+  align-items: flex-end;
+  gap: 0.5rem;
 }
 
 .chat-message.user {
   flex-direction: row-reverse;
+}
+
+.message-timestamp {
+  font-size: 0.75rem;
+  color: rgb(107 114 128);
+  flex-shrink: 0;
 }
 
 .message-bubble {

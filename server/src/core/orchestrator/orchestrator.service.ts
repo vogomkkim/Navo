@@ -32,7 +32,7 @@ export class OrchestratorService {
 
     if (analysis.intent === 'create_project' && analysis.complexity === 'complex') {
       this.app.log.info('[Orchestrator] Routing to Workflow Engine.');
-      const workflowResult = await this.workflowService.run(prompt, user, chatHistory);
+      const workflowResult = await this.workflowService.run(prompt, user, chatHistory, projectId);
       return {
         type: 'WORKFLOW_RESULT',
         payload: {
@@ -151,7 +151,7 @@ export class OrchestratorService {
       - rename: path, newName
       - move: path, newPath (target directory path)
       - delete: path
-      - update: path, content (full replacement)
+      - update: path, content (full replacement). If the user asks for a modification without providing the full code, generate the complete new file content based on the conversation context.
 
       Output strictly JSON with only these fields.
     `;

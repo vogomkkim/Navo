@@ -47,7 +47,7 @@ export function ChatSection() {
   }, [isTopOfChatVisible, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const chatHistory = useMemo(() => {
-    return data?.pages.flatMap((page) => page.messages).reverse() ?? [];
+    return data?.pages.flatMap((page) => page.messages) ?? [];
   }, [data]);
 
   const { user } = useAuth();
@@ -155,15 +155,11 @@ export function ChatSection() {
                 key={message.id}
                 className={`chat-message ${isUser ? 'user' : 'ai'}`}
               >
-                <div className="message-avatar">{isUser ? '👤' : '🤖'}</div>
                 <div className={`message-bubble ${isUser ? 'user' : 'ai'}`}>
-                  <div className="message-sender">
-                    {isUser ? '사용자' : message.role}
-                  </div>
                   <div className="message-text">{message.content}</div>
-                  <div className="message-timestamp">
-                    {new Date(message.createdAt).toLocaleTimeString()}
-                  </div>
+                </div>
+                <div className="message-timestamp">
+                  {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                 </div>
               </div>
             );

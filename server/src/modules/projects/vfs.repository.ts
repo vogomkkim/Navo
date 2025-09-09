@@ -19,7 +19,7 @@ export interface VfsRepository {
     parentId: string | null,
   ): Promise<VfsNode[]>;
   getNodeById(nodeId: string, projectId: string): Promise<VfsNode | null>;
-  updateNodeContent(nodeId: string, content: string): Promise<VfsNode | null>;
+  updateNodeContent(nodeId: string, projectId: string, content: string): Promise<VfsNode | null>;
   createNode(params: {
     projectId: string;
     parentId: string | null;
@@ -68,26 +68,66 @@ export class VfsRepositoryImpl implements VfsRepository {
           .select({ id: vfsNodes.id })
           .from(vfsNodes)
           .where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NULL`));
+        
         const rootId = rootNodeResult[0]?.id;
-        if (!rootId) throw new Error('Project root directory not found.');
+        if (!rootId) {
+          throw new Error('Project root directory not found.');
+        }
 
-        // Delete old nodes except the root
-        await tx.delete(vfsNodes).where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NOT NULL`));
+        // Helper function to recursively create nodes
+        const createNodesRecursively = async (nodes: any[], parentId: string) => {
+          if (!nodes || nodes.length === 0) {
+            return;
+          }
 
-        // Create new nodes based on the 'pages' array
-        if (architecture.pages && architecture.pages.length > 0) {
-          for (const page of architecture.pages) {
-            await tx
+          for (const node of nodes) {
+            const [newNode] = await tx
               .insert(vfsNodes)
               .values({
                 projectId,
-                parentId: rootId, // Assuming all pages are at the root level for now
-                nodeType: 'FILE',
-                name: page.name,
-                content: page.content ?? '',
-                metadata: page.metadata ?? {},
-              });
+                parentId,
+                nodeType: node.type === 'FILE' ? 'FILE' : 'DIRECTORY',
+                name: node.name,
+                content: node.type === 'FILE' ? node.content ?? '' : null,
+                metadata: node.metadata ?? {},
+              })
+              .returning({ id: vfsNodes.id });
+
+            if (node.type === 'DIRECTORY' && newNode?.id && node.children) {
+              await createNodesRecursively(node.children, newNode.id);
+            }
           }
+        };
+
+        let nodesToCreate = architecture.structure || architecture.file_structure;
+
+        // Data transformation logic for legacy formats
+        if (!nodesToCreate && (architecture.pages || architecture.components)) {
+            this.app.log.warn('Transforming legacy architecture format.');
+            nodesToCreate = [];
+            if (architecture.pages) {
+                const pagesDir = {
+                    type: 'DIRECTORY',
+                    name: 'pages',
+                    children: architecture.pages.map(p => ({ type: 'FILE', name: p.name, content: p.content ?? '' }))
+                };
+                nodesToCreate.push(pagesDir);
+            }
+            if (architecture.components) {
+                const componentsDir = {
+                    type: 'DIRECTORY',
+                    name: 'components',
+                    children: Object.entries(architecture.components).map(([key, val]: [string, any]) => ({ type: 'FILE', name: val.name ?? `${key}.tsx`, content: val.content ?? '' }))
+                };
+                nodesToCreate.push(componentsDir);
+            }
+        }
+
+        // Start the recursive creation from the root
+        if (nodesToCreate) {
+          await createNodesRecursively(nodesToCreate, rootId);
+        } else {
+            this.app.log.warn('No valid architecture structure found to sync.');
         }
       });
       this.app.log.info({ projectId }, 'Project architecture applied to VFS.');
@@ -122,9 +162,9 @@ export class VfsRepositoryImpl implements VfsRepository {
     }
   }
 
-  async updateNodeContent(nodeId: string, content: string): Promise<VfsNode | null> {
+  async updateNodeContent(nodeId: string, projectId: string, content: string): Promise<VfsNode | null> {
     try {
-      const updatedRows = await db.update(vfsNodes).set({ content, updatedAt: new Date().toISOString() }).where(eq(vfsNodes.id, nodeId)).returning();
+      const updatedRows = await db.update(vfsNodes).set({ content, updatedAt: new Date().toISOString() }).where(and(eq(vfsNodes.id, nodeId), eq(vfsNodes.projectId, projectId))).returning();
       if (updatedRows.length === 0) return null;
       return updatedRows[0] as VfsNode;
     } catch (error) {

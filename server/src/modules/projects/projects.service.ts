@@ -200,7 +200,7 @@ export class ProjectsService {
     if (node.nodeType !== 'FILE') {
       throw new Error('Cannot update content of a directory.');
     }
-    return this.vfsRepository.updateNodeContent(nodeId, content);
+    return this.vfsRepository.updateNodeContent(nodeId, projectId, content);
   }
 
   // This method now clearly belongs in the ProjectsService as it orchestrates both repos

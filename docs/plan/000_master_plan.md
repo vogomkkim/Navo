@@ -41,7 +41,35 @@ To achieve this, the AI Agent embodies five key roles:
 
 ---
 
-## 4. High-Level Technical Direction
+## 4. The User Journey: The Conversational Co-Pilot
+
+Navo's core user experience is designed to feel like working with a highly competent co-pilot, not just using a tool. The AI's primary role is to guide the user from a simple idea to a concrete plan, and then execute that plan. This is achieved through a **Conversational Requirement Refinement** process.
+
+The development cycle is as follows:
+
+1.  **Phase 1: The Idea (The Vague Request)**: The user starts with a simple, high-level request, just as they would with a human expert.
+    - *User: "I want to create a website to help people learn Korean."*
+
+2.  **Phase 2: The Proposal (The AI as a Planner)**: Instead of asking for technical details, the AI analyzes the vague request and acts as a product planner. It proposes a concrete, well-structured plan for the user's approval.
+    - *Navo: "Great idea! How about we start with these pages: a Homepage, a Hangul alphabet guide, a basic Grammar section, and a Vocabulary list. Does that sound like a good starting point?"*
+
+3.  **Phase 3: The Feedback Loop (Refining the Plan)**: The user provides simple feedback on the AI's proposal. The AI incorporates the feedback and confirms the final plan.
+    - *User: "That's good, but can you add a Quiz page too?"*
+    - *Navo: "Excellent suggestion. I've added a Quiz page to the plan. Shall I proceed with building the structure for these five pages?"*
+
+4.  **Phase 4: Scaffolding (Execution)**: Once the user approves the plan, the AI generates the complete file and directory structure (the "blueprint") in the Virtual File System (VFS).
+
+5.  **Phase 5: Progressive Implementation (The Inner Loop)**: With the project structure in place, the user can then work on individual files in a tight, conversational loop:
+    - **Focus**: The user selects a file (e.g., "Let's work on the Header").
+    - **Implement & Refine**: The user describes what they want, and the AI generates and refines the code based on feedback.
+    - **Save**: The user approves the final code, and the AI updates the file in the VFS.
+    - **Iterate**: The user moves to the next file.
+
+This approach ensures that non-technical users are never burdened with technical specifications. They only need to bring their idea; the AI co-pilot handles the rest, turning it into an actionable plan and a finished product.
+
+---
+
+## 5. High-Level Technical Direction
 
 To realize this vision, Navo is built on a modern, AI-native architecture:
 

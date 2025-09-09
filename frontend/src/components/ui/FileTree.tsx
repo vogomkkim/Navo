@@ -12,7 +12,7 @@ import { useIdeStore } from '@/store/ideStore';
 import clsx from 'clsx';
 import {
   FilePlusIcon,
-  FolderPlusIcon,
+  PlusCircledIcon,
   Pencil1Icon,
   TrashIcon,
 } from '@radix-ui/react-icons';
@@ -244,7 +244,7 @@ export const FileTree = ({ projectId }: { projectId: string }) => {
           className="p-1 text-gray-500 hover:text-gray-800"
           title="새 폴더"
         >
-          <FolderPlusIcon />
+          <PlusCircledIcon />
         </button>
       </div>
 
