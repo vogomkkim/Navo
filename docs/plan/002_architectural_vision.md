@@ -53,6 +53,37 @@ When a critical error occurs (e.g., a runtime error in the generated code), a sp
 
 ---
 
+## 3. Code Generation Strategy: Retrieval-Augmented Generation (RAG)
+
+To ensure the AI generates code that adheres to our specific standards and best practices, we will not rely solely on the LLM's base knowledge. Instead, we will implement a **Retrieval-Augmented Generation (RAG)** strategy.
+
+This approach addresses the critical challenge of context window limitations and ensures the AI is always equipped with the most relevant, up-to-date guidelines.
+
+### a. The Problem: Context Limitations
+- **Limited Context Window**: LLM prompts have a finite size. We cannot pass our entire set of development principles in every request.
+- **Relevance Dilution**: Providing irrelevant guidelines for a specific task can confuse the LLM and degrade the quality of the output.
+
+### b. The RAG Solution
+The RAG workflow separates our knowledge from the generation process:
+
+1.  **Knowledge Base Creation (Offline Process)**:
+    - Our development standards, coding conventions, and architectural principles are maintained in a dedicated document (e.g., `docs/tech/development-principles.md`).
+    - This document is parsed, split into meaningful chunks (e.g., "React Component Guidelines"), and converted into vector embeddings.
+    - These embeddings are stored in a specialized **Vector Database**, creating a searchable knowledge base.
+
+2.  **Intelligent Retrieval (Real-time Process)**:
+    - When a user requests a code generation task (e.g., "Create a login form component"), the system first analyzes the request.
+    - It converts the user's request into a vector embedding and uses it to query the Vector Database.
+    - The database returns the most semantically relevant chunks of our documentation (e.g., the "React Component Guidelines" and "API Client Usage" chunks).
+
+3.  **Augmented Prompting**:
+    - The system then dynamically constructs a prompt for the LLM that includes the user's original request **plus** the specific, relevant guidelines retrieved from the knowledge base.
+    - This ensures the LLM has the precise context it needs to generate high-quality, compliant code without being overwhelmed by irrelevant information.
+
+This strategy allows us to maintain a comprehensive and evolving set of development principles while ensuring the AI can apply them effectively and efficiently.
+
+---
+
 ## 4. Guiding Implementation Principles
 
 To ensure the long-term health and scalability of the codebase, we adhere to the following principles (distilled from our backend refactoring efforts):
