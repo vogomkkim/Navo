@@ -5,10 +5,12 @@ All notable changes to this project will be documented in this file.
 ## [2025-09-05] - pnpm Migration and Type System Stabilization
 
 ### Added
+
 - **pnpm Workspaces**: Introduced `pnpm` as the package manager for the monorepo to improve dependency management efficiency and speed. Created `pnpm-workspace.yaml` to define the workspace structure.
 - **Error Handling Utility**: Added a new utility function `handleUnauthorizedError` in `frontend/src/lib/handleApiError.ts` to centralize and simplify the handling of authentication errors in API hooks.
 
 ### Changed
+
 - **Package Manager Switch**: Replaced `npm` with `pnpm` across the entire project. All `package-lock.json` files have been removed and replaced with a single root `pnpm-lock.yaml`.
 - **Root Scripts**: Updated root `package.json` scripts to use `pnpm -r` for running commands across all workspaces (e.g., `pnpm -r run build`).
 - **Server Type System Refactoring**: Conducted a major refactoring of the server-side codebase to resolve numerous TypeScript errors that surfaced during the migration.
@@ -19,11 +21,13 @@ All notable changes to this project will be documented in this file.
 - **Component Stability**: Improved the stability of `HomeContent.tsx` by refactoring the `useUpdateVfsNodeContent` hook's `onSuccess` callback to use mutation response data, preventing potential stale state issues.
 
 ### Fixed
+
 - **Build Failures**: Resolved all build-breaking TypeScript errors in the `server` workspace, enabling the project to be successfully built with `tsc`.
 - **Dependency Issues**: Explicitly added necessary `devDependencies` like `typescript` and `@types/jest` to each workspace's `package.json`, fixing the "command not found" errors caused by pnpm's stricter dependency isolation.
 - **Frontend Build Error**: Fixed a type export issue in `AuthContext.tsx` that was causing the Next.js build to fail.
 
 ### Removed
+
 - All `package-lock.json` files from the repository.
 
 ## [2025-09-03] - Architectural Revolution: The Autonomous Workflow Engine
@@ -165,7 +169,7 @@ All notable changes to this project will be documented in this file.
     execute(
       enhancedPrompt: EnhancedPrompt,
       userContext: UserContext,
-      sessionId: string,
+      sessionId: string
     ): Promise<ActionResult>;
   }
 
@@ -361,7 +365,7 @@ All notable changes to this project will be documented in this file.
   // 개선: 동적 생성
   message: generateAgentSuccessMessage(
     'Project Architect Agent',
-    '프로젝트 요구사항 분석 및',
+    '프로젝트 요구사항 분석 및'
   );
   ```
 
@@ -607,9 +611,10 @@ All notable changes to this project will be documented in this file.
 - `deploySite` 노드: `undefined` URL 반환 문제 해결.
 - `deploySite` 노드: 중복 선언 문제 해결.
 - AI 제안 저장: `suggestions` 테이블의 외래 키 제약 조건 위반 문제 해결 (더미 사용자 및 프로젝트 시딩).
- - 홈 진입 시 미인증 상태에서 로그인 페이지로 즉시 리다이렉트되도록 클라이언트 사이드 처리 추가.
- - 미인증 플레이스홀더 문구를 한국어로 현지화("로그인 페이지로 이동 중...").
- - 서버 인증 미들웨어가 `request.user`만 설정하고 `request.userId`는 누락했던 문제 수정 → 컨트롤러에서 사용자 ID를 일관되게 인식.
+- 루트 `package.json` 스크립트 JSON 형식 오류 수정: `format` 라인에 누락된 쉼표 추가 및 Windows 경로 이스케이프 문제 해결(`clean` 스크립트에서 `frontend\\node_modules`, `server\\node_modules`, `packages\\shared\\node_modules`).
+- 홈 진입 시 미인증 상태에서 로그인 페이지로 즉시 리다이렉트되도록 클라이언트 사이드 처리 추가.
+- 미인증 플레이스홀더 문구를 한국어로 현지화("로그인 페이지로 이동 중...").
+- 서버 인증 미들웨어가 `request.user`만 설정하고 `request.userId`는 누락했던 문제 수정 → 컨트롤러에서 사용자 ID를 일관되게 인식.
 
 ## [0.1.0] - Initial
 

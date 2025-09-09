@@ -1,0 +1,49 @@
+{
+  "blueprintType": "API_BLUEPRINT_V1",
+  "endpoints": [
+    {
+      "path": "/users/:userId",
+      "method": "GET",
+      "description": "Retrieves the details of a specific user by their ID.",
+      "request": {
+        "params": {
+          "userId": {
+            "type": "string",
+            "description": "The unique identifier of the user."
+          }
+        }
+      },
+      "response": {
+        "200": {
+          "description": "User details retrieved successfully.",
+          "body": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "email": { "type": "string" }
+          }
+        },
+        "404": {
+          "description": "User not found.",
+          "body": { "error": { "type": "string" } }
+        }
+      }
+    },
+    {
+      "path": "/users",
+      "method": "POST",
+      "description": "Creates a new user.",
+      "request": {
+        "body": {
+          "name": { "type": "string" },
+          "email": { "type": "string" }
+        }
+      },
+      "response": {
+        "201": {
+          "description": "User created successfully.",
+          "body": { "id": { "type": "string" } }
+        }
+      }
+    }
+  ]
+}

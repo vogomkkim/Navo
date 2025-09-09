@@ -19,7 +19,9 @@
     "test": "vitest"
   },
   "devDependencies": {
+    "json-schema-to-zod": "^2.6.1",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "zod": "^3.24.2"
   }
 }

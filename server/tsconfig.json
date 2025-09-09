@@ -19,7 +19,8 @@
       "@/core/*": ["src/core/*"],
       "@/modules/*": ["src/modules/*"],
       "@/config": ["src/config"],
-      "@/config/*": ["src/config/*"]
+      "@/config/*": ["src/config/*"],
+      "@/shared/*": ["../packages/shared/*"]
     },
     "types": ["node", "vitest/globals"]
   },

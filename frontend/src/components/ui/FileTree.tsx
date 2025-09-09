@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, a useState, useRef, useEffect } from 'react';
 import {
   useListVfsNodes,
   useCreateVfsNode,
@@ -15,22 +15,29 @@ import {
   PlusCircledIcon,
   Pencil1Icon,
   TrashIcon,
+  FolderIcon,
+  FileIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@radix-ui/react-icons';
 import * as ContextMenu from '@radix-ui/react-context-menu';
+import { toast } from 'sonner';
 
-// Helper component for inline editing (create/rename)
+// --- Helper Components ---
+
 const InlineInput = ({
-  defaultValue,
+  defaultValue = '',
   onConfirm,
   onCancel,
+  icon,
 }: {
-  defaultValue: string;
+  defaultValue?: string;
   onConfirm: (value: string) => void;
   onCancel: () => void;
+  icon?: React.ReactNode;
 }) => {
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
-  const submittedRef = useRef(false); // Ref to prevent double submission
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -38,9 +45,7 @@ const InlineInput = ({
   }, []);
 
   const handleSubmit = () => {
-    if (submittedRef.current) return;
     if (value.trim()) {
-      submittedRef.current = true;
       onConfirm(value.trim());
     } else {
       onCancel();
@@ -48,132 +53,125 @@ const InlineInput = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSubmit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      onCancel();
-    }
+    if (e.key === 'Enter') handleSubmit();
+    else if (e.key === 'Escape') onCancel();
   };
 
   return (
-    <input
-      ref={inputRef}
-      type="text"
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onKeyDown={handleKeyDown}
-      onBlur={handleSubmit} // Use the same handler for blur
-      className="w-full px-1 py-0.5 text-sm border border-blue-500 rounded focus:outline-none"
-    />
+    <div className="flex items-center w-full py-0.5">
+      {icon && <span className="mr-1">{icon}</span>}
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={handleSubmit}
+        className="w-full px-1 text-sm bg-transparent border border-blue-500 rounded focus:outline-none"
+      />
+    </div>
   );
 };
 
-const NodeRenderer = ({
+// --- Main Components ---
+
+type EditingState = {
+  id: string;
+  type: 'rename';
+} | {
+  id: string; // parentId for creation
+  type: 'createFile' | 'createDirectory';
+};
+
+const Node = ({
   node,
   projectId,
   level,
-  onNodeSelect,
+  editingState,
+  setEditingState,
 }: {
   node: VfsNode;
   projectId: string;
   level: number;
-  onNodeSelect: (node: VfsNode) => void;
+  editingState: EditingState | null;
+  setEditingState: (state: EditingState | null) => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: childrenData, isLoading } = useListVfsNodes(projectId, node.id, {
-    enabled: isOpen,
-  });
+  const { data, isLoading } = useListVfsNodes(projectId, node.id, { enabled: isOpen });
 
-  const addOpenFile = useIdeStore((state) => state.addOpenFile);
-  const activeFile = useIdeStore((state) => state.activeFile);
+  const { openFile, activeFile, setActiveFile } = useIdeStore();
   const isActive = activeFile === node.id;
 
+  const { mutate: renameNode, isPending: isRenaming } = useRenameVfsNode();
+  const { mutate: deleteNode } = useDeleteVfsNode();
+  const { mutate: createNode, isPending: isCreating } = useCreateVfsNode();
+
   const handleNodeClick = () => {
-    onNodeSelect(node);
+    setActiveFile(node.id);
     if (node.nodeType === 'DIRECTORY') {
       setIsOpen(!isOpen);
     } else {
-      addOpenFile(node.id);
+      openFile({ projectId, fileId: node.id, fileName: node.name });
     }
   };
 
-  return (
-    <>
-      <div
-        onClick={handleNodeClick}
-        className={clsx(
-          'cursor-pointer flex items-center px-2 py-1 rounded text-sm',
-          isActive ? 'bg-blue-100' : 'hover:bg-gray-100',
-        )}
-        style={{ paddingLeft: `${level * 16}px` }}
-      >
-        {node.nodeType === 'DIRECTORY' && (
-          <span className="mr-1">{isOpen ? '▾' : '▸'}</span>
-        )}
-        <span>{node.name}</span>
-      </div>
-      {isOpen && (
-        <div>
-          {isLoading && (
-            <div
-              style={{ paddingLeft: `${(level + 1) * 16}px` }}
-              className="px-2 py-1 text-gray-400"
-            >
-              ...
-            </div>
-          )}
-          {childrenData?.nodes.map((childNode) => (
-            <ContextMenuWrapper
-              key={childNode.id}
-              node={childNode}
-              projectId={projectId}
-              level={level + 1}
-              onNodeSelect={onNodeSelect}
-            />
-          ))}
-        </div>
-      )}
-    </>
-  );
-};
-
-const ContextMenuWrapper = ({
-  node,
-  projectId,
-  level,
-  onNodeSelect,
-}: {
-  node: VfsNode;
-  projectId: string;
-  level: number;
-  onNodeSelect: (node: VfsNode) => void;
-}) => {
-  const [isRenaming, setIsRenaming] = useState(false);
-  const { mutate: renameNode } = useRenameVfsNode();
-  const { mutate: deleteNode } = useDeleteVfsNode();
-
   const handleRename = (newName: string) => {
+    if (newName === node.name) {
+      setEditingState(null);
+      return;
+    }
     renameNode(
-      { projectId, nodeId: node.id, name: newName },
-      { onSuccess: () => setIsRenaming(false) },
+      { projectId, nodeId: node.id, name: newName, parentId: node.parentId },
+      {
+        onSuccess: () => {
+          toast.success(`'${node.name}'의 이름을 '${newName}'(으)로 변경했습니다.`);
+          setEditingState(null);
+        },
+        onError: (error) => toast.error(error.message),
+      },
     );
   };
 
   const handleDelete = () => {
     if (window.confirm(`'${node.name}'을(를) 정말 삭제하시겠습니까?`)) {
-      deleteNode({ projectId, nodeId: node.id, parentId: node.parentId });
+      deleteNode(
+        { projectId, nodeId: node.id, parentId: node.parentId },
+        {
+          onSuccess: () => toast.success(`'${node.name}'을(를) 삭제했습니다.`),
+          onError: (error) => toast.error(error.message),
+        },
+      );
     }
   };
+  
+  const handleCreate = (name: string) => {
+    if (!editingState || editingState.type === 'rename') return;
+    createNode({
+      projectId,
+      parentId: node.id,
+      name,
+      nodeType: editingState.type === 'createFile' ? 'FILE' : 'DIRECTORY',
+    }, {
+      onSuccess: () => {
+        toast.success(`'${name}'을(를) 생성했습니다.`);
+        setEditingState(null);
+        setIsOpen(true);
+      },
+      onError: (error) => toast.error(error.message),
+    });
+  };
 
-  if (isRenaming) {
+  const isEditingThisNode = editingState?.type === 'rename' && editingState.id === node.id;
+  const isCreatingInThisNode = editingState?.id === node.id && editingState.type !== 'rename';
+
+  if (isEditingThisNode) {
     return (
       <div style={{ paddingLeft: `${level * 16}px` }} className="px-2 py-1">
         <InlineInput
           defaultValue={node.name}
           onConfirm={handleRename}
-          onCancel={() => setIsRenaming(false)}
+          onCancel={() => setEditingState(null)}
+          icon={node.nodeType === 'DIRECTORY' ? <FolderIcon /> : <FileIcon />}
         />
       </div>
     );
@@ -182,92 +180,151 @@ const ContextMenuWrapper = ({
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger>
-        <NodeRenderer
-          node={node}
-          projectId={projectId}
-          level={level}
-          onNodeSelect={onNodeSelect}
-        />
+        <div
+          onClick={handleNodeClick}
+          className={clsx(
+            'cursor-pointer flex items-center px-2 py-1 rounded text-sm whitespace-nowrap',
+            isActive ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-100 dark:hover:bg-gray-800',
+          )}
+          style={{ paddingLeft: `${level * 16}px` }}
+        >
+          {node.nodeType === 'DIRECTORY' ? (
+            <>
+              {isOpen ? <ChevronDownIcon className="mr-1" /> : <ChevronRightIcon className="mr-1" />}
+              <FolderIcon className="mr-1 text-yellow-600" />
+            </>
+          ) : (
+            <FileIcon className="mr-1 text-gray-500" />
+          )}
+          <span>{node.name}</span>
+        </div>
       </ContextMenu.Trigger>
       <ContextMenu.Portal>
-        <ContextMenu.Content className="bg-white shadow-lg rounded-md py-1.5 text-sm w-40 z-10">
+        <ContextMenu.Content className="bg-white dark:bg-gray-800 shadow-lg rounded-md py-1.5 text-sm w-48 z-10 border dark:border-gray-700">
+          {node.nodeType === 'DIRECTORY' && (
+            <>
+              <ContextMenu.Item
+                onClick={() => setEditingState({ id: node.id, type: 'createFile' })}
+                className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 outline-none"
+              >
+                <FilePlusIcon /> 새 파일
+              </ContextMenu.Item>
+              <ContextMenu.Item
+                onClick={() => setEditingState({ id: node.id, type: 'createDirectory' })}
+                className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 outline-none"
+              >
+                <PlusCircledIcon /> 새 폴더
+              </ContextMenu.Item>
+              <ContextMenu.Separator className="h-px my-1 bg-gray-200 dark:bg-gray-700" />
+            </>
+          )}
           <ContextMenu.Item
-            onClick={() => setIsRenaming(true)}
-            className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-100 outline-none"
+            onClick={() => setEditingState({ id: node.id, type: 'rename' })}
+            className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 outline-none"
           >
             <Pencil1Icon /> 이름 변경
           </ContextMenu.Item>
           <ContextMenu.Item
             onClick={handleDelete}
-            className="flex items-center gap-2 px-3 py-1.5 text-red-600 cursor-pointer hover:bg-red-50 outline-none"
+            className="flex items-center gap-2 px-3 py-1.5 text-red-600 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/50 outline-none"
           >
             <TrashIcon /> 삭제
           </ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu.Portal>
+
+      {isOpen && (
+        <div>
+          {isLoading && <div style={{ paddingLeft: `${(level + 1) * 16}px` }} className="px-2 py-1 text-gray-400">...</div>}
+          {data?.nodes.map((childNode) => (
+            <Node
+              key={childNode.id}
+              node={childNode}
+              projectId={projectId}
+              level={level + 1}
+              editingState={editingState}
+              setEditingState={setEditingState}
+            />
+          ))}
+          {isCreatingInThisNode && (
+            <div style={{ paddingLeft: `${(level + 1) * 16}px` }} className="px-2 py-1">
+              <InlineInput
+                onConfirm={handleCreate}
+                onCancel={() => setEditingState(null)}
+                icon={editingState.type === 'createFile' ? <FileIcon /> : <FolderIcon />}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </ContextMenu.Root>
   );
 };
 
+
 export const FileTree = ({ projectId }: { projectId: string }) => {
   const { data, isLoading, isError } = useListVfsNodes(projectId, null);
-  const [selectedNode, setSelectedNode] = useState<VfsNode | null>(null);
-  const [creatingType, setCreatingType] = useState<'FILE' | 'DIRECTORY' | null>(
-    null,
-  );
-  const { mutate: createNode } = useCreateVfsNode();
+  const [editingState, setEditingState] = useState<EditingState | null>(null);
+  const { mutate: createNode, isPending: isCreating } = useCreateVfsNode();
 
-  const handleCreate = (name: string) => {
-    if (!creatingType) return;
-    const parentId =
-      selectedNode?.nodeType === 'DIRECTORY'
-        ? selectedNode.id
-        : selectedNode?.parentId ?? null;
-    createNode(
-      { projectId, parentId, name, nodeType: creatingType },
-      { onSuccess: () => setCreatingType(null) },
-    );
+  const handleCreateRoot = (name: string) => {
+    if (!editingState || editingState.type === 'rename') return;
+    createNode({
+      projectId,
+      parentId: null,
+      name,
+      nodeType: editingState.type === 'createFile' ? 'FILE' : 'DIRECTORY',
+    }, {
+      onSuccess: () => {
+        toast.success(`'${name}'을(를) 최상위에 생성했습니다.`);
+        setEditingState(null);
+      },
+      onError: (error) => toast.error(error.message),
+    });
   };
 
   return (
     <div className="p-2">
       <div className="flex items-center gap-2 px-2 mb-2">
         <button
-          onClick={() => setCreatingType('FILE')}
-          className="p-1 text-gray-500 hover:text-gray-800"
-          title="새 파일"
+          onClick={() => setEditingState({ id: 'root', type: 'createFile' })}
+          className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-50"
+          title="새 파일 (최상위)"
+          disabled={isCreating}
         >
           <FilePlusIcon />
         </button>
         <button
-          onClick={() => setCreatingType('DIRECTORY')}
-          className="p-1 text-gray-500 hover:text-gray-800"
-          title="새 폴더"
+          onClick={() => setEditingState({ id: 'root', type: 'createDirectory' })}
+          className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-50"
+          title="새 폴더 (최상위)"
+          disabled={isCreating}
         >
           <PlusCircledIcon />
         </button>
       </div>
 
       {isLoading && <div className="text-sm text-gray-500">파일 트리 로딩 중...</div>}
-      {isError && <div className="text-sm text-red-500">오류 발생</div>}
+      {isError && <div className="text-sm text-red-500">오류가 발생했습니다.</div>}
 
-      {creatingType && (
+      {editingState?.id === 'root' && (
         <div className="px-2 py-1">
           <InlineInput
-            defaultValue=""
-            onConfirm={handleCreate}
-            onCancel={() => setCreatingType(null)}
+            onConfirm={handleCreateRoot}
+            onCancel={() => setEditingState(null)}
+            icon={editingState.type === 'createFile' ? <FileIcon /> : <FolderIcon />}
           />
         </div>
       )}
 
       {data?.nodes.map((node) => (
-        <ContextMenuWrapper
+        <Node
           key={node.id}
           node={node}
           projectId={projectId}
           level={1}
-          onNodeSelect={setSelectedNode}
+          editingState={editingState}
+          setEditingState={setEditingState}
         />
       ))}
     </div>
