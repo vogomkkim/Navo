@@ -20,6 +20,26 @@ export interface VfsRepository {
   ): Promise<VfsNode[]>;
   getNodeById(nodeId: string, projectId: string): Promise<VfsNode | null>;
   updateNodeContent(nodeId: string, content: string): Promise<VfsNode | null>;
+  createNode(params: {
+    projectId: string;
+    parentId: string | null;
+    nodeType: 'FILE' | 'DIRECTORY';
+    name: string;
+    content?: string | null;
+    metadata?: Record<string, unknown>;
+  }): Promise<VfsNode>;
+  renameNode(params: {
+    projectId: string;
+    nodeId: string;
+    newName: string;
+  }): Promise<VfsNode | null>;
+  moveNode(params: {
+    projectId: string;
+    nodeId: string;
+    newParentId: string | null;
+  }): Promise<VfsNode | null>;
+  deleteNode(params: { projectId: string; nodeId: string }): Promise<boolean>;
+  findByPath(projectId: string, path: string): Promise<VfsNode | null>;
 }
 
 export class VfsRepositoryImpl implements VfsRepository {
@@ -110,6 +130,148 @@ export class VfsRepositoryImpl implements VfsRepository {
     } catch (error) {
       this.app.log.error(error, 'VFS node update failed');
       throw new Error('Failed to update VFS node content.');
+    }
+  }
+
+  async createNode(params: {
+    projectId: string;
+    parentId: string | null;
+    nodeType: 'FILE' | 'DIRECTORY';
+    name: string;
+    content?: string | null;
+    metadata?: Record<string, unknown>;
+  }): Promise<VfsNode> {
+    const { projectId, parentId, nodeType, name } = params;
+    const content = nodeType === 'DIRECTORY' ? null : params.content ?? '';
+    const metadata = params.metadata ?? {};
+    try {
+      const [created] = await db
+        .insert(vfsNodes)
+        .values({ projectId, parentId, nodeType, name, content, metadata })
+        .returning();
+      return created as VfsNode;
+    } catch (error: any) {
+      this.app.log.error(error, 'VFS node create failed');
+      if (typeof error?.message === 'string' && error.message.includes('vfs_nodes_project_id_parent_id_name_key')) {
+        throw new Error('A node with the same name already exists in this directory.');
+      }
+      throw new Error('Failed to create VFS node.');
+    }
+  }
+
+  async renameNode(params: {
+    projectId: string;
+    nodeId: string;
+    newName: string;
+  }): Promise<VfsNode | null> {
+    const { projectId, nodeId, newName } = params;
+    try {
+      // Ensure node belongs to project and get parentId for unique constraint scope
+      const existing = await db
+        .select({ id: vfsNodes.id, parentId: vfsNodes.parentId })
+        .from(vfsNodes)
+        .where(and(eq(vfsNodes.id, nodeId), eq(vfsNodes.projectId, projectId)))
+        .limit(1);
+      if (existing.length === 0) return null;
+
+      const [updated] = await db
+        .update(vfsNodes)
+        .set({ name: newName, updatedAt: new Date().toISOString() })
+        .where(and(eq(vfsNodes.id, nodeId), eq(vfsNodes.projectId, projectId)))
+        .returning();
+      return updated as VfsNode;
+    } catch (error: any) {
+      this.app.log.error(error, 'VFS node rename failed');
+      if (typeof error?.message === 'string' && error.message.includes('vfs_nodes_project_id_parent_id_name_key')) {
+        throw new Error('A node with the same name already exists in this directory.');
+      }
+      throw new Error('Failed to rename VFS node.');
+    }
+  }
+
+  async moveNode(params: {
+    projectId: string;
+    nodeId: string;
+    newParentId: string | null;
+  }): Promise<VfsNode | null> {
+    const { projectId, nodeId, newParentId } = params;
+    try {
+      // Ensure node exists under project
+      const existing = await db
+        .select({ id: vfsNodes.id })
+        .from(vfsNodes)
+        .where(and(eq(vfsNodes.id, nodeId), eq(vfsNodes.projectId, projectId)))
+        .limit(1);
+      if (existing.length === 0) return null;
+
+      const [updated] = await db
+        .update(vfsNodes)
+        .set({ parentId: newParentId, updatedAt: new Date().toISOString() })
+        .where(and(eq(vfsNodes.id, nodeId), eq(vfsNodes.projectId, projectId)))
+        .returning();
+      return updated as VfsNode;
+    } catch (error: any) {
+      this.app.log.error(error, 'VFS node move failed');
+      if (typeof error?.message === 'string' && error.message.includes('vfs_nodes_project_id_parent_id_name_key')) {
+        throw new Error('A node with the same name already exists in the target directory.');
+      }
+      throw new Error('Failed to move VFS node.');
+    }
+  }
+
+  async deleteNode(params: { projectId: string; nodeId: string }): Promise<boolean> {
+    const { projectId, nodeId } = params;
+    try {
+      const res = await db
+        .delete(vfsNodes)
+        .where(and(eq(vfsNodes.id, nodeId), eq(vfsNodes.projectId, projectId)));
+      // drizzle returns number for affected? Depending on driver; treat success if no error
+      return true;
+    } catch (error) {
+      this.app.log.error(error, 'VFS node delete failed');
+      throw new Error('Failed to delete VFS node.');
+    }
+  }
+
+  async findByPath(projectId: string, path: string): Promise<VfsNode | null> {
+    try {
+      const normalized = path.trim();
+      if (normalized === '' || normalized === '/') {
+        const rows = await db
+          .select()
+          .from(vfsNodes)
+          .where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NULL`))
+          .limit(1);
+        return rows[0] as VfsNode | null;
+      }
+
+      const segments = normalized.split('/').filter((s) => s.length > 0);
+      // Start from root
+      const rootRows = await db
+        .select({ id: vfsNodes.id })
+        .from(vfsNodes)
+        .where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NULL`))
+        .limit(1);
+      if (rootRows.length === 0) return null;
+      let currentParentId: string | null = rootRows[0].id as string;
+
+      for (let i = 0; i < segments.length; i++) {
+        const name = segments[i];
+        const rows = await db
+          .select()
+          .from(vfsNodes)
+          .where(and(eq(vfsNodes.projectId, projectId), eq(vfsNodes.parentId, currentParentId), eq(vfsNodes.name, name)))
+          .limit(1);
+        if (rows.length === 0) return null;
+        const node = rows[0] as VfsNode;
+        currentParentId = node.id;
+        if (i === segments.length - 1) return node;
+      }
+
+      return null;
+    } catch (error) {
+      this.app.log.error(error, 'VFS findByPath failed');
+      throw new Error('Failed to find VFS node by path.');
     }
   }
 }
