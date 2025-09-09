@@ -39,7 +39,7 @@ export class ProjectsService {
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
-    
+
     const messageToCreate: CreateChatMessage = {
       projectId,
       userId,
@@ -123,6 +123,66 @@ export class ProjectsService {
     return this.vfsRepository.getNodeById(nodeId, projectId);
   }
 
+  async createVfsNode(
+    projectId: string,
+    userId: string,
+    params: { parentId: string | null; nodeType: 'FILE' | 'DIRECTORY'; name: string; content?: string | null; metadata?: Record<string, unknown> },
+  ): Promise<VfsNode> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+    return this.vfsRepository.createNode({ projectId, ...params });
+  }
+
+  async renameVfsNode(
+    projectId: string,
+    userId: string,
+    params: { nodeId: string; newName: string },
+  ): Promise<VfsNode | null> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+    return this.vfsRepository.renameNode({ projectId, ...params });
+  }
+
+  async moveVfsNode(
+    projectId: string,
+    userId: string,
+    params: { nodeId: string; newParentId: string | null },
+  ): Promise<VfsNode | null> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+    return this.vfsRepository.moveNode({ projectId, ...params });
+  }
+
+  async deleteVfsNode(
+    projectId: string,
+    userId: string,
+    params: { nodeId: string },
+  ): Promise<boolean> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+    return this.vfsRepository.deleteNode({ projectId, ...params });
+  }
+
+  async findVfsNodeByPath(
+    projectId: string,
+    userId: string,
+    path: string,
+  ): Promise<VfsNode | null> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+    return this.vfsRepository.findByPath(projectId, path);
+  }
+
   async updateVfsNodeContent(
     nodeId: string,
     projectId: string,
@@ -142,7 +202,7 @@ export class ProjectsService {
     }
     return this.vfsRepository.updateNodeContent(nodeId, content);
   }
-  
+
   // This method now clearly belongs in the ProjectsService as it orchestrates both repos
   async updateProjectFromArchitecture(
     projectId: string,
