@@ -166,67 +166,70 @@ export class OrchestratorService {
     }
   }
 
-  private async executeFileOperation(projectId: string, userId: string, instr: { op: string; path?: string; parentPath?: string; name?: string; newName?: string; newPath?: string; content?: string }): Promise<{ message: string; details?: any }> {
+  private async executeFileOperation(projectId: string, userId: string, instr: { op: string; path?: string; parentPath?: string; name?: string; newName?: string; newPath?: string; content?: string }): Promise<{ status: 'ok' | 'clarify'; message: string; details?: any }> {
     const safe = (s?: string) => (typeof s === 'string' ? s.trim() : undefined);
     const op = String(instr.op || '').toLowerCase();
 
     switch (op) {
       case 'create': {
         const name = safe(instr.name);
-        if (!name) return { message: '생성할 이름이 정의되지 않았습니다.' };
+        if (!name) return { status: 'clarify', message: '어떤 이름으로 생성할까요? 예: "utils/date.ts" 또는 이름만 알려주세요.' };
         const parentPath = safe(instr.parentPath) || (safe(instr.path)?.replace(/\/$/, '')?.split('/').slice(0, -1).join('/') || '/');
         const parentNode = await this.projectsService.findVfsNodeByPath(projectId, userId, parentPath || '/');
-        if (!parentNode) return { message: `부모 경로를 찾을 수 없습니다: ${parentPath}` };
+        if (!parentNode) return { status: 'clarify', message: `부모 경로를 찾을 수 없습니다: ${parentPath}. 생성할 위치(폴더 경로)를 알려주세요.` };
         const node = await this.projectsService.createVfsNode(projectId, userId, { parentId: parentNode.id, nodeType: instr.content != null ? 'FILE' : 'DIRECTORY', name, content: instr.content ?? null });
-        return { message: `노드 생성 완료: ${parentPath}/${name}`, details: { node } };
+        return { status: 'ok', message: `노드 생성 완료: ${parentPath}/${name}`, details: { node } };
       }
       case 'rename': {
         const path = safe(instr.path);
         const newName = safe(instr.newName);
-        if (!path || !newName) return { message: '이름 변경에 필요한 정보(path, newName)가 부족합니다.' };
+        if (!path) return { status: 'clarify', message: '어느 파일(경로)의 이름을 변경할까요?' };
+        if (!newName) return { status: 'clarify', message: '무슨 이름으로 변경할까요?' };
         const node = await this.projectsService.findVfsNodeByPath(projectId, userId, path);
-        if (!node) return { message: `경로를 찾을 수 없습니다: ${path}` };
+        if (!node) return { status: 'clarify', message: `경로를 찾을 수 없습니다: ${path}. 정확한 경로를 알려주세요.` };
         const renamed = await this.projectsService.renameVfsNode(projectId, userId, { nodeId: node.id, newName });
-        return { message: `이름 변경 완료: ${path} → ${newName}`, details: { node: renamed } };
+        return { status: 'ok', message: `이름 변경 완료: ${path} → ${newName}`, details: { node: renamed } };
       }
       case 'move': {
         const path = safe(instr.path);
         const newPath = safe(instr.newPath);
-        if (!path || !newPath) return { message: '이동에 필요한 정보(path, newPath)가 부족합니다.' };
+        if (!path) return { status: 'clarify', message: '어떤 파일(경로)을 옮길까요?' };
+        if (!newPath) return { status: 'clarify', message: '어디로 옮길까요? 대상 폴더 경로를 알려주세요.' };
         const node = await this.projectsService.findVfsNodeByPath(projectId, userId, path);
         const targetDir = await this.projectsService.findVfsNodeByPath(projectId, userId, newPath);
-        if (!node) return { message: `원본 경로를 찾을 수 없습니다: ${path}` };
-        if (!targetDir) return { message: `대상 경로를 찾을 수 없습니다: ${newPath}` };
+        if (!node) return { status: 'clarify', message: `원본 경로를 찾을 수 없습니다: ${path}. 정확한 경로를 알려주세요.` };
+        if (!targetDir) return { status: 'clarify', message: `대상 경로를 찾을 수 없습니다: ${newPath}. 정확한 폴더 경로를 알려주세요.` };
         const moved = await this.projectsService.moveVfsNode(projectId, userId, { nodeId: node.id, newParentId: targetDir.id });
-        return { message: `이동 완료: ${path} → ${newPath}/${node.name}`, details: { node: moved } };
+        return { status: 'ok', message: `이동 완료: ${path} → ${newPath}/${node.name}`, details: { node: moved } };
       }
       case 'delete': {
         const path = safe(instr.path);
-        if (!path) return { message: '삭제할 경로가 필요합니다.' };
+        if (!path) return { status: 'clarify', message: '어떤 파일(경로)을 삭제할까요?' };
         const node = await this.projectsService.findVfsNodeByPath(projectId, userId, path);
-        if (!node) return { message: `경로를 찾을 수 없습니다: ${path}` };
+        if (!node) return { status: 'clarify', message: `경로를 찾을 수 없습니다: ${path}. 정확한 경로를 알려주세요.` };
         await this.projectsService.deleteVfsNode(projectId, userId, { nodeId: node.id });
-        return { message: `삭제 완료: ${path}` };
+        return { status: 'ok', message: `삭제 완료: ${path}` };
       }
       case 'update': {
         const path = safe(instr.path);
-        if (!path || typeof instr.content !== 'string') return { message: '업데이트에는 path와 content가 필요합니다.' };
+        if (!path) return { status: 'clarify', message: '어느 파일(경로)을 수정할까요?' };
+        if (typeof instr.content !== 'string') return { status: 'clarify', message: '어떤 내용으로 바꿀까요? 전체 내용을 제공해주세요.' };
         const node = await this.projectsService.findVfsNodeByPath(projectId, userId, path);
-        if (!node) return { message: `경로를 찾을 수 없습니다: ${path}` };
+        if (!node) return { status: 'clarify', message: `경로를 찾을 수 없습니다: ${path}. 정확한 경로를 알려주세요.` };
         const updated = await this.projectsService.updateVfsNodeContent(node.id, projectId, userId, instr.content);
-        return { message: `내용 업데이트 완료: ${path} (${updated?.content?.length ?? 0}자)`, details: { node: updated } };
+        return { status: 'ok', message: `내용 업데이트 완료: ${path} (${updated?.content?.length ?? 0}자)`, details: { node: updated } };
       }
       case 'read':
       case 'open': {
         const path = safe(instr.path);
-        if (!path) return { message: '읽기/열기에는 path가 필요합니다.' };
+        if (!path) return { status: 'clarify', message: '어느 파일(경로)을 열까요?' };
         const node = await this.projectsService.findVfsNodeByPath(projectId, userId, path);
-        if (!node) return { message: `경로를 찾을 수 없습니다: ${path}` };
+        if (!node) return { status: 'clarify', message: `경로를 찾을 수 없습니다: ${path}. 정확한 경로를 알려주세요.` };
         const fetched = await this.projectsService.getVfsNode(node.id, projectId, userId);
-        return { message: `열기 완료: ${path}`, details: { node: fetched } };
+        return { status: 'ok', message: `열기 완료: ${path}`, details: { node: fetched } };
       }
       default:
-        return { message: `지원되지 않는 파일 작업입니다: ${instr.op}` };
+        return { status: 'clarify', message: `지원되지 않는 파일 작업입니다: ${instr.op}` };
     }
   }
 }

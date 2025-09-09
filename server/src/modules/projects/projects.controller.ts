@@ -49,8 +49,16 @@ export function projectsController(app: FastifyInstance) {
         const result = await orchestratorService.handleRequest(prompt, { id: userId }, chatHistory || [], projectId);
 
         // 3. Save AI's response to DB
-        const aiRole = result.type === 'WORKFLOW_RESULT' ? 'DevOps Engineer' : 'Strategic Planner';
-        const aiContent = result.type === 'WORKFLOW_RESULT' ? result.payload.summaryMessage : result.payload.message;
+        const aiRole =
+          result.type === 'WORKFLOW_RESULT'
+            ? 'DevOps Engineer'
+            : result.type === 'FILE_OPERATION_RESULT'
+            ? 'File Operator'
+            : 'Strategic Planner';
+        const aiContent =
+          result.type === 'WORKFLOW_RESULT'
+            ? result.payload.summaryMessage
+            : result.payload.message;
 
         await projectsService.createMessage(projectId, userId, {
           role: aiRole,
