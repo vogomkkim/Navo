@@ -25,7 +25,12 @@ import { WorkflowExecutor } from './workflowExecutor';
 // In a more advanced setup, this could be done dynamically by scanning the 'tools' directory.
 toolRegistry.register(createProjectInDbTool);
 toolRegistry.register(updateProjectFromArchitectureTool);
-toolRegistry.register(createProjectArchitectureTool);
+// Register all available tools
+toolRegistry.register(new CreateProjectInDbTool());
+toolRegistry.register(new CreateProjectArchitectureTool());
+toolRegistry.register(new UpdateProjectFromArchitectureTool());
+toolRegistry.register(new BackendGeneratorTool());
+
 toolRegistry.register(runShellCommandTool); // CMS 샌드박스에서 패키지 설치 및 빌드 필요
 toolRegistry.register(listDirectoryTool); // CMS에서 템플릿 구조 및 생성된 파일 확인 필요
 toolRegistry.register(readFileTool); // CMS에서 템플릿 파일 읽기 및 동적 콘텐츠 조합 필요

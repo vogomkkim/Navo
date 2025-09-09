@@ -92,6 +92,7 @@ export class WorkflowService {
         - When modifying an existing project, this step MUST use the "Project ID" from the Context.
         - When creating a new project, its 'projectId' input MUST reference the 'id' from the 'create_project_in_db' step's output.
         - Its 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output.
+      - **After creating the architecture**, if the project requires a backend API, you should add a step using the **'generate_backend_code_from_plan'** tool. The input for this tool MUST be a valid API Blueprint, which you should generate based on the project description.
 
       **Output Format (JSON only):**
       {

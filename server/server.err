@@ -1,0 +1,12 @@
+2025-09-09T06:11:02.138Z [Bootstrap] [Bootstrap] 진단 실패 ReferenceError CreateProjectInDbTool is not defined
+ReferenceError: CreateProjectInDbTool is not defined
+    at <anonymous> (C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\index.ts:29:27)
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async startServer (C:\Users\mkkim\WebstormProjects\Navo\server\src\bootstrap.ts:35:5)
+2025-09-09T06:11:14.303Z [Bootstrap] [Bootstrap] 진단 실패 ReferenceError CreateProjectInDbTool is not defined
+ReferenceError: CreateProjectInDbTool is not defined
+    at <anonymous> (C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\index.ts:29:27)
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async startServer (C:\Users\mkkim\WebstormProjects\Navo\server\src\bootstrap.ts:35:5)
