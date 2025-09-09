@@ -78,12 +78,19 @@ export class VfsRepositoryImpl implements VfsRepository {
         await tx.delete(vfsNodes).where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NOT NULL`));
 
         // Helper function to recursively create nodes
+        const MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024; // 1MB
         const createNodesRecursively = async (nodes: any[], parentId: string) => {
           if (!nodes || nodes.length === 0) {
             return;
           }
 
           for (const node of nodes) {
+            const content = node.type === 'FILE' ? node.content ?? '' : null;
+
+            if (content && content.length > MAX_FILE_SIZE_BYTES) {
+              throw new Error(`File content for "${node.name}" exceeds the limit of 1MB.`);
+            }
+
             const [newNode] = await tx
               .insert(vfsNodes)
               .values({
@@ -91,7 +98,7 @@ export class VfsRepositoryImpl implements VfsRepository {
                 parentId,
                 nodeType: node.type === 'FILE' ? 'FILE' : 'DIRECTORY',
                 name: node.name,
-                content: node.type === 'FILE' ? node.content ?? '' : null,
+                content: content,
                 metadata: node.metadata ?? {},
               })
               .returning({ id: vfsNodes.id });
