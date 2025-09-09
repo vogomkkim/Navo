@@ -3,16 +3,28 @@ import { z } from 'zod';
 import { Tool } from './tool';
 import { ProjectsService } from '@/modules/projects/projects.service';
 
+const RequestObjectSchema = z.object({
+  params: z.record(z.object({ type: z.string(), description: z.string() })).optional(),
+  body: z.record(z.object({ type: z.string(), description: z.string() })).optional(),
+});
+
+const ResponseObjectSchema = z.record(z.object({
+  description: z.string(),
+  body: z.record(z.object({ type: z.string(), description: z.string() })).optional(),
+}));
+
+const EndpointObjectSchema = z.object({
+  path: z.string(),
+  method: z.enum(['GET', 'POST', 'PATCH', 'DELETE']),
+  description: z.string(),
+  request: RequestObjectSchema.optional(),
+  response: ResponseObjectSchema,
+});
+
 const ApiBlueprintSchema = z.object({
   blueprintType: z.literal('API_BLUEPRINT_V1'),
-  endpoints: z.array(
-    z.object({
-      path: z.string(),
-      method: z.enum(['GET', 'POST', 'PATCH', 'DELETE']),
-      description: z.string(),
-      // We'll keep request/response schemas for future validation logic
-    })
-  ),
+  targetPath: z.string().optional().describe("The full path where the generated code should be saved, e.g., '/src/routes/user.routes.ts'"),
+  endpoints: z.array(EndpointObjectSchema),
 });
 
 type ApiBlueprint = z.infer<typeof ApiBlueprintSchema>;
@@ -24,26 +36,21 @@ export class BackendGeneratorTool implements Tool {
   public inputSchema = ApiBlueprintSchema;
 
   async execute(app: FastifyInstance, inputs: ApiBlueprint, projectId: string, userId: string): Promise<any> {
+    // 1. Validate the blueprint against the detailed schema
+    try {
+      this.inputSchema.parse(inputs);
+    } catch (error) {
+      app.log.error({ error, projectId }, `[${this.name}] Invalid API Blueprint provided.`);
+      throw new Error(`Invalid API Blueprint: ${error.message}`);
+    }
+
     const projectsService = new ProjectsService(app);
     app.log.info(`[${this.name}] Starting backend code generation for project ${projectId}`);
 
     const generatedCode = this.generateCodeFromBlueprint(inputs);
 
-    const targetFilePath = '/src/routes.ts';
-    let targetFile = await projectsService.findVfsNodeByPath(projectId, userId, targetFilePath);
-
-    // If the file doesn't exist, create it first (along with parent dirs if needed)
-    if (!targetFile) {
-      const srcDir = await projectsService.findVfsNodeByPath(projectId, userId, '/src');
-      if (!srcDir) {
-        const root = await projectsService.findVfsNodeByPath(projectId, userId, '/');
-        if (!root) throw new Error('Root directory not found.');
-        const newSrcDir = await projectsService.createVfsNode(projectId, userId, { parentId: root.id, nodeType: 'DIRECTORY', name: 'src' });
-        targetFile = await projectsService.createVfsNode(projectId, userId, { parentId: newSrcDir.id, nodeType: 'FILE', name: 'routes.ts', content: '' });
-      } else {
-        targetFile = await projectsService.createVfsNode(projectId, userId, { parentId: srcDir.id, nodeType: 'FILE', name: 'routes.ts', content: '' });
-      }
-    }
+    const targetFilePath = inputs.targetPath || '/src/routes.ts';
+    const targetFile = await projectsService.findOrCreateVfsNodeByPath(projectId, userId, targetFilePath);
 
     if (!targetFile) {
       throw new Error(`Failed to find or create target file at ${targetFilePath}`);

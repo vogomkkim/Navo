@@ -216,5 +216,15 @@ export class ProjectsService {
     return this.vfsRepository.syncArchitecture(projectId, architecture);
   }
 
-  // ... (other project-specific methods like rename, delete, etc.)
+  async findOrCreateVfsNodeByPath(
+    projectId: string,
+    userId: string,
+    path: string,
+  ): Promise<VfsNode> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+    return this.vfsRepository.findOrCreateByPath(projectId, path);
+  }
 }

@@ -39,7 +39,8 @@ export interface VfsRepository {
     newParentId: string | null;
   }): Promise<VfsNode | null>;
   deleteNode(params: { projectId: string; nodeId: string }): Promise<boolean>;
-  findByPath(projectId: string, path: string): Promise<VfsNode | null>;
+  findByPath(projectId: string, path: string, tx?: any): Promise<VfsNode | null>;
+  findOrCreateByPath(projectId: string, path: string): Promise<VfsNode>;
 }
 
 export class VfsRepositoryImpl implements VfsRepository {
@@ -190,12 +191,13 @@ export class VfsRepositoryImpl implements VfsRepository {
     name: string;
     content?: string | null;
     metadata?: Record<string, unknown>;
+    tx?: any;
   }): Promise<VfsNode> {
-    const { projectId, parentId, nodeType, name } = params;
+    const { projectId, parentId, nodeType, name, tx = db } = params;
     const content = nodeType === 'DIRECTORY' ? null : params.content ?? '';
     const metadata = params.metadata ?? {};
     try {
-      const [created] = await db
+      const [created] = await tx
         .insert(vfsNodes)
         .values({ projectId, parentId, nodeType, name, content, metadata })
         .returning();
@@ -283,45 +285,97 @@ export class VfsRepositoryImpl implements VfsRepository {
     }
   }
 
-  async findByPath(projectId: string, path: string): Promise<VfsNode | null> {
+  async findByPath(projectId: string, path: string, tx: any = db): Promise<VfsNode | null> {
     try {
-      const normalized = path.trim();
-      if (normalized === '' || normalized === '/') {
-        const rows = await db
+      const normalized = path.trim().replace(/\/$/, ''); // Also remove trailing slash
+      if (normalized === '') {
+        const rows = await tx
           .select()
           .from(vfsNodes)
           .where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NULL`))
           .limit(1);
-        return rows[0] as VfsNode | null;
+        return (rows[0] as VfsNode) || null;
       }
 
       const segments = normalized.split('/').filter((s) => s.length > 0);
-      // Start from root
-      const rootRows = await db
+      let parentId: string | null = null;
+
+      // Find the root node's ID first
+      const rootRows = await tx
         .select({ id: vfsNodes.id })
         .from(vfsNodes)
-        .where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NULL`))
-        .limit(1);
+        .where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NULL`));
+      
       if (rootRows.length === 0) return null;
-      let currentParentId: string | null = rootRows[0].id as string;
+      parentId = rootRows[0].id;
 
-      for (let i = 0; i < segments.length; i++) {
-        const name = segments[i];
-        const rows = await db
+      let currentNode: VfsNode | null = rootRows[0] as VfsNode;
+      for (const segment of segments) {
+        const rows = await tx
           .select()
           .from(vfsNodes)
-          .where(and(eq(vfsNodes.projectId, projectId), eq(vfsNodes.parentId, currentParentId), eq(vfsNodes.name, name)))
+          .where(and(eq(vfsNodes.projectId, projectId), eq(vfsNodes.parentId, parentId), eq(vfsNodes.name, segment)))
           .limit(1);
+        
         if (rows.length === 0) return null;
-        const node = rows[0] as VfsNode;
-        currentParentId = node.id;
-        if (i === segments.length - 1) return node;
+        currentNode = rows[0] as VfsNode;
+        parentId = currentNode.id;
       }
 
-      return null;
+      return currentNode;
     } catch (error) {
       this.app.log.error(error, 'VFS findByPath failed');
       throw new Error('Failed to find VFS node by path.');
     }
+  }
+
+  async findOrCreateByPath(projectId: string, path: string): Promise<VfsNode> {
+    return db.transaction(async (tx) => {
+      const existingNode = await this.findByPath(projectId, path, tx);
+      if (existingNode) {
+        return existingNode;
+      }
+
+      const segments = path.split('/').filter(Boolean);
+      const fileName = segments.pop();
+      if (!fileName) {
+        throw new Error('Invalid path provided. Path cannot be empty or just a slash.');
+      }
+
+      let parentNode = await this.findByPath(projectId, '/', tx);
+      if (!parentNode) {
+        throw new Error('Project root directory not found. Cannot create node.');
+      }
+
+      for (const segment of segments) {
+        const childRows = await tx
+            .select()
+            .from(vfsNodes)
+            .where(and(eq(vfsNodes.projectId, projectId), eq(vfsNodes.parentId, parentNode.id), eq(vfsNodes.name, segment)))
+            .limit(1);
+        
+        let childNode = childRows[0] as VfsNode | undefined;
+
+        if (!childNode) {
+          childNode = await this.createNode({
+            projectId,
+            parentId: parentNode.id,
+            nodeType: 'DIRECTORY',
+            name: segment,
+            tx,
+          });
+        }
+        parentNode = childNode;
+      }
+
+      return this.createNode({
+        projectId,
+        parentId: parentNode.id,
+        nodeType: 'FILE',
+        name: fileName,
+        content: '',
+        tx,
+      });
+    });
   }
 }
