@@ -186,6 +186,7 @@ export const chatMessages = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     role: varchar('role', { length: 50 }).notNull(), // 'user' or AI role
+    displayType: varchar('display_type', { length: 50 }).default('CHAT_MESSAGE').notNull(),
     content: text('content').notNull(),
     payload: jsonb('payload'), // For AI messages with extra data
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })

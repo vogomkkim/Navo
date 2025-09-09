@@ -43,6 +43,7 @@ export function projectsController(app: FastifyInstance) {
         await projectsService.createMessage(projectId, userId, {
           role: 'user',
           content: prompt,
+          displayType: 'CHAT_MESSAGE',
         });
 
         // 2. Get AI response from orchestrator
@@ -59,6 +60,7 @@ export function projectsController(app: FastifyInstance) {
           role: aiRole,
           content: aiContent,
           payload: result.payload,
+          displayType: 'CHAT_MESSAGE',
         });
 
         return reply.send(result);

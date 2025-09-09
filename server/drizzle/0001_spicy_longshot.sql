@@ -1,0 +1,1 @@
+ALTER TABLE "chat_messages" ADD COLUMN "display_type" varchar(50) DEFAULT 'CHAT_MESSAGE' NOT NULL;

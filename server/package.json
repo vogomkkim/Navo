@@ -9,9 +9,9 @@
     "start": "dotenvx run -o -e .env -e .env.local -- node dist/bootstrap.js",
     "lint": "eslint . --ext .ts --config ../eslint.config.js",
     "test": "vitest",
-    "db:generate": "cd .. && npx dotenvx run -f .env -f .env.local -- npx drizzle-kit generate",
-    "db:push": "cd .. && npx dotenvx run -f .env -f .env.local -- npx drizzle-kit push",
-    "db:pull": "dotenvx run -e .env -e .env.local -- drizzle-kit introspect --config ../drizzle.config.ts",
+    "db:generate": "cd .. && pnpm exec dotenvx run -f .env -f .env.local -- pnpm exec drizzle-kit generate",
+    "db:push": "cd .. && pnpm exec dotenvx run -f .env -f .env.local -- pnpm exec drizzle-kit push",
+    "db:pull": "pnpm exec dotenvx run -e .env -e .env.local -- pnpm exec drizzle-kit introspect --config ../drizzle.config.ts",
     "format": "prettier --write ."
   },
   "dependencies": {

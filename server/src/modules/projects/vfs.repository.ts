@@ -74,6 +74,9 @@ export class VfsRepositoryImpl implements VfsRepository {
           throw new Error('Project root directory not found.');
         }
 
+        // Delete all existing nodes except the root directory itself
+        await tx.delete(vfsNodes).where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NOT NULL`));
+
         // Helper function to recursively create nodes
         const createNodesRecursively = async (nodes: any[], parentId: string) => {
           if (!nodes || nodes.length === 0) {
