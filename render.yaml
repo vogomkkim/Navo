@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: navo-server
+    env: node
+    plan: starter
+    buildCommand: npm install --workspaces --no-fund --no-audit && npm run -w @navo/server build
+    startCommand: npm run -w @navo/server start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Configure DATABASE_URL and other secrets in Render dashboard or via env groups
