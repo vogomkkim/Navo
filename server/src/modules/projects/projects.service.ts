@@ -216,6 +216,34 @@ export class ProjectsService {
     return this.vfsRepository.upsertByPath(projectId, path, content);
   }
 
+  async applyPatchVfsNodeByPath(
+    projectId: string,
+    userId: string,
+    path: string,
+    patchPayload: string | { find: string; replace: string },
+  ): Promise<VfsNode> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+
+    // Ensure file exists (create if not)
+    const node = await this.vfsRepository.findByPath(projectId, path);
+    const target = node ?? await this.vfsRepository.findOrCreateByPath(projectId, path);
+
+    // Load latest content
+    const fresh = await this.vfsRepository.getNodeById(target.id, projectId);
+    const current = fresh?.content ?? '';
+
+    // Apply patch
+    const { applyTextPatch } = await import('@/lib/textPatch');
+    const { updatedText } = applyTextPatch(current, patchPayload);
+
+    // Save
+    const updated = await this.vfsRepository.updateNodeContent(target.id, projectId, updatedText);
+    return (updated as VfsNode) ?? target;
+  }
+
   // This method now clearly belongs in the ProjectsService as it orchestrates both repos
   async updateProjectFromArchitecture(
     projectId: string,

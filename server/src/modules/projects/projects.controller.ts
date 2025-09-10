@@ -390,6 +390,43 @@ export function projectsController(app: FastifyInstance) {
     },
   );
 
+  // Apply a textual patch to a VFS node by path (auto-create)
+  app.patch(
+    '/api/projects/:projectId/vfs/by-path/diff',
+    {
+      preHandler: [app.authenticateToken],
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request as any).userId as string | undefined;
+        if (!userId) {
+          reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
+          return;
+        }
+
+        const params = request.params as any;
+        const projectId = params.projectId as string;
+        const body = request.body as any;
+        const { path, patch } = body ?? {};
+
+        if (!path || typeof path !== 'string') {
+          reply.status(400).send({ error: '유효한 path가 필요합니다.' });
+          return;
+        }
+        if (!(typeof patch === 'string' || (patch && typeof patch.find === 'string'))) {
+          reply.status(400).send({ error: 'patch는 dmp 문자열 또는 { find, replace } 객체여야 합니다.' });
+          return;
+        }
+
+        const node = await projectsService.applyPatchVfsNodeByPath(projectId, userId, path, patch);
+        reply.send({ node });
+      } catch (error: any) {
+        app.log.error(error, '경로 기반 VFS 노드 패치 적용 실패');
+        reply.status(500).send({ error: error.message ?? '경로 기반 VFS 노드 패치 적용에 실패했습니다.' });
+      }
+    },
+  );
+
   // Rename project
   app.patch(
     '/api/projects/:projectId',
