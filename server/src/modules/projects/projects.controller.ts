@@ -353,6 +353,43 @@ export function projectsController(app: FastifyInstance) {
     },
   );
 
+  // Upsert a VFS node's content by path
+  app.patch(
+    '/api/projects/:projectId/vfs/by-path',
+    {
+      preHandler: [app.authenticateToken],
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request as any).userId as string | undefined;
+        if (!userId) {
+          reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
+          return;
+        }
+
+        const params = request.params as any;
+        const projectId = params.projectId as string;
+        const body = request.body as any;
+        const { path, content } = body ?? {};
+
+        if (!path || typeof path !== 'string') {
+          reply.status(400).send({ error: '유효한 path가 필요합니다.' });
+          return;
+        }
+        if (typeof content !== 'string') {
+          reply.status(400).send({ error: 'Content must be a string.' });
+          return;
+        }
+
+        const node = await projectsService.upsertVfsNodeByPath(projectId, userId, path, content);
+        reply.send({ node });
+      } catch (error: any) {
+        app.log.error(error, '경로 기반 VFS 노드 업서트 실패');
+        reply.status(500).send({ error: error.message ?? '경로 기반 VFS 노드 업서트에 실패했습니다.' });
+      }
+    },
+  );
+
   // Rename project
   app.patch(
     '/api/projects/:projectId',

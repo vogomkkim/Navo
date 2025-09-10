@@ -20,6 +20,7 @@ export interface VfsRepository {
   ): Promise<VfsNode[]>;
   getNodeById(nodeId: string, projectId: string): Promise<VfsNode | null>;
   updateNodeContent(nodeId: string, projectId: string, content: string): Promise<VfsNode | null>;
+  upsertByPath(projectId: string, path: string, content: string): Promise<VfsNode>;
   createNode(params: {
     projectId: string;
     parentId: string | null;
@@ -69,7 +70,7 @@ export class VfsRepositoryImpl implements VfsRepository {
           .select({ id: vfsNodes.id })
           .from(vfsNodes)
           .where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NULL`));
-        
+
         const rootId = rootNodeResult[0]?.id;
         if (!rootId) {
           throw new Error('Project root directory not found.');
@@ -305,7 +306,7 @@ export class VfsRepositoryImpl implements VfsRepository {
         .select({ id: vfsNodes.id })
         .from(vfsNodes)
         .where(and(eq(vfsNodes.projectId, projectId), sql`${vfsNodes.parentId} IS NULL`));
-      
+
       if (rootRows.length === 0) return null;
       parentId = rootRows[0].id;
 
@@ -316,7 +317,7 @@ export class VfsRepositoryImpl implements VfsRepository {
           .from(vfsNodes)
           .where(and(eq(vfsNodes.projectId, projectId), eq(vfsNodes.parentId, parentId), eq(vfsNodes.name, segment)))
           .limit(1);
-        
+
         if (rows.length === 0) return null;
         currentNode = rows[0] as VfsNode;
         parentId = currentNode.id;
@@ -353,7 +354,7 @@ export class VfsRepositoryImpl implements VfsRepository {
             .from(vfsNodes)
             .where(and(eq(vfsNodes.projectId, projectId), eq(vfsNodes.parentId, parentNode.id), eq(vfsNodes.name, segment)))
             .limit(1);
-        
+
         let childNode = childRows[0] as VfsNode | undefined;
 
         if (!childNode) {
@@ -377,5 +378,29 @@ export class VfsRepositoryImpl implements VfsRepository {
         tx,
       });
     });
+  }
+
+  async upsertByPath(projectId: string, path: string, content: string): Promise<VfsNode> {
+    const MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024; // 1MB
+    const normalizedPath = path.trim();
+    if (!normalizedPath.startsWith('/')) {
+      // Normalize to absolute-like project path (root-relative)
+      path = '/' + normalizedPath.replace(/^\/+/, '');
+    }
+    if (typeof content === 'string' && content.length > MAX_FILE_SIZE_BYTES) {
+      throw new Error('File content exceeds the limit of 1MB.');
+    }
+
+    // Try to find existing file
+    const existing = await this.findByPath(projectId, path);
+    if (existing) {
+      const updated = await this.updateNodeContent(existing.id, projectId, content);
+      return (updated as VfsNode) ?? existing;
+    }
+
+    // Create the file (with intermediate directories) then update content
+    const created = await this.findOrCreateByPath(projectId, path);
+    const updated = await this.updateNodeContent(created.id, projectId, content);
+    return (updated as VfsNode) ?? created;
   }
 }

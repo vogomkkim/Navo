@@ -214,9 +214,12 @@ export class OrchestratorService {
         const path = safe(instr.path);
         if (!path) return { status: 'clarify', message: '어느 파일(경로)을 수정할까요?' };
         if (typeof instr.content !== 'string') return { status: 'clarify', message: '어떤 내용으로 바꿀까요? 전체 내용을 제공해주세요.' };
-        const node = await this.projectsService.findVfsNodeByPath(projectId, userId, path);
-        if (!node) return { status: 'clarify', message: `경로를 찾을 수 없습니다: ${path}. 정확한 경로를 알려주세요.` };
-        const updated = await this.projectsService.updateVfsNodeContent(node.id, projectId, userId, instr.content);
+        const existing = await this.projectsService.findVfsNodeByPath(projectId, userId, path);
+        if (!existing) {
+          const createdOrUpdated = await this.projectsService.upsertVfsNodeByPath(projectId, userId, path, instr.content);
+          return { status: 'ok', message: `파일 생성 및 내용 저장 완료: ${path} (${createdOrUpdated?.content?.length ?? 0}자)`, details: { node: createdOrUpdated } };
+        }
+        const updated = await this.projectsService.updateVfsNodeContent(existing.id, projectId, userId, instr.content);
         return { status: 'ok', message: `내용 업데이트 완료: ${path} (${updated?.content?.length ?? 0}자)`, details: { node: updated } };
       }
       case 'read':

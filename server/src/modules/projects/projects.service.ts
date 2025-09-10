@@ -203,6 +203,19 @@ export class ProjectsService {
     return this.vfsRepository.updateNodeContent(nodeId, projectId, content);
   }
 
+  async upsertVfsNodeByPath(
+    projectId: string,
+    userId: string,
+    path: string,
+    content: string,
+  ): Promise<VfsNode> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+    return this.vfsRepository.upsertByPath(projectId, path, content);
+  }
+
   // This method now clearly belongs in the ProjectsService as it orchestrates both repos
   async updateProjectFromArchitecture(
     projectId: string,
