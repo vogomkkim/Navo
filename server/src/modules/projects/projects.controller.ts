@@ -407,7 +407,7 @@ export function projectsController(app: FastifyInstance) {
         const params = request.params as any;
         const projectId = params.projectId as string;
         const body = request.body as any;
-        const { path, patch } = body ?? {};
+        const { path, patch, options } = body ?? {};
 
         if (!path || typeof path !== 'string') {
           reply.status(400).send({ error: '유효한 path가 필요합니다.' });
@@ -418,7 +418,7 @@ export function projectsController(app: FastifyInstance) {
           return;
         }
 
-        const node = await projectsService.applyPatchVfsNodeByPath(projectId, userId, path, patch);
+        const node = await projectsService.applyPatchVfsNodeByPath(projectId, userId, path, patch, options);
         reply.send({ node });
       } catch (error: any) {
         app.log.error(error, '경로 기반 VFS 노드 패치 적용 실패');

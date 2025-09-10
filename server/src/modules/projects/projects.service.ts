@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { applyTextPatch, type TextPatchOptions } from '@/lib/textPatch';
 
 import type { Project, VfsNode, ProjectArchitecture, CreateChatMessage, CreateProjectData } from '@/modules/projects/projects.types';
 import { ProjectsRepositoryImpl } from './projects.repository';
@@ -220,7 +221,8 @@ export class ProjectsService {
     projectId: string,
     userId: string,
     path: string,
-    patchPayload: string | { find: string; replace: string },
+    patchPayload: string | { find: string; replace: string; isRegex?: boolean; flags?: string },
+    options?: TextPatchOptions,
   ): Promise<VfsNode> {
     const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
     if (!project) {
@@ -236,8 +238,7 @@ export class ProjectsService {
     const current = fresh?.content ?? '';
 
     // Apply patch
-    const { applyTextPatch } = await import('@/lib/textPatch');
-    const { updatedText } = applyTextPatch(current, patchPayload);
+    const { updatedText } = applyTextPatch(current, patchPayload as any, options);
 
     // Save
     const updated = await this.vfsRepository.updateNodeContent(target.id, projectId, updatedText);

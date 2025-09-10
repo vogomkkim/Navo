@@ -133,7 +133,7 @@ export class OrchestratorService {
     }
   }
 
-  private async analyzeFileOperation(prompt: string, chatHistory: any[]): Promise<{ op: 'read' | 'create' | 'rename' | 'move' | 'delete' | 'update' | 'open' | 'patch'; path?: string; parentPath?: string; name?: string; newName?: string; newPath?: string; content?: string; patch?: string | { find: string; replace: string } }> {
+  private async analyzeFileOperation(prompt: string, chatHistory: any[]): Promise<{ op: 'read' | 'create' | 'rename' | 'move' | 'delete' | 'update' | 'open' | 'patch'; path?: string; parentPath?: string; name?: string; newName?: string; newPath?: string; content?: string; patch?: string | { find: string; replace: string; isRegex?: boolean; flags?: string }; options?: { ignoreWhitespace?: boolean } }> {
     const analysisPrompt = `
       Extract a JSON instruction for a file operation from the user's message and conversation history.
 
@@ -152,7 +152,7 @@ export class OrchestratorService {
       - move: path, newPath (target directory path)
       - delete: path
       - update: path, content (full replacement). If the user asks for a modification without providing the full code, generate the complete new file content based on the conversation context.
-      - patch: path, patch (either a diff-match-patch string, or an object { find, replace })
+      - patch: path, patch (either a diff-match-patch string, or an object { find, replace, isRegex?, flags? }), options (optional { ignoreWhitespace: boolean })
 
       Output strictly JSON with only these fields.
     `;
@@ -242,7 +242,7 @@ export class OrchestratorService {
         if (!(typeof instr.patch === 'string' || (instr.patch && typeof (instr.patch as any).find === 'string'))) {
           return { status: 'clarify', message: '유효한 patch가 필요합니다. dmp 문자열 또는 { find, replace } 객체를 제공하세요.' };
         }
-        const updatedNode = await this.projectsService.applyPatchVfsNodeByPath(projectId, userId, path, instr.patch as any);
+        const updatedNode = await this.projectsService.applyPatchVfsNodeByPath(projectId, userId, path, instr.patch as any, (instr as any).options);
         return { status: 'ok', message: `패치 적용 완료: ${path}`, details: { node: updatedNode } };
       }
       default:
