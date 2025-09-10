@@ -2,7 +2,6 @@
   "name": "navo-monorepo",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@9.15.9",
   "type": "module",
   "workspaces": [
     "frontend",
@@ -10,11 +9,13 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "pnpm -r run build",
-    "dev": "pnpm -r --parallel run dev",
-    "start": "pnpm --filter @navo/server start",
-    "lint": "pnpm -r run lint",
-    "test": "pnpm -r run test",
+    "build": "npm run -ws build",
+    "dev": "run-p dev:server dev:frontend",
+    "dev:server": "npm -w @navo/server run dev",
+    "dev:frontend": "npm -w frontend run dev",
+    "start": "npm -w @navo/server run start",
+    "lint": "npm run -ws --if-present lint",
+    "test": "npm run -ws --if-present test",
     "format": "prettier --write .",
     "clean": "rmdir /s /q node_modules && rmdir /s /q frontend\\node_modules && rmdir /s /q server\\node_modules && rmdir /s /q packages\\shared\\node_modules"
   },

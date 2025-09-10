@@ -5,14 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "dotenvx run -o -e .env -e .env.local -- npx tsx watch src/bootstrap.ts",
-    "build": "pnpm exec tsc -p ./tsconfig.json",
+    "build": "tsc -p ./tsconfig.json",
     "start": "dotenvx run -o -e .env -e .env.local -- node dist/bootstrap.js",
     "lint": "eslint . --ext .ts --config ../eslint.config.js",
-    "test": "pnpm exec vitest",
+    "test": "vitest",
     "sim:gen": "tsx src/scripts/run-code-generator.ts",
-    "db:generate": "cd .. && pnpm exec dotenvx run -f .env -f .env.local -- pnpm exec drizzle-kit generate",
-    "db:push": "cd .. && pnpm exec dotenvx run -f .env -f .env.local -- pnpm exec drizzle-kit push",
-    "db:pull": "pnpm exec dotenvx run -e .env -e .env.local -- pnpm exec drizzle-kit introspect --config ../drizzle.config.ts",
+    "db:generate": "cd .. && dotenvx run -f .env -f .env.local -- drizzle-kit generate",
+    "db:push": "cd .. && dotenvx run -f .env -f .env.local -- drizzle-kit push",
+    "db:pull": "dotenvx run -e .env -e .env.local -- drizzle-kit introspect --config ../drizzle.config.ts",
     "format": "prettier --write ."
   },
   "dependencies": {

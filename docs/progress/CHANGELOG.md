@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025-09-10] - Package Manager: Migrate back to npm Workspaces
+
+### Changed
+
+- **Monorepo Package Manager**: Switched from `pnpm` back to **npm Workspaces** for broader platform compatibility (e.g., Render build images).
+- **Root Scripts**: Rewrote root `package.json` scripts to use npm workspace commands (e.g., `npm run -ws build`, `npm -w @navo/server run start`).
+- **Server Scripts**: Removed `pnpm exec` usage; now rely on npm script PATH (e.g., `tsc`, `vitest`, `drizzle-kit`).
+
+### Removed
+
+- Deleted `pnpm-lock.yaml` and `pnpm-workspace.yaml`.
+
+### Deployment
+
+- **Render (Backend)**
+  - Build: `npm install --workspaces --no-fund --no-audit && npm run -w @navo/server build`
+  - Start: `npm run -w @navo/server start`
+
 ## [2025-09-05] - pnpm Migration and Type System Stabilization
 
 ### Added
