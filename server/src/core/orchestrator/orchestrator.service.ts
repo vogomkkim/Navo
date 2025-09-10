@@ -133,7 +133,7 @@ export class OrchestratorService {
     }
   }
 
-  private async analyzeFileOperation(prompt: string, chatHistory: any[]): Promise<{ op: 'read' | 'create' | 'rename' | 'move' | 'delete' | 'update' | 'open'; path?: string; parentPath?: string; name?: string; newName?: string; newPath?: string; content?: string; }> {
+  private async analyzeFileOperation(prompt: string, chatHistory: any[]): Promise<{ op: 'read' | 'create' | 'rename' | 'move' | 'delete' | 'update' | 'open' | 'patch'; path?: string; parentPath?: string; name?: string; newName?: string; newPath?: string; content?: string; patch?: string | { find: string; replace: string; isRegex?: boolean; flags?: string }; options?: { ignoreWhitespace?: boolean } }> {
     const analysisPrompt = `
       Extract a JSON instruction for a file operation from the user's message and conversation history.
 
@@ -143,7 +143,7 @@ export class OrchestratorService {
       Latest Message:
       "${prompt}"
 
-      Operations: read | create | rename | move | delete | update | open
+      Operations: read | create | rename | move | delete | update | open | patch
 
       Fields by operation:
       - read/open: path
@@ -152,6 +152,7 @@ export class OrchestratorService {
       - move: path, newPath (target directory path)
       - delete: path
       - update: path, content (full replacement). If the user asks for a modification without providing the full code, generate the complete new file content based on the conversation context.
+      - patch: path, patch (either a diff-match-patch string, or an object { find, replace, isRegex?, flags? }), options (optional { ignoreWhitespace: boolean })
 
       Output strictly JSON with only these fields.
     `;
@@ -166,7 +167,11 @@ export class OrchestratorService {
     }
   }
 
-  private async executeFileOperation(projectId: string, userId: string, instr: { op: string; path?: string; parentPath?: string; name?: string; newName?: string; newPath?: string; content?: string }): Promise<{ status: 'ok' | 'clarify'; message: string; details?: any }> {
+  private async executeFileOperation(
+    projectId: string,
+    userId: string,
+    instr: { op: string; path?: string; parentPath?: string; name?: string; newName?: string; newPath?: string; content?: string; patch?: string | { find: string; replace: string } }
+  ): Promise<{ status: 'ok' | 'clarify'; message: string; details?: any }> {
     const safe = (s?: string) => (typeof s === 'string' ? s.trim() : undefined);
     const op = String(instr.op || '').toLowerCase();
 
@@ -214,9 +219,12 @@ export class OrchestratorService {
         const path = safe(instr.path);
         if (!path) return { status: 'clarify', message: '어느 파일(경로)을 수정할까요?' };
         if (typeof instr.content !== 'string') return { status: 'clarify', message: '어떤 내용으로 바꿀까요? 전체 내용을 제공해주세요.' };
-        const node = await this.projectsService.findVfsNodeByPath(projectId, userId, path);
-        if (!node) return { status: 'clarify', message: `경로를 찾을 수 없습니다: ${path}. 정확한 경로를 알려주세요.` };
-        const updated = await this.projectsService.updateVfsNodeContent(node.id, projectId, userId, instr.content);
+        const existing = await this.projectsService.findVfsNodeByPath(projectId, userId, path);
+        if (!existing) {
+          const createdOrUpdated = await this.projectsService.upsertVfsNodeByPath(projectId, userId, path, instr.content);
+          return { status: 'ok', message: `파일 생성 및 내용 저장 완료: ${path} (${createdOrUpdated?.content?.length ?? 0}자)`, details: { node: createdOrUpdated } };
+        }
+        const updated = await this.projectsService.updateVfsNodeContent(existing.id, projectId, userId, instr.content);
         return { status: 'ok', message: `내용 업데이트 완료: ${path} (${updated?.content?.length ?? 0}자)`, details: { node: updated } };
       }
       case 'read':
@@ -227,6 +235,15 @@ export class OrchestratorService {
         if (!node) return { status: 'clarify', message: `경로를 찾을 수 없습니다: ${path}. 정확한 경로를 알려주세요.` };
         const fetched = await this.projectsService.getVfsNode(node.id, projectId, userId);
         return { status: 'ok', message: `열기 완료: ${path}`, details: { node: fetched } };
+      }
+      case 'patch': {
+        const path = safe(instr.path);
+        if (!path) return { status: 'clarify', message: '어느 파일(경로)에 패치를 적용할까요?' };
+        if (!(typeof instr.patch === 'string' || (instr.patch && typeof (instr.patch as any).find === 'string'))) {
+          return { status: 'clarify', message: '유효한 patch가 필요합니다. dmp 문자열 또는 { find, replace } 객체를 제공하세요.' };
+        }
+        const updatedNode = await this.projectsService.applyPatchVfsNodeByPath(projectId, userId, path, instr.patch as any, (instr as any).options);
+        return { status: 'ok', message: `패치 적용 완료: ${path}`, details: { node: updatedNode } };
       }
       default:
         return { status: 'clarify', message: `지원되지 않는 파일 작업입니다: ${instr.op}` };

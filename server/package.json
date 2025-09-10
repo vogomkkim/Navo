@@ -30,7 +30,8 @@
     "pg": "^8.16.3",
     "pino": "^9.9.0",
     "postgres": "3.4.5",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "diff-match-patch": "^1.0.5"
   },
   "devDependencies": {
     "@babel/parser": "^7.28.4",
@@ -43,6 +44,7 @@
     "drizzle-kit": "^0.31.4",
     "pino-pretty": "^13.1.1",
     "recast": "^0.23.11",
+    "@types/diff-match-patch": "^1.0.36",
     "typescript": "^5.9.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"

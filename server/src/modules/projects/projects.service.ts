@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { applyTextPatch, type TextPatchOptions } from '@/lib/textPatch';
 
 import type { Project, VfsNode, ProjectArchitecture, CreateChatMessage, CreateProjectData } from '@/modules/projects/projects.types';
 import { ProjectsRepositoryImpl } from './projects.repository';
@@ -201,6 +202,47 @@ export class ProjectsService {
       throw new Error('Cannot update content of a directory.');
     }
     return this.vfsRepository.updateNodeContent(nodeId, projectId, content);
+  }
+
+  async upsertVfsNodeByPath(
+    projectId: string,
+    userId: string,
+    path: string,
+    content: string,
+  ): Promise<VfsNode> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+    return this.vfsRepository.upsertByPath(projectId, path, content);
+  }
+
+  async applyPatchVfsNodeByPath(
+    projectId: string,
+    userId: string,
+    path: string,
+    patchPayload: string | { find: string; replace: string; isRegex?: boolean; flags?: string },
+    options?: TextPatchOptions,
+  ): Promise<VfsNode> {
+    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+
+    // Ensure file exists (create if not)
+    const node = await this.vfsRepository.findByPath(projectId, path);
+    const target = node ?? await this.vfsRepository.findOrCreateByPath(projectId, path);
+
+    // Load latest content
+    const fresh = await this.vfsRepository.getNodeById(target.id, projectId);
+    const current = fresh?.content ?? '';
+
+    // Apply patch
+    const { updatedText } = applyTextPatch(current, patchPayload as any, options);
+
+    // Save
+    const updated = await this.vfsRepository.updateNodeContent(target.id, projectId, updatedText);
+    return (updated as VfsNode) ?? target;
   }
 
   // This method now clearly belongs in the ProjectsService as it orchestrates both repos
