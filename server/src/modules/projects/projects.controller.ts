@@ -39,31 +39,50 @@ export function projectsController(app: FastifyInstance) {
           return reply.status(400).send({ error: 'Prompt is required.' });
         }
 
-        // 1. Save user's message to DB
-        await projectsService.createMessage(projectId, userId, {
+        // 1. Save user's message to DB and return immediately
+        const userMessage = await projectsService.createMessage(projectId, userId, {
           role: 'user',
           content: prompt,
-          displayType: 'CHAT_MESSAGE',
         });
 
-        // 2. Get AI response from orchestrator
-        const result = await orchestratorService.handleRequest(prompt, { id: userId }, chatHistory || [], projectId);
-
-        // 3. Save AI's response to DB
-        const aiRole = 'Navo';
-        const aiContent =
-          result.type === 'WORKFLOW_RESULT'
-            ? result.payload.summaryMessage
-            : result.payload.message;
-
-        await projectsService.createMessage(projectId, userId, {
-          role: aiRole,
-          content: aiContent,
-          payload: result.payload,
-          displayType: 'CHAT_MESSAGE',
+        // 2. Return user message immediately for better UX
+        reply.send({
+          type: 'USER_MESSAGE_SAVED',
+          message: userMessage,
+          status: 'processing'
         });
 
-        return reply.send(result);
+        // 3. Process AI response in background
+        setImmediate(async () => {
+          try {
+            const result = await orchestratorService.handleRequest(prompt, { id: userId }, chatHistory || [], projectId);
+
+            // 4. Save AI's response to DB
+            const aiRole = 'Navo';
+            const aiContent =
+              result.type === 'WORKFLOW_RESULT'
+                ? result.payload.summaryMessage
+                : result.payload.message;
+
+            await projectsService.createMessage(projectId, userId, {
+              role: aiRole,
+              content: aiContent,
+              payload: result.payload,
+            });
+
+            // 5. Notify frontend that AI response is ready
+            // This could be done via WebSocket or polling
+            app.log.info(`AI response completed for project ${projectId}`);
+          } catch (error: any) {
+            app.log.error(error, 'Error in background AI processing');
+
+            // Save error message
+            await projectsService.createMessage(projectId, userId, {
+              role: 'Navo',
+              content: `죄송합니다. 처리 중 오류가 발생했습니다: ${error.message}`,
+            });
+          }
+        });
       } catch (error: any) {
         app.log.error(error, 'Error in orchestrator service');
         return reply.status(500).send({

@@ -70,7 +70,7 @@ export function isSafeAndAllowedPath(targetPath: string): boolean {
     return true;
 
   } catch (error) {
-    console.error(`Path validation error: ${error.message}`);
+    console.error(`Path validation error: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }

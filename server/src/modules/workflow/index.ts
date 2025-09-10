@@ -18,6 +18,7 @@ import { createOrganizationTool } from './tools/organization.tool';
 import { createProjectArchitectureTool } from './tools/projectArchitect.tool';
 // Import all tools and register them
 import { runShellCommandTool } from './tools/runShellCommand.tool';
+import { createVfsFileTool, createVfsDirectoryTool } from './tools/vfs.tool';
 import { WorkflowExecutor } from './workflowExecutor';
 
 // --- Tool Registration ---
@@ -26,10 +27,10 @@ import { WorkflowExecutor } from './workflowExecutor';
 toolRegistry.register(createProjectInDbTool);
 toolRegistry.register(updateProjectFromArchitectureTool);
 // Register all available tools
-toolRegistry.register(new CreateProjectInDbTool());
-toolRegistry.register(new CreateProjectArchitectureTool());
-toolRegistry.register(new UpdateProjectFromArchitectureTool());
-toolRegistry.register(new BackendGeneratorTool());
+// toolRegistry.register(new CreateProjectInDbTool());
+// toolRegistry.register(new CreateProjectArchitectureTool());
+// toolRegistry.register(new UpdateProjectFromArchitectureTool());
+// toolRegistry.register(new BackendGeneratorTool());
 
 toolRegistry.register(runShellCommandTool); // CMS 샌드박스에서 패키지 설치 및 빌드 필요
 toolRegistry.register(listDirectoryTool); // CMS에서 템플릿 구조 및 생성된 파일 확인 필요
@@ -37,6 +38,8 @@ toolRegistry.register(readFileTool); // CMS에서 템플릿 파일 읽기 및 �
 toolRegistry.register(writeFileTool); // CMS에서 사용자 입력 기반 동적 콘텐츠 파일 생성 필요
 toolRegistry.register(generateProjectFilesTool);
 toolRegistry.register(createOrganizationTool);
+toolRegistry.register(createVfsFileTool);
+toolRegistry.register(createVfsDirectoryTool);
 
 // --- Service Instantiation ---
 // Create a singleton instance of the executor to be used by other services.

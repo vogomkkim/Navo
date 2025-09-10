@@ -67,11 +67,19 @@ export function useSendMessage(
       try {
         // 2. Remove projectId from the data sent to the backend to avoid duplication.
         const { projectId: _p, ...payload } = data;
-        return await fetchApi(`/api/projects/${projectId}/messages`, {
+        const response = await fetchApi(`/api/projects/${projectId}/messages`, {
           method: 'POST',
           body: JSON.stringify(payload),
           token,
         });
+
+        // 3. Immediately invalidate queries to show user message
+        queryClient.invalidateQueries({ queryKey: ['messages', projectId] });
+
+        // 4. Start polling for AI response
+        startPollingForAIResponse(projectId, queryClient, token, logout);
+
+        return response;
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
           logout();
@@ -79,14 +87,44 @@ export function useSendMessage(
         throw error;
       }
     },
-    onSuccess: (_data, variables) => {
-      // 3. Invalidate queries using the same logic to ensure consistency.
-      const projectId =
-        variables.projectId || useIdeStore.getState().selectedProjectId;
-      if (projectId) {
-        queryClient.invalidateQueries({ queryKey: ['messages', projectId] });
-      }
-    },
     ...options,
   });
+}
+
+// Helper function to poll for AI response
+function startPollingForAIResponse(
+  projectId: string,
+  queryClient: any,
+  token: string,
+  logout: () => void
+) {
+  let pollCount = 0;
+  const maxPolls = 30; // 30 seconds max
+  const pollInterval = 1000; // 1 second
+
+  const poll = async () => {
+    try {
+      pollCount++;
+
+      // Check if we have new messages
+      await queryClient.invalidateQueries({ queryKey: ['messages', projectId] });
+
+      // Stop polling after max attempts
+      if (pollCount >= maxPolls) {
+        console.log('AI response polling timeout');
+        return;
+      }
+
+      // Continue polling
+      setTimeout(poll, pollInterval);
+    } catch (error) {
+      console.error('Error polling for AI response:', error);
+      if (error instanceof Error && error.message === 'Unauthorized') {
+        logout();
+      }
+    }
+  };
+
+  // Start polling after a short delay
+  setTimeout(poll, 500);
 }

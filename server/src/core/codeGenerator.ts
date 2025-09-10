@@ -3,7 +3,18 @@ import * as parser from '@babel/parser';
 import * as types from '@babel/types';
 import { z } from 'zod';
 // Assuming the Zod schema is generated and available from the shared package
-import { apiBlueprintSchema } from '@shared/api-blueprint.schema';
+// import { apiBlueprintSchema } from '../../packages/shared/src/api-blueprint.schema';
+
+// Define a simple schema for now
+const apiBlueprintSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  endpoints: z.array(z.object({
+    method: z.string(),
+    path: z.string(),
+    description: z.string().optional(),
+  })),
+});
 
 type ApiBlueprint = z.infer<typeof apiBlueprintSchema>;
 
@@ -53,13 +64,13 @@ export function addRouteToSource(sourceCode: string, newRouteCode: string): stri
     visitExportDefaultDeclaration(path) {
       const declaration = path.node.declaration;
       if (
-        (types.isFunctionDeclaration(declaration) || types.isArrowFunctionExpression(declaration)) &&
-        declaration.body &&
-        types.isBlockStatement(declaration.body)
+        (types.isFunctionDeclaration(declaration as any) || types.isArrowFunctionExpression(declaration as any)) &&
+        (declaration as any).body &&
+        types.isBlockStatement((declaration as any).body)
       ) {
-        exportFunctionBody = declaration.body.body;
-      } else if (types.isFunctionExpression(declaration) && declaration.body) {
-        exportFunctionBody = declaration.body.body;
+        exportFunctionBody = (declaration as any).body.body;
+      } else if (types.isFunctionExpression(declaration as any) && (declaration as any).body) {
+        exportFunctionBody = (declaration as any).body.body;
       }
       return false; // Stop visiting after finding the default export
     },
@@ -67,7 +78,7 @@ export function addRouteToSource(sourceCode: string, newRouteCode: string): stri
 
   if (exportFunctionBody) {
     // Add the new route to the end of the function body
-    exportFunctionBody.push(newRouteStatement);
+    (exportFunctionBody as any[]).push(newRouteStatement);
   } else {
     // If no default export function is found, append to the end of the file.
     // This is a fallback and might not be ideal for all file structures.
@@ -105,9 +116,9 @@ export function generateTestStub(blueprint: ApiBlueprint, moduleName: string): s
       url: '${path}',
     });
     // Initially, we might expect a 501 Not Implemented
-    expect(response.statusCode).toBe(501); 
+    expect(response.statusCode).toBe(501);
     */
-    
+
     // Placeholder expectation
     expect('${endpoint.path}').toBe('${endpoint.path}');
     console.log('Test stub for ${method.toUpperCase()} ${endpoint.path}');

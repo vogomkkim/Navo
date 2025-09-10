@@ -5,7 +5,7 @@ import { useInputHistory } from '@/hooks/useInputHistory';
 import { useGetMessages, useSendMessage } from '@/hooks/api';
 import { useGenerateProject } from '@/hooks/api/useAi';
 import { useIdeStore } from '@/store/ideStore';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { ChatPlaceholder } from './ChatPlaceholder';
 import './ChatSection.css';
@@ -29,6 +29,9 @@ export function ChatSection() {
     refetch,
   } = useGetMessages(selectedProjectId);
 
+  // Track if AI is processing
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+
   // Refetch messages when project changes
   useEffect(() => {
     if (selectedProjectId) {
@@ -49,6 +52,17 @@ export function ChatSection() {
   const chatHistory = useMemo(() => {
     return data?.pages.flatMap((page) => page.messages) ?? [];
   }, [data]);
+
+  // Track AI response completion
+  useEffect(() => {
+    if (isAIProcessing && chatHistory.length > 0) {
+      const lastMessage = chatHistory[chatHistory.length - 1];
+      // If the last message is from AI (Navo), stop processing
+      if (lastMessage.role === 'Navo' || lastMessage.role === 'assistant') {
+        setIsAIProcessing(false);
+      }
+    }
+  }, [chatHistory, isAIProcessing]);
 
   const { user } = useAuth();
   const { inputValue, setInputValue, handleKeyDown, addToHistory } =
@@ -103,22 +117,33 @@ export function ChatSection() {
   }, [chatHistory]);
 
   const handleSendMessage = () => {
-    if (!inputValue.trim() || isProcessing) return;
+    if (!inputValue.trim() || isProcessing || isAIProcessing) return;
 
     const messageToSend = inputValue;
-    // Don't add to history here, let the message stream update it
-    // addToHistory(messageToSend);
-    setIsProcessing(true);
     setInputValue(''); // Clear input immediately
+    setIsAIProcessing(true); // Start AI processing indicator
 
     if (!selectedProjectId) {
+      setIsProcessing(true);
       generateProject({
         projectName: `AI Project - ${new Date().toLocaleTimeString()}`,
         projectDescription: messageToSend,
       });
     } else {
       const recentHistory = chatHistory.slice(-10);
-      sendMessage({ prompt: messageToSend, chatHistory: recentHistory });
+      sendMessage({
+        prompt: messageToSend,
+        chatHistory: recentHistory
+      }, {
+        onSuccess: () => {
+          // User message sent, AI response will come via polling
+          console.log('User message sent, waiting for AI response...');
+        },
+        onError: (error) => {
+          console.error('Failed to send message:', error);
+          setIsAIProcessing(false);
+        }
+      });
     }
   };
 
@@ -148,7 +173,8 @@ export function ChatSection() {
         {chatHistory.length === 0 && !isLoading && !isFetchingNextPage ? (
           <ChatPlaceholder onExampleClick={setInputValue} />
         ) : (
-          chatHistory.map((message: any) => {
+          <>
+            {chatHistory.map((message: any) => {
             const isUser = message.role === 'user';
             return (
               <div
@@ -163,7 +189,24 @@ export function ChatSection() {
                 </div>
               </div>
             );
-          })
+          })}
+
+          {/* AI Processing Indicator */}
+          {isAIProcessing && (
+            <div className="chat-message ai">
+              <div className="message-content">
+                <div className="ai-thinking">
+                  <div className="thinking-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span className="thinking-text">AI가 생각 중입니다...</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -181,17 +224,17 @@ export function ChatSection() {
                 ? '아이디어를 입력하여 프로젝트를 발전시키세요...'
                 : '아이디어를 입력하여 새 AI 프로젝트를 시작하세요...'
             }
-            disabled={isProcessing}
+            disabled={isProcessing || isAIProcessing}
             rows={1}
             className="chat-textarea"
           />
           <button
             onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isProcessing}
+            disabled={!inputValue.trim() || isProcessing || isAIProcessing}
             className="send-button-new"
-            title={isProcessing ? 'AI 에이전트 작업 중...' : '전송'}
+            title={isProcessing || isAIProcessing ? 'AI 에이전트 작업 중...' : '전송'}
           >
-            {isProcessing ? (
+            {isProcessing || isAIProcessing ? (
               <div className="loading-spinner-new" />
             ) : (
               <svg

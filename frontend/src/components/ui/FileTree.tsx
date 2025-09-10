@@ -1,6 +1,6 @@
 'use client';
 
-import React, a useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   useListVfsNodes,
   useCreateVfsNode,
@@ -15,7 +15,7 @@ import {
   PlusCircledIcon,
   Pencil1Icon,
   TrashIcon,
-  FolderIcon,
+  ArchiveIcon,
   FileIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -99,7 +99,7 @@ const Node = ({
   const [isOpen, setIsOpen] = useState(false);
   const { data, isLoading } = useListVfsNodes(projectId, node.id, { enabled: isOpen });
 
-  const { openFile, activeFile, setActiveFile } = useIdeStore();
+  const { addOpenFile, activeFile, setActiveFile } = useIdeStore();
   const isActive = activeFile === node.id;
 
   const { mutate: renameNode, isPending: isRenaming } = useRenameVfsNode();
@@ -111,7 +111,7 @@ const Node = ({
     if (node.nodeType === 'DIRECTORY') {
       setIsOpen(!isOpen);
     } else {
-      openFile({ projectId, fileId: node.id, fileName: node.name });
+      addOpenFile(node.id);
     }
   };
 
@@ -143,7 +143,7 @@ const Node = ({
       );
     }
   };
-  
+
   const handleCreate = (name: string) => {
     if (!editingState || editingState.type === 'rename') return;
     createNode({
@@ -171,7 +171,7 @@ const Node = ({
           defaultValue={node.name}
           onConfirm={handleRename}
           onCancel={() => setEditingState(null)}
-          icon={node.nodeType === 'DIRECTORY' ? <FolderIcon /> : <FileIcon />}
+          icon={node.nodeType === 'DIRECTORY' ? <ArchiveIcon /> : <FileIcon />}
         />
       </div>
     );
@@ -191,7 +191,7 @@ const Node = ({
           {node.nodeType === 'DIRECTORY' ? (
             <>
               {isOpen ? <ChevronDownIcon className="mr-1" /> : <ChevronRightIcon className="mr-1" />}
-              <FolderIcon className="mr-1 text-yellow-600" />
+              <ArchiveIcon className="mr-1 text-yellow-600" />
             </>
           ) : (
             <FileIcon className="mr-1 text-gray-500" />
@@ -251,7 +251,7 @@ const Node = ({
               <InlineInput
                 onConfirm={handleCreate}
                 onCancel={() => setEditingState(null)}
-                icon={editingState.type === 'createFile' ? <FileIcon /> : <FolderIcon />}
+                icon={editingState.type === 'createFile' ? <FileIcon /> : <ArchiveIcon />}
               />
             </div>
           )}
@@ -312,7 +312,7 @@ export const FileTree = ({ projectId }: { projectId: string }) => {
           <InlineInput
             onConfirm={handleCreateRoot}
             onCancel={() => setEditingState(null)}
-            icon={editingState.type === 'createFile' ? <FileIcon /> : <FolderIcon />}
+            icon={editingState.type === 'createFile' ? <FileIcon /> : <ArchiveIcon />}
           />
         </div>
       )}

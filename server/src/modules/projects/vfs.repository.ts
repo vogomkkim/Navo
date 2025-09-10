@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, sql, isNull } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
 
 import { db } from '@/db/db.instance';
@@ -111,7 +111,7 @@ export class VfsRepositoryImpl implements VfsRepository {
           }
         };
 
-        let nodesToCreate = architecture.structure || architecture.file_structure;
+        let nodesToCreate = (architecture as any).structure || (architecture as any).file_structure;
 
         // Data transformation logic for legacy formats
         if (!nodesToCreate && (architecture.pages || architecture.components)) {
@@ -315,7 +315,7 @@ export class VfsRepositoryImpl implements VfsRepository {
         const rows = await tx
           .select()
           .from(vfsNodes)
-          .where(and(eq(vfsNodes.projectId, projectId), eq(vfsNodes.parentId, parentId), eq(vfsNodes.name, segment)))
+          .where(and(eq(vfsNodes.projectId, projectId), parentId ? eq(vfsNodes.parentId, parentId) : isNull(vfsNodes.parentId), eq(vfsNodes.name, segment)))
           .limit(1);
 
         if (rows.length === 0) return null;

@@ -1,6 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { Tool } from './tool';
+// import { Tool } from './tool';
+
+// Define Tool interface locally
+interface Tool {
+  name: string;
+  description: string;
+  parameters: any;
+  execute(app: any, inputs: any, projectId: string, userId: string): Promise<any>;
+}
 import { ProjectsService } from '@/modules/projects/projects.service';
 
 const RequestObjectSchema = z.object({
@@ -32,7 +40,8 @@ type ApiBlueprint = z.infer<typeof ApiBlueprintSchema>;
 export class BackendGeneratorTool implements Tool {
   public name = 'generate_backend_code_from_plan';
   public description = 'Generates Fastify backend route code from an API Blueprint and saves it to the VFS.';
-  
+  public parameters = ApiBlueprintSchema;
+
   public inputSchema = ApiBlueprintSchema;
 
   async execute(app: FastifyInstance, inputs: ApiBlueprint, projectId: string, userId: string): Promise<any> {
@@ -41,7 +50,7 @@ export class BackendGeneratorTool implements Tool {
       this.inputSchema.parse(inputs);
     } catch (error) {
       app.log.error({ error, projectId }, `[${this.name}] Invalid API Blueprint provided.`);
-      throw new Error(`Invalid API Blueprint: ${error.message}`);
+      throw new Error(`Invalid API Blueprint: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     const projectsService = new ProjectsService(app);
@@ -85,12 +94,11 @@ export async function generatedRoutes(app: FastifyInstance) {
     // TODO: Implement business logic for "${endpoint.description}"
     // Example: const data = await someService.fetchData(request.params);
     // reply.send(data);
-    
+
     reply.status(501).send({ message: 'Not Implemented' });
   });
 `;
-    }).join('
-');
+    }).join('\n');
 
     return header + routesCode + footer;
   }

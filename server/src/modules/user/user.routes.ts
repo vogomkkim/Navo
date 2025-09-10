@@ -1,16 +1,33 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { defineRoute } from '../../core/routeFactory';
-import { 
-  createUserSchema, 
-  userIdParamsSchema, 
-  userResponseSchema 
-} from '@shared/schemas/user.schema';
+// import {
+//   createUserSchema,
+//   userIdParamsSchema,
+//   userResponseSchema
+// } from '../../../packages/shared/src/schemas/user.schema';
+
+// Define schemas locally for now
+const createUserSchema = z.object({
+  name: z.string(),
+  email: z.string().email(),
+});
+
+const userIdParamsSchema = z.object({
+  userId: z.string(),
+});
+
+const userResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+});
 
 // Mock database - replace with actual service/repository calls
 const users: { id: string; name: string; email: string }[] = [];
 
 export default async function userRoutes(fastify: FastifyInstance) {
-  
+
   // --- GET /api/users/:userId ---
   defineRoute(fastify, {
     method: 'GET',
@@ -32,7 +49,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       if (!user) {
         return reply.status(404).send({ error: 'User not found' });
       }
-      
+
       // No reply.send() needed here. Just return the data.
       // The factory will handle sending the response with a 200 status code.
       return { user };
@@ -54,7 +71,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     },
     handler: async (req) => {
       const { name, email } = req.body as z.infer<typeof createUserSchema>;
-      
+
       const newUser = {
         id: crypto.randomUUID(),
         name,

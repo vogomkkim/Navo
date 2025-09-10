@@ -162,7 +162,6 @@ const start = async () => {
     } catch {}
 
     // 개발 환경에서는 환경변수를 그대로 한 번 출력
-    pinoLogger.info(process.env.NODE_ENV);
     if (process.env.NODE_ENV === 'development') {
       pinoLogger.info({ env: process.env }, '개발 환경: 환경변수 전체 출력');
     }

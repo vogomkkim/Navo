@@ -1,29 +1,130 @@
 import { FastifyInstance } from 'fastify';
 import { VfsRepositoryImpl } from '../projects/vfs.repository';
 
+// Helper function to get all nodes recursively
+async function getAllNodesRecursively(vfsRepository: VfsRepositoryImpl, projectId: string, parentId: string): Promise<any[]> {
+  const directChildren = await vfsRepository.listNodesByParentId(projectId, parentId);
+  let allNodes = [...directChildren];
+
+  for (const child of directChildren) {
+    if (child.nodeType === 'DIRECTORY') {
+      const subNodes = await getAllNodesRecursively(vfsRepository, projectId, child.id);
+      allNodes = [...allNodes, ...subNodes];
+    }
+  }
+
+  return allNodes;
+}
+
 // A very basic renderer to convert VFS nodes to an HTML page.
 // In a real application, this would be a sophisticated engine (e.g., using a virtual DOM).
-function renderToHtml(nodes: any[]): string {
+function renderToHtml(nodes: any[], targetNodeId?: string): string {
+  console.log('=== renderToHtml Debug ===');
+  console.log('Total nodes:', nodes.length);
+  console.log('Nodes:', nodes.map(n => ({ name: n.name, type: n.nodeType, hasContent: !!n.content })));
+
   const root = nodes.find((n) => n.name === '/');
   if (!root) {
+    console.log('No root node found');
     return `<html><body><h1>Project root not found.</h1></body></html>`;
   }
-  const files = nodes.filter((n) => n.parentId === root.id);
 
-  // For this MVP, we'll just find a file that looks like an entry point.
-  const entryFile =
-    files.find((f) => f.name.toLowerCase().includes('index.html')) ||
-    files.find((f) => f.name.toLowerCase().includes('app.tsx')) ||
-    files.find((f) => f.name.toLowerCase().includes('page.tsx')) ||
-    files[0];
+  // Find all files recursively
+  const allFiles = nodes.filter((n) => n.nodeType === 'FILE');
+  console.log('All files:', allFiles.map(f => ({ name: f.name, hasContent: !!f.content, contentLength: f.content?.length || 0 })));
 
-  if (!entryFile) {
-    return `<html><body><h1>No entry file found</h1><p>Create a file like 'index.html' or 'App.tsx'.</p></body></html>`;
+  let entryFile;
+
+  // 특정 파일 ID가 주어졌을 때 해당 파일 찾기
+  if (targetNodeId) {
+    entryFile = allFiles.find((f) => f.id === targetNodeId);
+    console.log('Target file by ID:', entryFile ? { name: entryFile.name, hasContent: !!entryFile.content } : 'Not found');
   }
 
-  // Super simplified renderer: just takes the content of the entry file.
-  // A real renderer would parse component structures, CSS, etc.
-  const htmlContent = entryFile.content || '<h1>Empty File</h1>';
+  // 특정 파일을 찾지 못했거나 ID가 주어지지 않았을 때 기본 로직 사용
+  if (!entryFile) {
+    // Look for entry points in order of preference
+    entryFile =
+      allFiles.find((f) => f.name.toLowerCase().includes('home.tsx')) ||
+      allFiles.find((f) => f.name.toLowerCase().includes('home.jsx')) ||
+      allFiles.find((f) => f.name.toLowerCase().includes('index.html')) ||
+      allFiles.find((f) => f.name.toLowerCase().includes('app.tsx')) ||
+      allFiles.find((f) => f.name.toLowerCase().includes('page.tsx')) ||
+      allFiles.find((f) => f.name.toLowerCase().includes('main.tsx')) ||
+      allFiles.find((f) => f.name.toLowerCase().includes('index.tsx')) ||
+      allFiles[0];
+
+    console.log('Selected entry file (default):', entryFile ? { name: entryFile.name, hasContent: !!entryFile.content } : 'None');
+  }
+
+  if (!entryFile) {
+    console.log('No entry file found');
+    return `<html><body><h1>No entry file found</h1><p>Create a file like 'Home.tsx', 'index.html' or 'App.tsx'.</p></body></html>`;
+  }
+
+  // Get file content and create a basic React-like preview
+  const fileContent = entryFile.content || '';
+
+  // If it's a React component, create a basic preview
+  if (entryFile.name.toLowerCase().includes('.tsx') || entryFile.name.toLowerCase().includes('.jsx')) {
+    const componentName = entryFile.name.replace(/\.(tsx|jsx)$/i, '');
+
+    // Extract JSX content from the component - improved regex
+    const jsxMatch = fileContent.match(/return\s*\(\s*<([\s\S]*?)>\s*\)/m) ||
+                    fileContent.match(/return\s*<([\s\S]*?)>/m) ||
+                    fileContent.match(/<div[^>]*>([\s\S]*?)<\/div>/m);
+
+    let jsxContent = jsxMatch ? jsxMatch[1] : fileContent;
+
+    // Clean up JSX for HTML display
+    jsxContent = jsxContent
+      .replace(/className/g, 'class')
+      .replace(/style=\{\{([^}]+)\}\}/g, 'style="$1"')
+      .replace(/\{([^}]+)\}/g, '$1') // Remove JSX expressions
+      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove comments
+      .replace(/\/\/.*$/gm, ''); // Remove line comments
+
+    // Create a simple preview with the component content
+    const htmlContent = `
+      <div style="padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <h2 style="color: #333; margin-bottom: 20px;">${componentName} Component Preview</h2>
+        <div style="border: 1px solid #e1e5e9; border-radius: 8px; padding: 20px; background: #f8f9fa; min-height: 200px;">
+          <div>${jsxContent}</div>
+        </div>
+        <details style="margin-top: 20px;">
+          <summary style="cursor: pointer; color: #666;">Raw Component Code</summary>
+          <pre style="background: #f1f3f4; padding: 10px; border-radius: 4px; overflow-x: auto; margin-top: 10px; font-size: 12px;">
+            <code>${fileContent}</code>
+          </pre>
+        </details>
+      </div>
+    `;
+
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Navo Preview - ${componentName}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #fff; }
+          * { box-sizing: border-box; }
+          h1, h2, h3, h4, h5, h6 { margin: 0 0 10px 0; }
+          p { margin: 0 0 10px 0; }
+          button { padding: 8px 16px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; }
+          button:hover { background: #f5f5f5; }
+        </style>
+      </head>
+      <body>
+        <div id="root">${htmlContent}</div>
+      </body>
+      </html>
+    `;
+  }
+
+  // For HTML files, use content as-is
+  const htmlContent = fileContent || '<h1>Empty File</h1>';
 
   return `
     <!DOCTYPE html>
@@ -34,7 +135,6 @@ function renderToHtml(nodes: any[]): string {
       <title>Navo Preview</title>
       <style>
         body { font-family: sans-serif; margin: 0; }
-        /* Add basic styles to avoid unstyled content flash */
       </style>
     </head>
     <body>
@@ -51,6 +151,8 @@ export function previewController(app: FastifyInstance) {
     try {
       const params = request.params as any;
       const { projectId } = params;
+      const query = request.query as any;
+      const { nodeId } = query; // 특정 파일 ID (선택사항)
 
       // In a real app, we'd also need to verify user permissions to view the preview.
       // For now, we assume public access for simplicity.
@@ -64,13 +166,17 @@ export function previewController(app: FastifyInstance) {
       }
       const rootNode = rootNodes[0];
 
-      const allNodes = await vfsRepository.listNodesByParentId(
-        projectId,
-        rootNode.id,
-      );
+      // Get all nodes recursively
+      const allNodes = await getAllNodesRecursively(vfsRepository, projectId, rootNode.id);
       const nodes = [rootNode, ...allNodes];
 
-      const html = renderToHtml(nodes);
+      // Debug logging
+      app.log.info(`Preview request for project ${projectId}, nodeId: ${nodeId || 'default'}`);
+      app.log.info(`Root node: ${JSON.stringify(rootNode, null, 2)}`);
+      app.log.info(`All nodes count: ${allNodes.length}`);
+      app.log.info(`All nodes: ${JSON.stringify(allNodes.map(n => ({ name: n.name, type: n.nodeType, hasContent: !!n.content })), null, 2)}`);
+
+      const html = renderToHtml(nodes, nodeId);
 
       reply.type('text/html').send(html);
     } catch (error) {

@@ -10,6 +10,7 @@ import { usersToOrganizations } from '@/drizzle/schema';
 import { toolRegistry, workflowExecutor } from './index';
 import { Plan } from './types';
 import { refineJsonResponse } from './utils/jsonRefiner';
+import { ProjectType, getAvailableTools, getBestTool } from './toolCategories';
 
 export class WorkflowService {
   private app: FastifyInstance;
@@ -30,18 +31,71 @@ export class WorkflowService {
       throw new Error('AI Planner returned an invalid plan.');
     }
 
-    const outputs = await workflowExecutor.execute(this.app, plan);
+    // Add context information to the plan steps
+    const enhancedPlan = this.enhancePlanWithContext(plan, user, projectId);
+
+    const outputs = await workflowExecutor.execute(this.app, enhancedPlan);
     this.app.log.info({ outputs: Object.fromEntries(outputs) }, '[WorkflowService] Workflow executed successfully');
 
     return { plan, outputs: Object.fromEntries(outputs) };
   }
 
+  /**
+   * Determine project type based on context
+   * For now, we assume VFS projects by default since we're working with VFS-based projects
+   */
+  private determineProjectType(projectId?: string): ProjectType {
+    // TODO: In the future, this could be determined by:
+    // 1. Checking project configuration in database
+    // 2. Analyzing existing project structure
+    // 3. User preferences
+
+    // For now, assume VFS projects since we're working with VFS-based system
+    return ProjectType.VFS;
+  }
+
+  /**
+   * Enhance plan steps with required context information
+   */
+  private enhancePlanWithContext(plan: Plan, user: { id: string }, projectId?: string): Plan {
+    const enhancedSteps = plan.steps.map(step => {
+      const enhancedInputs = { ...step.inputs };
+
+      // Add projectId and userId to VFS tools
+      if (step.tool === 'create_vfs_file' || step.tool === 'create_vfs_directory') {
+        if (projectId) {
+          enhancedInputs.projectId = projectId;
+        }
+        enhancedInputs.userId = user.id;
+      }
+
+      return {
+        ...step,
+        inputs: enhancedInputs
+      };
+    });
+
+    return {
+      ...plan,
+      steps: enhancedSteps
+    };
+  }
+
   private async generatePlan(prompt: string, user: { id: string }, chatHistory: any[], projectId?: string): Promise<Plan> {
-    const availableTools = toolRegistry.list().map((tool) => ({
+    // Determine project type based on context
+    const projectType = this.determineProjectType(projectId);
+
+    // Get appropriate tools for this project type
+    const appropriateTools = getAvailableTools(projectType);
+    const availableTools = appropriateTools.map((tool) => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: tool.inputSchema,
+      category: tool.category,
+      priority: tool.priority,
+      inputSchema: toolRegistry.get(tool.name)?.inputSchema || {},
     }));
+
+    this.app.log.info(`[WorkflowService] Using ${projectType} project type with ${availableTools.length} appropriate tools`);
 
     const memberships = await db
       .select({ organizationId: usersToOrganizations.organizationId })
@@ -57,6 +111,9 @@ export class WorkflowService {
     const plannerPrompt = `
       You are an expert AI Planner. Your job is to take a user's request and create a detailed, step-by-step execution plan using ONLY the available tools, based on the full conversation context.
 
+      **IMPORTANT: This is a VFS-based project. Always prefer VFS tools over local file system tools.**
+      **Priority order: VFS tools (create_vfs_file, create_vfs_directory) > Database tools > Other tools**
+
       **Conversation History:**
       ${JSON.stringify(chatHistory, null, 2)}
 
@@ -66,16 +123,22 @@ export class WorkflowService {
       **Context (Use these exact values):**
       - User ID: "${user.id}"
       - Organization ID: "${organizationId}"
+      - Project Type: ${projectType} (VFS-based)
       ${projectId ? `- Project ID: "${projectId}"` : ''}
 
-      **Available Tools:**
+      **Available Tools (sorted by priority):**
       ${JSON.stringify(availableTools, null, 2)}
+
+      **Tool Selection Guidelines:**
+      - For file operations: Use create_vfs_file (priority 1) instead of write_file (priority 10)
+      - For directory operations: Use create_vfs_directory (priority 2) instead of local file system tools
+      - Always use VFS paths (e.g., /pages/Home.tsx) not local paths (e.g., korean-learning-site/src/pages/Home.js)
 
       **Your Task:**
       Generate a JSON object that represents a valid "Plan".
       - **If a "Project ID" is provided in the Context, you MUST NOT use the 'create_project_in_db' tool.** Your plan should modify the existing project.
       - **If no "Project ID" is provided**, your plan should start with the 'create_project_in_db' tool.
-      
+
       **Tool Specific Instructions:**
       - **'create_project_architecture'**: The 'architecture' object this tool outputs MUST have a top-level key named "structure". The value of "structure" MUST be an array of nodes.
         - Each node MUST have a "type" ('FILE' or 'DIRECTORY') and a "name".
@@ -92,7 +155,7 @@ export class WorkflowService {
         - When modifying an existing project, this step MUST use the "Project ID" from the Context.
         - When creating a new project, its 'projectId' input MUST reference the 'id' from the 'create_project_in_db' step's output.
         - Its 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output.
-      - **After creating the architecture**, if the project requires a backend API, you should add a step using the **'generate_backend_code_from_plan'** tool. 
+      - **After creating the architecture**, if the project requires a backend API, you should add a step using the **'generate_backend_code_from_plan'** tool.
         - The input for this tool MUST be a valid API Blueprint, which you should generate based on the project description.
         - You should determine an appropriate **'targetPath'** for the generated routes file based on the project's file structure (e.g., '/src/routes.ts' or '/src/api/v1/routes.ts').
 
