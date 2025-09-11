@@ -2,7 +2,7 @@
  * @file Implements the WorkflowExecutor, the engine that runs declarative Plans.
  */
 
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from 'crypto';
 
 import { toolRegistry } from './toolRegistry';
 import { ExecutionContext, Plan, PlanStep } from './types';
@@ -13,6 +13,7 @@ export class WorkflowExecutor {
     app: any,
     plan: Plan,
     initialInputs: Record<string, any> = {},
+    contextExtras: Partial<ExecutionContext> = {},
   ): Promise<Map<string, any>> {
     if (!plan || !Array.isArray(plan.steps)) {
       throw new Error('Invalid plan: "steps" array is missing.');
@@ -21,7 +22,7 @@ export class WorkflowExecutor {
     const runId = randomUUID();
     console.log(`[Executor] Starting plan "${plan.name}" (Run ID: ${runId})`);
 
-    const executionContext: ExecutionContext = { runId, app };
+    const executionContext: ExecutionContext = { runId, app, ...contextExtras };
     const stepOutputs = new Map<string, any>();
     const completedSteps = new Set<string>();
 

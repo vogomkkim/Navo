@@ -108,4 +108,7 @@ export interface ExecutionContext {
   app: FastifyInstance;
 
   // Potentially, access to other services or configuration.
+  // Optional contextual identifiers for tools that require project/user scope
+  projectId?: string;
+  userId?: string;
 }
