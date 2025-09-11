@@ -101,6 +101,14 @@ export const TOOL_DEFINITIONS: Record<string, ToolInfo> = {
     description: 'Generates Deno serverless functions from API blueprint'
   },
 
+  'sync_deno_functions': {
+    name: 'sync_deno_functions',
+    category: ToolCategory.SERVERLESS,
+    priority: 5,
+    projectTypes: [ProjectType.VFS, ProjectType.HYBRID, ProjectType.LOCAL],
+    description: 'Syncs VFS serverless function files to provider (e.g., Deno Deploy)'
+  },
+
   // Shell Tools
   'run_shell_command': {
     name: 'run_shell_command',

@@ -119,7 +119,7 @@ export class WorkflowService {
       **Tool Selection Guidelines:**
       - For file operations: Use create_vfs_file (priority 1) instead of write_file (priority 10)
       - For directory operations: Use create_vfs_directory (priority 2) instead of local file system tools
-      - For backend/API: Use generate_deno_functions_from_blueprint to generate Deno serverless functions into '/functions'.
+      - For backend/API: Use generate_deno_functions_from_blueprint to generate Deno serverless functions into '/functions'. After generation, use sync_deno_functions to push code to the provider.
       - Always use VFS paths (e.g., /pages/Home.tsx or /functions/get_users.ts) not local FS paths.
 
       **Your Task:**

@@ -19,6 +19,7 @@ export interface VfsRepository {
     parentId: string | null,
   ): Promise<VfsNode[]>;
   listNodesByProject(projectId: string): Promise<VfsNode[]>;
+  listNodesUnderPath(projectId: string, path: string): Promise<VfsNode[]>;
   getNodeById(nodeId: string, projectId: string): Promise<VfsNode | null>;
   updateNodeContent(nodeId: string, projectId: string, content: string): Promise<VfsNode | null>;
   upsertByPath(projectId: string, path: string, content: string): Promise<VfsNode>;
@@ -175,6 +176,35 @@ export class VfsRepositoryImpl implements VfsRepository {
     } catch (error) {
       this.app.log.error(error, 'VFS list all nodes by project failed');
       throw new Error('Failed to list all VFS nodes for project.');
+    }
+  }
+
+  async listNodesUnderPath(projectId: string, path: string): Promise<VfsNode[]> {
+    try {
+      // Resolve the node for the given path, then fetch all descendants in memory
+      const startNode = await this.findByPath(projectId, path);
+      if (!startNode) return [];
+
+      const all = await this.listNodesByProject(projectId);
+      const byParent = new Map<string | null, VfsNode[]>();
+      for (const n of all) {
+        const arr = byParent.get(n.parentId) ?? [];
+        arr.push(n);
+        byParent.set(n.parentId, arr);
+      }
+
+      const results: VfsNode[] = [];
+      const stack: VfsNode[] = [startNode];
+      while (stack.length) {
+        const current = stack.pop()!;
+        const children = byParent.get(current.id) ?? [];
+        results.push(...children);
+        for (const c of children) if (c.nodeType === 'DIRECTORY') stack.push(c);
+      }
+      return results;
+    } catch (error) {
+      this.app.log.error(error, 'VFS list nodes under path failed');
+      throw new Error('Failed to list VFS nodes under path.');
     }
   }
 
