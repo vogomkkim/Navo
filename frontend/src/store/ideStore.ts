@@ -49,7 +49,6 @@ interface IdeState {
   addOpenFile: (filePath: string) => void;
   closeOpenFile: (filePath: string) => void;
   setActiveFile: (filePath: string | null) => void;
-  // Node metadata map with i18n display names per locale (e.g., 'ko', 'en', 'ja')
   nodesById: Record<
     string,
     {
@@ -75,6 +74,12 @@ interface IdeState {
     }>
   ) => void;
 
+  // UI State
+  activeView: 'editor' | 'preview';
+  setActiveView: (view: 'editor' | 'preview') => void;
+  activePreviewRoute: string | null;
+  setActivePreviewRoute: (route: string | null) => void;
+
   // Preferences
   treeLabelMode: 'name' | 'filename';
   setTreeLabelMode: (mode: 'name' | 'filename') => void;
@@ -90,7 +95,6 @@ export const useIdeStore = create<IdeState>((set) => ({
   setSelectedProjectId: (projectId) => {
     set({
       selectedProjectId: projectId,
-      // Reset related states on project change
       activeFile: null,
       openFiles: [],
       fileTree: null,
@@ -166,6 +170,12 @@ export const useIdeStore = create<IdeState>((set) => ({
       return { ...state, openFiles: newOpenFiles, activeFile: newActiveFile };
     }),
   setActiveFile: (filePath) => set({ activeFile: filePath }),
+
+  // UI State
+  activeView: 'editor',
+  setActiveView: (view) => set({ activeView: view }),
+  activePreviewRoute: null,
+  setActivePreviewRoute: (route) => set({ activePreviewRoute: route }),
 
   // Chat Processing State
   isProcessing: false,

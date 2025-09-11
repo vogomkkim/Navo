@@ -12,6 +12,13 @@ import { Plan } from './types';
 import { refineJsonResponse } from './utils/jsonRefiner';
 import { ProjectType, getAvailableTools } from './toolCategories';
 
+// Define the structure of the context object coming from the frontend
+interface MessageContext {
+  activeView?: 'editor' | 'preview';
+  activeFile?: string | null;
+  activePreviewRoute?: string | null;
+}
+
 export class WorkflowService {
   private app: FastifyInstance;
   private model: any;
@@ -26,12 +33,13 @@ export class WorkflowService {
     prompt: string,
     user: { id: string },
     chatHistory: any[],
-    projectId?: string
+    projectId?: string,
+    context?: MessageContext
   ): Promise<any> {
     this.app.log.info(
-      `[WorkflowService] Received prompt: "${prompt}" for project ${projectId} with history.`
+      `[WorkflowService] Received prompt: "${prompt}" for project ${projectId} with history and context.`
     );
-    const plan = await this.generatePlan(prompt, user, chatHistory, projectId);
+    const plan = await this.generatePlan(prompt, user, chatHistory, projectId, context);
     this.app.log.info({ plan }, '[WorkflowService] Generated Plan');
 
     if (!plan || !Array.isArray(plan.steps)) {
@@ -70,21 +78,16 @@ export class WorkflowService {
     prompt: string,
     user: { id: string },
     chatHistory: any[],
-    projectId?: string
+    projectId?: string,
+    context: MessageContext = {}
   ): Promise<Plan> {
     const projectType = this.determineProjectType(projectId);
     const appropriateTools = getAvailableTools(projectType);
     const availableTools = appropriateTools.map((tool) => ({
       name: tool.name,
       description: tool.description,
-      category: tool.category,
-      priority: tool.priority,
       inputSchema: toolRegistry.get(tool.name)?.inputSchema || {},
     }));
-
-    this.app.log.info(
-      `[WorkflowService] Using ${projectType} project type with ${availableTools.length} appropriate tools`
-    );
 
     const memberships = await db
       .select({ organizationId: usersToOrganizations.organizationId })
@@ -96,35 +99,60 @@ export class WorkflowService {
     if (!organizationId) {
       throw new Error(`User ${user.id} has no organization.`);
     }
-
-    // Convert our internal chat history format to the format expected by Google's API
+    
     const formattedHistory = chatHistory.map((item: any) => ({
       role: item.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: item.message || '' }],
     }));
 
     const plannerPrompt = `
-You are an expert AI Planner. Your job is to take a user's request and create a detailed, step-by-step execution plan using ONLY the available tools, based on the full conversation context.
+You are an expert AI Planner. Your job is to analyze a user's request and create a step-by-step execution plan using ONLY the available tools.
 
-IMPORTANT: This is a VFS-based project. Always prefer VFS tools over local file system tools.
-Backends must be implemented as Deno serverless functions (like Supabase). Do NOT generate Fastify or long-running servers.
-Priority order: VFS tools (create_vfs_file, create_vfs_directory) > Serverless tools (generate_deno_functions_from_blueprint) > Database tools > Other tools
+**Intelligent Target Inference Guidelines (VERY IMPORTANT):**
+You MUST determine the target file(s) for the user's request by following these rules in ORDER:
 
-Context (Use these exact values):
-- User ID: "${user.id}"
-- Organization ID: "${organizationId}"
-- Project Type: ${projectType} (VFS-based)
-${projectId ? `- Project ID: "${projectId}"` : ''}
+1.  **Explicit User Intent:** If the user's message explicitly mentions a file, component, or feature (e.g., "modify the login page", "update 'utils.ts'"), this is your highest priority.
 
-Available Tools (sorted by priority):
+2.  **Contextual Metadata:** If the user's message is ambiguous (e.g., "change this button"), use the following metadata as a strong hint.
+    - User's Active View: "${context.activeView || 'unknown'}"
+    - Active File in Editor: "${context.activeFile || 'none'}"
+    - Active Route in Preview: "${context.activePreviewRoute || 'none'}"
+    An ambiguous request likely refers to the "Active File in Editor".
+
+3.  **Conversation History:** If intent and metadata are insufficient, analyze the conversation history to find the context.
+
+**Available Tools:**
 ${JSON.stringify(availableTools, null, 2)}
 
-Your Task:
-Generate a JSON object that represents a valid "Plan" with fields { name: string, description: string, steps: Array<{ id: string; tool: string; inputs: Record<string, any>; dependencies?: string[] }> }.
-Return ONLY the JSON. Do not include markdown fences or commentary.
+**Your Task:**
+Generate a JSON object that represents a valid "Plan".
+- A plan to create a new project MUST start with 'create_project_in_db', then 'create_project_architecture', and then 'compile_blueprint_to_vfs'.
+- A plan to modify an existing project should use tools like 'create_project_architecture' followed by 'compile_blueprint_to_vfs' to update files.
+
+**Example Plan (for modifying an existing file):**
+{
+  "name": "Update Main Page Content",
+  "description": "Redesign the main page based on user feedback.",
+  "steps": [
+    {
+      "id": "step1_design_update",
+      "tool": "create_project_architecture",
+      "inputs": { "name": "Korean Greeting Project", "description": "Update the main page with a title, button, and dynamic greeting text, and apply a modern design.", "type": "web-application" }
+    },
+    {
+      "id": "step2_compile_update",
+      "tool": "compile_blueprint_to_vfs",
+      "inputs": {
+        "projectId": "${projectId}",
+        "blueprint": "${step1_design_update}"
+      }
+    }
+  ]
+}
+
+Respond with ONLY the raw JSON object, without any markdown formatting.
 `;
 
-    // The chat session should include the history, the detailed prompt, and the user's latest message
     const chat = this.model.startChat({
       history: formattedHistory,
     });
@@ -132,23 +160,15 @@ Return ONLY the JSON. Do not include markdown fences or commentary.
     const result = await chat.sendMessage(
       `Latest User Request: "${prompt}"\n\n${plannerPrompt}`
     );
-
+    
     const rawText: string = result?.response?.text?.() ?? '';
     let parsedPlan: Plan;
     try {
       const refined = await refineJsonResponse<Plan>(rawText);
-      if (typeof refined === 'string') {
-        parsedPlan = JSON.parse(refined) as Plan;
-      } else {
-        parsedPlan = refined as Plan;
-      }
+      parsedPlan = typeof refined === 'string' ? JSON.parse(refined) : refined;
     } catch (error) {
-      this.app.log.error({ error }, '[WorkflowService] 계획 JSON 파싱 실패');
-      parsedPlan = {
-        name: 'Fallback Plan',
-        description: 'AI 계획 파싱 실패로 인해 빈 계획을 사용합니다.',
-        steps: [],
-      };
+      this.app.log.error({ error, rawText }, '[WorkflowService] Failed to parse Plan JSON');
+      throw new Error('Failed to parse Plan JSON from AI response.');
     }
 
     return parsedPlan;
