@@ -98,7 +98,8 @@ export class WorkflowService {
       You are an expert AI Planner. Your job is to take a user's request and create a detailed, step-by-step execution plan using ONLY the available tools, based on the full conversation context.
 
       **IMPORTANT: This is a VFS-based project. Always prefer VFS tools over local file system tools.**
-      **Priority order: VFS tools (create_vfs_file, create_vfs_directory) > Database tools > Other tools**
+      **Backends must be implemented as Deno serverless functions (like Supabase). Do NOT generate Fastify or long-running servers.**
+      **Priority order: VFS tools (create_vfs_file, create_vfs_directory) > Serverless tools (generate_deno_functions_from_blueprint) > Database tools > Other tools**
 
       **Conversation History:**
       ${JSON.stringify(chatHistory, null, 2)}
@@ -118,7 +119,8 @@ export class WorkflowService {
       **Tool Selection Guidelines:**
       - For file operations: Use create_vfs_file (priority 1) instead of write_file (priority 10)
       - For directory operations: Use create_vfs_directory (priority 2) instead of local file system tools
-      - Always use VFS paths (e.g., /pages/Home.tsx) not local paths (e.g., korean-learning-site/src/pages/Home.js)
+      - For backend/API: Use generate_deno_functions_from_blueprint to generate Deno serverless functions into '/functions'.
+      - Always use VFS paths (e.g., /pages/Home.tsx or /functions/get_users.ts) not local FS paths.
 
       **Your Task:**
       Generate a JSON object that represents a valid "Plan".
@@ -141,9 +143,9 @@ export class WorkflowService {
         - When modifying an existing project, this step MUST use the "Project ID" from the Context.
         - When creating a new project, its 'projectId' input MUST reference the 'id' from the 'create_project_in_db' step's output.
         - Its 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output.
-      - **After creating the architecture**, if the project requires a backend API, you should add a step using the **'generate_backend_code_from_plan'** tool.
-        - The input for this tool MUST be a valid API Blueprint, which you should generate based on the project description.
-        - You should determine an appropriate **'targetPath'** for the generated routes file based on the project's file structure (e.g., '/src/routes.ts' or '/src/api/v1/routes.ts').
+      - **After creating the architecture**, if the project requires a backend API, add a step using **'generate_deno_functions_from_blueprint'**.
+        - The input MUST be a valid API Blueprint.
+        - The functions should be generated under '/functions' by default. Each endpoint becomes a Deno file named by method and path.
 
       **Output Format (JSON only):**
       {

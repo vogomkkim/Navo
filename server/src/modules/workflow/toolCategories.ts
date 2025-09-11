@@ -14,7 +14,8 @@ export enum ToolCategory {
   LOCAL_FS = 'LOCAL_FS',
   DATABASE = 'DATABASE',
   SHELL = 'SHELL',
-  ARCHITECTURE = 'ARCHITECTURE'
+  ARCHITECTURE = 'ARCHITECTURE',
+  SERVERLESS = 'SERVERLESS'
 }
 
 export interface ToolInfo {
@@ -89,6 +90,15 @@ export const TOOL_DEFINITIONS: Record<string, ToolInfo> = {
     priority: 3,
     projectTypes: [ProjectType.VFS, ProjectType.LOCAL, ProjectType.HYBRID],
     description: 'Creates project architecture'
+  },
+
+  // Serverless (Deno) Tools
+  'generate_deno_functions_from_blueprint': {
+    name: 'generate_deno_functions_from_blueprint',
+    category: ToolCategory.SERVERLESS,
+    priority: 4,
+    projectTypes: [ProjectType.VFS, ProjectType.HYBRID, ProjectType.LOCAL],
+    description: 'Generates Deno serverless functions from API blueprint'
   },
 
   // Shell Tools
