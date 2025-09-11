@@ -19,6 +19,7 @@ import { createProjectArchitectureTool } from './tools/projectArchitect.tool';
 // Import all tools and register them
 import { runShellCommandTool } from './tools/runShellCommand.tool';
 import { createVfsFileTool, createVfsDirectoryTool } from './tools/vfs.tool';
+import { compileBlueprintToVfsTool } from './tools/vfs_compiler.tool';
 import { WorkflowExecutor } from './workflowExecutor';
 import { BackendGeneratorTool } from './tools/backend_generator.tool';
 import { DenoFunctionsGeneratorTool } from './tools/deno_functions_generator.tool';
@@ -43,6 +44,7 @@ toolRegistry.register(generateProjectFilesTool);
 toolRegistry.register(createOrganizationTool);
 toolRegistry.register(createVfsFileTool);
 toolRegistry.register(createVfsDirectoryTool);
+toolRegistry.register(compileBlueprintToVfsTool);
 // Prefer Deno serverless generator for user projects
 toolRegistry.register(new DenoFunctionsGeneratorTool());
 toolRegistry.register(syncDenoFunctionsTool);

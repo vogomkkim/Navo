@@ -36,7 +36,6 @@ export interface UserMessage {
 
 export type ChatMessage = UserMessage | AgentMessage;
 
-
 interface IdeState {
   // Project Context
   selectedProjectId: string | null;
@@ -50,6 +49,35 @@ interface IdeState {
   addOpenFile: (filePath: string) => void;
   closeOpenFile: (filePath: string) => void;
   setActiveFile: (filePath: string | null) => void;
+  // Node metadata map with i18n display names per locale (e.g., 'ko', 'en', 'ja')
+  nodesById: Record<
+    string,
+    {
+      name: string;
+      path?: string;
+      displayNames?: Record<string, string>;
+    }
+  >;
+  upsertNodeMeta: (
+    nodeId: string,
+    meta: {
+      name: string;
+      path?: string;
+      displayNames?: Record<string, string>;
+    }
+  ) => void;
+  upsertManyNodeMeta: (
+    entries: Array<{
+      id: string;
+      name: string;
+      path?: string;
+      displayNames?: Record<string, string>;
+    }>
+  ) => void;
+
+  // Preferences
+  treeLabelMode: 'name' | 'filename';
+  setTreeLabelMode: (mode: 'name' | 'filename') => void;
 
   // Chat Processing State
   isProcessing: boolean;
@@ -60,10 +88,10 @@ export const useIdeStore = create<IdeState>((set) => ({
   // Project Context
   selectedProjectId: null,
   setSelectedProjectId: (projectId) => {
-    set({ 
-      selectedProjectId: projectId, 
+    set({
+      selectedProjectId: projectId,
       // Reset related states on project change
-      activeFile: null, 
+      activeFile: null,
       openFiles: [],
       fileTree: null,
     });
@@ -74,6 +102,49 @@ export const useIdeStore = create<IdeState>((set) => ({
   openFiles: [],
   activeFile: null,
   setFileTree: (fileTree) => set({ fileTree }),
+  nodesById: {},
+  upsertNodeMeta: (nodeId, meta) =>
+    set((state) => {
+      const prev = state.nodesById[nodeId] || {};
+      const mergedDisplayNames = {
+        ...(prev.displayNames || {}),
+        ...(meta.displayNames || {}),
+      };
+      return {
+        nodesById: {
+          ...state.nodesById,
+          [nodeId]: {
+            ...prev,
+            name: meta.name ?? prev.name,
+            path: meta.path ?? prev.path,
+            displayNames: mergedDisplayNames,
+          },
+        },
+      };
+    }),
+  upsertManyNodeMeta: (entries) =>
+    set((state) => {
+      const next = { ...state.nodesById };
+      for (const e of entries) {
+        const base = (e.name || '').replace(/\.(tsx|jsx|ts|js|html)$/i, '');
+        const prev = next[e.id] || {};
+        const prevDn = prev.displayNames || {};
+        const dn = e.displayNames || {};
+        next[e.id] = {
+          ...prev,
+          name: e.name,
+          path: e.path,
+          displayNames: {
+            ko: prevDn.ko ?? dn.ko ?? base,
+            en: prevDn.en ?? dn.en ?? base,
+            ja: prevDn.ja ?? dn.ja ?? base,
+            ...prevDn,
+            ...dn,
+          },
+        };
+      }
+      return { nodesById: next } as Partial<IdeState> as any;
+    }),
   addOpenFile: (filePath) =>
     set((state) => {
       if (state.openFiles.includes(filePath)) {
@@ -99,4 +170,8 @@ export const useIdeStore = create<IdeState>((set) => ({
   // Chat Processing State
   isProcessing: false,
   setIsProcessing: (isProcessing) => set({ isProcessing }),
+
+  // Preferences
+  treeLabelMode: 'name',
+  setTreeLabelMode: (mode) => set({ treeLabelMode: mode }),
 }));

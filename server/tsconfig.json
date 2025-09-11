@@ -13,16 +13,15 @@
     "paths": {
       "@/db": ["src/modules/db"],
       "@/db/*": ["src/modules/db/*"],
-      "@/schema": ["./drizzle/schema.ts"],
-      "@/drizzle/*": ["./drizzle/*"],
+      "@/schema": ["drizzle/schema.ts"],
+      "@/drizzle/*": ["drizzle/*"],
       "@/lib/*": ["src/lib/*"],
       "@/core/*": ["src/core/*"],
       "@/modules/*": ["src/modules/*"],
       "@/config": ["src/config"],
-      "@/config/*": ["src/config/*"],
-      "@/shared/*": ["../packages/shared/*"]
+      "@/config/*": ["src/config/*"]
     },
-    "types": ["node", "vitest/globals"]
+    "types": ["node"]
   },
   "include": [
     "src/**/*.ts",

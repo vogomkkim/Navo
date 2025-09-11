@@ -10,11 +10,13 @@ import { useInView } from 'react-intersection-observer';
 import { ChatPlaceholder } from './ChatPlaceholder';
 import './ChatSection.css';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDownIcon, XIcon } from 'lucide-react';
+import { ChevronDownIcon, Cross2Icon } from '@radix-ui/react-icons';
 
 export function ChatSection() {
   const selectedProjectId = useIdeStore((state) => state.selectedProjectId);
-  const setSelectedProjectId = useIdeStore((state) => state.setSelectedProjectId);
+  const setSelectedProjectId = useIdeStore(
+    (state) => state.setSelectedProjectId
+  );
   const isProcessing = useIdeStore((state) => state.isProcessing);
   const setIsProcessing = useIdeStore((state) => state.setIsProcessing);
   const queryClient = useQueryClient();
@@ -30,7 +32,10 @@ export function ChatSection() {
 
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-  const [toastMessage, setToastMessage] = useState<{ content: string; id: number } | null>(null);
+  const [toastMessage, setToastMessage] = useState<{
+    content: string;
+    id: number;
+  } | null>(null);
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -38,7 +43,9 @@ export function ChatSection() {
     }
   }, [selectedProjectId, refetch]);
 
-  const { ref: topOfChatRef, inView: isTopOfChatVisible } = useInView({ threshold: 0 });
+  const { ref: topOfChatRef, inView: isTopOfChatVisible } = useInView({
+    threshold: 0,
+  });
 
   useEffect(() => {
     if (isTopOfChatVisible && hasNextPage && !isFetchingNextPage) {
@@ -51,7 +58,8 @@ export function ChatSection() {
   }, [data]);
 
   const { user } = useAuth();
-  const { inputValue, setInputValue, handleKeyDown, addToHistory } = useInputHistory();
+  const { inputValue, setInputValue, handleKeyDown, addToHistory } =
+    useInputHistory();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -95,7 +103,8 @@ export function ChatSection() {
   useEffect(() => {
     if (chatHistory.length > 0) {
       const lastMessage = chatHistory[chatHistory.length - 1];
-      if (lastMessage.role !== 'user') { // Message from AI
+      if (lastMessage.role !== 'user') {
+        // Message from AI
         const chatContainer = chatContainerRef.current;
         if (chatContainer) {
           const { scrollHeight, scrollTop, clientHeight } = chatContainer;
@@ -137,7 +146,9 @@ export function ChatSection() {
         projectDescription: messageToSend,
       });
     } else {
-      const recentHistory = chatHistory.slice(-10).map(m => ({ role: m.role, message: m.content }));
+      const recentHistory = chatHistory
+        .slice(-10)
+        .map((m) => ({ role: m.role, message: m.content }));
       sendMessage({ prompt: messageToSend, chatHistory: recentHistory });
     }
   };
@@ -151,12 +162,19 @@ export function ChatSection() {
 
   return (
     <div className="chat-container">
-      <div className="chat-messages" ref={chatContainerRef} onScroll={handleScroll}>
+      <div
+        className="chat-messages"
+        ref={chatContainerRef}
+        onScroll={handleScroll}
+      >
         {/* ... (message rendering logic remains the same) ... */}
         {chatHistory.map((message: any) => {
           const isUser = message.role === 'user';
           return (
-            <div key={message.id} className={`chat-message ${isUser ? 'user' : 'ai'}`}>
+            <div
+              key={message.id}
+              className={`chat-message ${isUser ? 'user' : 'ai'}`}
+            >
               <div className={`message-bubble ${isUser ? 'user' : 'ai'}`}>
                 <div className="message-text">{message.content}</div>
               </div>
@@ -167,7 +185,9 @@ export function ChatSection() {
           <div className="chat-message ai">
             <div className="message-bubble ai">
               <div className="typing-indicator">
-                <span></span><span></span><span></span>
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
             </div>
           </div>
@@ -182,14 +202,23 @@ export function ChatSection() {
             <div className="toast-content">
               {toastMessage.content.substring(0, 80)}...
             </div>
-            <button className="toast-close-btn" onClick={(e) => { e.stopPropagation(); setToastMessage(null); }}>
-              <XIcon size={16} />
+            <button
+              className="toast-close-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setToastMessage(null);
+              }}
+            >
+              <Cross2Icon className="h-4 w-4" />
             </button>
           </div>
         )}
         {showScrollToBottom && !toastMessage && (
-          <button className="scroll-to-bottom-btn" onClick={() => scrollToBottom()}>
-            <ChevronDownIcon size={20} />
+          <button
+            className="scroll-to-bottom-btn"
+            onClick={() => scrollToBottom()}
+          >
+            <ChevronDownIcon className="h-5 w-5" />
           </button>
         )}
       </div>
@@ -207,7 +236,11 @@ export function ChatSection() {
           rows={1}
           className="chat-textarea"
         />
-        <button onClick={handleSendMessage} disabled={!inputValue.trim() || isProcessing || isAIProcessing} className="send-button-new">
+        <button
+          onClick={handleSendMessage}
+          disabled={!inputValue.trim() || isProcessing || isAIProcessing}
+          className="send-button-new"
+        >
           {/* ... */}
         </button>
       </div>

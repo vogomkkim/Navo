@@ -10,7 +10,7 @@ import { usersToOrganizations } from '@/drizzle/schema';
 import { toolRegistry, workflowExecutor } from './index';
 import { Plan } from './types';
 import { refineJsonResponse } from './utils/jsonRefiner';
-import { ProjectType, getAvailableTools, getBestTool } from './toolCategories';
+import { ProjectType, getAvailableTools } from './toolCategories';
 
 export class WorkflowService {
   private app: FastifyInstance;
@@ -22,8 +22,15 @@ export class WorkflowService {
     this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
-  async run(prompt: string, user: { id: string }, chatHistory: any[], projectId?: string): Promise<any> {
-    this.app.log.info(`[WorkflowService] Received prompt: "${prompt}" for project ${projectId} with history.`);
+  async run(
+    prompt: string,
+    user: { id: string },
+    chatHistory: any[],
+    projectId?: string
+  ): Promise<any> {
+    this.app.log.info(
+      `[WorkflowService] Received prompt: "${prompt}" for project ${projectId} with history.`
+    );
     const plan = await this.generatePlan(prompt, user, chatHistory, projectId);
     this.app.log.info({ plan }, '[WorkflowService] Generated Plan');
 
@@ -31,7 +38,6 @@ export class WorkflowService {
       throw new Error('AI Planner returned an invalid plan.');
     }
 
-    // Add context information to the plan steps
     const enhancedPlan = this.enhancePlanWithContext(plan, user, projectId);
 
     const outputs = await workflowExecutor.execute(
@@ -40,38 +46,33 @@ export class WorkflowService {
       {},
       { projectId, userId: user.id }
     );
-    this.app.log.info({ outputs: Object.fromEntries(outputs) }, '[WorkflowService] Workflow executed successfully');
+    this.app.log.info(
+      { outputs: Object.fromEntries(outputs) },
+      '[WorkflowService] Workflow executed successfully'
+    );
 
     return { plan, outputs: Object.fromEntries(outputs) };
   }
 
-  /**
-   * Determine project type based on context
-   * For now, we assume VFS projects by default since we're working with VFS-based projects
-   */
   private determineProjectType(projectId?: string): ProjectType {
-    // TODO: In the future, this could be determined by:
-    // 1. Checking project configuration in database
-    // 2. Analyzing existing project structure
-    // 3. User preferences
-
-    // For now, assume VFS projects since we're working with VFS-based system
     return ProjectType.VFS;
   }
 
-  /**
-   * Enhance plan steps with required context information
-   */
-  private enhancePlanWithContext(plan: Plan, user: { id: string }, projectId?: string): Plan {
-    // Do not mutate tool inputs; supply context via executor context instead
+  private enhancePlanWithContext(
+    plan: Plan,
+    user: { id: string },
+    projectId?: string
+  ): Plan {
     return plan;
   }
 
-  private async generatePlan(prompt: string, user: { id: string }, chatHistory: any[], projectId?: string): Promise<Plan> {
-    // Determine project type based on context
+  private async generatePlan(
+    prompt: string,
+    user: { id: string },
+    chatHistory: any[],
+    projectId?: string
+  ): Promise<Plan> {
     const projectType = this.determineProjectType(projectId);
-
-    // Get appropriate tools for this project type
     const appropriateTools = getAvailableTools(projectType);
     const availableTools = appropriateTools.map((tool) => ({
       name: tool.name,
@@ -81,7 +82,9 @@ export class WorkflowService {
       inputSchema: toolRegistry.get(tool.name)?.inputSchema || {},
     }));
 
-    this.app.log.info(`[WorkflowService] Using ${projectType} project type with ${availableTools.length} appropriate tools`);
+    this.app.log.info(
+      `[WorkflowService] Using ${projectType} project type with ${availableTools.length} appropriate tools`
+    );
 
     const memberships = await db
       .select({ organizationId: usersToOrganizations.organizationId })
@@ -94,96 +97,60 @@ export class WorkflowService {
       throw new Error(`User ${user.id} has no organization.`);
     }
 
+    // Convert our internal chat history format to the format expected by Google's API
+    const formattedHistory = chatHistory.map((item: any) => ({
+      role: item.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: item.message || '' }],
+    }));
+
     const plannerPrompt = `
-      You are an expert AI Planner. Your job is to take a user's request and create a detailed, step-by-step execution plan using ONLY the available tools, based on the full conversation context.
+You are an expert AI Planner. Your job is to take a user's request and create a detailed, step-by-step execution plan using ONLY the available tools, based on the full conversation context.
 
-      **IMPORTANT: This is a VFS-based project. Always prefer VFS tools over local file system tools.**
-      **Backends must be implemented as Deno serverless functions (like Supabase). Do NOT generate Fastify or long-running servers.**
-      **Priority order: VFS tools (create_vfs_file, create_vfs_directory) > Serverless tools (generate_deno_functions_from_blueprint) > Database tools > Other tools**
+IMPORTANT: This is a VFS-based project. Always prefer VFS tools over local file system tools.
+Backends must be implemented as Deno serverless functions (like Supabase). Do NOT generate Fastify or long-running servers.
+Priority order: VFS tools (create_vfs_file, create_vfs_directory) > Serverless tools (generate_deno_functions_from_blueprint) > Database tools > Other tools
 
-      **Conversation History:**
-      ${JSON.stringify(chatHistory, null, 2)}
+Context (Use these exact values):
+- User ID: "${user.id}"
+- Organization ID: "${organizationId}"
+- Project Type: ${projectType} (VFS-based)
+${projectId ? `- Project ID: "${projectId}"` : ''}
 
-      **Latest User Request:**
-      "${prompt}"
+Available Tools (sorted by priority):
+${JSON.stringify(availableTools, null, 2)}
 
-      **Context (Use these exact values):**
-      - User ID: "${user.id}"
-      - Organization ID: "${organizationId}"
-      - Project Type: ${projectType} (VFS-based)
-      ${projectId ? `- Project ID: "${projectId}"` : ''}
+Your Task:
+Generate a JSON object that represents a valid "Plan" with fields { name: string, description: string, steps: Array<{ id: string; tool: string; inputs: Record<string, any>; dependencies?: string[] }> }.
+Return ONLY the JSON. Do not include markdown fences or commentary.
+`;
 
-      **Available Tools (sorted by priority):**
-      ${JSON.stringify(availableTools, null, 2)}
+    // The chat session should include the history, the detailed prompt, and the user's latest message
+    const chat = this.model.startChat({
+      history: formattedHistory,
+    });
 
-      **Tool Selection Guidelines:**
-      - For file operations: Use create_vfs_file (priority 1) instead of write_file (priority 10)
-      - For directory operations: Use create_vfs_directory (priority 2) instead of local file system tools
-      - For backend/API: Use generate_deno_functions_from_blueprint to generate Deno serverless functions into '/functions'. After generation, use sync_deno_functions to push code to the provider.
-      - Always use VFS paths (e.g., /pages/Home.tsx or /functions/get_users.ts) not local FS paths.
+    const result = await chat.sendMessage(
+      `Latest User Request: "${prompt}"\n\n${plannerPrompt}`
+    );
 
-      **Your Task:**
-      Generate a JSON object that represents a valid "Plan".
-      - **If a "Project ID" is provided in the Context, you MUST NOT use the 'create_project_in_db' tool.** Your plan should modify the existing project.
-      - **If no "Project ID" is provided**, your plan should start with the 'create_project_in_db' tool.
-
-      **Tool Specific Instructions:**
-      - **'create_project_architecture'**: The 'architecture' object this tool outputs MUST have a top-level key named "structure". The value of "structure" MUST be an array of nodes.
-        - Each node MUST have a "type" ('FILE' or 'DIRECTORY') and a "name".
-        - Directories can optionally have a "children" property, which is an array of nodes following the same schema.
-        - **Example of a valid 'architecture' object:**
-          {
-            "structure": [
-              { "type": "DIRECTORY", "name": "src", "children": [
-                { "type": "FILE", "name": "index.js" }
-              ]}
-            ]
-          }
-      - **'update_project_from_architecture'**:
-        - When modifying an existing project, this step MUST use the "Project ID" from the Context.
-        - When creating a new project, its 'projectId' input MUST reference the 'id' from the 'create_project_in_db' step's output.
-        - Its 'architecture' input MUST reference the 'project' property of the 'create_project_architecture' step's output.
-      - **After creating the architecture**, if the project requires a backend API, add a step using **'generate_deno_functions_from_blueprint'**.
-        - The input MUST be a valid API Blueprint.
-        - The functions should be generated under '/functions' by default. Each endpoint becomes a Deno file named by method and path.
-
-      **Output Format (JSON only):**
-      {
-        "name": "Descriptive plan name",
-        "description": "Brief description.",
-        "steps": [
-          {
-            "id": "unique_step_id",
-            "tool": "tool_name_from_list",
-            "inputs": { "param1": "value1" }
-          }
-        ]
-      }
-
-      Respond with ONLY the raw JSON object, without any markdown formatting.
-    `;
-
+    const rawText: string = result?.response?.text?.() ?? '';
+    let parsedPlan: Plan;
     try {
-      const result = await this.model.generateContent(plannerPrompt);
-      let text = result.response.text();
-
-      const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-      const match = text.match(jsonRegex);
-      if (match && match[1]) {
-        text = match[1];
+      const refined = await refineJsonResponse<Plan>(rawText);
+      if (typeof refined === 'string') {
+        parsedPlan = JSON.parse(refined) as Plan;
       } else {
-        const startIndex = text.indexOf('{');
-        const endIndex = text.lastIndexOf('}');
-        if (startIndex > -1 && endIndex > -1) {
-          text = text.substring(startIndex, endIndex + 1);
-        }
+        parsedPlan = refined as Plan;
       }
-
-      const refinedJson = await refineJsonResponse<Plan>(text);
-      return typeof refinedJson === 'string' ? JSON.parse(refinedJson) : refinedJson;
-    } catch (error: any) {
-      this.app.log.error(error, 'Failed to generate or parse plan from LLM.');
-      throw new Error('Failed to parse JSON from LLM response.');
+    } catch (error) {
+      this.app.log.error({ error }, '[WorkflowService] 계획 JSON 파싱 실패');
+      parsedPlan = {
+        name: 'Fallback Plan',
+        description: 'AI 계획 파싱 실패로 인해 빈 계획을 사용합니다.',
+        steps: [],
+      };
     }
+
+    return parsedPlan;
   }
 }

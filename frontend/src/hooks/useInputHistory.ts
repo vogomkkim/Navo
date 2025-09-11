@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 interface UseInputHistoryReturn {
   inputValue: string;
   setInputValue: (value: string) => void;
-  handleKeyDown: (e: React.KeyboardEvent) => void;
+  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   addToHistory: (message: string) => void;
   clearHistory: () => void;
   messageHistory: string[];
@@ -41,73 +41,75 @@ export function useInputHistory(): UseInputHistoryReturn {
     }
   }, [messageHistory]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const isCaretAtStart = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const target = e.target as HTMLTextAreaElement;
+    return target.selectionStart === 0 && target.selectionEnd === 0;
+  };
+
+  const isCaretAtEnd = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const target = e.target as HTMLTextAreaElement;
+    const valueLength = target.value.length;
+    return (
+      target.selectionStart === valueLength &&
+      target.selectionEnd === valueLength
+    );
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'ArrowUp') {
+      // 위 화살표는 커서가 맨 앞(첫 줄의 시작)일 때만 히스토리 이동
+      if (!isCaretAtStart(e)) return; // 기본 캐럿 이동 허용
       e.preventDefault();
 
-      // 히스토리가 비어있으면 아무것도 하지 않음
-      if (messageHistory.length === 0) {
-        return;
-      }
+      if (messageHistory.length === 0) return;
 
-      // 현재 인덱스가 -1이면 가장 최근 메시지부터 시작
       if (historyIndex === -1) {
         setHistoryIndex(messageHistory.length - 1);
-        setInputValue(messageHistory[messageHistory.length - 1]); // 가장 최근 메시지 (마지막 인덱스)
+        setInputValue(messageHistory[messageHistory.length - 1]);
         return;
       }
 
-      // 이전 메시지로 이동 (더 오래된 메시지)
       if (historyIndex > 0) {
         const newIndex = historyIndex - 1;
         setHistoryIndex(newIndex);
         setInputValue(messageHistory[newIndex]);
       }
+      return;
     }
 
     if (e.key === 'ArrowDown') {
+      // 아래 화살표는 커서가 맨 끝(마지막 줄의 끝)일 때만 히스토리 이동
+      if (!isCaretAtEnd(e)) return; // 기본 캐럿 이동 허용
       e.preventDefault();
 
-      // 히스토리가 비어있으면 아무것도 하지 않음
-      if (messageHistory.length === 0) {
-        return;
-      }
+      if (messageHistory.length === 0) return;
 
-      // 현재 인덱스가 마지막보다 작으면 다음 메시지로 이동 (더 최근 메시지)
       if (historyIndex < messageHistory.length - 1) {
         const newIndex = historyIndex + 1;
         setHistoryIndex(newIndex);
         setInputValue(messageHistory[newIndex]);
       } else if (historyIndex === messageHistory.length - 1) {
-        // 가장 최근 메시지에서 ↓ 누르면 빈 값으로 초기화
         setHistoryIndex(-1);
         setInputValue('');
       } else if (historyIndex === -1) {
-        // 이미 빈 상태에서 ↓ 누르면 그대로 빈 상태 유지
         setInputValue('');
       }
+      return;
     }
   };
 
   const addToHistory = (message: string) => {
-    // 빈 메시지는 히스토리에 추가하지 않음
-    if (!message.trim()) {
-      return;
-    }
+    if (!message.trim()) return;
 
-    // 중복 메시지 제거 (최신 메시지가 이미 히스토리에 있으면 제거)
     const filteredHistory = messageHistory.filter((item) => item !== message);
-
-    // 새 메시지를 맨 뒤에 추가 (시간순 정렬)
     const newHistory = [...filteredHistory, message];
 
-    // 최대 10개까지만 유지 (가장 오래된 것부터 삭제)
     if (newHistory.length > MAX_HISTORY_SIZE) {
       newHistory.splice(0, newHistory.length - MAX_HISTORY_SIZE);
     }
 
     setMessageHistory(newHistory);
-    setHistoryIndex(-1); // 히스토리 인덱스 초기화
+    setHistoryIndex(-1);
   };
 
   const clearHistory = () => {
