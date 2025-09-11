@@ -6,25 +6,34 @@ import { z } from 'zod';
 // Use relative paths to import modules within the same package
 import { addRouteToSource, generateTestStub } from '../core/codeGenerator';
 import { getSafeAbsolutePath } from '../core/pathUtils';
-// import apiBlueprintSchema from '@/shared/src/api-blueprint.schema'; // Import from shared package
+// Avoid cross-package import to keep tsconfig root boundaries intact
+const apiBlueprintSchema = z.object({
+  blueprintType: z.literal('API_BLUEPRINT_V1').optional(),
+  endpoints: z.array(z.object({
+    path: z.string().regex(/^\//),
+    method: z.enum(['GET', 'POST', 'PATCH', 'DELETE']),
+    description: z.string(),
+    request: z.object({
+      params: z.record(z.object({ type: z.string(), description: z.string() })).optional(),
+      body: z.record(z.object({ type: z.string(), description: z.string() })).optional(),
+    }).optional(),
+    response: z.record(z.object({
+      description: z.string(),
+      body: z.record(z.object({ type: z.string(), description: z.string() })).optional(),
+    }))
+  })).min(1)
+});
 
-// Define a simple schema for now
-const apiBlueprintSchema = {
-  name: 'Test API',
-  endpoints: [
-    { method: 'GET', path: '/users', description: 'Get all users' },
-    { method: 'POST', path: '/users', description: 'Create a user' },
-  ]
-};
+// Use shared schema for validation
 
 async function main() {
   console.log('🚀 Starting Code Generator Demonstration...');
 
   try {
     // --- 1. Read and Validate Blueprint ---
-    const blueprintPath = path.resolve(__dirname, '../../packages/shared/schemas/user-api.blueprint.json');
+    const blueprintPath = path.resolve(process.cwd(), 'packages/shared/schemas/user-api.blueprint.json');
     const blueprintJSON = JSON.parse(await fs.readFile(blueprintPath, 'utf-8'));
-    const blueprint = blueprintJSON; // apiBlueprintSchema.parse(blueprintJSON);
+    const blueprint = apiBlueprintSchema.parse(blueprintJSON);
     console.log('✅ [1/5] Blueprint validated successfully.');
 
     // --- 2. Define the new route to be added ---
@@ -64,7 +73,7 @@ async function main() {
     console.log('    -> NOTE: A new DELETE endpoint has been added!');
 
     // --- 5. Generate and write the test stub ---
-    const testStubCode = generateTestStub(blueprint, 'User');
+    const testStubCode = generateTestStub(blueprint as any, 'User');
     const testFilePathRelative = 'server/src/modules/user/user.routes.test.ts';
     const testFilePathAbsolute = getSafeAbsolutePath(testFilePathRelative);
 

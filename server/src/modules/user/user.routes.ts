@@ -43,7 +43,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         404: z.object({ error: z.string() }),
       },
     },
-    handler: async (req, reply) => {
+    handler: async (req: any, reply: any) => {
       const { userId } = req.params as z.infer<typeof userIdParamsSchema>;
       const user = users.find(u => u.id === userId);
 
@@ -70,7 +70,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         201: userResponseSchema,
       },
     },
-    handler: async (req) => {
+    handler: async (req: any) => {
       const { name, email } = req.body as z.infer<typeof createUserSchema>;
 
       const newUser = {

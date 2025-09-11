@@ -20,6 +20,7 @@ import { createProjectArchitectureTool } from './tools/projectArchitect.tool';
 import { runShellCommandTool } from './tools/runShellCommand.tool';
 import { createVfsFileTool, createVfsDirectoryTool } from './tools/vfs.tool';
 import { WorkflowExecutor } from './workflowExecutor';
+import { BackendGeneratorTool } from './tools/backend_generator.tool';
 
 // --- Tool Registration ---
 // As we create more tools, we register them here.
@@ -40,6 +41,7 @@ toolRegistry.register(generateProjectFilesTool);
 toolRegistry.register(createOrganizationTool);
 toolRegistry.register(createVfsFileTool);
 toolRegistry.register(createVfsDirectoryTool);
+toolRegistry.register(new BackendGeneratorTool());
 
 // --- Service Instantiation ---
 // Create a singleton instance of the executor to be used by other services.

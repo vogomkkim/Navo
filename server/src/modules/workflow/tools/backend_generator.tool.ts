@@ -1,14 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-// import { Tool } from './tool';
-
-// Define Tool interface locally
-interface Tool {
-  name: string;
-  description: string;
-  parameters: any;
-  execute(app: any, inputs: any, projectId: string, userId: string): Promise<any>;
-}
+import { ExecutionContext, Tool } from '../types';
 import { ProjectsService } from '@/modules/projects/projects.service';
 
 const RequestObjectSchema = z.object({
@@ -40,32 +32,42 @@ type ApiBlueprint = z.infer<typeof ApiBlueprintSchema>;
 export class BackendGeneratorTool implements Tool {
   public name = 'generate_backend_code_from_plan';
   public description = 'Generates Fastify backend route code from an API Blueprint and saves it to the VFS.';
-  public parameters = ApiBlueprintSchema;
+  public inputSchema = ApiBlueprintSchema as unknown as Record<string, any>;
+  public outputSchema = {
+    type: 'object',
+    properties: {
+      success: { type: 'boolean' },
+      message: { type: 'string' },
+      filePath: { type: 'string' },
+    },
+  } as Record<string, any>;
 
-  public inputSchema = ApiBlueprintSchema;
-
-  async execute(app: FastifyInstance, inputs: ApiBlueprint, projectId: string, userId: string): Promise<any> {
+  async execute(context: ExecutionContext, inputs: ApiBlueprint): Promise<any> {
+    const app = context.app as FastifyInstance;
     // 1. Validate the blueprint against the detailed schema
     try {
-      this.inputSchema.parse(inputs);
+      ApiBlueprintSchema.parse(inputs);
     } catch (error) {
-      app.log.error({ error, projectId }, `[${this.name}] Invalid API Blueprint provided.`);
+      app.log.error({ error, projectId: context.projectId }, `[${this.name}] Invalid API Blueprint provided.`);
       throw new Error(`Invalid API Blueprint: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     const projectsService = new ProjectsService(app);
-    app.log.info(`[${this.name}] Starting backend code generation for project ${projectId}`);
+    if (!context.projectId || !context.userId) {
+      throw new Error('Project and user context are required');
+    }
+    app.log.info(`[${this.name}] Starting backend code generation for project ${context.projectId}`);
 
     const generatedCode = this.generateCodeFromBlueprint(inputs);
 
     const targetFilePath = inputs.targetPath || '/src/routes.ts';
-    const targetFile = await projectsService.findOrCreateVfsNodeByPath(projectId, userId, targetFilePath);
+    const targetFile = await projectsService.findOrCreateVfsNodeByPath(context.projectId, context.userId, targetFilePath);
 
     if (!targetFile) {
       throw new Error(`Failed to find or create target file at ${targetFilePath}`);
     }
 
-    await projectsService.updateVfsNodeContent(targetFile.id, projectId, userId, generatedCode);
+    await projectsService.updateVfsNodeContent(targetFile.id, context.projectId, context.userId, generatedCode);
 
     const summary = `Successfully generated ${inputs.endpoints.length} API endpoint(s) and saved to ${targetFilePath}.`;
     app.log.info(`[${this.name}] ${summary}`);
@@ -86,7 +88,8 @@ export async function generatedRoutes(app: FastifyInstance) {
 }
 `;
 
-    const routesCode = blueprint.endpoints.map(endpoint => {
+    type Endpoint = z.infer<typeof EndpointObjectSchema>;
+    const routesCode = blueprint.endpoints.map((endpoint: Endpoint) => {
       const methodName = endpoint.method.toLowerCase();
       return `
   // Description: ${endpoint.description}

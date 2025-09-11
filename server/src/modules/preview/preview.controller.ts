@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { VfsRepositoryImpl } from '../projects/vfs.repository';
 
 // Basic sanitizer to reduce XSS risk in preview output
@@ -158,12 +159,13 @@ function renderToHtml(nodes: any[], targetNodeId?: string): string {
 export function previewController(app: FastifyInstance) {
   const vfsRepository = new VfsRepositoryImpl(app);
 
-  app.get('/api/preview/:projectId', async (request, reply) => {
+  app.get('/api/preview/:projectId', async (request: any, reply: any) => {
     try {
       const params = request.params as any;
       const { projectId } = params;
       const query = request.query as any;
-      const { nodeId } = query; // 특정 파일 ID (선택사항)
+      const QuerySchema = z.object({ nodeId: z.string().optional() });
+      const { nodeId } = QuerySchema.parse(query);
 
       // In a real app, we'd also need to verify user permissions to view the preview.
       // For now, we assume public access for simplicity.
@@ -177,18 +179,8 @@ export function previewController(app: FastifyInstance) {
       }
       const rootNode = rootNodes[0];
 
-      // Get all nodes at once then construct tree in memory to avoid N+1
-      const queue: any[] = [rootNode];
-      const collected: any[] = [rootNode];
-      while (queue.length) {
-        const current = queue.shift();
-        const children = await vfsRepository.listNodesByParentId(projectId, current.id);
-        collected.push(...children);
-        for (const child of children) {
-          if (child.nodeType === 'DIRECTORY') queue.push(child);
-        }
-      }
-      const allNodes = collected.filter(n => n.id !== rootNode.id);
+      // Get all nodes in a single query to avoid N+1
+      const allNodes = (await vfsRepository.listNodesByProject(projectId)).filter(n => n.id !== rootNode.id);
       const nodes = [rootNode, ...allNodes];
 
       // Debug logging

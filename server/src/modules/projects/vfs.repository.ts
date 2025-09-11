@@ -18,6 +18,7 @@ export interface VfsRepository {
     projectId: string,
     parentId: string | null,
   ): Promise<VfsNode[]>;
+  listNodesByProject(projectId: string): Promise<VfsNode[]>;
   getNodeById(nodeId: string, projectId: string): Promise<VfsNode | null>;
   updateNodeContent(nodeId: string, projectId: string, content: string): Promise<VfsNode | null>;
   upsertByPath(projectId: string, path: string, content: string): Promise<VfsNode>;
@@ -160,6 +161,20 @@ export class VfsRepositoryImpl implements VfsRepository {
     } catch (error) {
       this.app.log.error(error, 'VFS node list query failed');
       throw new Error('Failed to list VFS nodes.');
+    }
+  }
+
+  async listNodesByProject(projectId: string): Promise<VfsNode[]> {
+    try {
+      const dbRows = await db
+        .select()
+        .from(vfsNodes)
+        .where(eq(vfsNodes.projectId, projectId))
+        .orderBy(vfsNodes.parentId, vfsNodes.nodeType, vfsNodes.name);
+      return dbRows as VfsNode[];
+    } catch (error) {
+      this.app.log.error(error, 'VFS list all nodes by project failed');
+      throw new Error('Failed to list all VFS nodes for project.');
     }
   }
 

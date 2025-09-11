@@ -34,7 +34,12 @@ export class WorkflowService {
     // Add context information to the plan steps
     const enhancedPlan = this.enhancePlanWithContext(plan, user, projectId);
 
-    const outputs = await workflowExecutor.execute(this.app, enhancedPlan);
+    const outputs = await workflowExecutor.execute(
+      this.app,
+      enhancedPlan,
+      {},
+      { projectId, userId: user.id }
+    );
     this.app.log.info({ outputs: Object.fromEntries(outputs) }, '[WorkflowService] Workflow executed successfully');
 
     return { plan, outputs: Object.fromEntries(outputs) };
