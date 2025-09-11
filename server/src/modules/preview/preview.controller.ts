@@ -1,6 +1,20 @@
 import { FastifyInstance } from 'fastify';
 import { VfsRepositoryImpl } from '../projects/vfs.repository';
 
+// Basic sanitizer to reduce XSS risk in preview output
+function sanitizeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  // Remove script/style tags and on* event handlers, javascript: urls
+  return unsafe
+    .replace(/<\/(?:script|style)>/gi, '')
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/ on[a-z]+\s*=\s*"[^"]*"/gi, '')
+    .replace(/ on[a-z]+\s*=\s*'[^']*'/gi, '')
+    .replace(/ on[a-z]+\s*=\s*[^\s>]+/gi, '')
+    .replace(/javascript:\s*/gi, '')
+    .replace(/data:text\/html[^,]*,/gi, '');
+}
+
 // Helper function to get all nodes recursively
 async function getAllNodesRecursively(vfsRepository: VfsRepositoryImpl, projectId: string, parentId: string): Promise<any[]> {
   const directChildren = await vfsRepository.listNodesByParentId(projectId, parentId);
@@ -19,9 +33,8 @@ async function getAllNodesRecursively(vfsRepository: VfsRepositoryImpl, projectI
 // A very basic renderer to convert VFS nodes to an HTML page.
 // In a real application, this would be a sophisticated engine (e.g., using a virtual DOM).
 function renderToHtml(nodes: any[], targetNodeId?: string): string {
-  console.log('=== renderToHtml Debug ===');
-  console.log('Total nodes:', nodes.length);
-  console.log('Nodes:', nodes.map(n => ({ name: n.name, type: n.nodeType, hasContent: !!n.content })));
+  // Reduce verbose logs to avoid leaking content
+  console.log('=== renderToHtml ===', { totalNodes: nodes.length });
 
   const root = nodes.find((n) => n.name === '/');
   if (!root) {
@@ -31,14 +44,12 @@ function renderToHtml(nodes: any[], targetNodeId?: string): string {
 
   // Find all files recursively
   const allFiles = nodes.filter((n) => n.nodeType === 'FILE');
-  console.log('All files:', allFiles.map(f => ({ name: f.name, hasContent: !!f.content, contentLength: f.content?.length || 0 })));
 
   let entryFile;
 
   // 특정 파일 ID가 주어졌을 때 해당 파일 찾기
   if (targetNodeId) {
     entryFile = allFiles.find((f) => f.id === targetNodeId);
-    console.log('Target file by ID:', entryFile ? { name: entryFile.name, hasContent: !!entryFile.content } : 'Not found');
   }
 
   // 특정 파일을 찾지 못했거나 ID가 주어지지 않았을 때 기본 로직 사용
@@ -54,7 +65,7 @@ function renderToHtml(nodes: any[], targetNodeId?: string): string {
       allFiles.find((f) => f.name.toLowerCase().includes('index.tsx')) ||
       allFiles[0];
 
-    console.log('Selected entry file (default):', entryFile ? { name: entryFile.name, hasContent: !!entryFile.content } : 'None');
+    // noop
   }
 
   if (!entryFile) {
@@ -89,12 +100,12 @@ function renderToHtml(nodes: any[], targetNodeId?: string): string {
       <div style="padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         <h2 style="color: #333; margin-bottom: 20px;">${componentName} Component Preview</h2>
         <div style="border: 1px solid #e1e5e9; border-radius: 8px; padding: 20px; background: #f8f9fa; min-height: 200px;">
-          <div>${jsxContent}</div>
+          <div>${sanitizeHtml(jsxContent)}</div>
         </div>
         <details style="margin-top: 20px;">
           <summary style="cursor: pointer; color: #666;">Raw Component Code</summary>
           <pre style="background: #f1f3f4; padding: 10px; border-radius: 4px; overflow-x: auto; margin-top: 10px; font-size: 12px;">
-            <code>${fileContent}</code>
+            <code>${sanitizeHtml(fileContent)}</code>
           </pre>
         </details>
       </div>
@@ -124,7 +135,7 @@ function renderToHtml(nodes: any[], targetNodeId?: string): string {
   }
 
   // For HTML files, use content as-is
-  const htmlContent = fileContent || '<h1>Empty File</h1>';
+  const htmlContent = sanitizeHtml(fileContent || '<h1>Empty File</h1>');
 
   return `
     <!DOCTYPE html>
@@ -166,15 +177,22 @@ export function previewController(app: FastifyInstance) {
       }
       const rootNode = rootNodes[0];
 
-      // Get all nodes recursively
-      const allNodes = await getAllNodesRecursively(vfsRepository, projectId, rootNode.id);
+      // Get all nodes at once then construct tree in memory to avoid N+1
+      const queue: any[] = [rootNode];
+      const collected: any[] = [rootNode];
+      while (queue.length) {
+        const current = queue.shift();
+        const children = await vfsRepository.listNodesByParentId(projectId, current.id);
+        collected.push(...children);
+        for (const child of children) {
+          if (child.nodeType === 'DIRECTORY') queue.push(child);
+        }
+      }
+      const allNodes = collected.filter(n => n.id !== rootNode.id);
       const nodes = [rootNode, ...allNodes];
 
       // Debug logging
-      app.log.info(`Preview request for project ${projectId}, nodeId: ${nodeId || 'default'}`);
-      app.log.info(`Root node: ${JSON.stringify(rootNode, null, 2)}`);
-      app.log.info(`All nodes count: ${allNodes.length}`);
-      app.log.info(`All nodes: ${JSON.stringify(allNodes.map(n => ({ name: n.name, type: n.nodeType, hasContent: !!n.content })), null, 2)}`);
+      app.log.info(`Preview request for project ${projectId}, nodeId: ${nodeId || 'default'}, nodes=${nodes.length}`);
 
       const html = renderToHtml(nodes, nodeId);
 

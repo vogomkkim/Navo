@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { defineRoute } from '../../core/routeFactory';
 // import {
@@ -73,7 +74,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
       const { name, email } = req.body as z.infer<typeof createUserSchema>;
 
       const newUser = {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         name,
         email,
       };

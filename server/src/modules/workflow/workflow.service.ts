@@ -58,27 +58,8 @@ export class WorkflowService {
    * Enhance plan steps with required context information
    */
   private enhancePlanWithContext(plan: Plan, user: { id: string }, projectId?: string): Plan {
-    const enhancedSteps = plan.steps.map(step => {
-      const enhancedInputs = { ...step.inputs };
-
-      // Add projectId and userId to VFS tools
-      if (step.tool === 'create_vfs_file' || step.tool === 'create_vfs_directory') {
-        if (projectId) {
-          enhancedInputs.projectId = projectId;
-        }
-        enhancedInputs.userId = user.id;
-      }
-
-      return {
-        ...step,
-        inputs: enhancedInputs
-      };
-    });
-
-    return {
-      ...plan,
-      steps: enhancedSteps
-    };
+    // Do not mutate tool inputs; supply context via executor context instead
+    return plan;
   }
 
   private async generatePlan(prompt: string, user: { id: string }, chatHistory: any[], projectId?: string): Promise<Plan> {
