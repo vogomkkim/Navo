@@ -11,8 +11,6 @@
  * 📚 참고: https://tailwindcss.com/docs/installation
  */
 
-const config = {
+module.exports = {
   plugins: ['tailwindcss', 'autoprefixer'],
 };
-
-export default config;

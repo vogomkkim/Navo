@@ -10,9 +10,13 @@ import { useInView } from 'react-intersection-observer';
 import './ChatSection.css';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDownIcon, Cross2Icon } from '@radix-ui/react-icons';
+import { PlanConfirmation } from './PlanConfirmation';
+import { WorkflowProgress } from './WorkflowProgress';
+import { useWorkflowSocket } from '@/hooks/useWorkflowSocket';
 
 export function ChatSection() {
   const selectedProjectId = useIdeStore((state) => state.selectedProjectId);
+  useWorkflowSocket(selectedProjectId); // <-- WebSocket connection
   const setSelectedProjectId = useIdeStore((state) => state.setSelectedProjectId);
   const isProcessing = useIdeStore((state) => state.isProcessing);
   const setIsProcessing = useIdeStore((state) => state.setIsProcessing);
@@ -60,9 +64,38 @@ export function ChatSection() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const {
+    workflowState,
+    setWorkflowState,
+    setWorkflowPlan,
+    resetWorkflow,
+  } = useIdeStore();
+
   const { mutate: sendMessage } = useSendMessage({
-    onError: (error) => console.error('Failed to send message:', error),
-    onSettled: () => setIsProcessing(false),
+    onSuccess: (data) => {
+      // This is the new logic to handle different response types
+      if (data.type === 'PLAN_CONFIRMATION_REQUIRED') {
+        setWorkflowPlan(data.payload.plan);
+        setWorkflowState('awaiting_confirmation');
+        setIsAIProcessing(false); // Stop the typing indicator
+      } else if (data.type === 'SIMPLE_CHAT') {
+        // The polling mechanism will pick up the new message,
+        // so we just need to stop the local processing indicator.
+        setIsAIProcessing(false);
+      } else {
+        // For now, let polling handle other cases like WORKFLOW_RESULT
+        console.log('Received unhandled response type:', data.type);
+        setIsAIProcessing(false);
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to send message:', error);
+      resetWorkflow(); // Reset workflow state on error
+    },
+    onSettled: () => {
+      // General cleanup, but specific processing is handled in onSuccess/onError
+      setIsProcessing(false);
+    },
   });
 
   const { mutate: generateProject } = useGenerateProject({
@@ -147,7 +180,7 @@ export function ChatSection() {
         context: messageContext,
       });
     } else {
-      const recentHistory = chatHistory.slice(-10).map(m => ({ role: m.role, message: m.content }));
+      const recentHistory = chatHistory.slice(-10);
       sendMessage({
         prompt: messageToSend,
         chatHistory: recentHistory,
@@ -226,25 +259,34 @@ export function ChatSection() {
         )}
       </div>
 
+      {/* --- Conditional Input Area --- */}
       <div className="chat-input-area">
-        <textarea
-          ref={textareaRef}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask AI to build..."
-          disabled={isProcessing || isAIProcessing}
-          rows={1}
-          className="chat-textarea"
-        />
-        <button
-          onClick={handleSendMessage}
-          disabled={!inputValue.trim() || isProcessing || isAIProcessing}
-          className="send-button-new"
-        >
-          Send
-        </button>
+        {workflowState === 'awaiting_confirmation' ? (
+          <PlanConfirmation />
+        ) : workflowState === 'running' ? (
+          <WorkflowProgress />
+        ) : (
+          <>
+            <textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask AI to build..."
+              disabled={isProcessing || isAIProcessing}
+              rows={1}
+              className="chat-textarea"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isProcessing || isAIProcessing}
+              className="send-button-new"
+            >
+              Send
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

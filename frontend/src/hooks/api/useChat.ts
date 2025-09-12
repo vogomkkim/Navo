@@ -20,6 +20,11 @@ interface SendMessagePayload {
   prompt: string;
   chatHistory: ChatMessage[];
   projectId?: string; // Allow explicitly passing projectId
+  context?: {
+    activeView: string | null;
+    activeFile: string | null;
+    activePreviewRoute: string | null;
+  };
 }
 
 // --- Hooks ---
@@ -76,9 +81,6 @@ export function useSendMessage(
         // 3. Immediately invalidate queries to show user message
         queryClient.invalidateQueries({ queryKey: ['messages', projectId] });
 
-        // 4. Start polling for AI response
-        startPollingForAIResponse(projectId, queryClient, token, logout);
-
         return response;
       } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
@@ -89,42 +91,4 @@ export function useSendMessage(
     },
     ...options,
   });
-}
-
-// Helper function to poll for AI response
-function startPollingForAIResponse(
-  projectId: string,
-  queryClient: any,
-  token: string,
-  logout: () => void
-) {
-  let pollCount = 0;
-  const maxPolls = 30; // 30 seconds max
-  const pollInterval = 1000; // 1 second
-
-  const poll = async () => {
-    try {
-      pollCount++;
-
-      // Check if we have new messages
-      await queryClient.invalidateQueries({ queryKey: ['messages', projectId] });
-
-      // Stop polling after max attempts
-      if (pollCount >= maxPolls) {
-        console.log('AI response polling timeout');
-        return;
-      }
-
-      // Continue polling
-      setTimeout(poll, pollInterval);
-    } catch (error) {
-      console.error('Error polling for AI response:', error);
-      if (error instanceof Error && error.message === 'Unauthorized') {
-        logout();
-      }
-    }
-  };
-
-  // Start polling after a short delay
-  setTimeout(poll, 500);
 }

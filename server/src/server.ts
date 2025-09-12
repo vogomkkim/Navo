@@ -13,6 +13,8 @@ import { eventsController } from '@/modules/events/events.controller';
 import { healthController } from '@/modules/health/health.controller';
 import { projectsController } from '@/modules/projects/projects.controller';
 import { previewController } from '@/modules/preview/preview.controller';
+import { workflowController } from '@/modules/workflow/workflow.controller';
+import websocket from '@fastify/websocket';
 
 // Fastify v4 인스턴스 생성
 const app = fastify<RawServerDefault, IncomingMessage, ServerResponse>({
@@ -23,6 +25,10 @@ const app = fastify<RawServerDefault, IncomingMessage, ServerResponse>({
     return fromHeader ?? randomUUID();
   },
 });
+
+// Register WebSocket plugin
+app.register(websocket);
+
 
 // 커스텀 로거 훅 등록
 app.decorateRequest('_startTime', undefined);
@@ -141,6 +147,7 @@ app.register((instance) => authController(instance), { prefix: '/api/auth' });
 healthController(app);
 app.register(eventsController, { prefix: '/api' });
 projectsController(app);
+workflowController(app);
 analyticsController(app);
 previewController(app); // Register the new preview controller
 

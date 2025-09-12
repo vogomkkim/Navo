@@ -13,6 +13,11 @@ import { handleUnauthorizedError } from '@/lib/handleApiError';
 interface GenerateProjectPayload {
   projectName: string;
   projectDescription: string;
+  context?: {
+    activeView: string | null;
+    activeFile: string | null;
+    activePreviewRoute: string | null;
+  };
 }
 
 interface GenerateProjectResponse {

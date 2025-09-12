@@ -28,13 +28,22 @@ export interface AgentMessage {
 }
 
 export interface UserMessage {
-  id: string;
+  id:string;
   role: 'user';
   message: string;
   timestamp: Date;
 }
 
 export type ChatMessage = UserMessage | AgentMessage;
+
+type WorkflowState =
+  | 'idle'
+  | 'awaiting_confirmation'
+  | 'running'
+  | 'completed'
+  | 'failed';
+
+export type StepStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 interface IdeState {
   // Project Context
@@ -63,7 +72,7 @@ interface IdeState {
       name: string;
       path?: string;
       displayNames?: Record<string, string>;
-    }
+    },
   ) => void;
   upsertManyNodeMeta: (
     entries: Array<{
@@ -71,7 +80,7 @@ interface IdeState {
       name: string;
       path?: string;
       displayNames?: Record<string, string>;
-    }>
+    }>,
   ) => void;
 
   // UI State
@@ -87,6 +96,17 @@ interface IdeState {
   // Chat Processing State
   isProcessing: boolean;
   setIsProcessing: (isProcessing: boolean) => void;
+
+  // Workflow State
+  workflowState: WorkflowState;
+  workflowPlan: any | null; // This would be a typed Plan in a real app
+  workflowOutputs: any | null;
+  stepStatuses: Record<string, StepStatus>;
+  setWorkflowState: (state: WorkflowState) => void;
+  setWorkflowPlan: (plan: any | null) => void;
+  setWorkflowOutputs: (outputs: any | null) => void;
+  setStepStatus: (stepId: string, status: StepStatus) => void;
+  resetWorkflow: () => void;
 }
 
 export const useIdeStore = create<IdeState>((set) => ({
@@ -184,4 +204,35 @@ export const useIdeStore = create<IdeState>((set) => ({
   // Preferences
   treeLabelMode: 'name',
   setTreeLabelMode: (mode) => set({ treeLabelMode: mode }),
+
+  // Workflow State
+  workflowState: 'idle',
+  workflowPlan: null,
+  workflowOutputs: null,
+  stepStatuses: {},
+  setWorkflowState: (state) => set({ workflowState: state }),
+  setWorkflowPlan: (plan) => {
+    const initialStatuses =
+      plan?.steps?.reduce((acc: any, step: any) => {
+        acc[step.id] = 'pending';
+        return acc;
+      }, {}) || {};
+    set({ workflowPlan: plan, stepStatuses: initialStatuses });
+  },
+  setWorkflowOutputs: (outputs) => set({ workflowOutputs: outputs }),
+  setStepStatus: (stepId, status) =>
+    set((state) => ({
+      stepStatuses: {
+        ...state.stepStatuses,
+        [stepId]: status,
+      },
+    })),
+  resetWorkflow: () =>
+    set({
+      workflowState: 'idle',
+      workflowPlan: null,
+      workflowOutputs: null,
+      stepStatuses: {},
+      isProcessing: false,
+    }),
 }));

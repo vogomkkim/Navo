@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { toolRegistry } from './toolRegistry';
 import { ExecutionContext, Plan, PlanStep } from './types';
 import { resolveInputs } from './utils/inputResolver';
+import { connectionManager } from './workflow.controller';
 
 export class WorkflowExecutor {
   async execute(
@@ -20,7 +21,15 @@ export class WorkflowExecutor {
     }
 
     const runId = randomUUID();
+    const projectId = contextExtras.projectId;
     console.log(`[Executor] Starting plan "${plan.name}" (Run ID: ${runId})`);
+
+    if (projectId) {
+      connectionManager.broadcast(projectId, {
+        type: 'workflow_started',
+        payload: { planName: plan.name, runId },
+      });
+    }
 
     const executionContext: ExecutionContext = { runId, app, ...contextExtras };
     const stepOutputs = new Map<string, any>();
@@ -51,10 +60,23 @@ export class WorkflowExecutor {
 
     if (completedSteps.size < plan.steps.length) {
       const remaining = plan.steps.filter(s => !completedSteps.has(s.id)).map(s => s.id);
-      throw new Error(`Workflow stalled. Circular dependency detected. Remaining: ${remaining.join(', ')}`);
+      const error = new Error(`Workflow stalled. Circular dependency detected. Remaining: ${remaining.join(', ')}`);
+      if (projectId) {
+        connectionManager.broadcast(projectId, {
+          type: 'workflow_failed',
+          payload: { planName: plan.name, runId, error: error.message },
+        });
+      }
+      throw error;
     }
 
     console.log(`[Executor] Plan "${plan.name}" executed successfully.`);
+    if (projectId) {
+      connectionManager.broadcast(projectId, {
+        type: 'workflow_completed',
+        payload: { planName: plan.name, runId, outputs: Object.fromEntries(stepOutputs) },
+      });
+    }
     return stepOutputs;
   }
 
@@ -64,9 +86,25 @@ export class WorkflowExecutor {
     allOutputs: Map<string, any>,
   ): Promise<any> {
     console.log(`[Executor] Executing step: ${step.id}`);
+    const projectId = context.projectId;
+
+    if (projectId) {
+      connectionManager.broadcast(projectId, {
+        type: 'workflow_progress',
+        payload: { stepId: step.id, status: 'running' },
+      });
+    }
+
     const tool = toolRegistry.get(step.tool);
     if (!tool) {
-      throw new Error(`Tool "${step.tool}" not found for step "${step.id}".`);
+      const error = new Error(`Tool "${step.tool}" not found for step "${step.id}".`);
+      if (projectId) {
+        connectionManager.broadcast(projectId, {
+          type: 'workflow_progress',
+          payload: { stepId: step.id, status: 'failed', error: error.message },
+        });
+      }
+      throw error;
     }
 
     const resolvedInputs = resolveInputs(step.inputs, allOutputs);
@@ -74,9 +112,22 @@ export class WorkflowExecutor {
     try {
       const output = await tool.execute(context, resolvedInputs);
       console.log(`[Executor] Step ${step.id} completed.`);
+      if (projectId) {
+        connectionManager.broadcast(projectId, {
+          type: 'workflow_progress',
+          payload: { stepId: step.id, status: 'completed', output },
+        });
+      }
       return output;
     } catch (error) {
       console.error(`[Executor] Error in step ${step.id}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (projectId) {
+        connectionManager.broadcast(projectId, {
+          type: 'workflow_progress',
+          payload: { stepId: step.id, status: 'failed', error: errorMessage },
+        });
+      }
       throw error;
     }
   }

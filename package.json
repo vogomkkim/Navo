@@ -12,7 +12,7 @@
     "build": "npm run -ws build",
     "dev": "run-p dev:server dev:frontend",
     "dev:server": "npm -w @navo/server run dev",
-    "dev:frontend": "npm -w frontend run dev",
+    "dev:frontend": "npm -w @navo/frontend run dev",
     "start": "npm -w @navo/server run start",
     "lint": "npm run -ws --if-present lint",
     "test": "npm run -ws --if-present test",

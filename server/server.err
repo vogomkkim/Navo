@@ -1,0 +1,42 @@
+2025-09-12T00:43:59.826Z [Bootstrap] [Bootstrap] 진단 실패 TransformError Transform failed with 1 error:
+C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:114:113: ERROR: Unterminated string literal
+TransformError: Transform failed with 1 error:
+C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:114:113: ERROR: Unterminated string literal
+    at failureErrorWithLog (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:1467:15)
+    at C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:736:50
+    at responseCallbacks.<computed> (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:603:9)
+    at handleIncomingPacket (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:658:12)
+    at Socket.readFromStdout (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:581:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+2025-09-12T00:44:38.495Z [Bootstrap] [Bootstrap] 진단 실패 TransformError Transform failed with 1 error:
+C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:114:113: ERROR: Unterminated string literal
+TransformError: Transform failed with 1 error:
+C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:114:113: ERROR: Unterminated string literal
+    at failureErrorWithLog (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:1467:15)
+    at C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:736:50
+    at responseCallbacks.<computed> (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:603:9)
+    at handleIncomingPacket (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:658:12)
+    at Socket.readFromStdout (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:581:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+2025-09-12T00:45:20.549Z [Bootstrap] [Bootstrap] 진단 실패 TransformError Transform failed with 1 error:
+C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:131:113: ERROR: Unterminated string literal
+TransformError: Transform failed with 1 error:
+C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:131:113: ERROR: Unterminated string literal
+    at failureErrorWithLog (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:1467:15)
+    at C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:736:50
+    at responseCallbacks.<computed> (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:603:9)
+    at handleIncomingPacket (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:658:12)
+    at Socket.readFromStdout (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:581:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
