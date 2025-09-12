@@ -13,7 +13,7 @@
     "db:generate": "cd .. && dotenvx run -f .env -f .env.local -- drizzle-kit generate",
     "db:push": "cd .. && dotenvx run -f .env -f .env.local -- drizzle-kit push",
     "db:pull": "dotenvx run -e .env -e .env.local -- drizzle-kit introspect --config ../drizzle.config.ts",
-    "format": "prettier --write ."
+    "format": "biome format --write ."
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.49.0",
@@ -45,6 +45,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^24.2.1",
     "@types/pg": "^8.15.5",
+    "@types/ws": "^8.18.1",
     "drizzle-kit": "^0.31.4",
     "pino-pretty": "^13.1.1",
     "recast": "^0.23.11",

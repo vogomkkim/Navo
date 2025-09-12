@@ -16,7 +16,7 @@
     "start": "npm -w @navo/server run start",
     "lint": "npm run -ws --if-present lint",
     "test": "npm run -ws --if-present test",
-    "format": "prettier --write .",
+    "format": "biome format --write .",
     "clean": "rmdir /s /q node_modules && rmdir /s /q frontend\\node_modules && rmdir /s /q server\\node_modules && rmdir /s /q packages\\shared\\node_modules"
   },
   "engines": {
@@ -26,15 +26,14 @@
     "esbuild": "^0.25.9"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.34.0",
     "@next/eslint-plugin-next": "^15.5.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.2.1",
     "eslint": "^9.33.0",
-    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
@@ -42,7 +41,6 @@
     "jest": "^30.1.2",
     "json-schema-to-zod": "^2.6.1",
     "npm-run-all": "^4.1.5",
-    "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",

@@ -184,11 +184,7 @@ All notable changes to this project will be documented in this file.
     name: string;
     description: string;
     canHandle(intent: string, target: string): boolean;
-    execute(
-      enhancedPrompt: EnhancedPrompt,
-      userContext: UserContext,
-      sessionId: string
-    ): Promise<ActionResult>;
+    execute(enhancedPrompt: EnhancedPrompt, userContext: UserContext, sessionId: string): Promise<ActionResult>;
   }
 
   interface ActionResult {
@@ -381,10 +377,7 @@ All notable changes to this project will be documented in this file.
   message: '프로젝트 요구사항 분석 및 아키텍처 설계를 완료했습니다.';
 
   // 개선: 동적 생성
-  message: generateAgentSuccessMessage(
-    'Project Architect Agent',
-    '프로젝트 요구사항 분석 및'
-  );
+  message: generateAgentSuccessMessage('Project Architect Agent', '프로젝트 요구사항 분석 및');
   ```
 
 ### Next Steps
@@ -532,6 +525,11 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+
+- Tooling: Migrated formatting from Prettier to Biome
+  - Removed Prettier configs and scripts
+  - Added `@biomejs/biome` and `biome.json` config
+  - Updated `format` scripts to use `biome format`
 
 - **Intelligent Logging System**: Smart HTTP request/response logging middleware
   - **Automatic Request Filtering**: Static assets (CSS, JS, images) filtered out by default
