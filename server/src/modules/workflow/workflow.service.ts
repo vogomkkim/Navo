@@ -125,7 +125,70 @@ export class WorkflowService {
     const plannerPrompt = `
     You are an expert AI Planner. Your job is to analyze a user's request and create a step-by-step execution plan using ONLY the available tools.
 
-    **Intelligent Target Inference Guidelines (VERY IMPORTANT):**
-    You MUST determine the target file(s) for the user's request by following these rules in ORDER:
+    **CONTEXT:**
+    - User ID: ${user.id}
+    - Organization ID: ${organizationId}
+    - Current Project ID: ${projectId || 'N/A'}
+    - User's Active View: "${context.activeView || 'unknown'}"
+    - Active File in Editor: "${context.activeFile || 'none'}"
+    - Active Route in Preview: "${context.activePreviewRoute || 'none'}"
 
-    1.  **Explicit User Intent:** If the user's message explicitly mentions a file, component, or feature (e.g., 
+    **Available Tools:**
+    ${JSON.stringify(availableTools, null, 2)}
+
+    **Your Task:**
+    Generate a JSON object that represents a valid "Plan".
+    - A plan to create a new project MUST start with 'create_project_in_db', then 'create_project_architecture', and then 'scaffold_project_from_blueprint'.
+    - A plan to modify an existing project should use tools like 'create_project_architecture' followed by 'scaffold_project_from_blueprint' to update files.
+
+    **Example Plan (for creating a new project):**
+    {
+      "name": "Create New Korean Greeting Project",
+      "description": "Create a simple web application that displays a Korean greeting.",
+      "steps": [
+        {
+          "id": "step1_create_db_record",
+          "tool": "create_project_in_db",
+          "inputs": { "name": "Korean Greeting Project", "description": "A simple web app.", "organizationId": "${organizationId}" }
+        },
+        {
+          "id": "step2_design_architecture",
+          "tool": "create_project_architecture",
+          "inputs": { "name": "Korean Greeting Project", "description": "A simple web app with a title and a button.", "type": "web-application" }
+        },
+        {
+          "id": "step3_scaffold_project",
+          "tool": "scaffold_project_from_blueprint",
+          "inputs": {
+            "projectId": "${step1_create_db_record.projectId}",
+            "userId": "${user.id}",
+            "file_structure": "${step2_design_architecture.project.file_structure}"
+          }
+        }
+      ]
+    }
+
+    Respond with ONLY the raw JSON object, without any markdown formatting.
+    `;
+
+    const chat = this.model.startChat({
+      history: formattedHistory,
+    });
+
+    const result = await chat.sendMessage(
+      `Latest User Request: "${prompt}"\n\n${plannerPrompt}`
+    );
+    
+    const rawText: string = result?.response?.text?.() ?? '';
+    let parsedPlan: Plan;
+    try {
+      const refined = await refineJsonResponse<Plan>(rawText);
+      parsedPlan = typeof refined === 'string' ? JSON.parse(refined) : refined;
+    } catch (error) {
+      this.app.log.error({ error, rawText }, '[WorkflowService] Failed to parse Plan JSON');
+      throw new Error('Failed to parse Plan JSON from AI response.');
+    }
+
+    return parsedPlan;
+  }
+}

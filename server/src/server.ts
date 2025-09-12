@@ -15,6 +15,7 @@ import { projectsController } from '@/modules/projects/projects.controller';
 import { previewController } from '@/modules/preview/preview.controller';
 import { workflowController } from '@/modules/workflow/workflow.controller';
 import websocket from '@fastify/websocket';
+import cors from '@fastify/cors';
 
 // Fastify v4 인스턴스 생성
 const app = fastify<RawServerDefault, IncomingMessage, ServerResponse>({
@@ -26,9 +27,14 @@ const app = fastify<RawServerDefault, IncomingMessage, ServerResponse>({
   },
 });
 
+// Register CORS for all routes, allowing localhost:3000 for development
+app.register(cors, {
+  origin: 'http://localhost:3000',
+  credentials: true,
+});
+
 // Register WebSocket plugin
 app.register(websocket);
-
 
 // 커스텀 로거 훅 등록
 app.decorateRequest('_startTime', undefined);
@@ -166,7 +172,9 @@ const start = async () => {
         'server.err'
       );
       fs.writeFileSync(startupErrFile, '');
-    } catch {}
+    } catch {
+      /* empty */
+    }
 
     // 개발 환경에서는 환경변수를 그대로 한 번 출력
     if (process.env.NODE_ENV === 'development') {

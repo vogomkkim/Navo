@@ -44,13 +44,9 @@ function createConsoleLogger(
     try {
       const now = new Date().toISOString();
       const line = [now, ...args.map(serializeValue)].join(' ') + '\n';
-      console.log('[Debug] Writing to file:', filePath);
-      console.log('[Debug] Content:', line);
       appendFileSync(filePath, line);
-      console.log('[Debug] Write successful');
     } catch (error) {
       console.error('[Debug] Write failed:', error);
-      // 파일 기록 실패는 무시 (콘솔 출력은 그대로 수행)
     }
   };
   const mergeBindings = (args: unknown[]): unknown[] => {

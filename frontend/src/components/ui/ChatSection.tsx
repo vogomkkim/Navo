@@ -54,7 +54,11 @@ export function ChatSection() {
   }, [isTopOfChatVisible, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const chatHistory = useMemo(() => {
-    return data?.pages.flatMap((page) => page.messages).reverse() ?? [];
+    // The API returns pages with newest messages first.
+    // We flatten all pages and then reverse the entire array to get
+    // the correct chronological order for display (oldest at the top).
+    const allMessages = data?.pages.flatMap((page) => page.messages) ?? [];
+    return allMessages.reverse();
   }, [data]);
 
   useAuth();

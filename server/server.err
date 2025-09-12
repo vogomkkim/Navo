@@ -1,42 +1,53 @@
-2025-09-12T00:43:59.826Z [Bootstrap] [Bootstrap] 진단 실패 TransformError Transform failed with 1 error:
-C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:114:113: ERROR: Unterminated string literal
-TransformError: Transform failed with 1 error:
-C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:114:113: ERROR: Unterminated string literal
-    at failureErrorWithLog (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:1467:15)
-    at C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:736:50
-    at responseCallbacks.<computed> (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:603:9)
-    at handleIncomingPacket (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:658:12)
-    at Socket.readFromStdout (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:581:7)
-    at Socket.emit (node:events:518:28)
-    at addChunk (node:internal/streams/readable:561:12)
-    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
-    at Readable.push (node:internal/streams/readable:392:5)
-    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
-2025-09-12T00:44:38.495Z [Bootstrap] [Bootstrap] 진단 실패 TransformError Transform failed with 1 error:
-C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:114:113: ERROR: Unterminated string literal
-TransformError: Transform failed with 1 error:
-C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:114:113: ERROR: Unterminated string literal
-    at failureErrorWithLog (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:1467:15)
-    at C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:736:50
-    at responseCallbacks.<computed> (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:603:9)
-    at handleIncomingPacket (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:658:12)
-    at Socket.readFromStdout (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:581:7)
-    at Socket.emit (node:events:518:28)
-    at addChunk (node:internal/streams/readable:561:12)
-    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
-    at Readable.push (node:internal/streams/readable:392:5)
-    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
-2025-09-12T00:45:20.549Z [Bootstrap] [Bootstrap] 진단 실패 TransformError Transform failed with 1 error:
-C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:131:113: ERROR: Unterminated string literal
-TransformError: Transform failed with 1 error:
-C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.service.ts:131:113: ERROR: Unterminated string literal
-    at failureErrorWithLog (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:1467:15)
-    at C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:736:50
-    at responseCallbacks.<computed> (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:603:9)
-    at handleIncomingPacket (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:658:12)
-    at Socket.readFromStdout (C:\Users\mkkim\WebstormProjects\Navo\node_modules\esbuild\lib\main.js:581:7)
-    at Socket.emit (node:events:518:28)
-    at addChunk (node:internal/streams/readable:561:12)
-    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
-    at Readable.push (node:internal/streams/readable:392:5)
-    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+{"level":30,"time":1757663836238,"pid":3052,"hostname":"DESKTOP-Q6V84GG","reqId":"67239a7b-fca1-40fb-894e-ae61cf2800fd","req":{"method":"GET","url":"/api/ws/projects/79952b94-09a8-490d-ac2c-c4c296c25c38","host":"localhost:3001","remoteAddress":"127.0.0.1","remotePort":14804},"msg":"incoming request"}
+[Navo] {
+  method: 'GET',
+  url: '/api/ws/projects/79952b94-09a8-490d-ac2c-c4c296c25c38',
+  host: 'localhost:3001',
+  requestId: '67239a7b-fca1-40fb-894e-ae61cf2800fd'
+} 요청 수신
+--- [DEBUG] WebSocket Request Object ---
+{
+  url: undefined,
+  method: undefined,
+  headers: [Function (anonymous)],
+  rawUrl: undefined
+}
+--------------------------------------
+[Navo] {
+  method: 'GET',
+  url: '/api/ws/projects/79952b94-09a8-490d-ac2c-c4c296c25c38',
+  err: TypeError: connection.socket.close is not a function
+      at Object.<anonymous> (C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.controller.ts:86:25)
+      at preHandlerCallbackInner (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\handleRequest.js:157:24)
+      at preHandlerCallback (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\handleRequest.js:125:5)
+      at next (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\hooks.js:236:9)
+      at Object.<anonymous> (C:\Users\mkkim\WebstormProjects\Navo\server\src\server.ts:142:3)
+      at hookIterator (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\hooks.js:408:10)
+      at next (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\hooks.js:242:18)
+      at hookRunner (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\hooks.js:264:5)
+      at validationCompleted (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\handleRequest.js:108:5)
+      at preValidationCallback (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\handleRequest.js:92:5),
+  requestId: '67239a7b-fca1-40fb-894e-ae61cf2800fd'
+} 요청 처리 중 오류
+[Navo] {
+  err: TypeError: connection.socket.close is not a function
+      at Object.<anonymous> (C:\Users\mkkim\WebstormProjects\Navo\server\src\modules\workflow\workflow.controller.ts:86:25)
+      at preHandlerCallbackInner (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\handleRequest.js:157:24)
+      at preHandlerCallback (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\handleRequest.js:125:5)
+      at next (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\hooks.js:236:9)
+      at Object.<anonymous> (C:\Users\mkkim\WebstormProjects\Navo\server\src\server.ts:142:3)
+      at hookIterator (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\hooks.js:408:10)
+      at next (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\hooks.js:242:18)
+      at hookRunner (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\hooks.js:264:5)
+      at validationCompleted (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\handleRequest.js:108:5)
+      at preValidationCallback (C:\Users\mkkim\WebstormProjects\Navo\node_modules\fastify\lib\handleRequest.js:92:5),
+  requestId: '67239a7b-fca1-40fb-894e-ae61cf2800fd'
+} 예상치 못한 에러 발생: connection.socket.close is not a function
+[Navo] {
+  method: 'GET',
+  url: '/api/ws/projects/79952b94-09a8-490d-ac2c-c4c296c25c38',
+  statusCode: 500,
+  requestId: '67239a7b-fca1-40fb-894e-ae61cf2800fd',
+  latencyMs: 7
+} 요청 처리 완료
+{"level":30,"time":1757663836247,"pid":3052,"hostname":"DESKTOP-Q6V84GG","reqId":"67239a7b-fca1-40fb-894e-ae61cf2800fd","res":{"statusCode":500},"responseTime":7.503499999642372,"msg":"request completed"}

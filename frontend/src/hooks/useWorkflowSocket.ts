@@ -7,15 +7,19 @@ export function useWorkflowSocket(projectId: string | null) {
   useEffect(() => {
     if (!projectId) return;
 
-    // Use relative URL for WebSocket to work in different environments
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${window.location.host}/api/ws/projects/${projectId}`;
-    
+    const backendHost =
+      process.env.NEXT_PUBLIC_BACKEND_HOST ||
+      (process.env.NODE_ENV === 'development'
+        ? 'localhost:3001'
+        : window.location.host);
+    const wsUrl = `${wsProtocol}//${backendHost}/api/ws/projects/${projectId}`;
+
     let socket: WebSocket;
     try {
       socket = new WebSocket(wsUrl);
     } catch (error) {
-      console.error("Failed to create WebSocket:", error);
+      console.error('Failed to create WebSocket:', error);
       setWorkflowState('failed');
       return;
     }
@@ -51,7 +55,10 @@ export function useWorkflowSocket(projectId: string | null) {
             setTimeout(() => resetWorkflow(), 5000);
             break;
           default:
-            console.warn('Received unknown WebSocket message type:', message.type);
+            console.warn(
+              'Received unknown WebSocket message type:',
+              message.type
+            );
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
