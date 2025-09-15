@@ -12,7 +12,7 @@ export const FileTabs = () => {
 
   return (
     <div className="w-full border-b border-gray-200 bg-white">
-      <div className="flex items-center overflow-x-auto overscroll-x-contain no-scrollbar py-1 gap-1">
+      <div className="flex items-center overflow-x-auto overscroll-x-contain no-scrollbar py-0.5 gap-1">
         {openFiles.map((filePath) => {
           const label =
             nodesById?.[filePath]?.displayNames?.ko ??

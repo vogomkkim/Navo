@@ -173,7 +173,7 @@ const Node = ({
         projectId,
         parentId: node.id,
         name,
-        nodeType: editingState.type === 'createFile' ? 'FILE' : 'DIRECTORY',
+        nodeType: editingState?.type === 'createFile' ? 'FILE' : 'DIRECTORY',
       },
       {
         onSuccess: () => {
@@ -189,7 +189,7 @@ const Node = ({
   const isEditingThisNode =
     editingState?.type === 'rename' && editingState.id === node.id;
   const isCreatingInThisNode =
-    editingState?.id === node.id && editingState.type !== 'rename';
+    editingState?.id === node.id && editingState?.type !== 'rename';
 
   // Cache children meta when they load
   useEffect(() => {
@@ -307,9 +307,9 @@ const Node = ({
               ...
             </div>
           )}
-          {data?.nodes.map((childNode) => (
+          {data?.nodes.map((childNode, index) => (
             <Node
-              key={childNode.id}
+              key={childNode.id || `child-${index}`}
               node={childNode}
               projectId={projectId}
               level={level + 1}
@@ -326,7 +326,7 @@ const Node = ({
                 onConfirm={handleCreate}
                 onCancel={() => setEditingState(null)}
                 icon={
-                  editingState.type === 'createFile' ? (
+                  editingState?.type === 'createFile' ? (
                     <FileIcon />
                   ) : (
                     <ArchiveIcon />
@@ -354,7 +354,7 @@ export const FileTree = ({ projectId }: { projectId: string }) => {
         projectId,
         parentId: null,
         name,
-        nodeType: editingState.type === 'createFile' ? 'FILE' : 'DIRECTORY',
+        nodeType: editingState?.type === 'createFile' ? 'FILE' : 'DIRECTORY',
       },
       {
         onSuccess: () => {
@@ -437,9 +437,9 @@ export const FileTree = ({ projectId }: { projectId: string }) => {
         </div>
       )}
 
-      {data?.nodes.map((node) => (
+      {data?.nodes.map((node, index) => (
         <Node
-          key={node.id}
+          key={node.id || `node-${index}`}
           node={node}
           projectId={projectId}
           level={1}

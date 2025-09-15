@@ -96,7 +96,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
       </div>
     </div>
     <div className="code-editor-panel flex flex-col h-full min-h-0">
-      <div className="flex items-center gap-2 px-2 py-1 border-b border-gray-200 bg-white">
+      <div className="flex items-center gap-2 border-b border-gray-200 bg-white">
         <div className="flex-1 min-w-0">
           <FileTabs />
         </div>

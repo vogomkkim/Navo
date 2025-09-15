@@ -36,29 +36,34 @@ const EmptyChatPlaceholder = () => (
 );
 
 export function ChatSection() {
-  const selectedProjectId = useIdeStore((state) => state.selectedProjectId);
-  useWorkflowSocket(selectedProjectId);
-  const setSelectedProjectId = useIdeStore(
-    (state) => state.setSelectedProjectId,
-  );
-  const isProcessing = useIdeStore((state) => state.isProcessing);
-  const setIsProcessing = useIdeStore((state) => state.setIsProcessing);
-  const activeFile = useIdeStore((state) => state.activeFile);
-  const activeView = useIdeStore((state) => state.activeView);
-  const activePreviewRoute = useIdeStore((state) => state.activePreviewRoute);
+  const {
+    messages,
+    addMessage,
+    updateMessage,
+    isProcessing,
+    setIsProcessing,
+    selectedProjectId,
+    setSelectedProjectId,
+    workflowState,
+    setWorkflowPlan,
+    resetWorkflow,
+    activeFile,
+    activeView,
+    activePreviewRoute,
+  } = useIdeStore();
 
+  useWorkflowEvents(selectedProjectId);
   const queryClient = useQueryClient();
 
   const {
-    data,
+    data: serverMessagesData,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading,
+    isLoading: isLoadingMessages,
     refetch,
   } = useGetMessages(selectedProjectId);
 
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [toastMessage, setToastMessage] = useState<{
     content: string;
@@ -67,7 +72,13 @@ export function ChatSection() {
 
   useEffect(() => {
     if (selectedProjectId) {
-      refetch();
+      refetch().then((result) => {
+        const initialMessages =
+          result.data?.pages.flatMap((page) => page.messages).reverse() || [];
+        useIdeStore.setState({ messages: initialMessages });
+      });
+    } else {
+      useIdeStore.setState({ messages: [] });
     }
   }, [selectedProjectId, refetch]);
 
@@ -97,19 +108,28 @@ export function ChatSection() {
   const { workflowState, setWorkflowPlan, resetWorkflow } = useIdeStore();
 
   const { mutate: sendMessage } = useSendMessage({
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      // Find the original 'sending' message and update its status to 'success'
+      const originalMessage = messages.find(m => m.id === variables.tempId);
+      if (originalMessage) {
+        updateMessage(originalMessage.id, { status: 'success' });
+      }
+
       if (data.type === 'PLAN_CONFIRMATION_REQUIRED') {
         setWorkflowPlan(data.payload.plan);
         useIdeStore.setState({ workflowState: 'awaiting_confirmation' });
-        setIsAIProcessing(false);
-      } else {
-        setIsAIProcessing(false);
       }
+      // The actual AI message will be added via SSE, so we don't add it here.
     },
-    onError: (error) => {
-      console.error('메시지 전송 실패:', error);
+    onError: (error, variables) => {
+      const originalMessage = messages.find(m => m.id === variables.tempId);
+      if (originalMessage) {
+        updateMessage(originalMessage.id, {
+          status: 'error',
+          error: error.message,
+        });
+      }
       resetWorkflow();
-      setIsAIProcessing(false); // Ensure AI processing state is reset on error
     },
     onSettled: () => {
       setIsProcessing(false);
@@ -117,9 +137,12 @@ export function ChatSection() {
   });
 
   const { mutate: generateProject } = useGenerateProject({
-    onSuccess: (data) => {
-      // The main workflow result is now handled via WebSocket or polling,
-      // but the initial response gives us the critical projectId.
+    onSuccess: (data, variables) => {
+      const originalMessage = messages.find(m => m.id === variables.tempId);
+      if (originalMessage) {
+        updateMessage(originalMessage.id, { status: 'success' });
+      }
+
       const outputs = (data as any).payload?.outputs;
       const newProjectId = outputs?.step1_create_db_record?.projectId;
 
@@ -129,14 +152,15 @@ export function ChatSection() {
       } else {
         console.error('Could not find new projectId in workflow response', data);
       }
-      
-      // This is crucial: reset the AI processing state to re-enable the input.
-      setIsAIProcessing(false);
     },
-    onError: (error) => {
-      console.error('프로젝트 생성 실패:', error);
-      setIsProcessing(false);
-      setIsAIProcessing(false);
+    onError: (error, variables) => {
+      const originalMessage = messages.find(m => m.id === variables.tempId);
+      if (originalMessage) {
+        updateMessage(originalMessage.id, {
+          status: 'error',
+          error: error.message,
+        });
+      }
     },
     onSettled: () => {
       setIsProcessing(false);
@@ -192,11 +216,22 @@ export function ChatSection() {
   };
 
   const handleSendMessage = () => {
-    if (!inputValue.trim() || isProcessing || isAIProcessing) return;
+    if (!inputValue.trim() || isProcessing) return;
+
     const messageToSend = inputValue;
+    const tempId = `user-message-${Date.now()}`;
+
     addToHistory(messageToSend);
     setInputValue('');
-    setIsAIProcessing(true);
+    setIsProcessing(true);
+
+    addMessage({
+      id: tempId,
+      role: 'user',
+      message: messageToSend,
+      timestamp: new Date(),
+      status: 'sending',
+    });
 
     const textarea = textareaRef.current;
     if (textarea) {
@@ -210,18 +245,19 @@ export function ChatSection() {
     };
 
     if (!selectedProjectId) {
-      setIsProcessing(true);
       generateProject({
         projectName: `AI 프로젝트 - ${new Date().toLocaleTimeString()}`,
         projectDescription: messageToSend,
         context: messageContext,
+        tempId,
       });
     } else {
-      const recentHistory = chatHistory.slice(-10);
+      const recentHistory = messages.slice(-10);
       sendMessage({
         prompt: messageToSend,
         chatHistory: recentHistory,
         context: messageContext,
+        tempId,
       });
     }
   };
@@ -233,33 +269,33 @@ export function ChatSection() {
     }
   };
 
-  const hasHistory = chatHistory.length > 0;
+  const hasHistory = messages.length > 0;
 
   return (
     <div className="relative flex flex-col h-full bg-slate-50 border-r border-gray-200">
       <div
         className={cn(
           'flex-1 p-4 pb-24',
-          hasHistory ? 'overflow-y-auto' : 'overflow-hidden'
+          hasHistory ? 'overflow-y-auto' : 'overflow-hidden',
         )}
         ref={chatContainerRef}
         onScroll={handleScroll}
       >
         <div ref={topOfChatRef} />
-        {isLoading ? (
+        {isLoadingMessages && !hasHistory ? (
           <div className="text-center text-gray-500">대화 내역을 불러오는 중...</div>
-        ) : !hasHistory && !isAIProcessing ? (
+        ) : !hasHistory && !isProcessing ? (
           <EmptyChatPlaceholder />
         ) : (
           <div className="space-y-6">
-            {chatHistory.map((message: any) => {
+            {messages.map((message: any) => {
               const isUser = message.role === 'user';
               return (
                 <div
                   key={message.id}
                   className={cn(
                     'flex items-end gap-2 animate-in fade-in-50 slide-in-from-bottom-2 duration-500',
-                    isUser ? 'justify-end' : 'justify-start'
+                    isUser ? 'justify-end' : 'justify-start',
                   )}
                 >
                   <div
@@ -267,17 +303,25 @@ export function ChatSection() {
                       'max-w-lg px-4 py-2.5 rounded-2xl shadow-sm',
                       isUser
                         ? 'bg-gradient-to-br from-blue-600 to-blue-500 text-white rounded-br-lg'
-                        : 'bg-white text-gray-800 border border-gray-200/80 rounded-bl-lg'
+                        : 'bg-white text-gray-800 border border-gray-200/80 rounded-bl-lg',
+                      message.status === 'sending' && 'opacity-70',
                     )}
                   >
-                    <div className="prose prose-sm max-w-none">{message.content}</div>
+                    <div className="prose prose-sm max-w-none">
+                      {message.message || message.content}
+                    </div>
+                     {isUser && message.status === 'error' && (
+                        <div className="text-red-100 text-xs mt-1">
+                          오류: {message.error}
+                        </div>
+                      )}
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-        {isAIProcessing && (
+        {isProcessing && messages.every(m => m.role !== 'user' || m.status !== 'sending') && (
           <div className="flex justify-start animate-in fade-in-50">
             <div className="max-w-lg px-4 py-2.5 rounded-2xl bg-white border border-gray-200/80 shadow-sm">
               <div className="flex items-center space-x-1.5">
@@ -320,7 +364,7 @@ export function ChatSection() {
             </button>
           )}
         </div>
-        
+
         {workflowState === 'awaiting_confirmation' ? (
           <PlanConfirmation />
         ) : workflowState === 'running' ? (
@@ -352,5 +396,19 @@ export function ChatSection() {
         )}
       </div>
     </div>
+  );
+}
+           <PaperPlaneIcon />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+  </div>
+  );
+}
+  </div>
   );
 }

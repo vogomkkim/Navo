@@ -74,8 +74,8 @@ export function useListVfsNodes(
       if (!projectId) return { nodes: [] };
       try {
         const url = parentId
-          ? `/api/projects/${projectId}/vfs?parentId=${parentId}`
-          : `/api/projects/${projectId}/vfs`;
+          ? `/api/projects/${projectId}/vfs/nodes/${parentId}`
+          : `/api/projects/${projectId}/vfs/nodes/null`;
         return await fetchApi<VfsNodesResponse>(url, { token });
       } catch (error) {
         handleUnauthorizedError(error, logout);

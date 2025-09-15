@@ -28,10 +28,12 @@ export interface AgentMessage {
 }
 
 export interface UserMessage {
-  id:string;
+  id: string;
   role: 'user';
   message: string;
   timestamp: Date;
+  status: 'sending' | 'success' | 'error';
+  error?: string;
 }
 
 export type ChatMessage = UserMessage | AgentMessage;
@@ -92,6 +94,12 @@ interface IdeState {
   // Preferences
   treeLabelMode: 'name' | 'filename';
   setTreeLabelMode: (mode: 'name' | 'filename') => void;
+
+  // Chat Messages
+  messages: ChatMessage[];
+  addMessage: (message: ChatMessage) => void;
+  updateMessage: (id: string, partialMessage: Partial<ChatMessage>) => void;
+  clearMessages: () => void;
 
   // Chat Processing State
   isProcessing: boolean;
@@ -200,6 +208,18 @@ export const useIdeStore = create<IdeState>((set) => ({
   // Chat Processing State
   isProcessing: false,
   setIsProcessing: (isProcessing) => set({ isProcessing }),
+
+  // Chat Messages
+  messages: [],
+  addMessage: (message) =>
+    set((state) => ({ messages: [...state.messages, message] })),
+  updateMessage: (id, partialMessage) =>
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.id === id ? { ...m, ...partialMessage } : m,
+      ),
+    })),
+  clearMessages: () => set({ messages: [] }),
 
   // Preferences
   treeLabelMode: 'name',

@@ -190,6 +190,38 @@ export function projectsController(app: FastifyInstance) {
     },
   );
 
+  // Get VFS nodes by parent ID
+  app.get(
+    '/api/projects/:projectId/vfs/nodes/:parentId',
+    {
+      preHandler: [app.authenticateToken],
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request as any).userId as string | undefined;
+        if (!userId) {
+          reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
+          return;
+        }
+
+        const params = request.params as any;
+        const { projectId, parentId } = params;
+        const parentIdParam = parentId === 'null' ? null : parentId;
+
+        const nodes = await projectsService.listProjectVfsNodes(
+          projectId,
+          parentIdParam,
+          userId,
+        );
+
+        reply.send({ nodes });
+      } catch (error) {
+        app.log.error(error, 'VFS 노드 목록 조회 실패');
+        reply.status(500).send({ error: 'VFS 노드 목록 조회에 실패했습니다.' });
+      }
+    },
+  );
+
   // Update a VFS node's content
   app.patch(
     '/api/projects/:projectId/vfs/:nodeId',
