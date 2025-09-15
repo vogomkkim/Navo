@@ -19,7 +19,8 @@
       "@/core/*": ["src/core/*"],
       "@/modules/*": ["src/modules/*"],
       "@/config": ["src/config"],
-      "@/config/*": ["src/config/*"]
+      "@/config/*": ["src/config/*"],
+      "@navo/shared": ["../packages/shared/src/index.ts"]
     },
     "types": ["node"]
   },

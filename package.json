@@ -11,6 +11,8 @@
   "scripts": {
     "build": "npm run -ws build",
     "dev": "run-p dev:server dev:frontend",
+    "dev:shared": "npm -w @navo/shared run build:watch",
+    "dev:all": "run-p dev:shared dev:server dev:frontend",
     "dev:server": "npm -w @navo/server run dev",
     "dev:frontend": "npm -w @navo/frontend run dev",
     "start": "npm -w @navo/server run start",

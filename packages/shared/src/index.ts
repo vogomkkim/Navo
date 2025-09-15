@@ -21,3 +21,10 @@ export interface LoginData {
 export function add(a: number, b: number): number {
   return a + b;
 }
+
+// Public re-exports
+export { ProjectBlueprintSchema } from "./project-blueprint.schema";
+export type { ProjectBlueprint } from "./project-blueprint.schema";
+
+// Schemas
+export * as userSchemas from "./schemas/user.schema";

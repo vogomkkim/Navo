@@ -1,53 +1,13 @@
-import { z } from 'zod';
-import { FastifyInstance } from 'fastify';
-import { Tool, ExecutionContext } from '../types';
-import { ProjectsService } from '@/modules/projects/projects.service';
-import * as path from 'node:path';
+import { z } from "zod";
+import { FastifyInstance } from "fastify";
+import { ProjectBlueprint, ProjectBlueprintSchema } from "@navo/shared";
+import { Tool, ExecutionContext } from "../types";
+import { ProjectsService } from "@/modules/projects/projects.service";
+import * as path from "node:path";
 
-// Minimal blueprint types and schema (decoupled from @navo/shared)
-type BlueprintFileNode = { type: 'file'; name: string; content?: string };
-type BlueprintFolderNode = {
-  type: 'folder';
-  name: string;
-  children: BlueprintNode[];
-};
-type BlueprintNode = BlueprintFileNode | BlueprintFolderNode;
-
-interface ProjectBlueprint {
-  project: {
-    file_structure: BlueprintFolderNode;
-  };
-}
-
-const BlueprintNodeSchema: z.ZodType<BlueprintNode> = z.lazy(() =>
-  z.union([
-    z.object({
-      type: z.literal('file'),
-      name: z.string(),
-      content: z.string().optional(),
-    }),
-    z.object({
-      type: z.literal('folder'),
-      name: z.string(),
-      children: z.array(BlueprintNodeSchema),
-    }),
-  ])
-);
-
-const ProjectBlueprintSchema = z.object({
-  project: z.object({
-    file_structure: z.object({
-      type: z.literal('folder'),
-      name: z.string(),
-      children: z.array(BlueprintNodeSchema),
-    }),
-  }),
-});
-
-// Type definitions for the file structure nodes, inferred from the shared schema
-type FileStructureNode = BlueprintNode;
-type FolderNode = Extract<FileStructureNode, { type: 'folder' }>;
-type FileNode = Extract<FileStructureNode, { type: 'file' }>;
+// Infer types from the single source of truth schema
+type FileStructureNode =
+  ProjectBlueprint["project"]["file_structure"]["children"][number];
 
 // Helper to get the service from the execution context
 function getProjectsService(context: ExecutionContext): ProjectsService {
@@ -64,47 +24,70 @@ function generateDefaultContentForPath(absoluteVfsPath: string): string {
   const ext = path.extname(filename).toLowerCase();
 
   // Next.js conventions
-  if (filename === 'page.tsx' || filename === 'page.jsx') {
-    return `export default function Page() {\n  return (\n    <main style={{ padding: 16 }}>\n      <h1>${path.dirname(absoluteVfsPath).split('/').pop() || 'Page'}</h1>\n    </main>\n  );\n}\n`;
+  if (filename === "page.tsx" || filename === "page.jsx") {
+    return `export default function Page() {
+  return (
+    <main style={{ padding: 16 }}>
+      <h1>${path.dirname(absoluteVfsPath).split("/").pop() || "Page"}</h1>
+    </main>
+  );
+}
+`;
   }
-  if (filename === 'layout.tsx' || filename === 'layout.jsx') {
-    return `export default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}\n`;
+  if (filename === "layout.tsx" || filename === "layout.jsx") {
+    return `import type React from 'react';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+`;
   }
 
   // React components
-  if (ext === '.tsx' || ext === '.jsx') {
-    const base = filename.replace(/\.(tsx|jsx)$/i, '');
-    const componentName = base
-      .split(/[^a-zA-Z0-9]/)
-      .filter(Boolean)
-      .map((s) => s[0]?.toUpperCase() + s.slice(1))
-      .join('') || 'Component';
-    return `export default function ${componentName}() {\n  return <div>${componentName}</div>;\n}\n`;
+  if (ext === ".tsx" || ext === ".jsx") {
+    const base = filename.replace(/\.(tsx|jsx)$/i, "");
+    const componentName =
+      base
+        .split(/[^a-zA-Z0-9]/)
+        .filter(Boolean)
+        .map((s) => s[0]?.toUpperCase() + s.slice(1))
+        .join("") || "Component";
+    return `export default function ${componentName}() {
+  return <div>${componentName}</div>;
+}
+`;
   }
 
   // TypeScript/JavaScript modules
-  if (ext === '.ts' || ext === '.js') {
-    return `export function handler() {\n  return null;\n}\n`;
+  if (ext === ".ts" || ext === ".js") {
+    return `export function handler() {
+  return null;
+}
+`;
   }
 
   // JSON
-  if (ext === '.json') {
+  if (ext === ".json") {
     return `{}\n`;
   }
 
   // Markdown
-  if (ext === '.md' || ext === '.mdx') {
+  if (ext === ".md" || ext === ".mdx") {
     const title = path.basename(filename, ext);
     return `# ${title}\n`;
   }
 
   // CSS
-  if (ext === '.css') {
+  if (ext === ".css") {
     return `/* ${filename} */\n`;
   }
 
   // Default empty
-  return '';
+  return "";
 }
 
 /**
@@ -124,12 +107,12 @@ async function createVfsStructure(
   currentPath: string,
   createdPaths: string[]
 ): Promise<void> {
-  const newPath = path.join(currentPath, currentNode.name).replace(/\\/g, '/');
+  const newPath = path.join(currentPath, currentNode.name).replace(/\\/g, "/");
 
-  if (currentNode.type === 'folder') {
+  if (currentNode.type === "folder") {
     // Do not upsert a file for folders; rely on file upserts below to create intermediate directories.
     // If this folder is empty, it will be implicitly absent in VFS, which is acceptable for most toolchains.
-    for (const child of (currentNode as any).children ?? []) {
+    for (const child of currentNode.children ?? []) {
       await createVfsStructure(
         projectsService,
         projectId,
@@ -139,10 +122,18 @@ async function createVfsStructure(
         createdPaths
       );
     }
-  } else if (currentNode.type === 'file') {
-    const provided = (currentNode as any).content;
-    const content = provided !== undefined ? provided : generateDefaultContentForPath(newPath);
-    await projectsService.upsertVfsNodeByPath(projectId, userId, newPath, content);
+  } else if (currentNode.type === "file") {
+    const provided = currentNode.content;
+    const content =
+      provided !== undefined
+        ? provided
+        : generateDefaultContentForPath(newPath);
+    await projectsService.upsertVfsNodeByPath(
+      projectId,
+      userId,
+      newPath,
+      content
+    );
     createdPaths.push(newPath);
   }
 }
@@ -151,24 +142,24 @@ async function createVfsStructure(
 const compileBlueprintToVfsInput = z.object({
   projectId: z
     .string()
-    .describe('The ID of the project to write the files to.'),
+    .describe("The ID of the project to write the files to."),
   blueprint: ProjectBlueprintSchema.describe(
-    'The project blueprint object, typically from the create_project_architecture tool.'
+    "The project blueprint object, typically from the create_project_architecture tool."
   ),
 });
 
 export const compileBlueprintToVfsTool: Tool = {
-  name: 'compile_blueprint_to_vfs',
+  name: "compile_blueprint_to_vfs",
   description:
-    'Compiles a project blueprint (IR) into a complete file and directory structure within the project VFS.',
+    "Compiles a project blueprint (IR) into a complete file and directory structure within the project VFS.",
   inputSchema: compileBlueprintToVfsInput,
   outputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
-      success: { type: 'boolean' },
-      projectId: { type: 'string' },
-      nodesCreated: { type: 'number' },
-      paths: { type: 'array', items: { type: 'string' } },
+      success: { type: "boolean" },
+      projectId: { type: "string" },
+      nodesCreated: { type: "number" },
+      paths: { type: "array", items: { type: "string" } },
     },
   },
   async execute(
@@ -179,14 +170,13 @@ export const compileBlueprintToVfsTool: Tool = {
     const { userId } = context;
 
     if (!userId) {
-      throw new Error('User ID is missing from the execution context.');
+      throw new Error("User ID is missing from the execution context.");
     }
 
-    const fileStructure = (blueprint as ProjectBlueprint).project
-      .file_structure;
-    if (!fileStructure || fileStructure.type !== 'folder') {
+    const fileStructure = blueprint.project.file_structure;
+    if (!fileStructure || fileStructure.type !== "folder") {
       throw new Error(
-        'Invalid or missing file_structure in the input blueprint.'
+        "Invalid or missing file_structure in the input blueprint."
       );
     }
 
@@ -198,7 +188,7 @@ export const compileBlueprintToVfsTool: Tool = {
       const projectsService = getProjectsService(context);
       const createdPaths: string[] = [];
 
-      const projectRootPath = '/';
+      const projectRootPath = "/";
       for (const child of fileStructure.children) {
         await createVfsStructure(
           projectsService,
