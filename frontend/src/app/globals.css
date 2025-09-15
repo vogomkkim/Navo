@@ -15,6 +15,25 @@
 
 /* Tailwind CSS v3 지시자 */
 @tailwind base;
+
+/* 전역 포커스 아웃라인 제거 */
+@layer base {
+  *, ::before, ::after {
+    --tw-ring-offset-shadow: 0 0 #0000;
+    --tw-ring-shadow: 0 0 #0000;
+    --tw-shadow: 0 0 #0000;
+    --tw-shadow-colored: 0 0 #0000;
+  }
+  :focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+  :focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+}
+
 @tailwind components;
 @tailwind utilities;
 

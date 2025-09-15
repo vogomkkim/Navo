@@ -78,10 +78,10 @@ export function workflowController(app: FastifyInstance) {
         method: request.method,
         headers: request.headers,
         // The 'raw' property often contains the underlying Node.js request object
-        rawUrl: request.raw?.url, 
+        rawUrl: request.raw?.url,
       });
       console.log('--------------------------------------');
-      
+
       // Immediately close for debugging, prevent further errors
       connection.socket.close(1011, 'Debugging connection.');
       return;
@@ -103,7 +103,7 @@ export function workflowController(app: FastifyInstance) {
         connection.socket.close(1011, 'Could not determine project ID.');
         return;
       }
-      
+
       app.log.info(`[WebSocket] Connection established for project: ${projectId}`);
       connectionManager.add(projectId, connection.socket);
 
@@ -115,7 +115,7 @@ export function workflowController(app: FastifyInstance) {
         app.log.info(`[WebSocket] Connection closed for project: ${projectId}`);
         connectionManager.remove(projectId, connection.socket);
       });
-      
+
       connection.socket.on('error', (error) => {
           app.log.error(error, `[WebSocket] Error on project ${projectId}`);
           connectionManager.remove(projectId, connection.socket);

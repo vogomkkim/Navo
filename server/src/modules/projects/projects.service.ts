@@ -1,7 +1,15 @@
 import { FastifyInstance } from 'fastify';
 import { applyTextPatch, type TextPatchOptions } from '@/lib/textPatch';
+import * as crypto from 'node:crypto';
 
-import type { Project, VfsNode, ProjectArchitecture, CreateChatMessage, CreateProjectData } from '@/modules/projects/projects.types';
+import type {
+  Project,
+  VfsNode,
+  ProjectArchitecture,
+  CreateChatMessage,
+  CreateProjectData,
+  VfsTree,
+} from '@/modules/projects/projects.types';
 import { ProjectsRepositoryImpl } from './projects.repository';
 import { VfsRepositoryImpl } from './vfs.repository';
 import { ChatRepository } from './chat.repository'; // Import the new repository
@@ -17,14 +25,107 @@ export class ProjectsService {
     this.chatRepository = new ChatRepository(); // Instantiate it
   }
 
+  // --- VFS Tree Method for Live Preview ---
+
+  async getVfsTree(
+    projectId: string,
+    userId: string,
+    options: { includeContent?: boolean },
+  ): Promise<VfsTree> {
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
+    if (!project) {
+      throw new Error('Project not found or access denied.');
+    }
+
+    const allNodes = await this.vfsRepository.listNodesByProject(projectId);
+    if (allNodes.length === 0) {
+      return {
+        projectId,
+        version: '',
+        nodes: [],
+      };
+    }
+
+    const nodeMap = new Map<string, VfsNode>(allNodes.map((n) => [n.id, n]));
+    const pathMap = new Map<string, string>();
+    const root = allNodes.find((n) => n.parentId === null);
+
+    if (!root) {
+      throw new Error('Project root not found.');
+    }
+
+    // Recursively build paths for all nodes
+    const buildPath = (nodeId: string): string => {
+      if (pathMap.has(nodeId)) return pathMap.get(nodeId)!;
+
+      const node = nodeMap.get(nodeId);
+      if (!node) return '';
+      if (node.parentId === null) {
+        pathMap.set(nodeId, '/');
+        return '/';
+      }
+
+      const parentPath = buildPath(node.parentId);
+      const fullPath =
+        parentPath === '/'
+          ? `/${node.name}`
+          : `${parentPath}/${node.name}`;
+      pathMap.set(nodeId, fullPath);
+      return fullPath;
+    };
+
+    for (const node of allNodes) {
+      buildPath(node.id);
+    }
+
+    const treeNodes = allNodes
+      .filter((n) => n.parentId !== null) // Exclude root '/' directory
+      .map((node) => ({
+        path: pathMap.get(node.id)!.substring(1), // Remove leading '/'
+        type: node.nodeType.toLowerCase() as 'file' | 'directory',
+        content:
+          options.includeContent && node.nodeType === 'FILE'
+            ? node.content
+            : undefined,
+        hash:
+          node.nodeType === 'FILE' && node.content
+            ? crypto.createHash('sha256').update(node.content).digest('hex')
+            : undefined,
+      }));
+
+    // Calculate the overall version hash from all file hashes
+    const contentToHash = treeNodes
+      .filter((n) => n.type === 'file' && n.hash)
+      .map((n) => n.hash)
+      .sort()
+      .join('');
+
+    const version = crypto
+      .createHash('sha256')
+      .update(contentToHash)
+      .digest('hex');
+
+    return {
+      projectId,
+      version,
+      nodes: treeNodes,
+    };
+  }
+
   // --- Chat Methods ---
 
   async getMessages(
     projectId: string,
     userId: string,
-    options: { cursor?: string; limit: number }
+    options: { cursor?: string; limit: number },
   ) {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -34,9 +135,12 @@ export class ProjectsService {
   async createMessage(
     projectId: string,
     userId: string,
-    messageData: { role: string; content: string; payload?: any }
+    messageData: { role: string; content: string; payload?: any },
   ) {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -58,12 +162,15 @@ export class ProjectsService {
 
   async createProject(
     projectData: CreateProjectData,
-    userId: string
+    userId: string,
   ): Promise<Project> {
     // Ensure the user belongs to the organization they are creating a project in
     if (projectData.organizationId) {
-      const userOrgs = await this.projectsRepository.listProjectsByUserId(userId);
-      const isMember = userOrgs.some(p => p.organizationId === projectData.organizationId);
+      const userOrgs =
+        await this.projectsRepository.listProjectsByUserId(userId);
+      const isMember = userOrgs.some(
+        (p) => p.organizationId === projectData.organizationId,
+      );
       // This logic is a bit flawed, as listProjectsByUserId returns projects, not orgs.
       // A proper implementation would check the usersToOrganizations table.
       // For now, we'll trust the organizationId from the planner.
@@ -76,8 +183,15 @@ export class ProjectsService {
     return this.projectsRepository.listProjectsByUserId(userId);
   }
 
-  async renameProject(projectId: string, name: string, userId: string): Promise<Project | null> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+  async renameProject(
+    projectId: string,
+    name: string,
+    userId: string,
+  ): Promise<Project | null> {
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -85,7 +199,10 @@ export class ProjectsService {
   }
 
   async deleteProject(projectId: string, userId: string): Promise<void> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -93,7 +210,10 @@ export class ProjectsService {
   }
 
   async rollbackProject(projectId: string, userId: string): Promise<void> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -105,7 +225,10 @@ export class ProjectsService {
     parentId: string | null,
     userId: string,
   ): Promise<VfsNode[]> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -117,7 +240,10 @@ export class ProjectsService {
     projectId: string,
     userId: string,
   ): Promise<VfsNode | null> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -127,9 +253,18 @@ export class ProjectsService {
   async createVfsNode(
     projectId: string,
     userId: string,
-    params: { parentId: string | null; nodeType: 'FILE' | 'DIRECTORY'; name: string; content?: string | null; metadata?: Record<string, unknown> },
+    params: {
+      parentId: string | null;
+      nodeType: 'FILE' | 'DIRECTORY';
+      name: string;
+      content?: string | null;
+      metadata?: Record<string, unknown>;
+    },
   ): Promise<VfsNode> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -141,7 +276,10 @@ export class ProjectsService {
     userId: string,
     params: { nodeId: string; newName: string },
   ): Promise<VfsNode | null> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -153,7 +291,10 @@ export class ProjectsService {
     userId: string,
     params: { nodeId: string; newParentId: string | null },
   ): Promise<VfsNode | null> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -165,7 +306,10 @@ export class ProjectsService {
     userId: string,
     params: { nodeId: string },
   ): Promise<boolean> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -177,7 +321,10 @@ export class ProjectsService {
     userId: string,
     path: string,
   ): Promise<VfsNode | null> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -190,7 +337,10 @@ export class ProjectsService {
     userId: string,
     content: string,
   ): Promise<VfsNode | null> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -210,7 +360,10 @@ export class ProjectsService {
     path: string,
     content: string,
   ): Promise<VfsNode> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -221,17 +374,23 @@ export class ProjectsService {
     projectId: string,
     userId: string,
     path: string,
-    patchPayload: string | { find: string; replace: string; isRegex?: boolean; flags?: string },
+    patchPayload:
+      | string
+      | { find: string; replace: string; isRegex?: boolean; flags?: string },
     options?: TextPatchOptions,
   ): Promise<VfsNode> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
 
     // Ensure file exists (create if not)
     const node = await this.vfsRepository.findByPath(projectId, path);
-    const target = node ?? await this.vfsRepository.findOrCreateByPath(projectId, path);
+    const target =
+      node ?? (await this.vfsRepository.findOrCreateByPath(projectId, path));
 
     // Load latest content
     const fresh = await this.vfsRepository.getNodeById(target.id, projectId);
@@ -241,7 +400,11 @@ export class ProjectsService {
     const { updatedText } = applyTextPatch(current, patchPayload as any, options);
 
     // Save
-    const updated = await this.vfsRepository.updateNodeContent(target.id, projectId, updatedText);
+    const updated = await this.vfsRepository.updateNodeContent(
+      target.id,
+      projectId,
+      updatedText,
+    );
     return (updated as VfsNode) ?? target;
   }
 
@@ -251,7 +414,10 @@ export class ProjectsService {
     architecture: ProjectArchitecture,
     userId: string,
   ): Promise<void> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
@@ -263,7 +429,10 @@ export class ProjectsService {
     userId: string,
     path: string,
   ): Promise<VfsNode> {
-    const project = await this.projectsRepository.getProjectByUserId(projectId, userId);
+    const project = await this.projectsRepository.getProjectByUserId(
+      projectId,
+      userId,
+    );
     if (!project) {
       throw new Error('Project not found or access denied.');
     }

@@ -116,7 +116,7 @@ export function projectsController(app: FastifyInstance) {
     }
   );
 
-  // List project VFS nodes
+  // Get the entire VFS tree for a project
   app.get(
     '/api/projects/:projectId/vfs',
     {
@@ -133,21 +133,26 @@ export function projectsController(app: FastifyInstance) {
         const params = request.params as any;
         const projectId = params.projectId as string;
         const query = request.query as any;
-        const parentId = (query.parentId as string) || null;
+        const includeContent = query.includeContent === 'true';
 
-        const nodes = await projectsService.listProjectVfsNodes(
-          projectId,
-          parentId,
-          userId
-        );
-        reply.send({ nodes });
+        const vfsTree = await projectsService.getVfsTree(projectId, userId, {
+          includeContent,
+        });
+
+        const etag = vfsTree.version;
+        if (request.headers['if-none-match'] === etag) {
+          return reply.status(304).send();
+        }
+
+        reply.header('ETag', etag);
+        reply.send(vfsTree);
       } catch (error) {
-        app.log.error(error, '프로젝트 VFS 노드 목록 조회 실패');
+        app.log.error(error, '프로젝트 VFS 트리 조회 실패');
         reply
           .status(500)
-          .send({ error: '프로젝트 VFS 노드 목록 조회에 실패했습니다.' });
+          .send({ error: '프로젝트 VFS 트리 조회에 실패했습니다.' });
       }
-    }
+    },
   );
 
   // Get a single VFS node by ID

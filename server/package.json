@@ -10,9 +10,9 @@
     "lint": "eslint . --ext .ts --config ../eslint.config.js",
     "test": "vitest",
     "sim:gen": "tsx src/scripts/run-code-generator.ts",
-    "db:generate": "cd .. && dotenvx run -f .env -f .env.local -- drizzle-kit generate",
-    "db:push": "cd .. && dotenvx run -f .env -f .env.local -- drizzle-kit push",
-    "db:pull": "dotenvx run -e .env -e .env.local -- drizzle-kit introspect --config ../drizzle.config.ts",
+    "db:generate": "dotenvx run -f ./server/.env -f ./server/.env.local -- drizzle-kit generate --config ../drizzle.config.ts",
+    "db:push": "dotenvx run -f ./server/.env -f ./server/.env.local -- drizzle-kit push --config ../drizzle.config.ts",
+    "db:pull": "dotenvx run -f ./server/.env -f ./server/.env.local -- drizzle-kit introspect --config ../drizzle.config.ts",
     "format": "biome format --write ."
   },
   "dependencies": {
