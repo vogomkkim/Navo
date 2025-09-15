@@ -16,7 +16,7 @@ import {
 } from '@radix-ui/react-icons';
 import { PlanConfirmation } from './PlanConfirmation';
 import { WorkflowProgress } from './WorkflowProgress';
-import { useWorkflowSocket } from '@/hooks/useWorkflowSocket';
+import { useWorkflowEvents } from '@/hooks/useWorkflowEvents';
 import { cn } from '@/lib/utils';
 
 const EmptyChatPlaceholder = () => (
@@ -109,6 +109,7 @@ export function ChatSection() {
     onError: (error) => {
       console.error('메시지 전송 실패:', error);
       resetWorkflow();
+      setIsAIProcessing(false); // Ensure AI processing state is reset on error
     },
     onSettled: () => {
       setIsProcessing(false);
@@ -116,18 +117,28 @@ export function ChatSection() {
   });
 
   const { mutate: generateProject } = useGenerateProject({
-    onSuccess: (data, variables) => {
-      setSelectedProjectId(data.projectId);
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      sendMessage({
-        prompt: variables.projectDescription,
-        chatHistory: [],
-        projectId: data.projectId,
-        context: variables.context,
-      });
+    onSuccess: (data) => {
+      // The main workflow result is now handled via WebSocket or polling,
+      // but the initial response gives us the critical projectId.
+      const outputs = (data as any).payload?.outputs;
+      const newProjectId = outputs?.step1_create_db_record?.projectId;
+
+      if (newProjectId) {
+        setSelectedProjectId(newProjectId);
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+      } else {
+        console.error('Could not find new projectId in workflow response', data);
+      }
+      
+      // This is crucial: reset the AI processing state to re-enable the input.
+      setIsAIProcessing(false);
     },
     onError: (error) => {
       console.error('프로젝트 생성 실패:', error);
+      setIsProcessing(false);
+      setIsAIProcessing(false);
+    },
+    onSettled: () => {
       setIsProcessing(false);
     },
   });

@@ -41,59 +41,55 @@ export function useInputHistory(): UseInputHistoryReturn {
     }
   }, [messageHistory]);
 
-  const isCaretAtStart = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    const target = e.target as HTMLTextAreaElement;
-    return target.selectionStart === 0 && target.selectionEnd === 0;
-  };
-
-  const isCaretAtEnd = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    const target = e.target as HTMLTextAreaElement;
-    const valueLength = target.value.length;
-    return (
-      target.selectionStart === valueLength &&
-      target.selectionEnd === valueLength
-    );
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target as HTMLTextAreaElement;
+
     if (e.key === 'ArrowUp') {
-      // 위 화살표는 커서가 맨 앞(첫 줄의 시작)일 때만 히스토리 이동
-      if (!isCaretAtStart(e)) return; // 기본 캐럿 이동 허용
-      e.preventDefault();
+      const caretPositionBefore = textarea.selectionStart;
+      
+      setTimeout(() => {
+        const caretPositionAfter = textarea.selectionStart;
+        if (caretPositionBefore === caretPositionAfter) {
+          // 커서가 움직이지 않았으므로 히스토리 탐색 실행
+          if (messageHistory.length === 0) return;
 
-      if (messageHistory.length === 0) return;
-
-      if (historyIndex === -1) {
-        setHistoryIndex(messageHistory.length - 1);
-        setInputValue(messageHistory[messageHistory.length - 1]);
-        return;
-      }
-
-      if (historyIndex > 0) {
-        const newIndex = historyIndex - 1;
-        setHistoryIndex(newIndex);
-        setInputValue(messageHistory[newIndex]);
-      }
+          if (historyIndex === -1) {
+            // 새로운 탐색 시작
+            const newIndex = messageHistory.length - 1;
+            setHistoryIndex(newIndex);
+            setInputValue(messageHistory[newIndex]);
+          } else if (historyIndex > 0) {
+            // 이전 히스토리로 이동
+            const newIndex = historyIndex - 1;
+            setHistoryIndex(newIndex);
+            setInputValue(messageHistory[newIndex]);
+          }
+        }
+      }, 0);
       return;
     }
 
     if (e.key === 'ArrowDown') {
-      // 아래 화살표는 커서가 맨 끝(마지막 줄의 끝)일 때만 히스토리 이동
-      if (!isCaretAtEnd(e)) return; // 기본 캐럿 이동 허용
-      e.preventDefault();
+      const caretPositionBefore = textarea.selectionStart;
 
-      if (messageHistory.length === 0) return;
+      setTimeout(() => {
+        const caretPositionAfter = textarea.selectionStart;
+        if (caretPositionBefore === caretPositionAfter) {
+          // 커서가 움직이지 않았으므로 히스토리 탐색 실행
+          if (historyIndex === -1) return; // 탐색 중이 아닐 때는 아무것도 안 함
 
-      if (historyIndex < messageHistory.length - 1) {
-        const newIndex = historyIndex + 1;
-        setHistoryIndex(newIndex);
-        setInputValue(messageHistory[newIndex]);
-      } else if (historyIndex === messageHistory.length - 1) {
-        setHistoryIndex(-1);
-        setInputValue('');
-      } else if (historyIndex === -1) {
-        setInputValue('');
-      }
+          if (historyIndex < messageHistory.length - 1) {
+            // 다음 히스토리로 이동
+            const newIndex = historyIndex + 1;
+            setHistoryIndex(newIndex);
+            setInputValue(messageHistory[newIndex]);
+          } else if (historyIndex === messageHistory.length - 1) {
+            // 히스토리 탐색 종료
+            setHistoryIndex(-1);
+            setInputValue('');
+          }
+        }
+      }, 0);
       return;
     }
   };
@@ -101,14 +97,24 @@ export function useInputHistory(): UseInputHistoryReturn {
   const addToHistory = (message: string) => {
     if (!message.trim()) return;
 
-    const filteredHistory = messageHistory.filter((item) => item !== message);
-    const newHistory = [...filteredHistory, message];
+    setMessageHistory((prevHistory) => {
+      const filteredHistory = prevHistory.filter((item) => item !== message);
+      const newHistory = [...filteredHistory, message];
 
-    if (newHistory.length > MAX_HISTORY_SIZE) {
-      newHistory.splice(0, newHistory.length - MAX_HISTORY_SIZE);
-    }
+      if (newHistory.length > MAX_HISTORY_SIZE) {
+        newHistory.splice(0, newHistory.length - MAX_HISTORY_SIZE);
+      }
+      
+      // 상태 업데이트와 동시에 localStorage에 동기적으로 저장
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+      } catch (error) {
+        console.warn('Failed to save input history to localStorage:', error);
+      }
 
-    setMessageHistory(newHistory);
+      return newHistory;
+    });
+
     setHistoryIndex(-1);
   };
 

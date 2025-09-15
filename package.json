@@ -19,7 +19,8 @@
     "lint": "npm run -ws --if-present lint",
     "test": "npm run -ws --if-present test",
     "format": "biome format --write .",
-    "clean": "rmdir /s /q node_modules && rmdir /s /q frontend\\node_modules && rmdir /s /q server\\node_modules && rmdir /s /q packages\\shared\\node_modules"
+    "db:push": "dotenvx run -f ./server/.env -f ./server/.env.local -- drizzle-kit push",
+    "clean": "rmdir /s /q node_modules && rmdir /s /q .\\frontend\\node_modules && rmdir /s /q .\\server\\node_modules && rmdir /s /q .\\packages\\shared\\node_modules"
   },
   "engines": {
     "node": ">=20.11"

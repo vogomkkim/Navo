@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '@/db/db.instance';
-import { projects, usersToOrganizations } from '@/drizzle/schema';
+import { projects, usersToOrganizations, vfsNodes } from '@/drizzle/schema';
 import { CreateProjectData, Project } from './projects.types';
 import { FastifyInstance } from 'fastify';
 
@@ -8,11 +8,21 @@ export class ProjectsRepositoryImpl {
   constructor(private readonly app: FastifyInstance) {}
 
   async createProject(projectData: CreateProjectData): Promise<Project> {
-    const [newProject] = await db
-      .insert(projects)
-      .values(projectData)
-      .returning();
-    return newProject;
+    return db.transaction(async (tx) => {
+      const [newProject] = await tx
+        .insert(projects)
+        .values(projectData)
+        .returning();
+
+      await tx.insert(vfsNodes).values({
+        projectId: newProject.id,
+        parentId: null,
+        nodeType: 'DIRECTORY',
+        name: '/',
+      });
+
+      return newProject;
+    });
   }
 
   async listProjectsByUserId(userId: string): Promise<Project[]> {
@@ -29,40 +39,68 @@ export class ProjectsRepositoryImpl {
       .from(projects)
       .innerJoin(
         usersToOrganizations,
-        eq(projects.organizationId, usersToOrganizations.organizationId)
+        eq(projects.organizationId, usersToOrganizations.organizationId),
       )
       .where(eq(usersToOrganizations.userId, userId));
   }
 
-  async getProjectByUserId(
-    projectId: string,
-    userId: string
-  ): Promise<Project | null> {
-    const result = await db
-      .select({
-        id: projects.id,
-        name: projects.name,
-        description: projects.description,
-        organizationId: projects.organizationId,
-        createdAt: projects.createdAt,
-        updatedAt: projects.updatedAt,
-        requirements: projects.requirements,
-      })
-      .from(projects)
-      .innerJoin(
-        usersToOrganizations,
-        eq(projects.organizationId, usersToOrganizations.organizationId)
-      )
-      .where(
-        and(
-          eq(usersToOrganizations.userId, userId),
-          eq(projects.id, projectId)
-        )
-      );
+  private async ensureVfsRootExists(projectId: string, tx: any = db): Promise<void> {
+    const root = await tx
+      .select({ id: vfsNodes.id })
+      .from(vfsNodes)
+      .where(and(eq(vfsNodes.projectId, projectId), isNull(vfsNodes.parentId)))
+      .limit(1);
 
-    return result[0] || null;
+    if (root.length === 0) {
+      this.app.log.warn(`VFS root for project ${projectId} not found. Creating it defensively.`);
+      await tx.insert(vfsNodes).values({
+        projectId: projectId,
+        parentId: null,
+        nodeType: 'DIRECTORY',
+        name: '/',
+      });
+    }
   }
 
+  async getProjectByUserId(
+    projectId: string,
+    userId: string,
+  ): Promise<Project | null> {
+    return db.transaction(async (tx) => {
+      const result = await tx
+        .select({
+          id: projects.id,
+          name: projects.name,
+          description: projects.description,
+          organizationId: projects.organizationId,
+          createdAt: projects.createdAt,
+          updatedAt: projects.updatedAt,
+          requirements: projects.requirements,
+        })
+        .from(projects)
+        .innerJoin(
+          usersToOrganizations,
+          eq(projects.organizationId, usersToOrganizations.organizationId),
+        )
+        .where(
+          and(
+            eq(usersToOrganizations.userId, userId),
+            eq(projects.id, projectId),
+          ),
+        );
+
+      const project = result[0] || null;
+
+      if (project) {
+        // This is the defensive check.
+        await this.ensureVfsRootExists(project.id, tx);
+      }
+
+      return project;
+    });
+  }
+  
+  // ... (rest of the file remains the same)
   async getProjectById(projectId: string): Promise<Project | null> {
     const result = await db
       .select()

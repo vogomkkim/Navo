@@ -109,8 +109,15 @@ export class WorkflowExecutor {
 
     const resolvedInputs = resolveInputs(step.inputs, allOutputs);
 
+    // Automatically inject context into the inputs for every tool
+    const inputsWithContext = {
+      ...resolvedInputs,
+      projectId: context.projectId,
+      userId: context.userId,
+    };
+
     try {
-      const output = await tool.execute(context, resolvedInputs);
+      const output = await tool.execute(context, inputsWithContext);
       console.log(`[Executor] Step ${step.id} completed.`);
       if (projectId) {
         connectionManager.broadcast(projectId, {

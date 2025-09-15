@@ -31,14 +31,20 @@ export class OrchestratorService {
     this.app.log.info({ analysis }, '[Orchestrator] Intent analysis complete');
 
     if (analysis.intent === 'create_project' && analysis.complexity === 'complex') {
-      this.app.log.info('[Orchestrator] Routing to Workflow Engine for planning.');
-      // Call preparePlan instead of run to get the user-friendly plan first.
+      this.app.log.info('[Orchestrator] Routing to Workflow Engine for planning and execution.');
+      
+      // 1. Prepare the plan
       const plan = await this.workflowService.preparePlan(prompt, user, chatHistory, projectId);
+      
+      // 2. Immediately execute the plan
+      const executionResult = await this.workflowService.executePlan(plan, user, projectId);
+
+      // 3. Return the final result
       return {
-        type: 'PLAN_CONFIRMATION_REQUIRED',
+        type: 'WORKFLOW_RESULT',
         payload: {
-          plan,
-          summaryMessage: 'AI가 다음과 같은 작업 계획을 세웠습니다. 이대로 진행할까요?',
+          ...executionResult,
+          summaryMessage: '프로젝트 생성이 완료되었습니다. 파일 트리와 미리보기를 확인해주세요.',
         },
       };
     }

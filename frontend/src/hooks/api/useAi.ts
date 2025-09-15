@@ -3,6 +3,7 @@ import {
   UseMutationOptions,
   useQuery,
   UseQueryOptions,
+  useQueryClient,
 } from '@tanstack/react-query';
 import { useAuth } from '@/app/context/AuthContext';
 import { fetchApi } from '@/lib/apiClient';
@@ -55,22 +56,66 @@ export function useGenerateProject(
     GenerateProjectPayload
   >,
 ) {
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
+  const queryClient = useQueryClient();
+
   return useMutation<GenerateProjectResponse, Error, GenerateProjectPayload>({
     mutationFn: async (data: GenerateProjectPayload) => {
-      try {
-        return await fetchApi<GenerateProjectResponse>(
-          '/api/ai/generate-project',
-          {
-            method: 'POST',
-            body: JSON.stringify(data),
-            token,
-          },
-        );
-      } catch (error) {
-        handleUnauthorizedError(error, logout);
-        throw error;
+      const workflowPayload = {
+        prompt: data.projectDescription,
+        chatHistory: [],
+        context: data.context,
+      };
+      // Note: We are calling a general workflow endpoint.
+      // The response might not be a standard project object.
+      // The onSuccess handler in the component will manage the outcome.
+      return await fetchApi<GenerateProjectResponse>(
+        '/api/workflow/execute',
+        {
+          method: 'POST',
+          body: JSON.stringify(workflowPayload),
+          token,
+        },
+      );
+    },
+    onMutate: async (newProjectData) => {
+      // Optimistically add the user's first message to the (not yet created) project's message cache
+      const tempProjectId = `temp-${Date.now()}`;
+      const queryKey = ['messages', tempProjectId];
+
+      await queryClient.cancelQueries({ queryKey });
+
+      const previousMessages = queryClient.getQueryData(queryKey);
+
+      const newUserMessage = {
+        id: `temp-msg-${Date.now()}`,
+        role: 'user',
+        content: newProjectData.projectDescription,
+        createdAt: new Date().toISOString(),
+        userId: user?.id,
+        projectId: tempProjectId,
+      };
+
+      queryClient.setQueryData(queryKey, {
+        pages: [{ messages: [newUserMessage], nextCursor: null }],
+        pageParams: [undefined],
+      });
+      
+      // Return context for rollback
+      return { previousMessages, tempProjectId };
+    },
+    onError: (err, newProjectData, context: any) => {
+      // Rollback on error
+      if (context?.previousMessages) {
+        queryClient.setQueryData(['messages', context.tempProjectId], context.previousMessages);
       }
+      handleUnauthorizedError(err, logout);
+    },
+    onSuccess: (data, variables, context: any) => {
+      // When the real project is created, invalidate the temporary query 
+      // and the real project query to sync up.
+      queryClient.invalidateQueries({ queryKey: ['messages', context.tempProjectId] });
+      queryClient.invalidateQueries({ queryKey: ['messages', data.projectId] });
     },
     ...options,
   });

@@ -138,8 +138,9 @@ export class WorkflowService {
 
     **Your Task:**
     Generate a JSON object that represents a valid "Plan".
-    - A plan to create a new project MUST start with 'create_project_in_db', then 'create_project_architecture', and then 'scaffold_project_from_blueprint'.
-    - A plan to modify an existing project should use tools like 'create_project_architecture' followed by 'scaffold_project_from_blueprint' to update files.
+    - Each step in the plan MUST have a user-friendly "title" and "description".
+    - A plan to create a new project MUST start with 'create_project_in_db', then 'create_project_architecture', and then 'compile_blueprint_to_vfs'.
+    - A plan to modify an existing project should use tools like 'create_project_architecture' followed by 'compile_blueprint_to_vfs' to update files.
 
     **Example Plan (for creating a new project):**
     {
@@ -148,21 +149,26 @@ export class WorkflowService {
       "steps": [
         {
           "id": "step1_create_db_record",
+          "title": "프로젝트 생성",
+          "description": "데이터베이스에 새 프로젝트를 등록합니다.",
           "tool": "create_project_in_db",
           "inputs": { "name": "Korean Greeting Project", "description": "A simple web app.", "organizationId": "${organizationId}" }
         },
         {
           "id": "step2_design_architecture",
+          "title": "애플리케이션 아키텍처 설계",
+          "description": "요구사항에 맞춰 페이지와 컴포넌트 구조를 설계합니다.",
           "tool": "create_project_architecture",
           "inputs": { "name": "Korean Greeting Project", "description": "A simple web app with a title and a button.", "type": "web-application" }
         },
         {
           "id": "step3_scaffold_project",
-          "tool": "scaffold_project_from_blueprint",
+          "title": "프로젝트 파일 생성",
+          "description": "설계된 아키텍처에 따라 실제 파일과 폴더를 생성합니다.",
+          "tool": "scaffold_project",
           "inputs": {
-            "projectId": "${step1_create_db_record.projectId}",
-            "userId": "${user.id}",
-            "file_structure": "${step2_design_architecture.project.file_structure}"
+            "projectId": "{{step1_create_db_record.projectId}}",
+            "blueprint": "{{step2_design_architecture.blueprint}}"
           }
         }
       ]

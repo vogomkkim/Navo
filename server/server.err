@@ -1,2 +1,0 @@
-2025-09-15T03:13:08.731Z {"method":"POST","url":"/api/auth/login","err":{"statusCode":401,"errorCode":"INVALID_CREDENTIALS","isOperational":true},"requestId":"37422128-3161-4496-b5cf-8b7720edaedd"} 요청 처리 중 오류
-2025-09-15T03:13:08.733Z {"err":{"statusCode":401,"errorCode":"INVALID_CREDENTIALS","isOperational":true},"requestId":"37422128-3161-4496-b5cf-8b7720edaedd"} 처리 가능한 에러 발생: 이메일 또는 비밀번호가 올바르지 않습니다.

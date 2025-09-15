@@ -56,37 +56,78 @@ export function useGetMessages(projectId: string | null) {
 export function useSendMessage(
   options?: UseMutationOptions<any, Error, SendMessagePayload>,
 ) {
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation<any, Error, SendMessagePayload>({
     mutationFn: async (data) => {
-      // 1. Use projectId from payload if provided, otherwise get from store at runtime.
       const projectId = data.projectId || useIdeStore.getState().selectedProjectId;
+      if (!projectId) throw new Error('No project selected');
 
-      if (!projectId) {
-        // This error will be caught by react-query's onError handler
-        throw new Error('No project selected');
-      }
+      const { projectId: _p, ...payload } = data;
+      return await fetchApi(`/api/projects/${projectId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        token,
+      });
+    },
+    onMutate: async (newMessage) => {
+      const projectId = newMessage.projectId || useIdeStore.getState().selectedProjectId;
+      const queryKey = ['messages', projectId];
 
-      try {
-        // 2. Remove projectId from the data sent to the backend to avoid duplication.
-        const { projectId: _p, ...payload } = data;
-        const response = await fetchApi(`/api/projects/${projectId}/messages`, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-          token,
-        });
+      // 즉시 실행될 쿼리를 취소하여 이전 서버 데이터가 낙관적 업데이트를 덮어쓰는 것을 방지
+      await queryClient.cancelQueries({ queryKey });
 
-        // 3. Immediately invalidate queries to show user message
-        queryClient.invalidateQueries({ queryKey: ['messages', projectId] });
+      // 이전 메시지 목록을 스냅샷
+      const previousMessages = queryClient.getQueryData<any>(queryKey);
 
-        return response;
-      } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized') {
-          logout();
+      // 새로운 메시지로 캐시를 낙관적으로 업데이트
+      queryClient.setQueryData(queryKey, (oldData: any) => {
+        const newUserMessage = {
+          id: `temp-${Date.now()}`,
+          role: 'user',
+          content: newMessage.prompt,
+          createdAt: new Date().toISOString(),
+          userId: user?.id,
+          projectId,
+        };
+
+        if (!oldData || !oldData.pages) {
+          return {
+            pages: [{ messages: [newUserMessage], nextCursor: null }],
+            pageParams: [undefined],
+          };
         }
-        throw error;
+
+        const newData = { ...oldData };
+        const firstPage = newData.pages[0] || { messages: [] };
+        const updatedFirstPage = {
+          ...firstPage,
+          messages: [newUserMessage, ...firstPage.messages],
+        };
+        newData.pages[0] = updatedFirstPage;
+        return newData;
+      });
+
+      // 에러 발생 시 롤백에 사용할 스냅샷 데이터 반환
+      return { previousMessages };
+    },
+    onError: (err, newMessage, context) => {
+      const projectId = newMessage.projectId || useIdeStore.getState().selectedProjectId;
+      // 뮤테이션 실패 시 스냅샷 데이터로 롤백
+      if (context?.previousMessages) {
+        queryClient.setQueryData(['messages', projectId], context.previousMessages);
+      }
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        logout();
+      }
+    },
+    onSettled: (data, error, variables) => {
+      const projectId = variables.projectId || useIdeStore.getState().selectedProjectId;
+      // 성공/실패 여부와 관계없이 항상 서버 데이터와 동기화
+      queryClient.invalidateQueries({ queryKey: ['messages', projectId] });
+      if (options?.onSettled) {
+        options.onSettled(data, error, variables, undefined);
       }
     },
     ...options,

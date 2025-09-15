@@ -1,0 +1,13 @@
+# Gemini-AI가 참조하지 않을 파일 및 디렉토리
+
+# 과거의 기록 및 로그 제외
+docs/progress/CHANGELOG.md
+docs/plan/archive/
+
+# 빌드 결과물 제외
+dist/
+out/
+.next/
+
+# 의존성 폴더 제외
+node_modules/
