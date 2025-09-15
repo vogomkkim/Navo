@@ -7,6 +7,13 @@ const FileNodeSchema = z.object({
   content: z.string().optional(),
 });
 
+// Type for a file node (kept in sync with FileNodeSchema)
+type FileNode = {
+  type: 'file';
+  name: string;
+  content?: string;
+};
+
 // Schema for a folder node, which can contain other nodes (recursive)
 // We use z.lazy() to handle the recursive type definition.
 type FolderNode = {
@@ -47,6 +54,11 @@ export const ProjectBlueprintSchema = z.object({
     name: z.string(),
     description: z.string(),
     type: z.string().describe('e.g., web-application, mobile-app'),
+    targets: z
+      .array(z.enum(['web', 'rn', 'flutter']))
+      .nonempty()
+      .default(['web'])
+      .describe('Stage 2 build targets selectable by the user'),
     pages: z.array(PageSchema),
     components: z.array(ComponentSchema),
     file_structure: FolderNodeSchema,

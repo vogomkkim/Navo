@@ -56,6 +56,58 @@ function getProjectsService(context: ExecutionContext): ProjectsService {
 }
 
 /**
+ * Generates sensible default file contents when blueprint nodes omitted `content`.
+ * Heuristics are based on filename and extension (Next.js/React biased).
+ */
+function generateDefaultContentForPath(absoluteVfsPath: string): string {
+  const filename = path.basename(absoluteVfsPath);
+  const ext = path.extname(filename).toLowerCase();
+
+  // Next.js conventions
+  if (filename === 'page.tsx' || filename === 'page.jsx') {
+    return `export default function Page() {\n  return (\n    <main style={{ padding: 16 }}>\n      <h1>${path.dirname(absoluteVfsPath).split('/').pop() || 'Page'}</h1>\n    </main>\n  );\n}\n`;
+  }
+  if (filename === 'layout.tsx' || filename === 'layout.jsx') {
+    return `export default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}\n`;
+  }
+
+  // React components
+  if (ext === '.tsx' || ext === '.jsx') {
+    const base = filename.replace(/\.(tsx|jsx)$/i, '');
+    const componentName = base
+      .split(/[^a-zA-Z0-9]/)
+      .filter(Boolean)
+      .map((s) => s[0]?.toUpperCase() + s.slice(1))
+      .join('') || 'Component';
+    return `export default function ${componentName}() {\n  return <div>${componentName}</div>;\n}\n`;
+  }
+
+  // TypeScript/JavaScript modules
+  if (ext === '.ts' || ext === '.js') {
+    return `export function handler() {\n  return null;\n}\n`;
+  }
+
+  // JSON
+  if (ext === '.json') {
+    return `{}\n`;
+  }
+
+  // Markdown
+  if (ext === '.md' || ext === '.mdx') {
+    const title = path.basename(filename, ext);
+    return `# ${title}\n`;
+  }
+
+  // CSS
+  if (ext === '.css') {
+    return `/* ${filename} */\n`;
+  }
+
+  // Default empty
+  return '';
+}
+
+/**
  * Recursively traverses the file structure from the blueprint and creates files/directories in the VFS.
  * @param projectsService The service to interact with the VFS.
  * @param projectId The ID of the project being modified.
@@ -75,10 +127,8 @@ async function createVfsStructure(
   const newPath = path.join(currentPath, currentNode.name).replace(/\\/g, '/');
 
   if (currentNode.type === 'folder') {
-    // Ensure the directory exists. upsertVfsNodeByPath can handle this.
-    // We pass empty string to signify an empty directory (service will create directory nodes appropriately).
-    await projectsService.upsertVfsNodeByPath(projectId, userId, newPath, '');
-    createdPaths.push(newPath);
+    // Do not upsert a file for folders; rely on file upserts below to create intermediate directories.
+    // If this folder is empty, it will be implicitly absent in VFS, which is acceptable for most toolchains.
     for (const child of (currentNode as any).children ?? []) {
       await createVfsStructure(
         projectsService,
@@ -90,12 +140,9 @@ async function createVfsStructure(
       );
     }
   } else if (currentNode.type === 'file') {
-    await projectsService.upsertVfsNodeByPath(
-      projectId,
-      userId,
-      newPath,
-      (currentNode as any).content || ''
-    );
+    const provided = (currentNode as any).content;
+    const content = provided !== undefined ? provided : generateDefaultContentForPath(newPath);
+    await projectsService.upsertVfsNodeByPath(projectId, userId, newPath, content);
     createdPaths.push(newPath);
   }
 }
