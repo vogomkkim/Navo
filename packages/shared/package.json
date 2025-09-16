@@ -17,7 +17,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "build:watch": "tsc -p tsconfig.json --watch",
-    "test": "vitest"
+    "test": "vitest",
+    "clean": "rmdir /s /q node_modules"
   },
   "devDependencies": {
     "json-schema-to-zod": "^2.6.1",

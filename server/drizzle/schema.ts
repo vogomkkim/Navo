@@ -188,7 +188,7 @@ export const chatMessages = pgTable(
     role: varchar('role', { length: 50 }).notNull(), // 'user' or AI role
     displayType: varchar('display_type', { length: 50 }).default('CHAT_MESSAGE').notNull(),
     content: text('content').notNull(),
-    payload: jsonb('payload'), // For AI messages with extra data
+    payloadRef: text('payload_ref'), // Format: 'store:key', e.g., 'asset:message_id' or 'cache:message_id'
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .defaultNow()
       .notNull(),
@@ -197,6 +197,17 @@ export const chatMessages = pgTable(
     index('idx_chat_messages_project').using('btree', table.projectId),
     index('idx_chat_messages_created_at').using('btree', table.createdAt),
   ]
+);
+
+export const chatMessagePayloads = pgTable(
+  'chat_message_payloads',
+  {
+    messageId: uuid('message_id').primaryKey().notNull().references(() => chatMessages.id, { onDelete: 'cascade' }),
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  }
 );
 
 // --- Deprecated Agent Tables (To be removed or refactored) ---

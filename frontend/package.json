@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "format": "biome format --write .",
-    "test": "jest"
+    "test": "jest",
+    "clean": "rmdir /s /q node_modules"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

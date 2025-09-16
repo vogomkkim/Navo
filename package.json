@@ -19,8 +19,10 @@
     "lint": "npm run -ws --if-present lint",
     "test": "npm run -ws --if-present test",
     "format": "biome format --write .",
-    "db:push": "dotenvx run -f ./server/.env -f ./server/.env.local -- drizzle-kit push",
-    "clean": "rmdir /s /q node_modules && rmdir /s /q .\\frontend\\node_modules && rmdir /s /q .\\server\\node_modules && rmdir /s /q .\\packages\\shared\\node_modules"
+    "db:generate": "npx drizzle-kit generate",
+    "db:push": "npx drizzle-kit push",
+    "db:pull": "npx drizzle-kit introspect",
+    "clean": "npm run -ws clean && rmdir /s /q node_modules"
   },
   "engines": {
     "node": ">=20.11"
@@ -35,6 +37,7 @@
     "@next/eslint-plugin-next": "^15.5.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.2.1",
+    "cross-env": "^10.0.0",
     "eslint": "^9.33.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
@@ -49,6 +52,7 @@
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.42.0",
     "vitest": "^3.2.4",
+    "drizzle-kit": "^0.31.4",
     "zod": "^3.24.2"
   }
 }
