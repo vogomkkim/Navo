@@ -93,9 +93,9 @@ export function ChatSection() {
   }, [isTopOfChatVisible, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const chatHistory = useMemo(() => {
-    const allMessages = data?.pages.flatMap((page) => page.messages) ?? [];
+    const allMessages = serverMessagesData?.pages.flatMap((page) => page.messages) ?? [];
     return allMessages.reverse();
-  }, [data]);
+  }, [serverMessagesData]);
 
   useAuth();
   const { inputValue, setInputValue, handleKeyDown, addToHistory } =
@@ -104,8 +104,6 @@ export function ChatSection() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const { workflowState, setWorkflowPlan, resetWorkflow } = useIdeStore();
 
   const { mutate: sendMessage } = useSendMessage({
     onSuccess: (data, variables) => {
@@ -172,10 +170,10 @@ export function ChatSection() {
   };
 
   useEffect(() => {
-    if (isAIProcessing) {
+    if (isProcessing) {
       scrollToBottom('auto');
     }
-  }, [isAIProcessing]);
+  }, [isProcessing]);
 
   useEffect(() => {
     if (chatHistory.length === 0) return;
@@ -183,7 +181,7 @@ export function ChatSection() {
     const isFromAI = lastMessage.role !== 'user';
     if (!isFromAI) return;
 
-    setIsAIProcessing(false);
+    setIsProcessing(false);
 
     const chatContainer = chatContainerRef.current;
     if (!chatContainer) return;
@@ -380,13 +378,13 @@ export function ChatSection() {
                 handleKeyDown(e);
               }}
               placeholder="만들고 싶은 것을 여기에 설명해주세요..."
-              disabled={isProcessing || isAIProcessing}
+              disabled={isProcessing}
               rows={1}
               className="flex-grow resize-none border-0 bg-transparent py-2.5 pl-4 pr-2 text-base leading-relaxed focus:outline-none focus:ring-0 max-h-48"
             />
             <button
               onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isProcessing || isAIProcessing}
+              disabled={!inputValue.trim() || isProcessing}
               className="grid h-8 w-8 mr-1.5 flex-shrink-0 place-items-center rounded-full bg-blue-600 text-white transition-all hover:bg-blue-700 hover:scale-105 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:scale-100"
               aria-label="메시지 전송"
             >
@@ -396,19 +394,5 @@ export function ChatSection() {
         )}
       </div>
     </div>
-  );
-}
-           <PaperPlaneIcon />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-  </div>
-  );
-}
-  </div>
   );
 }

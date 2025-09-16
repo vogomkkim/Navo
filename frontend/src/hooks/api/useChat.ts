@@ -25,6 +25,7 @@ interface SendMessagePayload {
     activeFile: string | null;
     activePreviewRoute: string | null;
   };
+  tempId?: string;
 }
 
 // --- Hooks ---

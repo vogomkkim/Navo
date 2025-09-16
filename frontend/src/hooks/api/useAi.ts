@@ -19,6 +19,7 @@ interface GenerateProjectPayload {
     activeFile: string | null;
     activePreviewRoute: string | null;
   };
+  tempId?: string;
 }
 
 interface GenerateProjectResponse {
@@ -100,7 +101,7 @@ export function useGenerateProject(
         pages: [{ messages: [newUserMessage], nextCursor: null }],
         pageParams: [undefined],
       });
-      
+
       // Return context for rollback
       return { previousMessages, tempProjectId };
     },
@@ -112,7 +113,7 @@ export function useGenerateProject(
       handleUnauthorizedError(err, logout);
     },
     onSuccess: (data, variables, context: any) => {
-      // When the real project is created, invalidate the temporary query 
+      // When the real project is created, invalidate the temporary query
       // and the real project query to sync up.
       queryClient.invalidateQueries({ queryKey: ['messages', context.tempProjectId] });
       queryClient.invalidateQueries({ queryKey: ['messages', data.projectId] });

@@ -215,9 +215,16 @@ export const useIdeStore = create<IdeState>((set) => ({
     set((state) => ({ messages: [...state.messages, message] })),
   updateMessage: (id, partialMessage) =>
     set((state) => ({
-      messages: state.messages.map((m) =>
-        m.id === id ? { ...m, ...partialMessage } : m,
-      ),
+      messages: state.messages.map((m) => {
+        if (m.id !== id) return m;
+
+        // 타입 안전한 업데이트
+        if (m.role === 'user') {
+          return { ...m, ...partialMessage } as UserMessage;
+        } else {
+          return { ...m, ...partialMessage } as AgentMessage;
+        }
+      }),
     })),
   clearMessages: () => set({ messages: [] }),
 
