@@ -186,11 +186,11 @@ export function DynamicComponentRenderer({ entryPath, vfs }: {entryPath:string; 
 ---
 
 ## 9. Milestones
-- **M1. API Spec & DTO** (`/vfs` + ETag)
-- **M2. `useVfsTree` Hook** (ETag/304)
-- **M3. `esbuild-wasm` + VFS Plugin**
-- **M4. Worker Separation**
-- **M5. Sandbox Iframe Rendering**
+- **M1. API Spec & DTO** (`/vfs` + ETag) <br> ✅ *Confirmed by Gemini on 2025-09-16: Backend API is implemented with ETag, `includeContent`, and `paths` filtering.*
+- **M2. `useVfsTree` Hook** (ETag/304) <br> ✅ *Confirmed by Gemini on 2025-09-16: `useVfsTree` hook is implemented using `react-query` to fetch data from the backend API.*
+- **M3. `esbuild-wasm` + VFS Plugin** <br> ✅ *Confirmed by Gemini on 2025-09-16: The bundler worker at `frontend/src/workers/bundler.worker.ts` is created, containing the core logic for the esbuild VFS plugin.*
+- **M4. Worker Separation** <br> 🔄 *In Progress: The `DynamicComponentRenderer` now uses the bundler worker, establishing the separation.*
+- **M5. Sandbox Iframe Rendering** <br> 🔄 *In Progress: The `DynamicComponentRenderer` renders the bundled output into a sandboxed iframe. The final React mounting logic is still needed.*
 - **M6. Error Overlay & Incremental Builds**
 - **M7. CSS/Image and Multi-page Support**
 

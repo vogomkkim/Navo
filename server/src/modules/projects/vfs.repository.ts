@@ -143,17 +143,65 @@ export class VfsRepositoryImpl implements VfsRepository {
     }
   }
 
-  async listNodesByProject(projectId: string): Promise<VfsNode[]> {
+  async listNodesByProject(
+    projectId: string,
+    paths?: string[],
+  ): Promise<VfsNode[]> {
+    // If no specific paths are provided, return all nodes for the project.
+    if (!paths || paths.length === 0) {
+      try {
+        const dbRows = await db
+          .select()
+          .from(vfsNodes)
+          .where(eq(vfsNodes.projectId, projectId))
+          .orderBy(vfsNodes.parentId, vfsNodes.nodeType, vfsNodes.name);
+        return dbRows as VfsNode[];
+      } catch (error) {
+        this.app.log.error(error, 'VFS list all nodes by project failed');
+        throw new Error('Failed to list all VFS nodes for project.');
+      }
+    }
+
+    // If paths are provided, use a recursive query to fetch only the necessary nodes.
     try {
-      const dbRows = await db
-        .select()
-        .from(vfsNodes)
-        .where(eq(vfsNodes.projectId, projectId))
-        .orderBy(vfsNodes.parentId, vfsNodes.nodeType, vfsNodes.name);
-      return dbRows as VfsNode[];
+      const startingNodes = await Promise.all(
+        paths.map((path) => this.findByPath(projectId, path)),
+      );
+      const startingNodeIds = startingNodes
+        .filter((n): n is VfsNode => n !== null)
+        .map((n) => n.id);
+
+      if (startingNodeIds.length === 0) {
+        return [];
+      }
+
+      // Drizzle doesn't directly support recursive CTEs in a type-safe way.
+      // We use a raw SQL query for this specific complex case.
+      const recursiveQuery = sql`
+        WITH RECURSIVE "descendants" AS (
+          SELECT "id", "project_id", "parent_id", "node_type", "name", "content", "metadata", "created_at", "updated_at"
+          FROM ${vfsNodes}
+          WHERE "id" = ANY(ARRAY[${sql.join(startingNodeIds, sql`, `)}])
+        
+          UNION ALL
+        
+          SELECT "child"."id", "child"."project_id", "child"."parent_id", "child"."node_type", "child"."name", "child"."content", "child"."metadata", "child"."created_at", "child"."updated_at"
+          FROM ${vfsNodes} as "child"
+          JOIN "descendants" as "parent" ON "child"."parent_id" = "parent"."id"
+        )
+        SELECT * FROM "descendants";
+      `;
+
+      const result = await db.execute(recursiveQuery);
+      // We need to cast the raw result back to our VfsNode type.
+      // Note: The property names in the SELECT list must match the VfsNode properties.
+      return result.rows as VfsNode[];
     } catch (error) {
-      this.app.log.error(error, 'VFS list all nodes by project failed');
-      throw new Error('Failed to list all VFS nodes for project.');
+      this.app.log.error(
+        { error, paths },
+        'VFS list nodes by paths recursive failed',
+      );
+      throw new Error('Failed to list VfsNode by paths.');
     }
   }
 

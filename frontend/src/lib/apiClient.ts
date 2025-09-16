@@ -91,23 +91,28 @@ export async function fetchApi<T>(
   }
 }
 
-export async function fetchVfsTree(
+export async function getVfsTree(
   projectId: string,
   token: string,
-  options: { includeContent?: boolean; etag?: string },
+  options: { paths?: string[]; includeContent?: boolean },
 ): Promise<VfsTree> {
-  const { includeContent = true, etag } = options;
-  const query = new URLSearchParams({
-    includeContent: String(includeContent),
-  });
+  const { paths, includeContent } = options;
+  const query = new URLSearchParams();
 
-  const headers: HeadersInit = {};
-  if (etag) {
-    headers['If-None-Match'] = etag;
+  if (includeContent !== undefined) {
+    query.set('includeContent', String(includeContent));
+  }
+  if (paths && paths.length > 0) {
+    query.set('paths', paths.join(','));
   }
 
-  return fetchApi<VfsTree>(`/api/projects/${projectId}/vfs?${query}`, {
+  const queryString = query.toString();
+  const url = `/api/projects/${projectId}/vfs${queryString ? `?${queryString}` : ''}`;
+
+  // Note: ETag is handled by the browser and react-query's caching mechanism.
+  // We don't need to pass it manually. The `fetchApi` function will throw on 304,
+  // which is what `react-query` expects to keep using the cached data.
+  return fetchApi<VfsTree>(url, {
     token,
-    headers,
   });
 }

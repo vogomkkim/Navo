@@ -1,136 +1,121 @@
+/// <reference lib="webworker" />
 import * as esbuild from 'esbuild-wasm';
-import { VfsNodeDto } from '@/lib/apiClient';
-
-/**
- * An esbuild plugin to resolve imports against our in-memory virtual file system.
- * @param vfs A map of file paths to VfsNodeDto objects.
- * @param entryPath The main entry point for the build.
- */
-const vfsPlugin = (vfs: Map<string, VfsNodeDto>, entryPath: string) => {
-  return {
-    name: 'vfs-plugin',
-    setup(build: esbuild.PluginBuild) {
-      // 1. Resolve the entry point directly.
-      build.onResolve({ filter: new RegExp(`^${entryPath}$`) }, (args) => {
-        return { path: args.path, namespace: 'vfs' };
-      });
-
-      // 2. Resolve relative paths (e.g., './Button' or '../lib/utils').
-      build.onResolve({ filter: /^.\.?\// }, (args) => {
-        const importerDir = args.importer.substring(0, args.importer.lastIndexOf('/') + 1);
-        let resolvedPath = new URL(args.path, `file:///${importerDir}`).pathname.substring(1);
-
-        // Try resolving with common extensions
-        const extensions = ['.ts', '.tsx', '.js', '.jsx', '.json'];
-        const candidates = [
-          resolvedPath,
-          ...extensions.map(ext => `${resolvedPath}${ext}`),
-          ...extensions.map(ext => `${resolvedPath}/index${ext}`),
-        ];
-
-        for (const candidate of candidates) {
-          if (vfs.has(candidate)) {
-            return { path: candidate, namespace: 'vfs' };
-          }
-        }
-
-        // If it's a directory, look for an index file.
-        const indexCandidate = `${resolvedPath}/index`;
-        for (const ext of extensions) {
-            if (vfs.has(`${indexCandidate}${ext}`)) {
-                return { path: `${indexCandidate}${ext}`, namespace: 'vfs' };
-            }
-        }
-
-        throw new Error(`Could not resolve path: ${args.path} from ${args.importer}`);
-      });
-
-      // 3. Load files from our VFS map.
-      build.onLoad({ filter: /.*/, namespace: 'vfs' }, (args) => {
-        const file = vfs.get(args.path);
-        if (!file || file.type !== 'file') {
-          throw new Error(`File not found in VFS: ${args.path}`);
-        }
-
-        const ext = args.path.split('.').pop()?.toLowerCase();
-        let loader: esbuild.Loader = 'text';
-        if (ext === 'ts') loader = 'ts';
-        if (ext === 'tsx') loader = 'tsx';
-        if (ext === 'js') loader = 'js';
-        if (ext === 'jsx') loader = 'jsx';
-        if (ext === 'json') loader = 'json';
-        if (ext === 'css') loader = 'css';
-
-        return {
-          contents: file.content || '',
-          loader,
-        };
-      });
-    },
-  };
-};
-
+import type { VfsNodeDto } from '@/lib/apiClient';
 
 let esbuildInitialized = false;
 
-self.onmessage = async (event) => {
+/**
+ * Initializes esbuild-wasm if it hasn't been already.
+ */
+async function initializeEsbuild() {
+  if (esbuildInitialized) return;
+  try {
+    await esbuild.initialize({
+      wasmURL: '/esbuild.wasm',
+      worker: false,
+    });
+    esbuildInitialized = true;
+    self.postMessage({ type: 'INIT_COMPLETE' });
+    console.log('[Worker] esbuild initialized.');
+  } catch (error) {
+    console.error('[Worker] Failed to initialize esbuild:', error);
+    self.postMessage({ type: 'INIT_ERROR', payload: { error } });
+  }
+}
+
+/**
+ * Creates an esbuild plugin to resolve and load files from a virtual file system.
+ * @param vfs - A map of file paths to their content.
+ * @returns An esbuild plugin object.
+ */
+const createVfsPlugin = (vfs: Map<string, string>): esbuild.Plugin => ({
+  name: 'vfs-plugin',
+  setup(build) {
+    // Intercept import paths to resolve them against the VFS
+    build.onResolve({ filter: /.*/ }, (args) => {
+      // Handle the entry point
+      if (args.kind === 'entry-point') {
+        return { path: args.path, namespace: 'vfs' };
+      }
+
+      // Resolve relative imports (e.g., './Button') within the VFS
+      if (args.path.startsWith('.') && args.importer) {
+        const importerDir = args.importer.substring(0, args.importer.lastIndexOf('/'));
+        const resolvedPath = new URL(args.path, `file://${importerDir}/`).pathname.substring(1);
+        return { path: resolvedPath, namespace: 'vfs' };
+      }
+      
+      // Mark external packages (like 'react') to be handled by the browser
+      return { path: args.path, external: true };
+    });
+
+    // Load the content of a resolved path from the VFS
+    build.onLoad({ filter: /.*/, namespace: 'vfs' }, (args) => {
+      const content = vfs.get(args.path);
+      if (content === undefined) {
+        return { errors: [{ text: `File not found in VFS: ${args.path}` }] };
+      }
+      
+      // Determine the correct loader based on the file extension
+      const loader = args.path.endsWith('.css') ? 'css' : 'tsx';
+      
+      return { contents: content, loader };
+    });
+  },
+});
+
+/**
+ * Bundles the code from the VFS using esbuild.
+ * @param entryPoint - The starting file for the bundle (e.g., 'src/app/page.tsx').
+ * @param vfsNodes - An array of file nodes from the API.
+ */
+async function bundleCode(entryPoint: string, vfsNodes: VfsNodeDto[]) {
+  console.log(`[Worker] Starting build for entry point: ${entryPoint}`);
+  const vfs = new Map(vfsNodes.map(node => [node.path, node.content || '']));
+
+  try {
+    const result = await esbuild.build({
+      entryPoints: [entryPoint],
+      bundle: true,
+      write: false, // We want the output in memory, not written to a file
+      plugins: [createVfsPlugin(vfs)],
+      format: 'esm', // Output ES Module format
+      target: 'es2020',
+      jsx: 'transform', // Automatically transform JSX
+      jsxFactory: 'React.createElement',
+      jsxFragment: 'React.Fragment',
+    });
+
+    console.log('[Worker] Build successful.');
+    self.postMessage({ type: 'BUILD_COMPLETE', payload: { outputFiles: result.outputFiles } });
+  } catch (error) {
+    console.error('[Worker] Build failed:', error);
+    self.postMessage({ type: 'BUILD_ERROR', payload: { error } });
+  }
+}
+
+
+/**
+ * Main message handler for the worker.
+ */
+self.onmessage = async (event: MessageEvent) => {
   const { type, payload } = event.data;
 
-  if (type === 'INIT') {
-    if (!esbuildInitialized) {
-      try {
-        await esbuild.initialize({
-          wasmURL: '/esbuild.wasm',
-          worker: false,
-        });
-        esbuildInitialized = true;
-        self.postMessage({ type: 'INIT_SUCCESS' });
-      } catch (error) {
-        self.postMessage({ type: 'INIT_ERROR', payload: (error as Error).message });
+  switch (type) {
+    case 'INIT':
+      await initializeEsbuild();
+      break;
+
+    case 'BUILD':
+      if (!esbuildInitialized) {
+        self.postMessage({ type: 'BUILD_ERROR', payload: { error: 'esbuild not initialized' } });
+        return;
       }
-    } else {
-      self.postMessage({ type: 'INIT_SUCCESS' }); // Already initialized
-    }
-    return;
-  }
-
-  if (type === 'BUILD') {
-    if (!esbuildInitialized) {
-      self.postMessage({ type: 'BUILD_ERROR', payload: 'esbuild is not initialized.' });
-      return;
-    }
-
-    const { entryPath, vfsNodes } = payload as { entryPath: string, vfsNodes: VfsNodeDto[] };
-    const vfsMap = new Map<string, VfsNodeDto>(vfsNodes.map(node => [node.path, node]));
-
-    try {
-      const result = await esbuild.build({
-        entryPoints: [entryPath],
-        bundle: true,
-        write: false,
-        plugins: [vfsPlugin(vfsMap, entryPath)],
-        define: {
-          'process.env.NODE_ENV': '"production"',
-          global: 'window',
-        },
-        jsxFactory: 'React.createElement',
-        jsxFragment: 'React.Fragment',
-        external: ['react', 'react-dom'],
-        outdir: '/out', // virtual output directory
-      });
-
-      const jsFile = result.outputFiles.find((f) => f.path.endsWith('.js'));
-      const cssFile = result.outputFiles.find((f) => f.path.endsWith('.css'));
-
-      self.postMessage({
-        type: 'BUILD_COMPLETE',
-        payload: {
-          js: jsFile?.text || '',
-          css: cssFile?.text || '',
-        },
-      });
-    } catch (error) {
-      self.postMessage({ type: 'BUILD_ERROR', payload: (error as Error).message });
-    }
+      if (!payload.entryPoint || !payload.vfsNodes) {
+        self.postMessage({ type: 'BUILD_ERROR', payload: { error: 'Missing entryPoint or vfsNodes in payload' } });
+        return;
+      }
+      await bundleCode(payload.entryPoint, payload.vfsNodes);
+      break;
   }
 };

@@ -2,14 +2,48 @@
 
 import { useState } from 'react';
 import { VfsPreviewRenderer } from './VfsPreviewRenderer';
-
-// 이 컴포넌트는 VFS 기반 미리보기의 메인 통합 지점 역할을 합니다.
-// 현재는 하드코딩된 projectId를 사용하지만, 실제 앱에서는 Context나 prop으로부터 값을 받아야 합니다.
-const MOCK_PROJECT_ID = 'clyx6591n00012a6g3q2k62qf'; // 데이터베이스의 유효한 프로젝트 ID로 교체해야 합니다.
+import { useListProjects } from '@/hooks/api/useProject'; // 프로젝트 목록을 가져오는 훅 import
 
 export function PreviewDemo() {
+  const { data: projectsData, isLoading, isError, error } = useListProjects();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // 첫 번째 프로젝트를 기본으로 사용하거나, 프로젝트가 없으면 null로 설정
+  const projectId = projectsData?.projects?.[0]?.id ?? null;
   const [entryPath, setEntryPath] = useState('src/app/page.tsx');
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="p-4 text-center text-gray-500">
+          프로젝트 목록을 불러오는 중...
+        </div>
+      );
+    }
+
+    if (isError) {
+      return (
+        <div className="p-4 text-center text-red-500">
+          오류: {error.message}
+        </div>
+      );
+    }
+
+    if (!projectId) {
+      return (
+        <div className="p-4 text-center text-gray-500">
+          미리보기를 표시할 프로젝트가 없습니다. 새 프로젝트를 먼저 만들어주세요.
+        </div>
+      );
+    }
+
+    return (
+      <VfsPreviewRenderer
+        projectId={projectId}
+        entryPath={entryPath}
+      />
+    );
+  };
 
   return (
     <div className="preview-demo">
@@ -53,17 +87,7 @@ export function PreviewDemo() {
           </div>
 
           <div className="preview-content-wrapper">
-            {MOCK_PROJECT_ID ? (
-              <VfsPreviewRenderer
-                projectId={MOCK_PROJECT_ID}
-                entryPath={entryPath}
-              />
-            ) : (
-              <div className="p-4 text-center text-gray-500">
-                미리보기를 활성화하려면 PreviewDemo.tsx 파일에
-                유효한 MOCK_PROJECT_ID를 입력해주세요.
-              </div>
-            )}
+            {renderContent()}
           </div>
         </div>
       </div>

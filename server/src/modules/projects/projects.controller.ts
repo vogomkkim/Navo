@@ -134,9 +134,11 @@ export function projectsController(app: FastifyInstance) {
         const projectId = params.projectId as string;
         const query = request.query as any;
         const includeContent = query.includeContent === 'true';
+        const paths = query.paths ? (query.paths as string).split(',') : undefined;
 
         const vfsTree = await projectsService.getVfsTree(projectId, userId, {
           includeContent,
+          paths,
         });
 
         const etag = vfsTree.version;

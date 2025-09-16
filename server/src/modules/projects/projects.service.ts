@@ -30,7 +30,7 @@ export class ProjectsService {
   async getVfsTree(
     projectId: string,
     userId: string,
-    options: { includeContent?: boolean },
+    options: { includeContent?: boolean; paths?: string[] },
   ): Promise<VfsTree> {
     const project = await this.projectsRepository.getProjectByUserId(
       projectId,
@@ -40,7 +40,10 @@ export class ProjectsService {
       throw new Error('Project not found or access denied.');
     }
 
-    const allNodes = await this.vfsRepository.listNodesByProject(projectId);
+    const allNodes = await this.vfsRepository.listNodesByProject(
+      projectId,
+      options.paths,
+    );
     if (allNodes.length === 0) {
       return {
         projectId,
