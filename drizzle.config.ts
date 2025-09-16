@@ -5,7 +5,7 @@ export default defineConfig({
   out: "./server/drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    // url: "postgres://avnadmin:AVNS_DQSyvn6_6S7zl_KzTlw@pg-vico-vogoplay-681f-vico.k.aivencloud.com:24567/defaultdb?sslmode=require",
+    // url: "postgres://@pg-vico-vogoplay-681f-vico.k.aivencloud.com:24567/defaultdb?sslmode=require",
     ssl: { rejectUnauthorized: false },
   },
   verbose: true,
