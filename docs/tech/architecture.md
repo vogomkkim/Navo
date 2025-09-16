@@ -52,8 +52,8 @@ model component_definitions {
 
 1. User completes onboarding and requests a project.
 2. Orchestrator executes generation nodes (copy, image) in parallel.
-3. Build node composes a page or layout JSON.
-4. Deploy node builds and publishes to CDN, returning a public URL.
+3. Build node composes a page or layout JSON in VFS (database-backed virtual file system).
+4. Deploy node materializes IR into real files and publishes to CDN, returning a public URL.
 5. Client receives updates and shows progress; analytics capture events.
 
 ## DI + Node Graph
@@ -69,7 +69,7 @@ model component_definitions {
 
 ## Data Storage Rationale
 
-The project uses a database as the primary source of truth for content and metadata, rather than managing content directly in Git files. This decision is based on the following reasons:
+The project uses a database (VFS) as the primary source of truth for content and metadata, rather than managing content directly in Git files. This decision is based on the following reasons:
 
 - **Speed & Latency**: Database queries are significantly faster for the frequent, granular read/write operations required by a real-time visual editor, compared to the slower `git commit/push/pull` cycle.
 - **Granular Control**: A database allows for atomic updates to small pieces of data (e.g., a single component's properties), which is more efficient than file-based operations.
@@ -78,8 +78,15 @@ The project uses a database as the primary source of truth for content and metad
 
 The architecture uses a hybrid model:
 
-1.  **Database as Source of Truth**: The editor interacts directly with the database for a fast and responsive user experience.
-2.  **Git as Deployment Target**: When a user publishes their project, the system generates the necessary files from the database and commits them to a Git repository, which then triggers a CI/CD pipeline for deployment.
+1.  **Database as Source of Truth (VFS)**: The editor interacts directly with a virtual file system stored in the database for a fast and responsive user experience.
+2.  **Git/FS as Deployment Target**: When a user publishes their project, the system generates the necessary files from the database and commits them to a Git repository or writes to a real filesystem, which then triggers a CI/CD pipeline for deployment.
+
+## VFS vs Physical File System Policy
+
+- **Editing/Preview Phase**: All page/file create/update/delete operations are performed in the VFS (database). No physical files are written.
+- **IR and Deploy Phase**: Only after an intermediate representation (IR) is finalized, the system materializes real files (fs.\*) for build/deploy.
+- **Preview**: The preview UI fetches tree and content from VFS APIs and renders without executing installed dependencies.
+- **Exceptions**: Workflow tools and code generation scripts may use the physical filesystem in isolated, non-product paths for scaffolding or tests.
 
 ### Scalability
 

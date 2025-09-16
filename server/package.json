@@ -8,7 +8,7 @@
     "build": "tsc -p ./tsconfig.json",
     "start": "dotenvx run -o -e .env -e .env.local -- node dist/bootstrap.js",
     "lint": "eslint . --ext .ts --config ../eslint.config.js",
-    "test": "vitest",
+    "test": "dotenvx run -o -e .env -e .env.local -- vitest",
     "sim:gen": "tsx src/scripts/run-code-generator.ts",
     "db:generate": "dotenvx run -f ./server/.env -f ./server/.env.local -- drizzle-kit generate --config ../drizzle.config.ts",
     "db:push": "dotenvx run -f ./server/.env -f ./server/.env.local -- drizzle-kit push --config ../drizzle.config.ts",

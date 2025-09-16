@@ -72,7 +72,7 @@ export const scaffoldProjectTool: Tool = {
     },
   },
   async execute(context: ExecutionContext, input: Input): Promise<any> {
-    const { projectId, userId, file_structure } = inputSchema.parse(input);
+    const { projectId, userId, file_structure } = input;
     const projectsService = new ProjectsService(context.app);
 
     context.app.log.info(`[ScaffolderTool] Starting scaffolding for project ID: ${projectId}`);

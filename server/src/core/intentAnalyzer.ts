@@ -23,19 +23,29 @@ import { EnhancedPrompt, IntentAnalysis } from '@/core/types/intent';
 export class IntentAnalyzer {
   private genAI: GoogleGenerativeAI;
   private model: any;
+  private readonly modelName = 'gemini-2.5-flash';
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    this.model = this.genAI.getGenerativeModel({ model: this.modelName });
   }
 
   public async analyzeIntent(
     message: string,
-    contextInfo: any
+    userContext: UserContext,
+    recentMessages?: ChatMessage[]
   ): Promise<IntentAnalysis> {
-    const systemInstruction = buildSystemInstruction();
-    const userPrompt = buildUserPrompt(message, contextInfo);
-    const fullPrompt = `SYSTEM:\n${systemInstruction}\n\nUSER:\n${userPrompt}`;
+    const domain = await this.classifyDomain(message);
+    const fullContext = this.buildContextInfo(userContext, recentMessages);
+    const selectedContext = this.selectContextForDomain(domain, fullContext);
+
+    const systemInstruction = buildSystemInstruction(domain);
+    const userPrompt = buildUserPrompt(message, selectedContext);
+    const fullPrompt = `SYSTEM:
+${systemInstruction}
+
+USER:
+${userPrompt}`;
 
     try {
       const result = await this.model.generateContent(fullPrompt);
@@ -43,9 +53,31 @@ export class IntentAnalyzer {
 
       const parsed = parseJsonFromMarkdown(raw);
       const normalized = normalizeModelAnalysis(parsed);
-      const decision = decideExecution(normalized);
+      const decision = decideExecution(normalized, userContext);
+
+      // --- Safe Fallback Logic ---
+      const shouldFallback = domain === 'project_management' &&
+        (decision.status === 'blocked' || (decision.status === 'manual' && normalized.is_vague));
+
+      if (shouldFallback) {
+        return {
+          domain: 'project_management',
+          type: 'clarification',
+          confidence: 0.9,
+          description: `Request is blocked or too vague. Proposing a safe fallback action: create a new page. Original reason: ${decision.reason}`,
+          isVague: false,
+          status: 'manual', // Requires user confirmation
+          reason: 'fallback_to_safe_action',
+          actions: [{
+            type: 'project.add_pages',
+            parameters: { name: 'new-page-from-fallback' },
+            description: 'Create a new page as a safe alternative.'
+          }],
+        } as any;
+      }
 
       const out: IntentAnalysis = {
+        domain,
         type: normalized.type,
         confidence: normalized.confidence,
         description: normalized.description,
@@ -67,6 +99,7 @@ export class IntentAnalyzer {
       const msg = error instanceof Error ? error.message : String(error);
       console.error('analyzeIntent failed:', msg.slice(0, 300));
       return {
+        domain,
         type: 'general',
         confidence: 0.5,
         description: '의도 분석 실패, 기본값',
@@ -77,79 +110,7 @@ export class IntentAnalyzer {
     }
   }
 
-  public async enhance(
-    message: string,
-    userContext: UserContext,
-    recentMessages?: ChatMessage[]
-  ): Promise<EnhancedPrompt> {
-    const startTime = Date.now();
-    const contextInfo = this.buildContextInfo(userContext, recentMessages);
-    const intentAnalysis = await this.analyzeIntent(message, contextInfo);
-
-    const processingTime = Date.now() - startTime;
-
-    return {
-      originalMessage: message,
-      enhancedMessage: intentAnalysis.enhancedMessage || message,
-      intent: {
-        type: intentAnalysis.type as string,
-        confidence: intentAnalysis.confidence,
-        description: intentAnalysis.description,
-        isVague: intentAnalysis.isVague,
-        clarification: intentAnalysis.clarification,
-      },
-      target: {
-        type: (intentAnalysis as any).targets?.[0]?.scope || 'unknown',
-        id: (intentAnalysis as any).targets?.[0]?.id,
-        name: (intentAnalysis as any).targets?.[0]?.name,
-        description: (intentAnalysis as any).targets?.[0]?.description,
-      },
-      action: {
-        type: (intentAnalysis as any).actions?.[0]?.type || 'explain',
-        parameters: (intentAnalysis as any).actions?.[0]?.parameters || {},
-        description:
-          (intentAnalysis as any).actions?.[0]?.description || '기본 액션',
-      },
-      context: {
-        projectContext: (contextInfo as any).projectContext,
-        componentContext: (contextInfo as any).componentContext,
-        conversationContext: (contextInfo as any).conversationContext,
-      },
-      metadata: {
-        model: 'gemini-2.5-flash',
-        tokens: 0,
-        processingTime,
-        timestamp: new Date(),
-      },
-    };
-  }
-
-  private buildContextInfo(
-    userContext: UserContext,
-    recentMessages?: ChatMessage[]
-  ) {
-    const contextInfo: any = {};
-
-    if (userContext.currentProject) {
-      contextInfo.projectContext = `현재 작업 중인 프로젝트: ${userContext.currentProject.name}${userContext.currentProject.description ? ` (${userContext.currentProject.description})` : ''}`;
-    }
-
-    if (userContext.currentComponent) {
-      contextInfo.componentContext = `현재 작업 중인 컴포넌트: ${userContext.currentComponent.displayName} (${userContext.currentComponent.type})`;
-    }
-
-    if (recentMessages && recentMessages.length > 0) {
-      const recentTexts = recentMessages
-        .slice(-3)
-        .map((msg) => `${msg.role}: ${msg.content.message}`)
-        .join('\n');
-      contextInfo.conversationContext = `최근 대화:\n${recentTexts}`;
-    }
-
-    return contextInfo;
-  }
-}
-
-export const intentAnalyzer = new IntentAnalyzer(
-  process.env.GEMINI_API_KEY || ''
-);
+  private async classifyDomain(message: string): Promise<'project_management' | 'general_conversation'> {
+    const prompt = `
+      Analyze the user's message and classify it into one of the following two categories:
+      -
