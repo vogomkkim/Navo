@@ -145,25 +145,53 @@ This IR-based approach is the key to Navo's long-term vision of being a versatil
 
 ---
 
-## 3. System Stability and Self-Healing
+## 3. Live Preview: The Interactive Canvas
+
+A core feature of Navo is the Live Preview, which allows users to see and interact with their application in real-time. To deliver a truly powerful and competitive user experience, the preview must do more than just render UI; it must allow for testing of real functionality, including data fetching and mutations. This necessitates a shift from a completely isolated security model to a trust-based proxy architecture.
+
+### a. The Challenge: Security vs. Functionality
+- **Zero-Trust Model (Initial Approach):** The initial design prioritized maximum security by running user-generated code in a heavily sandboxed `iframe`. This perfectly isolated the preview from the main application, preventing any possibility of malicious code accessing user data or APIs. However, this came at the cost of functionality—the preview was a "showroom car with the engine off," unable to perform any real backend operations like fetching data or submitting forms.
+- **The Market Requirement:** Competing platforms demonstrate that users expect a high-fidelity preview that mimics a real application. A preview limited to UI rendering is a significant competitive disadvantage.
+
+### b. The Solution: Trust-Based Proxy Architecture
+To bridge this gap, we adopt a **trust-based proxy architecture**. This model acknowledges that the primary user of the preview is the project's creator, who has a vested interest in the project's success rather than its failure.
+
+The architecture works as follows:
+
+1.  **Sandboxed `iframe`:** User code still runs inside a sandboxed `iframe` to prevent direct access to the parent window's DOM, cookies, or `localStorage`.
+2.  **API Request Proxying:**
+    - When the code inside the `iframe` attempts to make an API call (e.g., `fetch('/api/posts')`), it doesn't make the request directly.
+    - Instead, it uses `postMessage` to send a structured message to the parent `VfsPreviewRenderer` component, detailing the API request (URL, method, body, etc.).
+3.  **Parent as a Trusted Proxy:** The `VfsPreviewRenderer` component, running in the main application's trusted context, receives this message. It acts as a secure proxy:
+    - It attaches the user's actual authentication token to the request.
+    - It forwards the request to the Navo backend.
+    - It receives the response from the backend.
+    - It sends the response back to the `iframe` via `postMessage`.
+4.  **API Allow-List for Security:** To mitigate the risk of malicious code abusing the proxy (e.g., calling a `deleteAllProjects` API), the proxy maintains a strict **API Allow-List**. Only requests matching predefined safe routes and methods (e.g., `GET /api/projects/:id/posts`) are forwarded. Any unauthorized requests are blocked at the proxy level.
+
+This hybrid approach provides the best of both worlds: it empowers users with a fully functional, interactive preview while maintaining a robust security posture by validating all backend operations through a trusted and controlled proxy layer.
+
+---
+
+## 4. System Stability and Self-Healing
 ... (Content remains the same)
 ...
 
 ---
 
-## 4. Code Generation Strategy: Retrieval-Augmented Generation (RAG)
+## 5. Code Generation Strategy: Retrieval-Augmented Generation (RAG)
 ... (Content remains the same)
 ...
 
 ---
 
-## 5. Guiding Implementation Principles
+## 6. Guiding Implementation Principles
 ... (Content remains the same)
 ...
 
 ---
 
-## 6. The Final Frontier: The Self-Extending AI
+## 7. The Final Frontier: The Self-Extending AI
 ... (Content remains the same)
 ...
 
