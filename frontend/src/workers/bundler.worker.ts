@@ -3,6 +3,11 @@ import * as esbuild from 'esbuild-wasm';
 import type { VfsNodeDto } from '@/lib/apiClient';
 
 let esbuildInitialized = false;
+// Build context for incremental builds. Using `any` as the type from esbuild is complex.
+let buildContext: any | null = null;
+let currentVfs = new Map<string, string>();
+let currentEntryPoint: string | null = null;
+
 
 /**
  * Initializes esbuild-wasm if it hasn't been already.
@@ -24,11 +29,11 @@ async function initializeEsbuild() {
 }
 
 /**
- * Creates an esbuild plugin to resolve and load files from a virtual file system.
- * @param vfs - A map of file paths to their content.
+ * Creates an esbuild plugin to resolve and load files from the virtual file system.
+ * This plugin reads from the worker's global `currentVfs` map.
  * @returns An esbuild plugin object.
  */
-const createVfsPlugin = (vfs: Map<string, string>): esbuild.Plugin => ({
+const createVfsPlugin = (): esbuild.Plugin => ({
   name: 'vfs-plugin',
   setup(build) {
     // Intercept import paths to resolve them against the VFS
@@ -51,49 +56,24 @@ const createVfsPlugin = (vfs: Map<string, string>): esbuild.Plugin => ({
 
     // Load the content of a resolved path from the VFS
     build.onLoad({ filter: /.*/, namespace: 'vfs' }, (args) => {
-      const content = vfs.get(args.path);
+      const content = currentVfs.get(args.path);
       if (content === undefined) {
         return { errors: [{ text: `File not found in VFS: ${args.path}` }] };
       }
       
       // Determine the correct loader based on the file extension
-      const loader = args.path.endsWith('.css') ? 'css' : 'tsx';
+      const imageLoaderRegex = /\.(png|jpe?g|gif|svg|webp)$/;
+      let loader: esbuild.Loader = 'tsx';
+      if (args.path.endsWith('.css')) {
+        loader = 'css';
+      } else if (imageLoaderRegex.test(args.path)) {
+        loader = 'dataurl';
+      }
       
       return { contents: content, loader };
     });
   },
 });
-
-/**
- * Bundles the code from the VFS using esbuild.
- * @param entryPoint - The starting file for the bundle (e.g., 'src/app/page.tsx').
- * @param vfsNodes - An array of file nodes from the API.
- */
-async function bundleCode(entryPoint: string, vfsNodes: VfsNodeDto[]) {
-  console.log(`[Worker] Starting build for entry point: ${entryPoint}`);
-  const vfs = new Map(vfsNodes.map(node => [node.path, node.content || '']));
-
-  try {
-    const result = await esbuild.build({
-      entryPoints: [entryPoint],
-      bundle: true,
-      write: false, // We want the output in memory, not written to a file
-      plugins: [createVfsPlugin(vfs)],
-      format: 'esm', // Output ES Module format
-      target: 'es2020',
-      jsx: 'transform', // Automatically transform JSX
-      jsxFactory: 'React.createElement',
-      jsxFragment: 'React.Fragment',
-    });
-
-    console.log('[Worker] Build successful.');
-    self.postMessage({ type: 'BUILD_COMPLETE', payload: { outputFiles: result.outputFiles } });
-  } catch (error) {
-    console.error('[Worker] Build failed:', error);
-    self.postMessage({ type: 'BUILD_ERROR', payload: { error } });
-  }
-}
-
 
 /**
  * Main message handler for the worker.
@@ -115,7 +95,49 @@ self.onmessage = async (event: MessageEvent) => {
         self.postMessage({ type: 'BUILD_ERROR', payload: { error: 'Missing entryPoint or vfsNodes in payload' } });
         return;
       }
-      await bundleCode(payload.entryPoint, payload.vfsNodes);
+
+      // Update VFS with the latest content
+      currentVfs = new Map(payload.vfsNodes.map((node: VfsNodeDto) => [node.path, node.content || '']));
+
+      try {
+        // If entry point changes or context doesn't exist, create a new build context
+        if (payload.entryPoint !== currentEntryPoint || !buildContext) {
+          buildContext?.dispose?.(); // Dispose of the old context if it exists
+
+          console.log(`[Worker] Creating new build context for: ${payload.entryPoint}`);
+          currentEntryPoint = payload.entryPoint;
+
+          buildContext = await esbuild.build({
+            entryPoints: [payload.entryPoint],
+            bundle: true,
+            write: false,
+            plugins: [createVfsPlugin()],
+            format: 'esm',
+            target: 'es2020',
+            jsx: 'transform',
+            jsxFactory: 'React.createElement',
+            jsxFragment: 'React.Fragment',
+            incremental: true, // Enable incremental builds
+          });
+          
+          console.log('[Worker] Initial build successful.');
+          self.postMessage({ type: 'BUILD_COMPLETE', payload: { outputFiles: buildContext.outputFiles } });
+
+        } else {
+          // Otherwise, just rebuild
+          console.log('[Worker] Rebuilding...');
+          const rebuildResult = await buildContext.rebuild();
+          console.log('[Worker] Rebuild successful.');
+          self.postMessage({ type: 'BUILD_COMPLETE', payload: { outputFiles: rebuildResult.outputFiles } });
+        }
+      } catch (error) {
+        console.error('[Worker] Build failed:', error);
+        // On failure, reset the context so the next build is a full one
+        buildContext?.dispose?.();
+        buildContext = null;
+        currentEntryPoint = null;
+        self.postMessage({ type: 'BUILD_ERROR', payload: { error } });
+      }
       break;
   }
 };

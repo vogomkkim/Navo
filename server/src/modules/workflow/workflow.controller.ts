@@ -1,6 +1,35 @@
 import { FastifyInstance } from "fastify";
 import { OrchestratorService } from "@/core/orchestrator/orchestrator.service";
 import { WorkflowService } from "./workflow.service";
+import crypto from "crypto";
+
+// A simple in-memory store for one-time SSE authentication tickets
+export const sseTicketManager = {
+  tickets: new Map<string, { userId: string; expiresAt: number }>(),
+  
+  issue(userId: string): string {
+    const ticket = crypto.randomBytes(16).toString("hex");
+    const expiresAt = Date.now() + 15000; // Ticket is valid for 15 seconds
+    this.tickets.set(ticket, { userId, expiresAt });
+    return ticket;
+  },
+
+  verify(ticket: string): { userId: string } | null {
+    const record = this.tickets.get(ticket);
+    if (!record) {
+      return null; // Ticket not found
+    }
+
+    // Immediately delete the ticket to prevent reuse
+    this.tickets.delete(ticket);
+
+    if (Date.now() > record.expiresAt) {
+      return null; // Ticket expired
+    }
+
+    return { userId: record.userId };
+  },
+};
 
 // A simple in-memory connection manager for SSE
 export const connectionManager = {
@@ -46,6 +75,20 @@ export function workflowController(app: FastifyInstance) {
 
   // SSE route (server -> client events)
   app.get("/api/sse/projects/:projectId", async (request, reply) => {
+    const { projectId, ticket } = request.query as { projectId: string; ticket?: string };
+
+    if (!ticket) {
+      return reply.code(401).send("Authentication ticket is missing.");
+    }
+
+    const verification = sseTicketManager.verify(ticket);
+    if (!verification) {
+      return reply.code(401).send("Invalid or expired authentication ticket.");
+    }
+    
+    // Optional but recommended: Check if verification.userId has access to projectId
+    // For now, we'll assume the ticket grants access.
+
     const origin = request.headers.origin as string | undefined;
     const allowedDevOrigin = "http://localhost:3000";
     const allowedProdOrigin = process.env.WS_ALLOWED_ORIGIN;
@@ -91,6 +134,22 @@ export function workflowController(app: FastifyInstance) {
       connectionManager.removeSse(projectId, reply.raw);
     });
   });
+
+  // Route to issue a one-time ticket for SSE authentication
+  app.post(
+    "/api/sse/ticket",
+    {
+      preHandler: [app.authenticateToken],
+    },
+    async (request, reply) => {
+      const userId = (request as any).userId as string | undefined;
+      if (!userId) {
+        return reply.status(401).send({ error: "사용자 인증이 필요합니다." });
+      }
+      const ticket = sseTicketManager.issue(userId);
+      return reply.send({ ticket });
+    }
+  );
 
   app.post(
     "/api/workflow/execute",

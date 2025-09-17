@@ -116,3 +116,10 @@ export async function getVfsTree(
     token,
   });
 }
+
+export async function fetchSseTicket(token: string): Promise<{ ticket: string }> {
+  return fetchApi<{ ticket: string }>('/api/sse/ticket', {
+    method: 'POST',
+    token,
+  });
+}
