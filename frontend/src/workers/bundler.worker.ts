@@ -104,13 +104,24 @@ self.onmessage = async (event: MessageEvent) => {
         if (payload.entryPoint !== currentEntryPoint || !buildContext) {
           buildContext?.dispose?.(); // Dispose of the old context if it exists
 
-          console.log(`[Worker] Creating new build context for: ${payload.entryPoint}`);
-          currentEntryPoint = payload.entryPoint;
+          console.log(`[Worker] Creating new build context for entry points`);
+          
+          const allNodes = payload.vfsNodes as VfsNodeDto[];
+          const entryPoints = allNodes
+            .filter(node => node.type === 'file' && node.path.includes('/app') && node.path.endsWith('page.tsx'))
+            .map(node => node.path);
+
+          if (entryPoints.length === 0) {
+            // Fallback to a single entry point if no pages are found
+            entryPoints.push(payload.entryPoint);
+          }
 
           buildContext = await esbuild.build({
-            entryPoints: [payload.entryPoint],
+            entryPoints,
             bundle: true,
             write: false,
+            splitting: true, // Enable code splitting
+            outdir: 'dist', // Needed for splitting, but doesn't write to disk
             plugins: [createVfsPlugin()],
             format: 'esm',
             target: 'es2020',
@@ -120,14 +131,14 @@ self.onmessage = async (event: MessageEvent) => {
             incremental: true, // Enable incremental builds
           });
           
-          console.log('[Worker] Initial build successful.');
+          console.log('[Worker] Initial build successful with output files:', buildContext.outputFiles.map(f => f.path));
           self.postMessage({ type: 'BUILD_COMPLETE', payload: { outputFiles: buildContext.outputFiles } });
 
         } else {
           // Otherwise, just rebuild
           console.log('[Worker] Rebuilding...');
           const rebuildResult = await buildContext.rebuild();
-          console.log('[Worker] Rebuild successful.');
+          console.log('[Worker] Rebuild successful with output files:', rebuildResult.outputFiles.map(f => f.path));
           self.postMessage({ type: 'BUILD_COMPLETE', payload: { outputFiles: rebuildResult.outputFiles } });
         }
       } catch (error) {

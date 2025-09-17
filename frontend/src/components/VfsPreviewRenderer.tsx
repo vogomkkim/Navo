@@ -37,54 +37,98 @@ const iframeHtml = `
     window.React = React;
     window.ReactDOM = ReactDOM;
 
-    const handleError = (message) => {
-      document.body.innerHTML = '<div id="root"></div>';
+    const bundleCache = new Map();
+    let root = null;
+
+    const handleError = (message, error) => {
+      console.error(message, error);
       const errorDiv = document.createElement('div');
       errorDiv.className = 'error-overlay';
-      errorDiv.innerText = '런타임 오류:\n' + message;
+      errorDiv.innerText = message + '\n' + (error?.message || '');
       document.body.appendChild(errorDiv);
     };
 
-    window.addEventListener('error', (event) => handleError(event.message));
-    window.addEventListener('unhandledrejection', (event) => handleError(event.reason));
+    window.addEventListener('error', (event) => handleError('런타임 오류:', event.error));
+    window.addEventListener('unhandledrejection', (event) => handleError('처리되지 않은 Promise 거부:', event.reason));
 
-    window.addEventListener('message', async (event) => {
-      if (event.data.type === 'LOAD_BUNDLE') {
+    async function renderPage(path) {
+      try {
         const errorOverlay = document.querySelector('.error-overlay');
         if (errorOverlay) errorOverlay.remove();
 
-        const { js, css } = event.data.payload;
+        const layoutPath = 'dist/src/app/layout.js';
+        const pagePath = `dist/src/app${path === '/' ? '' : path}/page.js`;
+
+        const LayoutModule = await import(bundleCache.get(layoutPath));
+        const PageModule = await import(bundleCache.get(pagePath));
+
+        if (!LayoutModule || !LayoutModule.default) {
+          throw new Error('layout.tsx에서 default export를 찾을 수 없습니다.');
+        }
+        if (!PageModule || !PageModule.default) {
+          throw new Error(`
+${pagePath}에 해당하는 페이지에서 default export를 찾을 수 없습니다.`);
+        }
+
+        const Layout = LayoutModule.default;
+        const Page = PageModule.default;
+        
+        if (!root) {
+          const container = document.getElementById('root');
+          root = ReactDOM.createRoot(container);
+        }
+        
+        root.render(React.createElement(Layout, null, React.createElement(Page)));
+
+      } catch (e) {
+        handleError('페이지 렌더링 오류:', e);
+      }
+    }
+
+    window.addEventListener('click', (event) => {
+      let target = event.target.closest('a');
+      if (target) {
+        const href = target.getAttribute('href');
+        if (href && href.startsWith('/')) {
+          event.preventDefault();
+          history.pushState({}, '', href);
+          renderPage(href);
+        }
+      }
+    });
+
+    window.addEventListener('popstate', () => {
+      renderPage(window.location.pathname);
+    });
+
+    window.addEventListener('message', async (event) => {
+      if (event.data.type === 'LOAD_BUNDLE') {
+        const { outputFiles } = event.data.payload;
+        
+        // Revoke old blob URLs and clear cache
+        bundleCache.forEach(url => URL.revokeObjectURL(url));
+        bundleCache.clear();
+
+        let cssContent = '';
+        for (const file of outputFiles) {
+          const blob = new Blob([file.text], { type: file.path.endsWith('.css') ? 'text/css' : 'application/javascript' });
+          bundleCache.set(file.path, URL.createObjectURL(blob));
+          if(file.path.endsWith('.css')) {
+            cssContent += file.text;
+          }
+        }
 
         const styleEl = document.getElementById('preview-styles');
-        if (styleEl) styleEl.textContent = css;
-
-        const oldScript = document.getElementById('bundle-script');
-        if (oldScript) oldScript.remove();
+        if (styleEl) styleEl.textContent = cssContent;
         
-        const blob = new Blob([js], { type: 'application/javascript' });
-        const blobUrl = URL.createObjectURL(blob);
-
-        try {
-          const AppModule = await import(blobUrl);
-          
-          const container = document.getElementById('root');
-          if (container && AppModule.default) {
-            const root = ReactDOM.createRoot(container);
-            root.render(React.createElement(AppModule.default));
-          } else {
-            throw new Error('진입점 파일에서 default export를 찾을 수 없습니다.');
-          }
-        } catch (e) {
-          handleError(e.message);
-        } finally {
-          URL.revokeObjectURL(blobUrl);
-        }
+        // Initial render
+        renderPage(window.location.pathname || '/');
       }
     });
   </script>
 </body>
 </html>
-`;
+`
 
 export function VfsPreviewRenderer({
   projectId,
@@ -116,7 +160,8 @@ export function VfsPreviewRenderer({
         iframeRef.current?.contentWindow?.postMessage({ type: 'LOAD_BUNDLE', payload }, '*');
       } else if (type === 'BUILD_ERROR') {
         console.error('빌드 오류:', payload);
-        setBuildError(payload);
+        const errorMessage = payload.error?.message || '알 수 없는 빌드 오류';
+        setBuildError(errorMessage);
       }
     };
 
@@ -126,13 +171,17 @@ export function VfsPreviewRenderer({
       worker.removeEventListener('message', handleMessage);
       worker.terminate();
     };
-  }, []);
+  }, [vfsTree]); // Re-create worker if vfsTree instance changes (though it shouldn't)
 
   const build = useCallback((vfsNodes: VfsNodeDto[]) => {
     if (workerRef.current?.postMessage) {
         workerRef.current.postMessage({
             type: 'BUILD',
-            payload: { entryPath, vfsNodes },
+            payload: { 
+              // entryPoint is now used as a fallback by the worker
+              entryPoint: entryPath, 
+              vfsNodes 
+            },
         });
     }
   }, [entryPath]);
