@@ -8,6 +8,7 @@ import {
 import { useAuth } from '@/app/context/AuthContext';
 import { fetchApi } from '@/lib/apiClient';
 import { ChatMessage, useIdeStore } from '@/store/ideStore';
+import { useWorkflowEvents } from '@/hooks/useWorkflowEvents';
 
 // --- Types ---
 
@@ -59,11 +60,18 @@ export function useSendMessage(
 ) {
   const { token, logout, user } = useAuth();
   const queryClient = useQueryClient();
+  const { ensureConnection } = useWorkflowEvents(useIdeStore.getState().selectedProjectId);
 
   return useMutation<any, Error, SendMessagePayload>({
     mutationFn: async (data) => {
       const projectId = data.projectId || useIdeStore.getState().selectedProjectId;
       if (!projectId) throw new Error('No project selected');
+
+      // 메시지 전송 전 SSE 연결 확인
+      const isConnected = await ensureConnection();
+      if (!isConnected) {
+        console.warn('SSE 연결 실패 - 워크플로우 진행 상황을 실시간으로 받을 수 없습니다');
+      }
 
       const { projectId: _p, ...payload } = data;
       return await fetchApi(`/api/projects/${projectId}/messages`, {

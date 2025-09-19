@@ -9,60 +9,76 @@ export function useWorkflowEvents(projectId: string | null) {
   const sourceRef = useRef<EventSource | null>(null);
   const connectingRef = useRef(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !token) return;
+  // 수동 연결 함수 - 채팅 메시지 전송 시 호출
+  const ensureConnection = async (): Promise<boolean> => {
+    if (!projectId || !token) return false;
 
-    // 프로젝트가 비어지면 기존 연결 정리
-    if (!projectId) {
-      if (sourceRef.current) {
-        sourceRef.current.close();
-      }
-      sourceRef.current = null;
-      connectingRef.current = false;
-      return;
+    // 이미 연결되어 있으면 성공
+    if (
+      sourceRef.current &&
+      sourceRef.current.readyState === EventSource.OPEN
+    ) {
+      return true;
     }
 
-    // 중복 연결 가드
-    if (sourceRef.current) {
-      const state = sourceRef.current.readyState; // 0 CONNECTING, 1 OPEN, 2 CLOSED
-      if (state === 0 || state === 1) {
-        return;
-      }
+    // 연결 중이면 대기
+    if (connectingRef.current) {
+      return new Promise<boolean>((resolve) => {
+        const checkConnection = () => {
+          if (
+            sourceRef.current &&
+            sourceRef.current.readyState === EventSource.OPEN
+          ) {
+            resolve(true);
+          } else if (!connectingRef.current) {
+            resolve(false);
+          } else {
+            setTimeout(checkConnection, 100);
+          }
+        };
+        checkConnection();
+      });
     }
-    if (connectingRef.current) return;
-    
 
-    let es: EventSource;
+    // 새로 연결 시도
+    return await connectSSE();
+  };
 
-    const connect = async () => {
-      if (connectingRef.current) return;
-      connectingRef.current = true;
+  // SSE 연결 함수
+  const connectSSE = async (): Promise<boolean> => {
+    if (!projectId || !token) return false;
 
-      try {
-        const { ticket } = await fetchSseTicket(token);
+    connectingRef.current = true;
 
-        const httpProtocol = window.location.protocol;
-        const backendHost =
-          process.env.NEXT_PUBLIC_BACKEND_HOST ||
-          (process.env.NODE_ENV === "development"
-            ? "localhost:3001"
-            : window.location.host);
-        const sseUrl = `${httpProtocol}//${backendHost}/api/sse/projects/${projectId}?ticket=${ticket}`;
-        
-        es = new EventSource(sseUrl);
-        sourceRef.current = es;
+    try {
+      const { ticket } = await fetchSseTicket(token);
 
+      // SSE는 프록시를 우회하고 직접 백엔드에 연결
+      const httpProtocol = window.location.protocol;
+      const backendHost =
+        process.env.NODE_ENV === "development"
+          ? "localhost:3001"
+          : process.env.NEXT_PUBLIC_BACKEND_HOST || window.location.host;
+      const sseUrl = `${httpProtocol}//${backendHost}/api/sse/projects/${projectId}?ticket=${ticket}`;
+
+      const es = new EventSource(sseUrl);
+      sourceRef.current = es;
+
+      return new Promise((resolve) => {
         es.onopen = () => {
-          console.log("SSE connection established for project:", projectId);
+          console.log("✅ SSE 연결 성공 - 프로젝트:", projectId);
           connectingRef.current = false;
+          resolve(true);
         };
 
         es.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data);
-            console.log("SSE message received:", message);
 
             switch (message.type) {
+              case "connection_established":
+                // 연결 확인 - 조용히 처리
+                break;
               case "workflow_started":
                 setWorkflowState("running");
                 break;
@@ -80,8 +96,17 @@ export function useWorkflowEvents(projectId: string | null) {
                 setWorkflowState("failed");
                 setTimeout(() => resetWorkflow(), 5000);
                 break;
+              case "TEST_MESSAGE":
+                // 테스트 메시지 - 개발 환경에서만 로그
+                if (process.env.NODE_ENV === "development") {
+                  console.log("✅ SSE 테스트 메시지 수신:", message.message);
+                }
+                break;
               default:
-                console.warn("Received unknown SSE message type:", message.type);
+                console.warn(
+                  "Received unknown SSE message type:",
+                  message.type
+                );
             }
           } catch (error) {
             console.error("Error parsing SSE message:", error);
@@ -89,25 +114,38 @@ export function useWorkflowEvents(projectId: string | null) {
         };
 
         es.onerror = (error) => {
-          console.error("SSE error:", error);
-          // EventSource will automatically try to reconnect.
-          // On some errors (like 401 from server), it will stop.
+          console.error("SSE 연결 실패:", error);
+          connectingRef.current = false;
+          resolve(false);
         };
+      });
+    } catch (error) {
+      console.error("Failed to establish SSE connection:", error);
+      connectingRef.current = false;
+      return false;
+    }
+  };
 
-      } catch (error) {
-        console.error("Failed to establish SSE connection:", error);
-        setWorkflowState("failed");
-        connectingRef.current = false;
-      }
-    };
+  // 프로젝트 변경 시 기존 연결 정리
+  useEffect(() => {
+    if (!projectId && sourceRef.current) {
+      sourceRef.current.close();
+      sourceRef.current = null;
+      connectingRef.current = false;
+    }
+  }, [projectId]);
 
-    connect();
-
-    // Cleanup function
+  // 컴포넌트 언마운트 시 연결 정리
+  useEffect(() => {
     return () => {
-      if (es) es.close();
-      if (sourceRef.current === es) sourceRef.current = null;
+      if (sourceRef.current) {
+        sourceRef.current.close();
+        sourceRef.current = null;
+      }
       connectingRef.current = false;
     };
-  }, [projectId, token, setWorkflowState, setStepStatus, resetWorkflow]);
+  }, []);
+
+  // 수동 연결 함수를 반환하여 외부에서 호출 가능하게 함
+  return { ensureConnection };
 }

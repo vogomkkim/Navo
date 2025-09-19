@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../dist/scripts",
+    // --- ESM Compliance Settings ---
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    // --- Path Alias Settings ---
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["server/src/*"]
+    }
+  },
+  "include": ["./**/*.ts"]
+}

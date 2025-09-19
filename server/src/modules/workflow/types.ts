@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance } from "fastify";
 
 /**
  * @file Defines the core types for the declarative, tool-based workflow engine.
@@ -44,6 +44,31 @@ export interface Tool {
 }
 
 /**
+ * Retry policy configuration for a step
+ */
+export interface RetryPolicy {
+  /**
+   * Maximum number of retry attempts
+   */
+  maxRetries: number;
+
+  /**
+   * Backoff strategy: 'linear', 'exponential', or 'fixed'
+   */
+  backoff: "linear" | "exponential" | "fixed";
+
+  /**
+   * Initial delay in milliseconds
+   */
+  initialDelay?: number;
+
+  /**
+   * Maximum delay in milliseconds
+   */
+  maxDelay?: number;
+}
+
+/**
  * Represents a single step within a workflow Plan.
  * Each step executes a specific Tool with defined inputs.
  */
@@ -82,6 +107,32 @@ export interface PlanStep {
    * This defines the DAG structure of the workflow.
    */
   dependencies?: string[];
+
+  /**
+   * Optional condition for step execution
+   * e.g., "${steps.previousStep.outputs.success} === true"
+   */
+  conditional?: string;
+
+  /**
+   * Retry policy for this step
+   */
+  retryPolicy?: RetryPolicy;
+
+  /**
+   * Optional rollback action step ID
+   */
+  rollbackAction?: string;
+
+  /**
+   * Estimated execution time in milliseconds
+   */
+  estimatedDuration?: number;
+
+  /**
+   * Priority level for execution (higher = more priority)
+   */
+  priority?: number;
 }
 
 /**
@@ -103,6 +154,26 @@ export interface Plan {
    * The sequence of steps that make up the workflow.
    */
   steps: PlanStep[];
+
+  /**
+   * Estimated total execution time
+   */
+  estimatedDuration?: string;
+
+  /**
+   * Whether the plan can be parallelized
+   */
+  parallelizable?: boolean;
+
+  /**
+   * Plan metadata
+   */
+  metadata?: {
+    version: string;
+    createdAt: string;
+    complexity: "simple" | "medium" | "complex";
+    tags: string[];
+  };
 }
 
 /**

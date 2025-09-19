@@ -10,7 +10,7 @@ export interface Project {
   requirements?: string | null;
 }
 
-export type VfsNodeType = 'FILE' | 'DIRECTORY';
+export type VfsNodeType = "FILE" | "DIRECTORY";
 
 export interface VfsNode {
   id: string;
@@ -27,7 +27,7 @@ export interface VfsNode {
 export interface ProjectArchitecture {
   pages: Omit<
     VfsNode,
-    'id' | 'projectId' | 'parentId' | 'createdAt' | 'updatedAt'
+    "id" | "projectId" | "parentId" | "createdAt" | "updatedAt"
   >[];
   components: Record<string, { props: Record<string, any>; parent?: string }>;
 }
@@ -52,4 +52,8 @@ export interface CreateChatMessage {
   content: string;
   payload?: any;
   createdAt?: string; // Changed to string
+}
+
+export interface VfsTree {
+  [key: string]: VfsNode | VfsTree;
 }

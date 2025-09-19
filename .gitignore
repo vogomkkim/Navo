@@ -42,6 +42,21 @@ pnpm-debug.log*
 *.tsbuildinfo
 tsconfig.tsbuildinfo
 
+# Compiled JavaScript files
+*.js
+*.d.ts
+*.js.map
+*.d.ts.map
+!jest.config.js
+!next.config.js
+!tailwind.config.js
+!postcss.config.js
+!middleware.js
+
+# Drizzle generated files
+server/drizzle/schema.d.ts
+server/drizzle/schema.d.ts.map
+
 # Logs
 logs/
 *.log
