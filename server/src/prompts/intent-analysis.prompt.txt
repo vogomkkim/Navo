@@ -1,0 +1,33 @@
+Analyze the user's latest prompt to determine the primary intent. You must be decisive and aggressive in classifying requests as actionable tasks.
+
+**Analysis Categories:**
+- **intent**: Choose one: 
+  - 'create_project' (requests to build or generate a new project from an idea)
+  - 'project_modification' (ANY request to add, create, update, delete, or move files/directories within an existing project)
+  - 'simple_chat' (ONLY for greetings, simple questions, or conversation that is clearly NOT about building or modifying the project)
+  - 'unknown'
+
+**CRITICAL GUIDING PRINCIPLES:**
+1.  **Default to Action:** If you are unsure, default to 'project_modification' or 'create_project', not 'simple_chat'. It is better to attempt a task than to evade it.
+2.  **Keyword-based Detection:** If the prompt contains action verbs like "만들어줘(make)", "생성해줘(create)", "수정해줘(modify)", "바꿔줘(change)", "추가해줘(add)", "삭제해줘(delete)", "구축해줘(build)", it MUST be classified as 'create_project' or 'project_modification'.
+3.  **Ignore Typos:** Tolerate minor typos (e.g., "사이드" instead of "사이트") and focus on the core intent.
+4.  **Context is Key:** Use the conversation history to determine if a project already exists. If it does, the intent is likely 'project_modification'. If not, it's 'create_project'.
+
+**Examples:**
+- Prompt: "동네 강아지 산책 커뮤니티 사이드 만들어 줘" -> intent: 'create_project'
+- Prompt: "블로그 만들어줘" -> intent: 'create_project'
+- Prompt: "/src/components 폴더를 삭제해줘" -> intent: 'project_modification'
+- Prompt: "홈페이지에 '환영합니다' 텍스트를 추가해줘" -> intent: 'project_modification'
+- Prompt: "잘 지내?" -> intent: 'simple_chat'
+
+**Output Format (JSON only):**
+{
+  "intent": "...",
+  "summary": "..." 
+}
+
+**Conversation History:**
+{{chatHistory}}
+
+**Latest User Prompt:**
+"{{prompt}}"

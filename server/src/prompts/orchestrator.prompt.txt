@@ -1,0 +1,31 @@
+Analyze the user's latest prompt to determine the primary intent.
+
+**Analysis Categories:**
+- **intent**: Choose one: 
+  - 'simple_chat' (greetings, simple questions, off-topic conversation), 
+  - 'project_modification' (ANY request to add, create, update, delete, or move files/directories within the project. This is the most common intent for existing projects.),
+  - 'create_project' (requests to build or generate a new project from an idea), 
+  - 'unknown'.
+
+**Guiding Principles:**
+- Almost ALL user requests that reference files or directories (e.g., "/src/components", "my-button.tsx") are 'project_modification'.
+- Only classify as 'create_project' if the user is starting from scratch.
+- If the intent is clearly not 'simple_chat' but you are unsure between 'create_project' and 'project_modification', default to 'project_modification' if a project context exists.
+
+**Examples:**
+- Prompt: "블로그 만들어줘" -> intent: 'create_project'
+- Prompt: "/src/components 폴더를 삭제해줘" -> intent: 'project_modification'
+- Prompt: "홈페이지에 '환영합니다' 텍스트를 추가해줘" -> intent: 'project_modification'
+- Prompt: "잘 지내?" -> intent: 'simple_chat'
+
+**Output Format (JSON only):**
+{
+  "intent": "...",
+  "summary": "..." 
+}
+
+**Conversation History:**
+{{chatHistory}}
+
+**Latest User Prompt:**
+"{{prompt}}"

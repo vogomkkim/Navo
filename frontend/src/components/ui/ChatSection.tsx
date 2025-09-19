@@ -171,16 +171,25 @@ export function ChatSection() {
         updateMessage(originalMessage.id, { status: "success" });
       }
 
-      const outputs = (data as any).payload?.outputs;
-      const newProjectId = outputs?.step1_create_db_record?.projectId;
+      // 응답 타입이 CREATE_PROJECT인지 확인
+      if ((data as any).type === "CREATE_PROJECT") {
+        const outputs = (data as any).payload?.outputs;
+        const newProjectId = outputs?.step1_create_db_record?.projectId;
 
-      if (newProjectId) {
-        setSelectedProjectId(newProjectId);
-        queryClient.invalidateQueries({ queryKey: ["projects"] });
+        if (newProjectId) {
+          setSelectedProjectId(newProjectId);
+          queryClient.invalidateQueries({ queryKey: ["projects"] });
+        } else {
+          console.error(
+            "Could not find new projectId in CREATE_PROJECT response",
+            data
+          );
+        }
       } else {
-        console.error(
-          "Could not find new projectId in workflow response",
-          data
+        // SIMPLE_CHAT이나 다른 타입의 응답인 경우
+        console.log(
+          "Received non-CREATE_PROJECT response:",
+          (data as any).type
         );
       }
     },
