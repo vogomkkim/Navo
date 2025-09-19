@@ -125,7 +125,9 @@ export function workflowController(app: FastifyInstance) {
     const heartbeat = setInterval(() => {
       try {
         res.write(":heartbeat\n\n");
-      } catch {}
+      } catch {
+        // do nothing
+      }
     }, 25000);
 
     // 컨넥션 매니저에 등록 (나중에 다른 곳에서 write 할 수 있게)
@@ -153,7 +155,9 @@ export function workflowController(app: FastifyInstance) {
       connectionManager.removeSse?.(projectId, res);
       try {
         res.end();
-      } catch {}
+      } catch {
+        // do nothing
+      }
     });
   });
 

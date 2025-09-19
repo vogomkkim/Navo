@@ -22,11 +22,12 @@ interface MessageContext {
 export class WorkflowService {
   private app: FastifyInstance;
   private model: any;
+  private readonly modelName = "gemini-2.5-flash";
 
   constructor(app: FastifyInstance) {
     this.app = app;
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    this.model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    this.model = genAI.getGenerativeModel({ model: this.modelName });
   }
 
   async preparePlan(
@@ -121,9 +122,9 @@ export class WorkflowService {
       role: item.role === "assistant" ? "model" : "user",
       parts: [{ text: item.message || "" }],
     }));
-
+    const steps: any = {};
     const plannerPrompt = `
-    You are an expert AI Project Planner with advanced DAG (Directed Acyclic Graph) optimization capabilities. Your job is to analyze a user's request and create an optimal execution plan using ONLY the available tools.
+    You are an expert AI Project Planner. Your job is to analyze a user's request and create a precise, executable, step-by-step plan using ONLY the available tools.
 
     **CONTEXT:**
     - User ID: ${user.id}
@@ -133,113 +134,51 @@ export class WorkflowService {
     - Active File in Editor: "${context.activeFile || "none"}"
     - Active Route in Preview: "${context.activePreviewRoute || "none"}"
 
-    **Available Tools:**
+    **Available Tools (with Input Schemas):**
     ${JSON.stringify(availableTools, null, 2)}
 
-    **ADVANCED PLANNING STRATEGY:**
+    **Your Task:**
+    Generate a JSON object that represents a valid "Plan". This plan will be executed by a machine, so it must be 100% correct.
 
-    1. **DAG Optimization Principles:**
-       - Identify independent tasks that can run in parallel
-       - Minimize critical path length for faster execution
-       - Group related operations to reduce context switching
-       - Use conditional steps for dynamic behavior
+    **CRITICAL RULES:**
+    1.  **Tool Names:** You MUST use the exact tool names provided in the "Available Tools" list. Do not invent tool names.
+    2.  **Input Schemas:** You MUST provide all required inputs for each tool, as defined in its inputSchema.
+    3.  **Data Flow (Placeholders):** To use the output of a previous step as input for a subsequent step, you MUST use the placeholder syntax: "\${steps.STEP_ID.outputs.KEY}". For example, to use the 'id' from 'step1_create_db_record', the placeholder would be "\${steps.step1_create_db_record.outputs.id}". This is the ONLY way to link steps.
+    4.  **Dependencies:** If a step uses the output of another step, you MUST add the source step's ID to the dependencies array.
 
-    2. **Smart Decomposition:**
-       - Break complex requests into atomic, reusable steps
-       - Create intermediate steps for data transformation
-       - Use validation steps to ensure data integrity
-       - Implement rollback points for error recovery
-
-    3. **Dependency Management:**
-       - Use explicit dependencies: ["step_id"] for sequential execution
-       - Use conditional dependencies: ["step_id:success"] for error handling
-       - Create parallel branches for independent operations
-       - Use data flow: \`\${steps.step_id.outputs.key}\` for dynamic inputs
-
-    4. **Error Handling Strategy:**
-       - Add validation steps after critical operations
-       - Create fallback steps for common failure scenarios
-       - Use conditional execution based on previous step results
-       - Implement cleanup steps for resource management
-
-    **PLAN STRUCTURE:**
+    **Example Plan (for creating a new project):**
     {
-      "name": "Descriptive plan name",
-      "description": "Detailed plan description",
-      "estimatedDuration": "estimated execution time",
-      "parallelizable": true/false,
+      "name": "Create New Project",
+      "description": "A plan to create a new project from scratch.",
       "steps": [
         {
-          "id": "unique_step_id",
-          "title": "User-friendly title",
-          "description": "Detailed description",
-          "tool": "tool_name",
-          "inputs": { /* tool inputs */ },
-          "dependencies": ["step_id1", "step_id2"],
-          "conditional": "optional condition for execution",
-          "retryPolicy": { "maxRetries": 3, "backoff": "exponential" },
-          "rollbackAction": "optional rollback step id"
-        }
-      ]
-    }
-
-    **EXAMPLE: Complex Project Creation with Parallel Execution**
-    {
-      "name": "Create Full-Stack E-commerce Project",
-      "description": "Creates a complete e-commerce application with frontend, backend, and database",
-      "estimatedDuration": "2-3 minutes",
-      "parallelizable": true,
-      "steps": [
-        {
-          "id": "init_project",
-          "title": "프로젝트 초기화",
-          "description": "데이터베이스에 새 프로젝트 레코드 생성",
+          "id": "step1_create_db_record",
+          "title": "프로젝트 생성",
+          "description": "데이터베이스에 새 프로젝트를 등록합니다.",
           "tool": "create_project_in_db",
-          "inputs": { "name": "E-commerce App", "type": "fullstack" },
-          "dependencies": []
+          "inputs": { "name": "New Web App", "description": "A new web application.", "organizationId": "${organizationId}", "userId": "${user.id}" }
         },
         {
-          "id": "design_architecture",
+          "id": "step2_design_architecture",
           "title": "아키텍처 설계",
-          "description": "프로젝트 구조 및 기술 스택 설계",
+          "description": "애플리케이션 구조를 설계합니다.",
           "tool": "create_project_architecture",
-          "inputs": { "projectId": "\${steps.init_project.outputs.projectId}" },
-          "dependencies": ["init_project"]
+          "inputs": { "name": "New Web App", "description": "A new web application.", "type": "web-application" },
+          "dependencies": ["step1_create_db_record"]
         },
         {
-          "id": "create_backend_files",
-          "title": "백엔드 파일 생성",
-          "description": "API 서버 및 데이터베이스 스키마 생성",
+          "id": "step3_compile_blueprint",
+          "title": "프로젝트 파일 생성",
+          "description": "설계된 아키텍처에 따라 VFS에 파일을 생성합니다.",
           "tool": "compile_blueprint_to_vfs",
-          "inputs": { "blueprint": "\${steps.design_architecture.outputs.blueprint}" },
-          "dependencies": ["design_architecture"]
-        },
-        {
-          "id": "create_frontend_files",
-          "title": "프론트엔드 파일 생성",
-          "description": "React 컴포넌트 및 페이지 생성",
-          "tool": "create_vfs_file",
-          "inputs": { "path": "/src/components/ProductList.tsx", "content": "..." },
-          "dependencies": ["design_architecture"]
-        },
-        {
-          "id": "validate_build",
-          "title": "빌드 검증",
-          "description": "생성된 프로젝트의 빌드 가능성 검증",
-          "tool": "run_shell_command",
-          "inputs": { "command": "npm run build", "cwd": "/project" },
-          "dependencies": ["create_backend_files", "create_frontend_files"],
-          "retryPolicy": { "maxRetries": 2, "backoff": "linear" }
+          "inputs": {
+            "projectId": "\${steps.step1_create_db_record.outputs.id}",
+            "blueprint": "\${steps.step2_design_architecture.outputs}"
+          },
+          "dependencies": ["step1_create_db_record", "step2_design_architecture"]
         }
       ]
     }
-
-    **CRITICAL REQUIREMENTS:**
-    - Always optimize for parallel execution where possible
-    - Include proper error handling and retry mechanisms
-    - Use descriptive step IDs and titles
-    - Validate all tool inputs and dependencies
-    - Consider rollback scenarios for critical operations
 
     Respond with ONLY the raw JSON object, without any markdown formatting.
     `;
@@ -248,9 +187,8 @@ export class WorkflowService {
       history: formattedHistory,
     });
 
-    const result = await chat.sendMessage(
-      `Latest User Request: "${prompt}"\n\n${plannerPrompt}`
-    );
+    const fullPrompt = `Latest User Request: "${prompt}" ${plannerPrompt}`;
+    const result = await chat.sendMessage(fullPrompt);
 
     const rawText: string = result?.response?.text?.() ?? "";
     let parsedPlan: Plan;

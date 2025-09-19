@@ -139,23 +139,26 @@ export class PerformanceMonitor {
    */
   generateMetrics(): PerformanceMetrics {
     const totalExecutionTime = Date.now() - this.startTime;
-    const optimizationSuggestions = this.generateOptimizationSuggestions();
 
-    return {
+    const metrics: PerformanceMetrics = {
       totalExecutionTime,
       stepMetrics: new Map(this.stepMetrics),
       levelMetrics: new Map(this.levelMetrics),
       resourceUsage: { ...this.resourceUsage },
-      optimizationSuggestions,
+      optimizationSuggestions: [], // Initialize as empty
     };
+
+    // Now, generate suggestions based on the metrics we just collected.
+    metrics.optimizationSuggestions = this.generateOptimizationSuggestions(metrics);
+
+    return metrics;
   }
 
   /**
    * Generate optimization suggestions based on metrics
    */
-  private generateOptimizationSuggestions(): string[] {
+  private generateOptimizationSuggestions(metrics: PerformanceMetrics): string[] {
     const suggestions: string[] = [];
-    const metrics = this.generateMetrics();
 
     // Analyze step execution times
     const slowSteps = Array.from(metrics.stepMetrics.values())

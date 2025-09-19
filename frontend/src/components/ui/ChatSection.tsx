@@ -1,23 +1,30 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/app/context/AuthContext';
-import { useInputHistory } from '@/hooks/useInputHistory';
-import { useGetMessages, useSendMessage } from '@/hooks/api';
-import { useGenerateProject } from '@/hooks/api/useAi';
-import { useIdeStore } from '@/store/ideStore';
-import React, { useEffect, useMemo, useRef, useState, UIEvent } from 'react';
-import { useInView } from 'react-intersection-observer';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from "@/app/context/AuthContext";
+import { useInputHistory } from "@/hooks/useInputHistory";
+import { useGetMessages, useSendMessage } from "@/hooks/api";
+import { useGenerateProject } from "@/hooks/api/useAi";
+import { useIdeStore } from "@/store/ideStore";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  UIEvent,
+  useCallback,
+} from "react";
+import { useInView } from "react-intersection-observer";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDownIcon,
   Cross2Icon,
   PaperPlaneIcon,
   MagicWandIcon,
-} from '@radix-ui/react-icons';
-import { PlanConfirmation } from './PlanConfirmation';
-import { WorkflowProgress } from './WorkflowProgress';
-import { useWorkflowEvents } from '@/hooks/useWorkflowEvents';
-import { cn } from '@/lib/utils';
+} from "@radix-ui/react-icons";
+import { PlanConfirmation } from "./PlanConfirmation";
+import { WorkflowProgress } from "./WorkflowProgress";
+import { useWorkflowEvents } from "@/hooks/useWorkflowEvents";
+import { cn } from "@/lib/utils";
 
 const EmptyChatPlaceholder = () => (
   <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 px-4">
@@ -29,7 +36,8 @@ const EmptyChatPlaceholder = () => (
       만들고 싶은 웹사이트나 애플리케이션에 대해 자유롭게 이야기해주세요.
       <br />
       <span className="text-sm text-gray-400 mt-2 block">
-        예시: &quot;우리 동네 강아지들을 위한 산책 커뮤니티 사이트 만들어줘&quot;
+        예시: &quot;우리 동네 강아지들을 위한 산책 커뮤니티 사이트
+        만들어줘&quot;
       </span>
     </p>
   </div>
@@ -70,17 +78,29 @@ export function ChatSection() {
     id: number;
   } | null>(null);
 
+  const scrollToBottom = useCallback(
+    (behavior: "smooth" | "auto" = "smooth") => {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    },
+    []
+  );
+
   useEffect(() => {
     if (selectedProjectId) {
       refetch().then((result) => {
         const initialMessages =
           result.data?.pages.flatMap((page) => page.messages).reverse() || [];
         useIdeStore.setState({ messages: initialMessages });
+
+        // 초기 메시지 로드 후 자동 스크롤
+        setTimeout(() => {
+          scrollToBottom("auto");
+        }, 100);
       });
     } else {
       useIdeStore.setState({ messages: [] });
     }
-  }, [selectedProjectId, refetch]);
+  }, [selectedProjectId, refetch, scrollToBottom]);
 
   const { ref: topOfChatRef, inView: isTopOfChatVisible } = useInView({
     threshold: 0,
@@ -93,9 +113,19 @@ export function ChatSection() {
   }, [isTopOfChatVisible, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const chatHistory = useMemo(() => {
-    const allMessages = serverMessagesData?.pages.flatMap((page) => page.messages) ?? [];
+    const allMessages =
+      serverMessagesData?.pages.flatMap((page) => page.messages) ?? [];
     return allMessages.reverse();
   }, [serverMessagesData]);
+
+  // 서버에서 메시지가 로드되면 자동 스크롤
+  useEffect(() => {
+    if (chatHistory.length > 0 && !isLoadingMessages) {
+      setTimeout(() => {
+        scrollToBottom("auto");
+      }, 50);
+    }
+  }, [chatHistory.length, isLoadingMessages, scrollToBottom]);
 
   useAuth();
   const { inputValue, setInputValue, handleKeyDown, addToHistory } =
@@ -108,22 +138,22 @@ export function ChatSection() {
   const { mutate: sendMessage } = useSendMessage({
     onSuccess: (data, variables) => {
       // Find the original 'sending' message and update its status to 'success'
-      const originalMessage = messages.find(m => m.id === variables.tempId);
+      const originalMessage = messages.find((m) => m.id === variables.tempId);
       if (originalMessage) {
-        updateMessage(originalMessage.id, { status: 'success' });
+        updateMessage(originalMessage.id, { status: "success" });
       }
 
-      if (data.type === 'PLAN_CONFIRMATION_REQUIRED') {
+      if (data.type === "PLAN_CONFIRMATION_REQUIRED") {
         setWorkflowPlan(data.payload.plan);
-        useIdeStore.setState({ workflowState: 'awaiting_confirmation' });
+        useIdeStore.setState({ workflowState: "awaiting_confirmation" });
       }
       // The actual AI message will be added via SSE, so we don't add it here.
     },
     onError: (error, variables) => {
-      const originalMessage = messages.find(m => m.id === variables.tempId);
+      const originalMessage = messages.find((m) => m.id === variables.tempId);
       if (originalMessage) {
         updateMessage(originalMessage.id, {
-          status: 'error',
+          status: "error",
           error: error.message,
         });
       }
@@ -136,9 +166,9 @@ export function ChatSection() {
 
   const { mutate: generateProject } = useGenerateProject({
     onSuccess: (data, variables) => {
-      const originalMessage = messages.find(m => m.id === variables.tempId);
+      const originalMessage = messages.find((m) => m.id === variables.tempId);
       if (originalMessage) {
-        updateMessage(originalMessage.id, { status: 'success' });
+        updateMessage(originalMessage.id, { status: "success" });
       }
 
       const outputs = (data as any).payload?.outputs;
@@ -146,16 +176,19 @@ export function ChatSection() {
 
       if (newProjectId) {
         setSelectedProjectId(newProjectId);
-        queryClient.invalidateQueries({ queryKey: ['projects'] });
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
       } else {
-        console.error('Could not find new projectId in workflow response', data);
+        console.error(
+          "Could not find new projectId in workflow response",
+          data
+        );
       }
     },
     onError: (error, variables) => {
-      const originalMessage = messages.find(m => m.id === variables.tempId);
+      const originalMessage = messages.find((m) => m.id === variables.tempId);
       if (originalMessage) {
         updateMessage(originalMessage.id, {
-          status: 'error',
+          status: "error",
           error: error.message,
         });
       }
@@ -165,20 +198,16 @@ export function ChatSection() {
     },
   });
 
-  const scrollToBottom = (behavior: 'smooth' | 'auto' = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
-  };
-
   useEffect(() => {
     if (isProcessing) {
-      scrollToBottom('auto');
+      scrollToBottom("auto");
     }
-  }, [isProcessing]);
+  }, [isProcessing, scrollToBottom]);
 
   useEffect(() => {
     if (chatHistory.length === 0) return;
     const lastMessage = chatHistory[chatHistory.length - 1];
-    const isFromAI = lastMessage.role !== 'user';
+    const isFromAI = lastMessage.role !== "user";
     if (!isFromAI) return;
 
     setIsProcessing(false);
@@ -191,12 +220,22 @@ export function ChatSection() {
     if (isAtBottom) {
       scrollToBottom();
     } else {
-      const preview = (lastMessage as any).content || '';
-      setToastMessage({ content: preview, id: Date.now() });
-      const timer = setTimeout(() => setToastMessage(null), 3000);
-      return () => clearTimeout(timer);
+      // 새로 생성된 메시지만 토스트 표시 (최근 5초 이내 생성된 메시지)
+      const messageTime = new Date(
+        lastMessage.createdAt || lastMessage.timestamp
+      );
+      const now = new Date();
+      const timeDiff = now.getTime() - messageTime.getTime();
+      const isNewMessage = timeDiff < 5000; // 5초 이내
+
+      if (isNewMessage) {
+        const preview = (lastMessage as any).content || "";
+        setToastMessage({ content: preview, id: Date.now() });
+        const timer = setTimeout(() => setToastMessage(null), 3000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [chatHistory]);
+  }, [chatHistory, scrollToBottom]);
 
   const handleScroll = (e: UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -208,7 +247,7 @@ export function ChatSection() {
     setInputValue(e.target.value);
     const textarea = textareaRef.current;
     if (textarea) {
-      textarea.style.height = 'auto';
+      textarea.style.height = "auto";
       textarea.style.height = `${textarea.scrollHeight}px`;
     }
   };
@@ -220,20 +259,20 @@ export function ChatSection() {
     const tempId = `user-message-${Date.now()}`;
 
     addToHistory(messageToSend);
-    setInputValue('');
+    setInputValue("");
     setIsProcessing(true);
 
     addMessage({
       id: tempId,
-      role: 'user',
+      role: "user",
       message: messageToSend,
       timestamp: new Date(),
-      status: 'sending',
+      status: "sending",
     });
 
     const textarea = textareaRef.current;
     if (textarea) {
-      textarea.style.height = 'auto';
+      textarea.style.height = "auto";
     }
 
     const messageContext = {
@@ -261,7 +300,7 @@ export function ChatSection() {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -273,63 +312,68 @@ export function ChatSection() {
     <div className="relative flex flex-col h-full bg-slate-50 border-r border-gray-200">
       <div
         className={cn(
-          'flex-1 p-4 pb-24',
-          hasHistory ? 'overflow-y-auto' : 'overflow-hidden',
+          "flex-1 p-4 pb-24",
+          hasHistory ? "overflow-y-auto" : "overflow-hidden"
         )}
         ref={chatContainerRef}
         onScroll={handleScroll}
       >
         <div ref={topOfChatRef} />
         {isLoadingMessages && !hasHistory ? (
-          <div className="text-center text-gray-500">대화 내역을 불러오는 중...</div>
+          <div className="text-center text-gray-500">
+            대화 내역을 불러오는 중...
+          </div>
         ) : !hasHistory && !isProcessing ? (
           <EmptyChatPlaceholder />
         ) : (
           <div className="space-y-6">
             {messages.map((message: any) => {
-              const isUser = message.role === 'user';
+              const isUser = message.role === "user";
               return (
                 <div
                   key={message.id}
                   className={cn(
-                    'flex items-end gap-2 animate-in fade-in-50 slide-in-from-bottom-2 duration-500',
-                    isUser ? 'justify-end' : 'justify-start',
+                    "flex items-end gap-2 animate-in fade-in-50 slide-in-from-bottom-2 duration-500",
+                    isUser ? "justify-end" : "justify-start"
                   )}
                 >
                   <div
                     className={cn(
-                      'max-w-lg px-4 py-2.5 rounded-2xl shadow-sm',
+                      "max-w-lg px-4 py-2.5 rounded-2xl shadow-sm",
                       isUser
-                        ? 'bg-gradient-to-br from-blue-600 to-blue-500 text-white rounded-br-lg'
-                        : 'bg-white text-gray-800 border border-gray-200/80 rounded-bl-lg',
-                      message.status === 'sending' && 'opacity-70',
+                        ? "bg-gradient-to-br from-blue-600 to-blue-500 text-white rounded-br-lg"
+                        : "bg-white text-gray-800 border border-gray-200/80 rounded-bl-lg",
+                      message.status === "sending" && "opacity-70"
                     )}
                   >
                     <div className="prose prose-sm max-w-none">
                       {message.message || message.content}
                     </div>
-                     {isUser && message.status === 'error' && (
-                        <div className="text-red-100 text-xs mt-1">
-                          오류: {message.error}
-                        </div>
-                      )}
+                    {isUser && message.status === "error" && (
+                      <div className="text-red-100 text-xs mt-1">
+                        오류: {message.error}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-        {isProcessing && messages.every(m => m.role !== 'user' || m.status !== 'sending') && (
-          <div className="flex justify-start animate-in fade-in-50">
-            <div className="max-w-lg px-4 py-2.5 rounded-2xl bg-white border border-gray-200/80 shadow-sm">
-              <div className="flex items-center space-x-1.5">
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-0"></span>
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150"></span>
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-300"></span>
+        {isProcessing &&
+          messages.every(
+            (m) => m.role !== "user" || m.status !== "sending"
+          ) && (
+            <div className="flex justify-start animate-in fade-in-50">
+              <div className="max-w-lg px-4 py-2.5 rounded-2xl bg-white border border-gray-200/80 shadow-sm">
+                <div className="flex items-center space-x-1.5">
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-0"></span>
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150"></span>
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-300"></span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -337,13 +381,13 @@ export function ChatSection() {
         <div className="absolute bottom-full left-0 right-0 p-4 pointer-events-none">
           {toastMessage && (
             <div
-              className="pointer-events-auto w-full max-w-md mx-auto cursor-pointer rounded-lg bg-blue-500 p-3 text-white shadow-lg transition-all hover:bg-blue-600 animate-in fade-in-50 slide-in-from-bottom-2"
+              className="pointer-events-auto w-full max-w-md mx-auto cursor-pointer rounded-lg bg-white border border-gray-200/80 p-3 text-gray-800 shadow-lg transition-all hover:bg-gray-50 animate-in fade-in-50 slide-in-from-bottom-2"
               onClick={() => scrollToBottom()}
             >
               <p className="text-sm font-medium">새 메시지:</p>
               <p className="text-xs truncate">{toastMessage.content}</p>
               <button
-                className="absolute top-1 right-1 p-1 text-white rounded-full hover:bg-white/20"
+                className="absolute top-1 right-1 p-1 text-gray-600 rounded-full hover:bg-gray-200"
                 onClick={(e) => {
                   e.stopPropagation();
                   setToastMessage(null);
@@ -363,9 +407,9 @@ export function ChatSection() {
           )}
         </div>
 
-        {workflowState === 'awaiting_confirmation' ? (
+        {workflowState === "awaiting_confirmation" ? (
           <PlanConfirmation />
-        ) : workflowState === 'running' ? (
+        ) : workflowState === "running" ? (
           <WorkflowProgress />
         ) : (
           <div className="flex items-center relative w-full rounded-full border border-gray-300 bg-white shadow-sm focus-within:ring-2 focus-within:ring-blue-500 transition-all">

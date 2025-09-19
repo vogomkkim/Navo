@@ -17,8 +17,9 @@ type ProjectRequest = {
 };
 
 // Initialize the AI model once
+const modelName = "gemini-2.5-flash";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: modelName });
 
 async function designArchitectureWithAI(request: ProjectRequest): Promise<any> {
   // This function encapsulates the multi-step design process from the original agent.
@@ -59,7 +60,7 @@ async function designArchitectureWithAI(request: ProjectRequest): Promise<any> {
             "type": "folder",
             "name": "QuizMaster",
             "children": [
-              { "type": "file", "name": "package.json", "content": "{\"name\": \"quiz-master\", \"version\": \"1.0.0\"}" },
+              { "type": "file", "name": "package.json", "content": "{"name": "quiz-master", "version": "1.0.0"}" },
               { "type": "file", "name": "README.md", "content": "# QuizMaster\n\nAn AI-powered quiz platform." }
             ]
           }

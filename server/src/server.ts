@@ -27,6 +27,7 @@ const app = fastify<RawServerDefault, IncomingMessage, ServerResponse>({
   },
 });
 
+
 // Register CORS for all routes, allowing localhost:3000 for development
 app.register(cors, {
   origin: 'http://localhost:3000',
