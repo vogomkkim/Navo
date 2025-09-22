@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { useVfsTree, VfsNodeDto } from '@/hooks/api/useVfsTree';
+import { useVfsTree } from '@/hooks/api/useVfsTree';
 
 interface VfsPreviewRendererProps {
   projectId: string;
@@ -121,7 +121,7 @@ const iframeHtml = `
         // Normalize path
         const normalizedPath = path === '/' ? '' : path;
         const layoutPath = 'dist/src/app/layout.js';
-        const pagePath = `dist/src/app${normalizedPath}/page.js`;
+        const pagePath = 'dist/src/app' + normalizedPath + '/page.js';
 
         // Check if we have cached modules
         let LayoutModule, PageModule;
@@ -146,9 +146,9 @@ const iframeHtml = `
         if (!PageModule || !PageModule.default) {
           // Try to find alternative page files
           const alternativePaths = [
-            `dist/src/app${normalizedPath}/index.js`,
-            `dist/src/app${normalizedPath}/index.tsx`,
-            `dist/src/app/page.js` // fallback to root page
+            'dist/src/app' + normalizedPath + '/index.js',
+            'dist/src/app' + normalizedPath + '/index.tsx',
+            'dist/src/app/page.js' // fallback to root page
           ];
 
           let foundPage = false;
@@ -163,7 +163,7 @@ const iframeHtml = `
           }
 
           if (!foundPage) {
-            throw new Error(`페이지를 찾을 수 없습니다: ${pagePath}`);
+            throw new Error('페이지를 찾을 수 없습니다: ' + pagePath);
           }
         }
 
@@ -221,13 +221,7 @@ const iframeHtml = `
 
     // Add loading animation CSS
     const style = document.createElement('style');
-    style.textContent = `
-      @keyframes loading {
-        0% { width: 0%; }
-        50% { width: 70%; }
-        100% { width: 100%; }
-      }
-    `;
+    style.textContent = '@keyframes loading { 0% { width: 0%; } 50% { width: 70%; } 100% { width: 100%; } }';
     document.head.appendChild(style);
 
     // --- API Proxy: Override fetch ---
@@ -324,7 +318,7 @@ export function VfsPreviewRenderer({
 }: VfsPreviewRendererProps) {
   const { data: vfsTree, isLoading, isError, error } = useVfsTree(projectId);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const workerRef = useRef<Worker>();
+  const workerRef = useRef<Worker>(null);
   const [buildError, setBuildError] = useState<string | null>(null);
   const [buildInfo, setBuildInfo] = useState<{ type: string; timestamp: number; duration?: number } | null>(null);
   const [performanceMetrics, setPerformanceMetrics] = useState<{
@@ -335,10 +329,15 @@ export function VfsPreviewRenderer({
 
   // --- API Proxy Logic ---
   const apiAllowList = [
+    // Allow guestbook API
+    {
+      path: '/api/guestbook',
+      methods: ['GET', 'POST']
+    },
     // Allow all standard methods for any API endpoint under the current project
     // This is a broad rule for MVP functionality. In production, this should be more specific.
     {
-      path: `/api/projects/${projectId}/.*`,
+      path: '/api/projects/' + projectId + '/.*',
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
     },
   ];
@@ -347,7 +346,7 @@ export function VfsPreviewRenderer({
     // Make sure the URL is relative to the origin
     const requestPath = url.startsWith('/') ? url : new URL(url).pathname;
     for (const rule of apiAllowList) {
-      const pattern = new RegExp(`^${rule.path.replace(/:\w+/g, '[^/]+')}$`);
+      const pattern = new RegExp('^' + rule.path.replace(/:\w+/g, '[^/]+') + '$');
       if (pattern.test(requestPath)) {
         return true;
       }
@@ -357,7 +356,7 @@ export function VfsPreviewRenderer({
 
   // --- Message Handler ---
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
 
       if (event.data.type === 'NAVIGATE') {
@@ -368,18 +367,60 @@ export function VfsPreviewRenderer({
             path
           }, '*');
         }
+      } else if (event.data.type === 'API_REQUEST') {
+        // Handle API proxy requests
+        const { requestId, payload } = event.data;
+        const { url, options } = payload;
+
+        try {
+          // Verify the request against the API Allow-List
+          if (!isRequestAllowed(url, options?.method || 'GET')) {
+            iframeRef.current?.contentWindow?.postMessage({
+              type: 'API_RESPONSE',
+              requestId,
+              error: 'API request blocked by security policy.',
+            }, '*');
+            return;
+          }
+
+          // Forward the request to the server
+          const serverUrl = 'http://localhost:3001' + url;
+          const response = await fetch(serverUrl, {
+            ...options,
+            headers: {
+              'Content-Type': 'application/json',
+              ...options?.headers,
+            },
+          });
+
+          const responseData = await response.json();
+
+          // Send success response back to iframe
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'API_RESPONSE',
+            requestId,
+            payload: responseData,
+          }, '*');
+        } catch (error: any) {
+          // Send error response back to iframe
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'API_RESPONSE',
+            requestId,
+            error: error.message || 'API request failed',
+          }, '*');
+        }
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [projectId]);
 
   // --- Worker Management ---
   useEffect(() => {
     if (!vfsTree) return;
 
-    const worker = new Worker(new URL('../../workers/bundler.worker.ts', import.meta.url));
+    const worker = new Worker(new URL('../workers/bundler.worker.ts', import.meta.url));
     workerRef.current = worker;
 
     worker.postMessage({

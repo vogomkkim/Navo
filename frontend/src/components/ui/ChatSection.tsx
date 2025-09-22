@@ -136,7 +136,7 @@ export function ChatSection() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { mutate: sendMessage } = useSendMessage({
-    onSuccess: (data, variables) => {
+    onSuccess: (data: any, variables) => {
       // Find the original 'sending' message and update its status to 'success'
       const originalMessage = messages.find((m) => m.id === variables.tempId);
       if (originalMessage) {
@@ -231,7 +231,7 @@ export function ChatSection() {
     } else {
       // 새로 생성된 메시지만 토스트 표시 (최근 5초 이내 생성된 메시지)
       const messageTime = new Date(
-        lastMessage.createdAt || lastMessage.timestamp
+        (lastMessage as any).createdAt || (lastMessage as any).timestamp
       );
       const now = new Date();
       const timeDiff = now.getTime() - messageTime.getTime();

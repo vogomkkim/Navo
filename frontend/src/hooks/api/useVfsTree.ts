@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/app/context/AuthContext';
-import { fetchVfsTree, VfsTree } from '@/lib/apiClient';
+import { getVfsTree, VfsTree } from '@/lib/apiClient';
 
 export function useVfsTree(
   projectId: string,
@@ -22,9 +22,8 @@ export function useVfsTree(
         throw new Error('Authentication token is not available.');
       }
       try {
-        return await fetchVfsTree(projectId, token, {
+        return await getVfsTree(projectId, token, {
           includeContent,
-          etag: previousData?.version,
         });
       } catch (error) {
         // If the error is 'Not Modified', react-query will keep the stale data,

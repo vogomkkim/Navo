@@ -25,6 +25,7 @@ import { NoProjectsPlaceholder } from '@/components/ui/NoProjectsPlaceholder';
 import { FileTree } from '@/components/ui/FileTree';
 import { FileTabs } from '@/components/ui/FileTabs';
 import { CodeEditor } from '@/components/ui/CodeEditor';
+import { ProjectSettings } from '@/components/ProjectSettings';
 
 type ActiveView = 'editor' | 'preview';
 
@@ -93,6 +94,9 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
       </h2>
       <div className="flex-1 min-h-0 overflow-y-auto">
         <FileTree projectId={selectedProjectId} />
+      </div>
+      <div className="p-2 border-t border-gray-200/80">
+        <ProjectSettings />
       </div>
     </div>
     <div className="code-editor-panel flex flex-col h-full min-h-0">

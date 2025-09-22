@@ -375,3 +375,21 @@ export const publishDeploys = pgTable(
     }).onDelete('cascade'),
   ]
 );
+
+export const guestbook = pgTable(
+  'guestbook',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    message: varchar('message', { length: 255 }).notNull(),
+    author: varchar('author', { length: 255 }).default('Anonymous').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_guestbook_project_id').using('btree', table.projectId),
+  ]
+);

@@ -116,6 +116,36 @@ export function projectsController(app: FastifyInstance) {
     }
   );
 
+  // Get project details
+  app.get(
+    '/api/projects/:projectId',
+    {
+      preHandler: [app.authenticateToken],
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request as any).userId as string | undefined;
+        if (!userId) {
+          reply.status(401).send({ error: '사용자 인증이 필요합니다.' });
+          return;
+        }
+
+        const { projectId } = request.params as { projectId: string };
+        const project = await projectsService.getProject(projectId, userId);
+
+        if (!project) {
+          reply.status(404).send({ error: '프로젝트를 찾을 수 없습니다.' });
+          return;
+        }
+
+        reply.send(project);
+      } catch (error) {
+        app.log.error(error, '프로젝트 조회 실패');
+        reply.status(500).send({ error: '프로젝트 조회에 실패했습니다.' });
+      }
+    }
+  );
+
   // Get the entire VFS tree for a project
   app.get(
     '/api/projects/:projectId/vfs',

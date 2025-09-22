@@ -25,6 +25,12 @@ export class ProjectsService {
     this.chatRepository = new ChatRepository(); // Instantiate it
   }
 
+  // --- Project Management Methods ---
+
+  async getProject(projectId: string, userId: string): Promise<Project | null> {
+    return await this.projectsRepository.getProjectByUserId(projectId, userId);
+  }
+
   // --- VFS Tree Method for Live Preview ---
 
   async getVfsTree(

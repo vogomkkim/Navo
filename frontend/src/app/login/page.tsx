@@ -164,10 +164,9 @@ export default function LoginPage() {
 
         // Use the login function from AuthContext
         login(data.token, data.user);
+        router.push('/'); // Immediately redirect after successful login
 
         console.log('✅ login 함수 호출 완료');
-
-        // Redirect will be handled by useEffect
       } else {
         setMessage({ text: data.error || '로그인 실패', type: 'error' });
       }

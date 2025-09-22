@@ -16,7 +16,7 @@ let buildCache = new Map<string, { hash: string; timestamp: number }>();
  */
 function calculateVfsHash(vfsNodes: VfsNodeDto[]): string {
   const content = vfsNodes
-    .map(node => `${node.path}:${node.content || ''}:${node.mtime || 0}`)
+    .map(node => `${node.path}:${node.content || ''}`)
     .sort()
     .join('|');
 
@@ -190,13 +190,10 @@ self.onmessage = async (event: MessageEvent) => {
             jsx: 'transform',
             jsxFactory: 'React.createElement',
             jsxFragment: 'React.Fragment',
-            incremental: true, // Enable incremental builds
             metafile: true, // Enable metafile for better caching
             // Enhanced asset handling
             assetNames: 'assets/[name]-[hash]',
             chunkNames: 'chunks/[name]-[hash]',
-            // CSS handling
-            cssCodeSplit: true,
             // External dependencies
             external: ['react', 'react-dom', 'react-dom/client'],
             // Source maps for debugging
@@ -213,15 +210,11 @@ self.onmessage = async (event: MessageEvent) => {
             // Bundle size optimization
             mainFields: ['browser', 'module', 'main'],
             conditions: ['browser', 'development'],
-            // Chunk size limits
-            chunkSizeWarningLimit: 1000, // 1MB warning
             // Dead code elimination
             drop: ['console', 'debugger'],
-            // Compression hints
-            compress: false, // Disable compression for faster builds
           });
 
-          console.log('[Worker] Initial build successful with output files:', buildContext.outputFiles.map(f => f.path));
+          console.log('[Worker] Initial build successful with output files:', buildContext.outputFiles.map((f: any) => f.path));
           self.postMessage({
             type: 'BUILD_COMPLETE',
             payload: {
@@ -235,7 +228,7 @@ self.onmessage = async (event: MessageEvent) => {
           // Otherwise, just rebuild
           console.log('[Worker] Incremental rebuild...');
           const rebuildResult = await buildContext.rebuild();
-          console.log('[Worker] Incremental rebuild successful with output files:', rebuildResult.outputFiles.map(f => f.path));
+          console.log('[Worker] Incremental rebuild successful with output files:', rebuildResult.outputFiles.map((f: any) => f.path));
           self.postMessage({
             type: 'BUILD_COMPLETE',
             payload: {
@@ -254,40 +247,40 @@ self.onmessage = async (event: MessageEvent) => {
 
         // Enhanced error reporting with diagnostics
         const errorPayload = {
-          error: error,
+          error: error as any,
           diagnostics: [],
           codeFrame: ''
         };
 
         // Extract esbuild diagnostics if available
-        if (error.errors && Array.isArray(error.errors)) {
-          errorPayload.diagnostics = error.errors.map(err => ({
+        if ((error as any).errors && Array.isArray((error as any).errors)) {
+          errorPayload.diagnostics = (error as any).errors.map((err: any) => ({
             text: err.text,
             location: err.location,
             notes: err.notes || []
           }));
 
           // Generate code frame for the first error
-          if (error.errors[0] && error.errors[0].location) {
-            const firstError = error.errors[0];
+          if ((error as any).errors[0] && (error as any).errors[0].location) {
+            const firstError = (error as any).errors[0];
             const fileContent = currentVfs.get(firstError.location.file);
             if (fileContent) {
               const lines = fileContent.split('\n');
               const startLine = Math.max(0, firstError.location.line - 3);
               const endLine = Math.min(lines.length - 1, firstError.location.line + 2);
 
-              let codeFrame = `파일: ${firstError.location.file}\\n`;
-              codeFrame += `라인 ${firstError.location.line}, 컬럼 ${firstError.location.column}\\n\\n`;
+              let codeFrame = `파일: ${firstError.location.file}\n`;
+              codeFrame += `라인 ${firstError.location.line}, 컬럼 ${firstError.location.column}\n\n`;
 
               for (let i = startLine; i <= endLine; i++) {
                 const lineNum = i + 1;
                 const line = lines[i] || '';
                 const marker = i === firstError.location.line - 1 ? '>>> ' : '    ';
-                codeFrame += \`\${marker}\${lineNum.toString().padStart(3)}: \${line}\\n\`;
+                codeFrame += `${marker}${lineNum.toString().padStart(3)}: ${line}\n`;
 
                 if (i === firstError.location.line - 1) {
                   const spaces = ' '.repeat(firstError.location.column + 6);
-                  codeFrame += \`\${spaces}^\\n\`;
+                  codeFrame += `${spaces}^\n`;
                 }
               }
 

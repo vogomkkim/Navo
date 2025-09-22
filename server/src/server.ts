@@ -14,6 +14,7 @@ import { healthController } from '@/modules/health/health.controller';
 import { projectsController } from '@/modules/projects/projects.controller';
 import { previewController } from '@/modules/preview/preview.controller';
 import { workflowController } from '@/modules/workflow/workflow.controller';
+import { guestbookController } from '@/modules/guestbook/guestbook.controller';
 import websocket from '@fastify/websocket';
 import cors from '@fastify/cors';
 
@@ -157,6 +158,7 @@ projectsController(app);
 workflowController(app);
 analyticsController(app);
 previewController(app); // Register the new preview controller
+app.register((instance) => guestbookController(instance), { prefix: '/api/guestbook' });
 
 // 서버 시작 함수
 const start = async () => {

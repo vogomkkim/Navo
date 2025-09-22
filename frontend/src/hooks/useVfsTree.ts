@@ -25,7 +25,7 @@ export function useVfsTree(
     },
     enabled: !!projectId && !!token && enabled,
     // Keep previous data while refetching to prevent UI flickering
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     // Stale time can be adjusted based on how fresh the data needs to be.
     // For a collaborative environment, a shorter stale time might be better.
     staleTime: 5 * 60 * 1000, // 5 minutes
