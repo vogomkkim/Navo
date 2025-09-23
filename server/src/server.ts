@@ -13,6 +13,7 @@ import { eventsController } from '@/modules/events/events.controller';
 import { healthController } from '@/modules/health/health.controller';
 import { projectsController } from '@/modules/projects/projects.controller';
 import { previewController } from '@/modules/preview/preview.controller';
+import { vercelController } from '@/modules/vercel/vercel.controller';
 import { workflowController } from '@/modules/workflow/workflow.controller';
 import { guestbookController } from '@/modules/guestbook/guestbook.controller';
 import websocket from '@fastify/websocket';
@@ -158,6 +159,7 @@ projectsController(app);
 workflowController(app);
 analyticsController(app);
 previewController(app); // Register the new preview controller
+app.register((instance) => vercelController(instance), { prefix: '/api/vercel' });
 app.register((instance) => guestbookController(instance), { prefix: '/api/guestbook' });
 
 // 서버 시작 함수

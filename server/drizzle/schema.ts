@@ -393,3 +393,28 @@ export const guestbook = pgTable(
     index('idx_guestbook_project_id').using('btree', table.projectId),
   ]
 );
+
+// --- Vercel Integration Table ---
+
+export const vercelIntegrations = pgTable(
+  'vercel_integrations',
+  {
+    id: uuid('id').defaultRandom().primaryKey().notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' })
+      .unique(),
+    accessToken: text('access_token').notNull(),
+    refreshToken: text('refresh_token').notNull(),
+    teamId: text('team_id'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_vercel_integrations_user_id').using('btree', table.userId),
+  ]
+);

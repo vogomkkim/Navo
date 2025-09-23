@@ -29,6 +29,13 @@
       "when": 1758502451925,
       "tag": "0003_calm_khan",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1758593249323,
+      "tag": "0004_chief_mach_iv",
+      "breakpoints": true
     }
   ]
 }
