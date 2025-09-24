@@ -90,6 +90,9 @@ interface IdeState {
   setActiveView: (view: 'editor' | 'preview') => void;
   activePreviewRoute: string | null;
   setActivePreviewRoute: (route: string | null) => void;
+  isSettingsModalOpen: boolean;
+  openSettingsModal: () => void;
+  closeSettingsModal: () => void;
 
   // Preferences
   treeLabelMode: 'name' | 'filename';
@@ -204,6 +207,9 @@ export const useIdeStore = create<IdeState>((set) => ({
   setActiveView: (view) => set({ activeView: view }),
   activePreviewRoute: null,
   setActivePreviewRoute: (route) => set({ activePreviewRoute: route }),
+  isSettingsModalOpen: false,
+  openSettingsModal: () => set({ isSettingsModalOpen: true }),
+  closeSettingsModal: () => set({ isSettingsModalOpen: false }),
 
   // Chat Processing State
   isProcessing: false,

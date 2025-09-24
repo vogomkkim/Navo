@@ -36,6 +36,20 @@
       "when": 1758593249323,
       "tag": "0004_chief_mach_iv",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1758682393615,
+      "tag": "0005_sour_invaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1758684398187,
+      "tag": "0006_empty_proudstar",
+      "breakpoints": true
     }
   ]
 }

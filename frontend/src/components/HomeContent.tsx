@@ -1,38 +1,38 @@
 /* eslint-disable react/prop-types */
-import { useAuth } from '@/app/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { UseMutationResult } from '@tanstack/react-query';
-import { useIdeStore } from '@/store/ideStore';
-import { useState, useEffect, useRef, Dispatch, SetStateAction } from 'react';
+import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { UseMutationResult } from "@tanstack/react-query";
+import { useIdeStore } from "@/store/ideStore";
+import { useState, useEffect, useRef, Dispatch, SetStateAction } from "react";
 import {
   useVfsNodeContent,
   useUpdateVfsNodeContent,
   useListVfsNodes,
-} from '@/hooks/api/useVfs';
-import { useListProjects } from '@/hooks/api/useProject';
-import * as Select from '@radix-ui/react-select';
+} from "@/hooks/api/useVfs";
+import { useListProjects } from "@/hooks/api/useProject";
+import * as Select from "@radix-ui/react-select";
 import {
   ChevronDownIcon,
   CubeIcon,
   EyeOpenIcon,
   Pencil2Icon,
   CheckIcon,
-} from '@radix-ui/react-icons';
-import { ProfileMenu } from '@/components/ui/ProfileMenu';
-import { StatusDisplay } from '@/components/ui/StatusDisplay';
-import { ChatSection } from '@/components/ui/ChatSection';
-import { NoProjectsPlaceholder } from '@/components/ui/NoProjectsPlaceholder';
-import { FileTree } from '@/components/ui/FileTree';
-import { FileTabs } from '@/components/ui/FileTabs';
-import { CodeEditor } from '@/components/ui/CodeEditor';
-import { ProjectSettings } from '@/components/ProjectSettings';
+} from "@radix-ui/react-icons";
+import { ProfileMenu } from "@/components/ui/ProfileMenu";
+import { StatusDisplay } from "@/components/ui/StatusDisplay";
+import { ChatSection } from "@/components/ui/ChatSection";
+import { NoProjectsPlaceholder } from "@/components/ui/NoProjectsPlaceholder";
+import { FileTree } from "@/components/ui/FileTree";
+import { FileTabs } from "@/components/ui/FileTabs";
+import { CodeEditor } from "@/components/ui/CodeEditor";
+import { ProjectSettings } from "@/components/settings/ProjectSettings";
 
-type ActiveView = 'editor' | 'preview';
+type ActiveView = "editor" | "preview";
 
 interface VfsNode {
   id: string;
   name: string;
-  nodeType: 'FILE' | 'DIRECTORY';
+  nodeType: "FILE" | "DIRECTORY";
   updatedAt: string;
   metadata: {
     path?: string;
@@ -111,7 +111,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
             className="flex items-center gap-2 btn btn-ghost btn-sm text-gray-600 hover:bg-gray-200"
           >
             {updateMutation.isPending ? (
-              '저장 중...'
+              "저장 중..."
             ) : (
               <>
                 <CheckIcon />
@@ -133,8 +133,8 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
           </div>
         ) : (
           <CodeEditor
-            content={editedContent ?? ''}
-            onChange={(value) => setEditedContent(value || '')}
+            content={editedContent ?? ""}
+            onChange={(value) => setEditedContent(value || "")}
           />
         )}
       </div>
@@ -165,10 +165,10 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
   const pageList = allVfsNodes
     .filter(
-      (node) => node.nodeType === 'FILE' && /\.(tsx|jsx)$/i.test(node.name)
+      (node) => node.nodeType === "FILE" && /\.(tsx|jsx)$/i.test(node.name)
     )
     .map((node) => {
-      const name = node.name.replace(/\.(tsx|jsx)$/i, '');
+      const name = node.name.replace(/\.(tsx|jsx)$/i, "");
       return {
         id: node.id,
         name: name,
@@ -177,7 +177,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
       };
     });
 
-  const activePageId = pageList.find((p) => p.isActive)?.id || '';
+  const activePageId = pageList.find((p) => p.isActive)?.id || "";
 
   return (
     <div className="live-preview-panel h-full flex flex-col">
@@ -202,11 +202,11 @@ export default function HomeContent() {
   );
   const activeFile = useIdeStore((state) => state.activeFile);
   const [editedContent, setEditedContent] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<ActiveView>('preview');
+  const [activeView, setActiveView] = useState<ActiveView>("preview");
   const previewIframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const { data: vfsNodeData, isLoading: isLoadingVfsNode } = useVfsNodeContent(
-    selectedProjectId || '',
+    selectedProjectId || "",
     activeFile
   );
 
@@ -219,28 +219,28 @@ export default function HomeContent() {
   const allVfsNodes = (rootVfsNodes?.nodes ?? []) as VfsNode[];
   const pageList = allVfsNodes
     .filter(
-      (node) => node.nodeType === 'FILE' && /\.(tsx|jsx)$/i.test(node.name)
+      (node) => node.nodeType === "FILE" && /\.(tsx|jsx)$/i.test(node.name)
     )
     .map((node) => {
-      const name = node.name.replace(/\.(tsx|jsx)$/i, '');
+      const name = node.name.replace(/\.(tsx|jsx)$/i, "");
       return {
         id: node.id,
         name,
         path: node.metadata?.path || `/${name}`,
       };
     });
-  const activePageId = activeFile ?? '';
+  const activePageId = activeFile ?? "";
 
   useEffect(() => {
-    if (vfsNodeData?.node?.nodeType === 'FILE') {
-      setEditedContent(vfsNodeData.node.content ?? '');
+    if (vfsNodeData?.node?.nodeType === "FILE") {
+      setEditedContent(vfsNodeData.node.content ?? "");
     }
     // 디렉토리 선택 시에는 편집 내용을 유지 (변경 없음)
   }, [vfsNodeData]);
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
-      router.replace('/login');
+      router.replace("/login");
     }
   }, [isAuthLoading, user, router]);
 
@@ -266,7 +266,7 @@ export default function HomeContent() {
   };
 
   const handleProjectSelect = (projectId: string) => {
-    if (projectId === 'new') {
+    if (projectId === "new") {
       setSelectedProjectId(null);
       return;
     }
@@ -274,7 +274,7 @@ export default function HomeContent() {
   };
 
   const currentProjectName =
-    projectsData?.projects?.find((p) => p.id === selectedProjectId)?.name || '';
+    projectsData?.projects?.find((p) => p.id === selectedProjectId)?.name || "";
 
   if (isAuthLoading) {
     return <div>인증 정보를 불러오는 중...</div>;
@@ -294,7 +294,7 @@ export default function HomeContent() {
           <h1 className="text-2xl font-bold text-gray-900">Navo 에디터</h1>
           {hasProjects && (
             <Select.Root
-              value={selectedProjectId || ''}
+              value={selectedProjectId || ""}
               onValueChange={handleProjectSelect}
             >
               <Select.Trigger
@@ -355,6 +355,12 @@ export default function HomeContent() {
           )}
         </div>
         <div className="topbar-actions">
+          <button
+            onClick={() => useIdeStore.getState().openSettingsModal()}
+            className="btn btn-ghost btn-sm"
+          >
+            Settings
+          </button>
           <ProfileMenu />
           <StatusDisplay />
         </div>
@@ -373,30 +379,30 @@ export default function HomeContent() {
                 <div className="inline-flex items-center rounded-md border border-gray-300 overflow-hidden bg-white shadow-sm">
                   <button
                     title="에디터"
-                    aria-pressed={activeView === 'editor'}
-                    onClick={() => setActiveView('editor')}
+                    aria-pressed={activeView === "editor"}
+                    onClick={() => setActiveView("editor")}
                     className={
-                      activeView === 'editor'
-                        ? 'px-2.5 py-1.5 text-xs bg-blue-600 text-white'
-                        : 'px-2.5 py-1.5 text-xs bg-white text-gray-700 hover:bg-gray-100'
+                      activeView === "editor"
+                        ? "px-2.5 py-1.5 text-xs bg-blue-600 text-white"
+                        : "px-2.5 py-1.5 text-xs bg-white text-gray-700 hover:bg-gray-100"
                     }
                   >
                     <Pencil2Icon className="w-4 h-4" />
                   </button>
                   <button
                     title="미리보기"
-                    aria-pressed={activeView === 'preview'}
-                    onClick={() => setActiveView('preview')}
+                    aria-pressed={activeView === "preview"}
+                    onClick={() => setActiveView("preview")}
                     className={
-                      activeView === 'preview'
-                        ? 'px-2.5 py-1.5 text-xs bg-blue-600 text-white border-l border-blue-600'
-                        : 'px-2.5 py-1.5 text-xs bg-white text-gray-700 hover:bg-gray-100 border-l border-gray-300'
+                      activeView === "preview"
+                        ? "px-2.5 py-1.5 text-xs bg-blue-600 text-white border-l border-blue-600"
+                        : "px-2.5 py-1.5 text-xs bg-white text-gray-700 hover:bg-gray-100 border-l border-gray-300"
                     }
                   >
                     <EyeOpenIcon className="w-4 h-4" />
                   </button>
                 </div>
-                {activeView === 'preview' && (
+                {activeView === "preview" && (
                   <div className="flex items-center gap-2 ml-2">
                     <Select.Root
                       value={activePageId}
@@ -436,7 +442,7 @@ export default function HomeContent() {
                 )}
               </div>
               <div className="flex-grow relative">
-                {activeView === 'editor' ? (
+                {activeView === "editor" ? (
                   <EditorPanel
                     currentProjectName={currentProjectName}
                     selectedProjectId={selectedProjectId}
@@ -454,7 +460,7 @@ export default function HomeContent() {
                     selectedProjectId={selectedProjectId}
                     activeFile={activeFile}
                     vfsNodeData={vfsNodeData}
-                    onSwitchToEditor={() => setActiveView('editor')}
+                    onSwitchToEditor={() => setActiveView("editor")}
                   />
                 )}
               </div>
