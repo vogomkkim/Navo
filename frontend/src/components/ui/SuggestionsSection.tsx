@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
-import { useSuggestions } from '@/hooks/api';
+import { useSuggestions } from "@/hooks/api";
 
 export function SuggestionsSection() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -44,7 +44,7 @@ export function SuggestionsSection() {
       )}
 
       <div
-        className={`suggestions-panel ${isPanelOpen ? 'open' : ''}`}
+        className={`suggestions-panel ${isPanelOpen ? "open" : ""}`}
         id="suggestionsPanel"
       >
         <div className="suggestions-header">
@@ -71,8 +71,11 @@ export function SuggestionsSection() {
             <p>사용 가능한 제안이 없습니다.</p>
           )}
           {data?.suggestions.map((suggestion: any, index: number) => (
-            <div key={index} className="suggestion-card">
-              <p>{JSON.stringify(suggestion.content)}</p>{' '}
+            <div
+              key={suggestion.id || `suggestion-${index}`}
+              className="suggestion-card"
+            >
+              <p>{JSON.stringify(suggestion.content)}</p>{" "}
               {/* TODO: Render suggestion content properly */}
               {/* Add apply button here */}
             </div>

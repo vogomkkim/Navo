@@ -85,7 +85,10 @@ function clearAllUserInputHistory(): void {
 // --- Types ---
 
 interface GetMessagesResponse {
-  messages: ChatMessage[];
+  messages: {
+    messages: ChatMessage[];
+    nextCursor: string | null;
+  };
   nextCursor: string | null;
 }
 
@@ -108,12 +111,17 @@ export function useGetMessages(projectId: string | null) {
   return useInfiniteQuery<GetMessagesResponse, Error>({
     queryKey: ["messages", projectId],
     queryFn: async ({ pageParam = undefined }) => {
-      if (!projectId) return { messages: [], nextCursor: null };
+      if (!projectId)
+        return {
+          messages: { messages: [], nextCursor: null },
+          nextCursor: null,
+        };
       try {
         const url = `/api/projects/${projectId}/messages?limit=20${
           pageParam ? `&cursor=${pageParam}` : ""
         }`;
-        return await fetchApi<GetMessagesResponse>(url, { token });
+        const response = await fetchApi<GetMessagesResponse>(url, { token });
+        return response;
       } catch (error) {
         if (error instanceof Error && error.message === "Unauthorized") {
           logout();
@@ -122,7 +130,7 @@ export function useGetMessages(projectId: string | null) {
       }
     },
     initialPageParam: undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    getNextPageParam: (lastPage) => lastPage.messages.nextCursor,
     enabled: !!projectId && !!token,
   });
 }
@@ -132,9 +140,7 @@ export function useSendMessage(
 ) {
   const { token, logout, user } = useAuth();
   const queryClient = useQueryClient();
-  const { ensureConnection } = useWorkflowEvents(
-    useIdeStore.getState().selectedProjectId
-  );
+  // SSE 연결은 ChatSection에서 관리하므로 여기서는 제거
 
   return useMutation<unknown, Error, SendMessagePayload>({
     mutationFn: async (data) => {
@@ -142,13 +148,7 @@ export function useSendMessage(
         data.projectId || useIdeStore.getState().selectedProjectId;
       if (!projectId) throw new Error("No project selected");
 
-      // 메시지 전송 전 SSE 연결 확인
-      const isConnected = await ensureConnection();
-      if (!isConnected) {
-        console.warn(
-          "SSE 연결 실패 - 워크플로우 진행 상황을 실시간으로 받을 수 없습니다"
-        );
-      }
+      // SSE 연결은 ChatSection에서 관리됨
 
       const { projectId: _projectId, ...payload } = data;
       void _projectId; // 사용하지 않는 변수 명시
@@ -177,7 +177,7 @@ export function useSendMessage(
       // 새로운 메시지로 캐시를 낙관적으로 업데이트
       queryClient.setQueryData(queryKey, (oldData: unknown) => {
         const newUserMessage = {
-          id: `temp-${Date.now()}`,
+          id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           role: "user",
           content: newMessage.prompt,
           createdAt: new Date().toISOString(),
@@ -187,18 +187,31 @@ export function useSendMessage(
 
         if (!oldData || !(oldData as { pages?: unknown[] })?.pages) {
           return {
-            pages: [{ messages: [newUserMessage], nextCursor: null }],
+            pages: [
+              {
+                messages: {
+                  messages: [newUserMessage],
+                  nextCursor: null,
+                },
+                nextCursor: null,
+              },
+            ],
             pageParams: [undefined],
           };
         }
 
         const newData = { ...(oldData as { pages: unknown[] }) };
-        const firstPage = (newData.pages[0] as { messages: unknown[] }) || {
-          messages: [],
+        const firstPage = (newData.pages[0] as {
+          messages: { messages: unknown[] };
+        }) || {
+          messages: { messages: [] },
         };
         const updatedFirstPage = {
           ...firstPage,
-          messages: [newUserMessage, ...firstPage.messages],
+          messages: {
+            ...firstPage.messages,
+            messages: [newUserMessage, ...firstPage.messages.messages],
+          },
         };
         newData.pages[0] = updatedFirstPage;
 

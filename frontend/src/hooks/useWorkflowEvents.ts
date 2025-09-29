@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useIdeStore } from "@/store/ideStore";
 import { useAuth } from "@/app/context/AuthContext";
 import { fetchSseTicket } from "@/lib/apiClient";
@@ -9,43 +9,8 @@ export function useWorkflowEvents(projectId: string | null) {
   const sourceRef = useRef<EventSource | null>(null);
   const connectingRef = useRef(false);
 
-  // 수동 연결 함수 - 채팅 메시지 전송 시 호출
-  const ensureConnection = async (): Promise<boolean> => {
-    if (!projectId || !token) return false;
-
-    // 이미 연결되어 있으면 성공
-    if (
-      sourceRef.current &&
-      sourceRef.current.readyState === EventSource.OPEN
-    ) {
-      return true;
-    }
-
-    // 연결 중이면 대기
-    if (connectingRef.current) {
-      return new Promise<boolean>((resolve) => {
-        const checkConnection = () => {
-          if (
-            sourceRef.current &&
-            sourceRef.current.readyState === EventSource.OPEN
-          ) {
-            resolve(true);
-          } else if (!connectingRef.current) {
-            resolve(false);
-          } else {
-            setTimeout(checkConnection, 100);
-          }
-        };
-        checkConnection();
-      });
-    }
-
-    // 새로 연결 시도
-    return await connectSSE();
-  };
-
   // SSE 연결 함수
-  const connectSSE = async (): Promise<boolean> => {
+  const connectSSE = useCallback(async (): Promise<boolean> => {
     if (!projectId || !token) return false;
 
     connectingRef.current = true;
@@ -81,11 +46,39 @@ export function useWorkflowEvents(projectId: string | null) {
                 break;
               case "workflow_started":
                 setWorkflowState("running");
+                // 워크플로우 시작 메시지 추가
+                if (message.payload?.message) {
+                  useIdeStore.getState().addMessage({
+                    id: `workflow-start-${Date.now()}`,
+                    role: "assistant",
+                    content: message.payload.message,
+                    timestamp: new Date().toISOString(),
+                    status: "thinking",
+                    isLive: true,
+                  });
+                }
                 break;
               case "workflow_progress":
-                const { stepId, status } = message.payload;
+                const {
+                  stepId,
+                  status,
+                  message: stepMessage,
+                  stepTitle,
+                } = message.payload;
                 if (stepId && status) {
                   setStepStatus(stepId, status);
+
+                  // 실시간 메시지 추가
+                  if (stepMessage && stepTitle) {
+                    useIdeStore.getState().addMessage({
+                      id: `workflow-${stepId}-${Date.now()}`,
+                      role: "assistant",
+                      content: stepMessage,
+                      timestamp: new Date().toISOString(),
+                      status: status === "running" ? "thinking" : "success",
+                      isLive: true,
+                    });
+                  }
                 }
                 break;
               case "workflow_completed":
@@ -95,6 +88,33 @@ export function useWorkflowEvents(projectId: string | null) {
               case "workflow_failed":
                 setWorkflowState("failed");
                 setTimeout(() => resetWorkflow(), 5000);
+                break;
+              case "AI_RESPONSE_COMPLETE":
+                // AI 응답 완료 - 채팅에 메시지 추가
+                console.log("✅ AI 응답 수신:", message.message);
+                useIdeStore.getState().addMessage({
+                  id: `ai-${Date.now()}-${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
+                  role: "assistant",
+                  content: message.message,
+                  timestamp: new Date().toISOString(),
+                  status: "success",
+                });
+                break;
+              case "AI_RESPONSE_ERROR":
+                // AI 응답 오류
+                console.error("❌ AI 응답 오류:", message.error);
+                useIdeStore.getState().addMessage({
+                  id: `ai-error-${Date.now()}-${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
+                  role: "assistant",
+                  content: message.message,
+                  timestamp: new Date().toISOString(),
+                  status: "error",
+                  error: message.error,
+                });
                 break;
               case "TEST_MESSAGE":
                 // 테스트 메시지 - 개발 환경에서만 로그
@@ -124,16 +144,54 @@ export function useWorkflowEvents(projectId: string | null) {
       connectingRef.current = false;
       return false;
     }
-  };
+  }, [projectId, token]);
 
-  // 프로젝트 변경 시 기존 연결 정리
+  // 수동 연결 함수 - 채팅 메시지 전송 시 호출
+  const ensureConnection = useCallback(async (): Promise<boolean> => {
+    if (!projectId || !token) return false;
+
+    // 이미 연결되어 있으면 성공
+    if (
+      sourceRef.current &&
+      sourceRef.current.readyState === EventSource.OPEN
+    ) {
+      return true;
+    }
+
+    // 연결 중이면 대기
+    if (connectingRef.current) {
+      return new Promise<boolean>((resolve) => {
+        const checkConnection = () => {
+          if (
+            sourceRef.current &&
+            sourceRef.current.readyState === EventSource.OPEN
+          ) {
+            resolve(true);
+          } else if (!connectingRef.current) {
+            resolve(false);
+          } else {
+            setTimeout(checkConnection, 100);
+          }
+        };
+        checkConnection();
+      });
+    }
+
+    // 새로 연결 시도
+    return await connectSSE();
+  }, [projectId, token, connectSSE]);
+
+  // 프로젝트 변경 시 기존 연결 정리 및 새 연결
   useEffect(() => {
     if (!projectId && sourceRef.current) {
       sourceRef.current.close();
       sourceRef.current = null;
       connectingRef.current = false;
+    } else if (projectId && token) {
+      // 프로젝트가 선택되면 자동으로 SSE 연결
+      connectSSE();
     }
-  }, [projectId]);
+  }, [projectId, token, connectSSE]);
 
   // 컴포넌트 언마운트 시 연결 정리
   useEffect(() => {
@@ -147,5 +205,5 @@ export function useWorkflowEvents(projectId: string | null) {
   }, []);
 
   // 수동 연결 함수를 반환하여 외부에서 호출 가능하게 함
-  return { ensureConnection };
+  return { ensureConnection, connectSSE };
 }

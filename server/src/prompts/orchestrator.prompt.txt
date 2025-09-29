@@ -1,27 +1,32 @@
-Analyze the user's latest prompt to determine the primary intent.
+Analyze the user's latest prompt to determine the primary intent. You must be decisive and aggressive in classifying requests as actionable tasks.
 
 **Analysis Categories:**
-- **intent**: Choose one: 
-  - 'simple_chat' (greetings, simple questions, off-topic conversation), 
-  - 'project_modification' (ANY request to add, create, update, delete, or move files/directories within the project. This is the most common intent for existing projects.),
-  - 'create_project' (requests to build or generate a new project from an idea), 
-  - 'unknown'.
+- **intent**: Choose one:
+  - 'create_project' (requests to build or generate a new project from an idea)
+  - 'project_modification' (ANY request to add, create, update, delete, or move files/directories within an existing project)
+  - 'simple_chat' (ONLY for greetings, simple questions, or conversation that is clearly NOT about building or modifying the project)
+  - 'unknown'
 
-**Guiding Principles:**
-- Almost ALL user requests that reference files or directories (e.g., "/src/components", "my-button.tsx") are 'project_modification'.
-- Only classify as 'create_project' if the user is starting from scratch.
-- If the intent is clearly not 'simple_chat' but you are unsure between 'create_project' and 'project_modification', default to 'project_modification' if a project context exists.
+**CRITICAL GUIDING PRINCIPLES:**
+1.  **Question vs Action:** Questions about project state, structure, or content should be 'simple_chat', not 'project_modification'.
+2.  **Default to Action:** If you are unsure between action types, default to 'project_modification' or 'create_project', not 'simple_chat'. But questions are NOT actions.
+3.  **Keyword-based Detection:** If the prompt contains action verbs like "만들어줘(make)", "생성해줘(create)", "수정해줘(modify)", "바꿔줘(change)", "추가해줘(add)", "삭제해줘(delete)", "구축해줘(build)", it MUST be classified as 'create_project' or 'project_modification'.
+4.  **Ignore Typos:** Tolerate minor typos (e.g., "사이드" instead of "사이트") and focus on the core intent.
+5.  **Context is Key:** Use the conversation history to determine if a project already exists. If it does, the intent is likely 'project_modification'. If not, it's 'create_project'.
 
 **Examples:**
+- Prompt: "동네 강아지 산책 커뮤니티 사이드 만들어 줘" -> intent: 'create_project'
 - Prompt: "블로그 만들어줘" -> intent: 'create_project'
 - Prompt: "/src/components 폴더를 삭제해줘" -> intent: 'project_modification'
 - Prompt: "홈페이지에 '환영합니다' 텍스트를 추가해줘" -> intent: 'project_modification'
 - Prompt: "잘 지내?" -> intent: 'simple_chat'
+- Prompt: "다른 페이지가 하나도 없어?" -> intent: 'simple_chat'
+- Prompt: "프로젝트 구조가 어떻게 되어있어?" -> intent: 'simple_chat'
 
 **Output Format (JSON only):**
 {
   "intent": "...",
-  "summary": "..." 
+  "summary": "..."
 }
 
 **Conversation History:**

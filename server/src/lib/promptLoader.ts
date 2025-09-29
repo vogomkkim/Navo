@@ -1,6 +1,7 @@
 // server/src/lib/promptLoader.ts
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 
 export class PromptLoader {
   private static cache = new Map<string, string>();
@@ -10,9 +11,10 @@ export class PromptLoader {
       return this.cache.get(templateName)!;
     }
 
-    // 현재 파일(__dirname) 기준으로 prompts 디렉토리 찾기
-    const currentDir = __dirname; // server/src/lib
-    const promptsDir = path.resolve(currentDir, "..", "prompts");
+    // ES 모듈에서 __dirname 대신 import.meta.url 사용
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const promptsDir = path.resolve(__dirname, "..", "prompts");
     const templatePath = path.join(promptsDir, templateName);
 
     if (!fs.existsSync(templatePath)) {

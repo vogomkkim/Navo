@@ -36,7 +36,12 @@ You MUST respond with a JSON object. The JSON object must have a "message" field
 **Conversation History:**
 {{chatHistory}}
 
+{{projectContext}}
+
 **Latest User Prompt:**
 "{{prompt}}"
+
+**Instructions for Project Questions:**
+If the user asks about the current project (like "다른 페이지가 하나도 없어?" or "프로젝트 구조가 어떻게 되어있어?"), use the project context above to provide helpful information. If you don't have enough information, suggest that the user can ask for specific modifications.
 
 Your JSON Response (JSON only, no markdown):

@@ -55,5 +55,12 @@ export interface CreateChatMessage {
 }
 
 export interface VfsTree {
-  [key: string]: VfsNode | VfsTree;
+  projectId: string;
+  version: string;
+  nodes: Array<{
+    path: string;
+    type: "file" | "directory";
+    content?: string;
+    hash?: string;
+  }>;
 }

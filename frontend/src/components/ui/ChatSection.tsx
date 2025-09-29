@@ -60,7 +60,7 @@ export function ChatSection() {
     activePreviewRoute,
   } = useIdeStore();
 
-  useWorkflowEvents(selectedProjectId);
+  const { ensureConnection } = useWorkflowEvents(selectedProjectId);
   const queryClient = useQueryClient();
 
   const {
@@ -76,6 +76,7 @@ export function ChatSection() {
   const [toastMessage, setToastMessage] = useState<{
     content: string;
     id: number;
+    type?: "info" | "error" | "success";
   } | null>(null);
 
   const scrollToBottom = useCallback(
@@ -89,7 +90,9 @@ export function ChatSection() {
     if (selectedProjectId) {
       refetch().then((result) => {
         const initialMessages =
-          result.data?.pages.flatMap((page) => page.messages).reverse() || [];
+          result.data?.pages
+            .flatMap((page) => page.messages.messages)
+            .reverse() || [];
         useIdeStore.setState({ messages: initialMessages });
 
         // 초기 메시지 로드 후 자동 스크롤
@@ -114,7 +117,7 @@ export function ChatSection() {
 
   const chatHistory = useMemo(() => {
     const allMessages =
-      serverMessagesData?.pages.flatMap((page) => page.messages) ?? [];
+      serverMessagesData?.pages.flatMap((page) => page.messages.messages) ?? [];
     return allMessages.reverse();
   }, [serverMessagesData]);
 
@@ -157,6 +160,19 @@ export function ChatSection() {
           error: error.message,
         });
       }
+
+      // 사용자에게 에러 알림
+      setToastMessage({
+        content: `메시지 전송 실패: ${error.message}`,
+        id: Date.now(),
+        type: "error",
+      });
+
+      // 3초 후 토스트 메시지 자동 제거
+      setTimeout(() => {
+        setToastMessage(null);
+      }, 3000);
+
       resetWorkflow();
     },
     onSettled: () => {
@@ -201,6 +217,18 @@ export function ChatSection() {
           error: error.message,
         });
       }
+
+      // 사용자에게 에러 알림
+      setToastMessage({
+        content: `프로젝트 생성 실패: ${error.message}`,
+        id: Date.now(),
+        type: "error",
+      });
+
+      // 3초 후 토스트 메시지 자동 제거
+      setTimeout(() => {
+        setToastMessage(null);
+      }, 3000);
     },
     onSettled: () => {
       setIsProcessing(false);
@@ -261,11 +289,21 @@ export function ChatSection() {
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim() || isProcessing) return;
 
+    // SSE 연결 확인
+    if (selectedProjectId) {
+      const isConnected = await ensureConnection();
+      if (!isConnected) {
+        console.warn("SSE 연결 실패 - AI 응답을 실시간으로 받을 수 없습니다");
+      }
+    }
+
     const messageToSend = inputValue;
-    const tempId = `user-message-${Date.now()}`;
+    const tempId = `user-message-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
 
     addToHistory(messageToSend);
     setInputValue("");
@@ -340,7 +378,7 @@ export function ChatSection() {
               const isUser = message.role === "user";
               return (
                 <div
-                  key={message.id}
+                  key={message.id || `fallback-${Math.random()}`}
                   className={cn(
                     "flex items-end gap-2 animate-in fade-in-50 slide-in-from-bottom-2 duration-500",
                     isUser ? "justify-end" : "justify-start"
@@ -390,10 +428,16 @@ export function ChatSection() {
         <div className="absolute bottom-full left-0 right-0 p-4 pointer-events-none">
           {toastMessage && (
             <div
-              className="pointer-events-auto w-full max-w-md mx-auto cursor-pointer rounded-lg bg-white border border-gray-200/80 p-3 text-gray-800 shadow-lg transition-all hover:bg-gray-50 animate-in fade-in-50 slide-in-from-bottom-2"
+              className={`pointer-events-auto w-full max-w-md mx-auto cursor-pointer rounded-lg border p-3 shadow-lg transition-all hover:bg-gray-50 animate-in fade-in-50 slide-in-from-bottom-2 ${
+                toastMessage.type === "error"
+                  ? "bg-red-50 border-red-200 text-red-800"
+                  : "bg-white border-gray-200/80 text-gray-800"
+              }`}
               onClick={() => scrollToBottom()}
             >
-              <p className="text-sm font-medium">새 메시지:</p>
+              <p className="text-sm font-medium">
+                {toastMessage.type === "error" ? "오류 발생:" : "새 메시지:"}
+              </p>
               <p className="text-xs truncate">{toastMessage.content}</p>
               <button
                 className="absolute top-1 right-1 p-1 text-gray-600 rounded-full hover:bg-gray-200"

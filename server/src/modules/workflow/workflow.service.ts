@@ -81,6 +81,43 @@ export class WorkflowService {
     return { plan, outputs: Object.fromEntries(outputs) };
   }
 
+  async createAndRunWorkflow(params: {
+    projectId: string;
+    userId: string;
+    prompt: string;
+    chatHistory: any[];
+    context: MessageContext;
+  }) {
+    const { projectId, userId, prompt, chatHistory, context } = params;
+    const user = { id: userId };
+
+    // 1. Generate the plan based on the prompt and context
+    const plan = await this.preparePlan(
+      prompt,
+      user,
+      chatHistory,
+      projectId,
+      context
+    );
+
+    // 2. Execute the plan in the background (don't await)
+    this.executePlan(plan, user, projectId).catch((error) => {
+      this.app.log.error(
+        error,
+        `[WorkflowService] Background execution failed for plan "${plan.name}"`
+      );
+      // Here you might want to add error handling, like notifying the user via SSE
+    });
+
+    // 3. Return a run identifier immediately
+    // For now, a simple object. Later, this could be a record from a workflow_runs table.
+    return {
+      id: `run_${new Date().getTime()}`,
+      planName: plan.name,
+      status: "started",
+    };
+  }
+
   private determineProjectType(projectId?: string): ProjectType {
     return ProjectType.VFS;
   }

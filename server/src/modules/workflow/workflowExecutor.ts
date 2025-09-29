@@ -293,7 +293,13 @@ export class WorkflowExecutor {
     if (projectId) {
       connectionManager.broadcast(projectId, {
         type: "workflow_progress",
-        payload: { stepId: step.id, status: "running" },
+        payload: {
+          stepId: step.id,
+          status: "running",
+          message: `${step.title}을(를) 시작합니다...`,
+          stepTitle: step.title,
+          stepDescription: step.description,
+        },
       });
     }
 
@@ -326,7 +332,13 @@ export class WorkflowExecutor {
       if (projectId) {
         connectionManager.broadcast(projectId, {
           type: "workflow_progress",
-          payload: { stepId: step.id, status: "completed", output },
+          payload: {
+            stepId: step.id,
+            status: "completed",
+            output,
+            message: `${step.title}이(가) 완료되었습니다.`,
+            stepTitle: step.title,
+          },
         });
       }
       return output;

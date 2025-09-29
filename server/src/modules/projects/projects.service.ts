@@ -138,7 +138,15 @@ export class ProjectsService {
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
-    return this.chatRepository.getMessagesByProjectId(projectId, options);
+    
+    const messages = await this.chatRepository.getMessagesByProjectId(projectId, options);
+    
+    let nextCursor: string | null = null;
+    if (messages.length === options.limit) {
+      nextCursor = messages[messages.length - 1].id;
+    }
+
+    return { messages, nextCursor };
   }
 
   async createMessage(

@@ -26,7 +26,7 @@
 
 1. **워크플로우 엔진** (Orchestrator, WorkflowService, WorkflowExecutor)
 2. **프로젝트 관리** (VFS, Projects)
-3. **AI 통합** (IntentAnalyzer, AI Planner)
+3. **AI 통합** (AI Planner)
 4. **실시간 통신** (SSE)
 
 ## 🚀 마이그레이션 전략
