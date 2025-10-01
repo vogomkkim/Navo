@@ -23,6 +23,9 @@ ${steps.STEP_ID.outputs.KEY}
 ${steps.step1_create_db_record.outputs.id}
 `. This is the ONLY way to link steps.
 4.  **Dependencies:** If a step uses the output of another step, you MUST add the source step's ID to the `dependencies` array.
+5.  **NO CIRCULAR DEPENDENCIES:** NEVER create circular dependencies. Each step can only depend on steps that come BEFORE it in the execution order. Step A cannot depend on Step B if Step B also depends on Step A.
+6.  **Execution Order:** Plan your steps in a logical, linear order. Database creation → Architecture design → File generation → Implementation.
+7.  **Fallback Strategy:** If you cannot understand the user's request or find appropriate tools, create a simple plan with basic tools like `create_vfs_file` or `create_vfs_directory` rather than failing.
 
 **Example Plan (for creating a new project):**
 {
@@ -48,12 +51,31 @@ ${steps.step1_create_db_record.outputs.id}
       "id": "step3_compile_blueprint",
       "title": "프로젝트 파일 생성",
       "description": "설계된 아키텍처에 따라 VFS에 파일을 생성합니다.",
-      "tool": "compile_blueprint_to_vfs",
+      "tool": "scaffold_project_from_blueprint",
       "inputs": {
         "projectId": "\${steps.step1_create_db_record.outputs.id}",
         "blueprint": "\${steps.step2_design_architecture.outputs}"
       },
       "dependencies": ["step1_create_db_record", "step2_design_architecture"]
+    }
+  ]
+}
+
+**Example Plan (for simple file creation):**
+{
+  "name": "Create Simple File",
+  "description": "A plan to create a simple file in the VFS.",
+  "steps": [
+    {
+      "id": "step1_create_file",
+      "title": "파일 생성",
+      "description": "VFS에 새 파일을 생성합니다.",
+      "tool": "create_vfs_file",
+      "inputs": {
+        "path": "src/app/page.tsx",
+        "content": "export default function Page() { return <div>Hello World</div>; }",
+        "projectId": "{{projectId}}"
+      }
     }
   ]
 }

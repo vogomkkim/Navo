@@ -322,9 +322,21 @@ export function ChatSection() {
       textarea.style.height = "auto";
     }
 
+    // Extract filename from activeFile (remove UUID, keep readable path)
+    const getReadableFileName = (fileId: string | null): string | null => {
+      if (!fileId) return null;
+
+      // If it's already a readable path (contains /), return as is
+      if (fileId.includes('/')) return fileId;
+
+      // If it's a UUID, try to get the actual filename from nodesById
+      const nodeMeta = useIdeStore.getState().nodesById[fileId];
+      return nodeMeta?.name || nodeMeta?.path || fileId;
+    };
+
     const messageContext = {
       activeView,
-      activeFile,
+      activeFile: getReadableFileName(activeFile),
       activePreviewRoute,
     };
 
@@ -421,7 +433,7 @@ export function ChatSection() {
               </div>
             </div>
           )}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} data-messages-end />
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200/80 bg-slate-50/80 backdrop-blur-sm">

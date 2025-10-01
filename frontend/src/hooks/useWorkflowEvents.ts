@@ -87,7 +87,64 @@ export function useWorkflowEvents(projectId: string | null) {
                 break;
               case "workflow_failed":
                 setWorkflowState("failed");
+                // 실패 메시지 추가 - 사용자 친화적 메시지
+                if (message.payload?.error) {
+                  // 기술적 에러를 사용자 친화적 메시지로 변환
+                  const getUserFriendlyMessage = (error: string) => {
+                    if (error.includes('circular dependency')) {
+                      return '요청을 처리하는 중에 문제가 발생했습니다. 다시 시도해주세요.';
+                    }
+                    if (error.includes('No root nodes found')) {
+                      return '요청을 이해하지 못했습니다. 다른 방식으로 말씀해주세요.';
+                    }
+                    if (error.includes('timeout')) {
+                      return '처리 시간이 오래 걸려 중단되었습니다. 다시 시도해주세요.';
+                    }
+                    // 기본 메시지
+                    return '요청을 처리하는 중에 문제가 발생했습니다. 다시 시도해주세요.';
+                  };
+
+                  useIdeStore.getState().addMessage({
+                    id: `workflow-failed-${Date.now()}`,
+                    role: "assistant",
+                    content: getUserFriendlyMessage(message.payload.error),
+                    timestamp: new Date().toISOString(),
+                    status: "error",
+                    error: message.payload.error, // 기술적 정보는 error 필드에 보관
+                    isLive: true,
+                  });
+
+                  // 부드럽게 스크롤 다운
+                  setTimeout(() => {
+                    const messagesEndRef = document.querySelector('[data-messages-end]');
+                    if (messagesEndRef) {
+                      messagesEndRef.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }, 100);
+                }
                 setTimeout(() => resetWorkflow(), 5000);
+                break;
+
+              case "question_answered":
+                // 질문 답변 처리
+                if (message.payload?.answer) {
+                  useIdeStore.getState().addMessage({
+                    id: `question-answer-${Date.now()}`,
+                    role: "assistant",
+                    content: message.payload.answer,
+                    timestamp: new Date().toISOString(),
+                    status: "completed",
+                    isLive: true,
+                  });
+
+                  // 부드럽게 스크롤 다운
+                  setTimeout(() => {
+                    const messagesEndRef = document.querySelector('[data-messages-end]');
+                    if (messagesEndRef) {
+                      messagesEndRef.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }, 100);
+                }
                 break;
               case "AI_RESPONSE_COMPLETE":
                 // AI 응답 완료 - 채팅에 메시지 추가
@@ -101,6 +158,14 @@ export function useWorkflowEvents(projectId: string | null) {
                   timestamp: new Date().toISOString(),
                   status: "success",
                 });
+
+                // 부드럽게 스크롤 다운
+                setTimeout(() => {
+                  const messagesEndRef = document.querySelector('[data-messages-end]');
+                  if (messagesEndRef) {
+                    messagesEndRef.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }, 100);
                 break;
               case "AI_RESPONSE_ERROR":
                 // AI 응답 오류

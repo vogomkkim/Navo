@@ -126,7 +126,7 @@ export const useIdeStore = create<IdeState>((set) => ({
   setSelectedProjectId: (projectId) => {
     set({
       selectedProjectId: projectId,
-      activeFile: null,
+      activeFile: null, // Will be set by useEffect in HomeContent
       openFiles: [],
       fileTree: null,
     });

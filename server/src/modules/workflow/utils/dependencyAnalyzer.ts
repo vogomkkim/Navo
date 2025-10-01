@@ -317,6 +317,45 @@ export class DependencyAnalyzer {
   }
 
   /**
+   * Auto-resolve circular dependencies by breaking cycles
+   */
+  static autoResolveCircularDependencies(plan: Plan): Plan {
+    const analysis = this.analyze(plan);
+
+    if (analysis.circularDependencies.length === 0) {
+      return plan; // No circular dependencies found
+    }
+
+    console.log(`[DependencyAnalyzer] Found ${analysis.circularDependencies.length} circular dependencies, attempting auto-resolution...`);
+
+    const resolvedPlan = { ...plan };
+    const resolvedSteps = [...plan.steps];
+
+    // For each circular dependency, break the cycle by removing the latest dependency
+    analysis.circularDependencies.forEach((cycle, index) => {
+      console.log(`[DependencyAnalyzer] Resolving cycle ${index + 1}: ${cycle.join(' -> ')}`);
+
+      // Find the step that creates the cycle (the last step in the cycle)
+      const cycleStepId = cycle[cycle.length - 1];
+      const cycleStepIndex = resolvedSteps.findIndex(step => step.id === cycleStepId);
+
+      if (cycleStepIndex !== -1) {
+        const cycleStep = resolvedSteps[cycleStepIndex];
+        const problematicDependency = cycle[cycle.length - 2]; // The dependency that creates the cycle
+
+        // Remove the problematic dependency
+        if (cycleStep.dependencies) {
+          cycleStep.dependencies = cycleStep.dependencies.filter(dep => dep !== problematicDependency);
+          console.log(`[DependencyAnalyzer] Removed dependency ${problematicDependency} from step ${cycleStepId}`);
+        }
+      }
+    });
+
+    resolvedPlan.steps = resolvedSteps;
+    return resolvedPlan;
+  }
+
+  /**
    * Validate plan for common issues
    */
   static validatePlan(plan: Plan): { isValid: boolean; issues: string[] } {
