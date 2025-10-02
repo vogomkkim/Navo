@@ -8,6 +8,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { fetchApi } from "@/lib/apiClient";
 import { ChatMessage, useIdeStore } from "@/store/ideStore";
 import { useWorkflowEvents } from "@/hooks/useWorkflowEvents";
+import type { WorkflowResponse } from "@/types/workflow";
 
 // --- 사용자 입력 히스토리 관리 (브라우저 콘솔 스타일) ---
 
@@ -136,13 +137,13 @@ export function useGetMessages(projectId: string | null) {
 }
 
 export function useSendMessage(
-  options?: UseMutationOptions<unknown, Error, SendMessagePayload>
+  options?: UseMutationOptions<WorkflowResponse, Error, SendMessagePayload>
 ) {
   const { token, logout, user } = useAuth();
   const queryClient = useQueryClient();
   // SSE 연결은 ChatSection에서 관리하므로 여기서는 제거
 
-  return useMutation<unknown, Error, SendMessagePayload>({
+  return useMutation<WorkflowResponse, Error, SendMessagePayload>({
     mutationFn: async (data) => {
       const projectId =
         data.projectId || useIdeStore.getState().selectedProjectId;
@@ -152,11 +153,13 @@ export function useSendMessage(
 
       const { projectId: _projectId, ...payload } = data;
       void _projectId; // 사용하지 않는 변수 명시
-      return await fetchApi(`/api/projects/${projectId}/messages`, {
+      const response = await fetchApi<WorkflowResponse>(`/api/projects/${projectId}/messages`, {
         method: "POST",
         body: JSON.stringify(payload),
         token,
       });
+
+      return response;
     },
     onMutate: async (newMessage) => {
       const projectId =

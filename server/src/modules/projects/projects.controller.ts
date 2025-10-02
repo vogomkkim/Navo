@@ -24,9 +24,9 @@ export function projectsController(app: FastifyInstance) {
           cursor,
           limit,
         });
-        
+
         app.log.info({ messagesToClient: messages }, "Sending messages to client");
-        
+
         reply.send(messages);
       } catch (error) {
         app.log.error(error, "메시지 조회 실패");
@@ -40,7 +40,7 @@ export function projectsController(app: FastifyInstance) {
     { preHandler: [app.authenticateToken] },
     async (request, reply) => {
       try {
-        const { projectId } = request.params as { projectId: string };
+        let { projectId } = request.params as { projectId: string };
         const { prompt, chatHistory, context } = request.body as {
           prompt: string;
           chatHistory: any[];
@@ -50,6 +50,22 @@ export function projectsController(app: FastifyInstance) {
 
         if (!prompt) {
           return reply.status(400).send({ error: "Prompt is required." });
+        }
+
+        // Handle "new" project creation
+        if (projectId === "new") {
+          // Create a new project first
+          const newProject = await projectsService.createProject(
+            {
+              name: `AI 프로젝트 - ${new Date().toLocaleTimeString()}`,
+              description: prompt.substring(0, 200), // Use first 200 chars as description
+              organizationId: await projectsService.getUserOrganizationId(userId),
+              requirements: prompt,
+            },
+            userId
+          );
+          projectId = newProject.id;
+          app.log.info({ projectId, userId }, "New project created from message");
         }
 
         // 1. Save user's message to DB
@@ -63,7 +79,7 @@ export function projectsController(app: FastifyInstance) {
         );
 
         // 2. Immediately trigger the workflow and return a workflow ID for tracking
-        const workflowRun = await workflowService.createAndRunWorkflow({
+        const workflowResponse = await workflowService.createAndRunWorkflow({
           projectId,
           userId,
           prompt,
@@ -71,11 +87,19 @@ export function projectsController(app: FastifyInstance) {
           context,
         });
 
-        // 3. Return the workflow run ID to the client
-        reply.status(202).send({
-          message: "Workflow started",
-          workflowRunId: workflowRun.id
-        });
+        // 3. Return the appropriate response based on the workflow decision
+        // Include projectId in all responses for new project case
+        const responseWithProjectId = {
+          ...workflowResponse,
+          projectId, // Add projectId to response
+        };
+
+        if (workflowResponse.type === 'EXECUTION_STARTED') {
+          return reply.status(202).send(responseWithProjectId);
+        } else {
+          // For PROPOSAL_REQUIRED or ERROR
+          return reply.status(200).send(responseWithProjectId);
+        }
 
       } catch (error: any) {
         app.log.error(error, "Error in workflow service");

@@ -13,6 +13,9 @@ import type {
 import { ProjectsRepositoryImpl } from './projects.repository';
 import { VfsRepositoryImpl } from './vfs.repository';
 import { ChatRepository } from './chat.repository'; // Import the new repository
+import { db } from '@/db/db.instance';
+import { usersToOrganizations } from '@/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export class ProjectsService {
   private projectsRepository: ProjectsRepositoryImpl;
@@ -138,9 +141,9 @@ export class ProjectsService {
     if (!project) {
       throw new Error('Project not found or access denied.');
     }
-    
+
     const messages = await this.chatRepository.getMessagesByProjectId(projectId, options);
-    
+
     let nextCursor: string | null = null;
     if (messages.length === options.limit) {
       nextCursor = messages[messages.length - 1].id;
@@ -198,6 +201,21 @@ export class ProjectsService {
 
   async listProjects(userId: string): Promise<Project[]> {
     return this.projectsRepository.listProjectsByUserId(userId);
+  }
+
+  async getUserOrganizationId(userId: string): Promise<string> {
+    // Get the first organization the user belongs to
+    const memberships = await db
+      .select({ organizationId: usersToOrganizations.organizationId })
+      .from(usersToOrganizations)
+      .where(eq(usersToOrganizations.userId, userId))
+      .limit(1);
+
+    if (memberships.length === 0) {
+      throw new Error(`User ${userId} is not a member of any organization`);
+    }
+
+    return memberships[0].organizationId;
   }
 
   async renameProject(

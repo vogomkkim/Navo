@@ -156,9 +156,9 @@ export interface Plan {
   steps: PlanStep[];
 
   /**
-   * Estimated total execution time
+   * Estimated total execution time in milliseconds
    */
-  estimatedDuration?: string;
+  estimatedDuration?: number;
 
   /**
    * Whether the plan can be parallelized
@@ -194,4 +194,103 @@ export interface ExecutionContext {
   // Optional contextual identifiers for tools that require project/user scope
   projectId?: string;
   userId?: string;
+}
+
+// --- New Types for Propose-and-Approve Workflow (Phase 1.1) ---
+
+/**
+ * Unified response type for all workflow-related requests.
+ * The frontend must handle each type appropriately.
+ * Design finalized in docs/plan/009_phase_1_1_api_design.md
+ */
+export type WorkflowResponse =
+  | ExecutionStartedResponse
+  | ProposalRequiredResponse
+  | ClarificationNeededResponse
+  | ErrorResponse;
+
+/**
+ * Returned when the AI decides to execute the plan immediately.
+ * The frontend should use the sseUrl to establish an SSE connection and track progress.
+ */
+export interface ExecutionStartedResponse {
+  type: 'EXECUTION_STARTED';
+  runId: string;
+  sseUrl: string;
+  planSummary: PlanSummary;
+}
+
+/**
+ * Returned when the AI determines that user approval is required before execution.
+ * The frontend should display the proposal and wait for user action.
+ */
+export interface ProposalRequiredResponse {
+  type: 'PROPOSAL_REQUIRED';
+  proposalId: string;
+  reasoning: string;
+  planSummary: PlanSummary;
+  confidence: number;
+}
+
+/**
+ * (Future) Returned when the AI needs more information from the user to proceed.
+ */
+export interface ClarificationNeededResponse {
+  type: 'CLARIFICATION_NEEDED';
+  questions: Array<{
+    id: string;
+    question: string;
+    type: 'text' | 'choice';
+    choices?: string[];
+  }>;
+  context: string;
+}
+
+/**
+ * Returned when a recoverable or fatal error occurs during the planning phase.
+ */
+export interface ErrorResponse {
+  type: 'ERROR';
+  errorCode: string;
+  message: string;
+  retryable: boolean;
+}
+
+/**
+ * A summarized, security-sanitized version of a Plan, safe to send to the frontend.
+ */
+export interface PlanSummary {
+  name: string;
+  description: string;
+  steps: Array<{
+    id: string;
+    title: string;
+    description: string;
+    tool: string;
+  }>;
+  estimatedDuration: number;
+}
+
+/**
+ * The structure of a proposal stored on the backend, including the full executable plan.
+ */
+export interface Proposal {
+  proposalId: string;
+  projectId: string;
+  userId: string;
+  plan: Plan; // The full, executable plan object
+  reasoning: string;
+  confidence: number;
+  createdAt: Date;
+  expiresAt: Date;
+}
+
+/**
+ * The expected output schema from the AI Planner, to be validated by Zod.
+ */
+export interface PlannerOutput {
+  decision: 'execute' | 'propose';
+  confidence: number;
+  reasoning: string;
+  plan: Plan;
 }

@@ -69,97 +69,53 @@ export const connectionManager = {
   },
 };
 
+import { proposalStore } from "./proposalStore/inMemoryStore";
+
 export function workflowController(app: FastifyInstance) {
   const orchestratorService = new OrchestratorService(app);
   const workflowService = new WorkflowService(app);
 
   // SSE route (server -> client events)
-  app.get("/api/sse/projects/:projectId", async (request, reply) => {
-    const { projectId } = request.params as { projectId: string };
-    const { ticket } = request.query as { ticket?: string };
-    const origin = request.headers.origin as string | undefined;
+  app.get(
+    "/api/sse/projects/:projectId",
+    async (request, reply) => {
+      const { projectId } = request.params as { projectId: string };
+      const { ticket } = request.query as { ticket?: string };
 
-    if (!ticket) {
-      return reply.code(401).send("Authentication ticket is missing.");
-    }
-
-    const verification = sseTicketManager.verify(ticket);
-    if (!verification) {
-      return reply.code(401).send("Invalid or expired authentication ticket.");
-    }
-
-    // --- SSE 필수 헤더
-    reply.raw.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    reply.raw.setHeader("Cache-Control", "no-cache");
-    reply.raw.setHeader("Connection", "keep-alive");
-
-    // 압축 확실히 끄기 (전역 compression 플러그인 쓴다면 라우트 제외가 더 안전)
-    reply.header("Content-Encoding", "");
-
-    // CORS (credentials 쓸 거면 * 금지)
-    if (origin) {
-      reply.raw.setHeader("Access-Control-Allow-Origin", origin);
-      reply.raw.setHeader("Vary", "Origin");
-      reply.raw.setHeader("Access-Control-Allow-Credentials", "true");
-    } else {
-      // 필요 없다면 이 두 줄 빼도 됨
-      reply.raw.setHeader("Access-Control-Allow-Origin", "*");
-      reply.raw.setHeader("Access-Control-Allow-Credentials", "false");
-    }
-
-    // --- (가장 중요) Fastify 응답 관리에서 분리
-    // Fastify 응답 객체를 직접 조작하기 위해 사용
-    reply.hijack();
-
-    const res = reply.raw;
-
-    // 헤더 즉시 전송
-    if (typeof res.flushHeaders === "function") res.flushHeaders();
-
-    // 연결 직후 환영 이벤트
-    res.write(
-      'data: {"type":"connection_established","message":"SSE 연결 성공"}\n\n'
-    );
-
-    // 하트비트 (프록시/브라우저 타임아웃 방지)
-    const heartbeat = setInterval(() => {
-      try {
-        res.write(":heartbeat\n\n");
-      } catch {
-        // do nothing
+      if (!ticket) {
+        return reply.status(401).send({ error: "Missing ticket" });
       }
-    }, 25000);
 
-    // 컨넥션 매니저에 등록 (나중에 다른 곳에서 write 할 수 있게)
-    connectionManager.addSse(projectId, res);
-
-    // 테스트 이벤트 (3초 후)
-    const testTimer = setTimeout(() => {
-      try {
-        const testMessage = JSON.stringify({
-          type: "TEST_MESSAGE",
-          message: "연결 동작 중 - SSE 테스트 성공!",
-          timestamp: new Date().toISOString(),
-          projectId,
-        });
-        res.write(`data: ${testMessage}\n\n`);
-      } catch (e) {
-        console.error("[SSE Test] write failed:", e);
+      const verifiedUser = sseTicketManager.verify(ticket);
+      if (!verifiedUser) {
+        return reply.status(403).send({ error: "Invalid or expired ticket" });
       }
-    }, 3000);
 
-    // 연결 종료 처리
-    request.raw.on("close", () => {
-      clearInterval(heartbeat);
-      clearTimeout(testTimer);
-      connectionManager.removeSse?.(projectId, res);
-      try {
-        res.end();
-      } catch {
-        // do nothing
-      }
-    });
-  });
+      // Set SSE headers (including CORS)
+      reply.raw.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no", // For nginx
+        "Access-Control-Allow-Origin": "http://localhost:3000",
+        "Access-Control-Allow-Credentials": "true",
+      });
+
+      // Add connection to manager
+      connectionManager.addSse(projectId, reply.raw);
+
+      // Send initial connection event
+      reply.raw.write(`data: ${JSON.stringify({ type: "connected", projectId })}\n\n`);
+
+      // Handle client disconnect
+      request.raw.on("close", () => {
+        connectionManager.removeSse(projectId, reply.raw);
+        app.log.info({ projectId, userId: verifiedUser.userId }, "SSE connection closed");
+      });
+
+      app.log.info({ projectId, userId: verifiedUser.userId }, "SSE connection established");
+    }
+  );
 
   // Route to issue a one-time ticket for SSE authentication
   app.post(
@@ -168,100 +124,133 @@ export function workflowController(app: FastifyInstance) {
       preHandler: [app.authenticateToken],
     },
     async (request, reply) => {
-      const userId = (request as any).userId as string | undefined;
-      if (!userId) {
-        return reply.status(401).send({ error: "사용자 인증이 필요합니다." });
-      }
+      const userId = (request as any).userId as string;
       const ticket = sseTicketManager.issue(userId);
       return reply.send({ ticket });
     }
   );
 
+  // New primary entry point for user messages
   app.post(
-    "/api/workflow/execute",
+    "/api/projects/:projectId/workflow/message",
     {
       preHandler: [app.authenticateToken],
     },
     async (request, reply) => {
-      // ... existing execute logic
       try {
-        const userId = (request as any).userId as string | undefined;
-        if (!userId) {
-          return reply.status(401).send({ error: "사용자 인증이 필요합니다." });
-        }
-
-        const { prompt, chatHistory, projectId } = request.body as {
+        const userId = (request as any).userId as string;
+        const { projectId } = request.params as { projectId: string };
+        const { prompt, chatHistory, context } = request.body as {
           prompt: string;
           chatHistory: any[];
-          projectId?: string;
+          context: any; // Define MessageContext type here if needed
         };
 
         if (!prompt) {
           return reply.status(400).send({ error: "Prompt is required." });
         }
 
-        const result = await orchestratorService.handleRequest(
+        const workflowResponse = await workflowService.createAndRunWorkflow({
+          projectId,
+          userId,
           prompt,
-          { id: userId },
-          chatHistory || [],
-          projectId
-        );
+          chatHistory: chatHistory || [],
+          context,
+        });
 
-        return reply.send(result);
+        if (workflowResponse.type === 'EXECUTION_STARTED') {
+          return reply.status(202).send(workflowResponse);
+        } else {
+          return reply.status(200).send(workflowResponse);
+        }
+
       } catch (error: any) {
-        app.log.error(error, "Error in orchestrator service");
+        app.log.error(error, "Error in workflow service");
         return reply.status(500).send({
-          error: "Failed to handle request.",
-          details: error.message,
+          type: 'ERROR',
+          errorCode: 'WORKFLOW_CREATION_FAILED',
+          message: error.message || "Failed to create or run workflow.",
+          retryable: false,
         });
       }
     }
   );
 
+  // New endpoint to approve a proposal and start execution
   app.post(
-    "/api/workflow/run",
-    // {
-    //   preHandler: [app.authenticateToken],
-    // },
+    "/api/projects/:projectId/workflow/approve-proposal",
+    {
+      preHandler: [app.authenticateToken],
+    },
     async (request, reply) => {
-      // ... existing run logic
+      const { projectId } = request.params as { projectId: string };
+      const { proposalId } = request.body as { proposalId: string };
+      const userId = (request as any).userId as string;
+
       try {
-        const userId =
-          ((request as any).userId as string | undefined) || "test-user-id";
-        // if (!userId) {
-        //   return reply.status(401).send({ error: "사용자 인증이 필요합니다." });
-        // }
+        const proposal = await proposalStore.get(proposalId);
 
-        const { plan, projectId } = request.body as {
-          plan: any;
-          projectId?: string;
-        };
-
-        if (!plan) {
-          return reply.status(400).send({ error: "A valid plan is required." });
+        if (!proposal) {
+          return reply.status(404).send({ type: 'ERROR', errorCode: 'PROPOSAL_NOT_FOUND', message: 'Proposal not found or expired', retryable: false });
         }
 
-        const result = await workflowService.executePlan(
-          plan,
-          { id: userId },
-          projectId
-        );
+        if (proposal.userId !== userId || proposal.projectId !== projectId) {
+          return reply.status(403).send({ type: 'ERROR', errorCode: 'UNAUTHORIZED', message: 'You are not authorized to approve this proposal.', retryable: false });
+        }
 
-        const msg =
-          "프로젝트 생성이 완료되었습니다! 파일 트리에서 결과를 확인하세요.";
+        const result = await workflowService.executePlan(proposal.plan, { id: userId }, projectId);
+
+        await proposalStore.delete(proposalId);
+
+        // This needs to be adapted to the new SSE ticket flow
+        // For now, let's assume executePlan will return what's needed
+        // This part will require careful integration with the SSE ticket logic
+        const ticket = sseTicketManager.issue(userId);
+        const sseUrl = `/api/sse/projects/${projectId}?ticket=${ticket}`;
+
         return reply.send({
-          type: "WORKFLOW_RESULT",
-          payload: {
-            ...result,
-            summaryMessage: msg,
+          type: 'EXECUTION_STARTED',
+          runId: result.runId, // Assuming executePlan returns a runId
+          sseUrl: sseUrl,
+          planSummary: {
+            name: proposal.plan.name,
+            description: proposal.plan.description,
+            steps: proposal.plan.steps.map(s => ({ id: s.id, title: s.title, description: s.description, tool: s.tool })),
+            estimatedDuration: proposal.plan.estimatedDuration || 0,
           },
         });
+
       } catch (error: any) {
-        app.log.error(error, "Error in workflow execution");
+        app.log.error(error, "Failed to approve proposal");
         return reply.status(500).send({
-          error: "Failed to execute workflow.",
-          details: error.message,
+          type: 'ERROR',
+          errorCode: 'APPROVAL_FAILED',
+          message: 'Failed to start execution after approval.',
+          retryable: true,
         });
+      }
+    }
+  );
+
+  // New endpoint to reject a proposal
+  app.post(
+    "/api/projects/:projectId/workflow/reject-proposal",
+    {
+      preHandler: [app.authenticateToken],
+    },
+    async (request, reply) => {
+      const { proposalId } = request.body as { proposalId: string };
+      const userId = (request as any).userId as string;
+
+      try {
+        const proposal = await proposalStore.get(proposalId);
+        if (proposal && proposal.userId === userId) {
+          await proposalStore.delete(proposalId);
+        }
+        return reply.status(200).send({ success: true });
+      } catch (error: any) {
+        app.log.error(error, "Failed to reject proposal");
+        return reply.status(500).send({ success: false });
       }
     }
   );

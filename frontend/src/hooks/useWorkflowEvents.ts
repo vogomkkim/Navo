@@ -181,6 +181,10 @@ export function useWorkflowEvents(projectId: string | null) {
                   error: message.error,
                 });
                 break;
+              case "connected":
+                // SSE 연결 확인 메시지
+                console.log("🔗 SSE 연결 확인:", message.projectId || "프로젝트 ID 없음");
+                break;
               case "TEST_MESSAGE":
                 // 테스트 메시지 - 개발 환경에서만 로그
                 if (process.env.NODE_ENV === "development") {

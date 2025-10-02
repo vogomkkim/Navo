@@ -209,29 +209,53 @@ ${availableTools}`;
     }
 
     prompt += `\n\n**CRITICAL RULES:**
-1. **VALID JSON ONLY:** Respond with ONLY a valid JSON object. No markdown, no code blocks, no additional text.
-2. **CORRECT JSON STRUCTURE:** Use this exact format:
+1. **LANGUAGE:** All user-facing messages (reasoning, plan names, descriptions) must be in KOREAN (한국어).
+2. **VALID JSON ONLY:** Respond with ONLY a valid JSON object. No markdown, no code blocks, no additional text.
+3. **CORRECT JSON STRUCTURE - PlannerOutput format:** Use this exact format:
 {
-  "name": "Plan Name",
-  "description": "Plan description",
-  "steps": [
-    {
-      "id": "step_id",
-      "title": "Step Title",
-      "description": "Step description",
-      "tool": "tool_name",
-      "inputs": {...},
-      "dependencies": []
-    }
-  ],
-  "estimatedDuration": 60,
-  "parallelizable": false
+  "decision": "execute",
+  "confidence": 0.9,
+  "reasoning": "요청이 명확하고 구체적이어서 즉시 실행할 수 있습니다.",
+  "plan": {
+    "name": "TODO 앱 생성",
+    "description": "간단한 TODO 앱을 HTML, CSS, JavaScript로 구현합니다.",
+    "steps": [
+      {
+        "id": "step_1",
+        "title": "프로젝트 아키텍처 생성",
+        "description": "TODO 앱의 기본 구조를 설정합니다.",
+        "tool": "tool_name",
+        "inputs": {...},
+        "dependencies": []
+      }
+    ],
+    "estimatedDuration": 60,
+    "parallelizable": false
+  }
 }
-3. **COMPLETE PLAN:** Include all necessary steps to fulfill the user's request.
-4. **CORRECT TOOL USAGE:** Use only the tools listed in AVAILABLE TOOLS.
-5. **NO CIRCULAR DEPENDENCIES:** NEVER create circular dependencies. Each step can only depend on steps that come BEFORE it in the execution order.
-6. **Execution Order:** Plan your steps in a logical, linear order. Database creation → Architecture design → File generation → Implementation.
-7. **Fallback Strategy:** If you cannot understand the user's request or find appropriate tools, create a simple plan with basic tools like \`create_vfs_file\` or \`create_vfs_directory\` rather than failing.`;
+
+**DECISION FIELD:**
+- Use "execute" if the user's request is clear, specific, and you have high confidence (>0.7)
+- Use "propose" if the request is vague, complex, or you need user confirmation (confidence <0.7)
+
+**CONFIDENCE FIELD:**
+- A number between 0 and 1 representing your confidence in understanding and fulfilling the request
+- 0.9-1.0: Very clear, straightforward request
+- 0.7-0.9: Clear request with some ambiguity
+- 0.5-0.7: Vague or complex request, recommend proposal
+- 0.0-0.5: Very unclear, definitely propose for approval
+
+**REASONING FIELD:**
+- Explain your decision (execute vs propose) and confidence score IN KOREAN
+- This will be shown directly to users, so write in clear, natural Korean
+- Mention any assumptions or clarifications needed
+- Example: "요청이 명확하고 구체적이어서 즉시 실행할 수 있습니다."
+
+4. **COMPLETE PLAN:** Include all necessary steps to fulfill the user's request. All plan fields (name, description, titles) must be in KOREAN.
+5. **CORRECT TOOL USAGE:** Use only the tools listed in AVAILABLE TOOLS.
+6. **NO CIRCULAR DEPENDENCIES:** NEVER create circular dependencies. Each step can only depend on steps that come BEFORE it in the execution order.
+7. **Execution Order:** Plan your steps in a logical, linear order. Database creation → Architecture design → File generation → Implementation.
+8. **Fallback Strategy:** If you cannot understand the user's request or find appropriate tools, create a simple plan with basic tools like \`create_vfs_file\` or \`create_vfs_directory\` rather than failing.`;
 
     return prompt;
   }

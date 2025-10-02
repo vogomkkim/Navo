@@ -24,6 +24,10 @@ import {
 import { PlanConfirmation } from "./PlanConfirmation";
 import { WorkflowProgress } from "./WorkflowProgress";
 import { useWorkflowEvents } from "@/hooks/useWorkflowEvents";
+import { useProposalHandler } from "@/hooks/useProposalHandler";
+import { ProposalCard } from "../workflow/ProposalCard";
+import type { WorkflowResponse } from "@/types/workflow";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const EmptyChatPlaceholder = () => (
@@ -61,6 +65,13 @@ export function ChatSection() {
   } = useIdeStore();
 
   const { ensureConnection } = useWorkflowEvents(selectedProjectId);
+  const {
+    activeProposal,
+    isProcessing: isProposalProcessing,
+    setActiveProposal,
+    approveProposal,
+    rejectProposal
+  } = useProposalHandler(selectedProjectId);
   const queryClient = useQueryClient();
 
   const {
@@ -139,18 +150,69 @@ export function ChatSection() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { mutate: sendMessage } = useSendMessage({
-    onSuccess: (data: any, variables) => {
+    onSuccess: (response: WorkflowResponse, variables) => {
       // Find the original 'sending' message and update its status to 'success'
       const originalMessage = messages.find((m) => m.id === variables.tempId);
       if (originalMessage) {
         updateMessage(originalMessage.id, { status: "success" });
       }
 
-      if (data.type === "PLAN_CONFIRMATION_REQUIRED") {
-        setWorkflowPlan(data.payload.plan);
+      // If response includes projectId (new project case), update selected project
+      if ((response as any).projectId && !selectedProjectId) {
+        const newProjectId = (response as any).projectId;
+        console.log('✅ New project created:', newProjectId);
+        setSelectedProjectId(newProjectId);
+        // Refresh project list
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+      }
+
+      // Handle different WorkflowResponse types
+      switch (response.type) {
+        case 'EXECUTION_STARTED':
+          console.log('✅ Workflow execution started:', response.runId);
+          // SSE will handle real-time updates
+          setWorkflowPlan(response.planSummary as any);
+          useIdeStore.setState({ workflowState: "running" });
+          break;
+
+        case 'PROPOSAL_REQUIRED':
+          console.log('📋 Proposal required:', response.proposalId);
+          setActiveProposal(response);
+          // Optionally add a message to chat
+          addMessage({
+            id: `proposal-${response.proposalId}`,
+            role: "assistant",
+            message: `AI가 작업 계획을 제안했습니다. (신뢰도: ${Math.round(response.confidence * 100)}%)`,
+            timestamp: new Date(),
+            status: "success",
+          });
+          break;
+
+        case 'CLARIFICATION_NEEDED':
+          console.log('❓ Clarification needed');
+          // Future: Handle clarification questions
+          break;
+
+        case 'ERROR':
+          console.error('❌ Workflow error:', response.errorCode);
+          addMessage({
+            id: `error-${Date.now()}`,
+            role: "assistant",
+            message: response.message,
+            timestamp: new Date(),
+            status: "error",
+          });
+          break;
+
+        default:
+          console.warn('⚠️ Unknown response type:', (response as any).type);
+      }
+
+      // Legacy: Handle old PLAN_CONFIRMATION_REQUIRED format if still present
+      if ((response as any).type === "PLAN_CONFIRMATION_REQUIRED") {
+        setWorkflowPlan((response as any).payload.plan);
         useIdeStore.setState({ workflowState: "awaiting_confirmation" });
       }
-      // The actual AI message will be added via SSE, so we don't add it here.
     },
     onError: (error, variables) => {
       const originalMessage = messages.find((m) => m.id === variables.tempId);
@@ -340,22 +402,17 @@ export function ChatSection() {
       activePreviewRoute,
     };
 
-    if (!selectedProjectId) {
-      generateProject({
-        projectName: `AI 프로젝트 - ${new Date().toLocaleTimeString()}`,
-        projectDescription: messageToSend,
-        context: messageContext,
-        tempId,
-      });
-    } else {
-      const recentHistory = messages.slice(-10);
-      sendMessage({
-        prompt: messageToSend,
-        chatHistory: recentHistory,
-        context: messageContext,
-        tempId,
-      });
-    }
+    const recentHistory = messages.slice(-10);
+
+    // 프로젝트가 없으면 "new"를 projectId로 사용
+    // 백엔드가 자동으로 프로젝트 생성 후 응답에 projectId 포함
+    sendMessage({
+      prompt: messageToSend,
+      chatHistory: recentHistory,
+      context: messageContext,
+      tempId,
+      projectId: selectedProjectId || "new", // 프로젝트가 없으면 "new" 사용
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -380,7 +437,7 @@ export function ChatSection() {
         <div ref={topOfChatRef} />
         {isLoadingMessages && !hasHistory ? (
           <div className="text-center text-gray-500">
-            대화 내역을 불러오는 중...
+            {t('chat.loading')}
           </div>
         ) : !hasHistory && !isProcessing ? (
           <EmptyChatPlaceholder />
@@ -410,7 +467,7 @@ export function ChatSection() {
                     </div>
                     {isUser && message.status === "error" && (
                       <div className="text-red-100 text-xs mt-1">
-                        오류: {message.error}
+                        {t('chat.errorPrefix')}: {message.error}
                       </div>
                     )}
                   </div>
@@ -419,6 +476,65 @@ export function ChatSection() {
             })}
           </div>
         )}
+
+        {/* Active Proposal Card */}
+        {activeProposal && (
+          <div className="mt-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
+            <ProposalCard
+              proposal={activeProposal}
+              onApprove={async (proposalId) => {
+                try {
+                  const result = await approveProposal(proposalId);
+
+                  // Handle EXECUTION_STARTED response
+                  if (result && result.type === 'EXECUTION_STARTED') {
+                    console.log('✅ Execution started after approval:', result);
+
+                    // Update workflow state
+                    setWorkflowState('running');
+                    setWorkflowPlan(result.planSummary);
+
+                    // Connect to SSE for real-time updates
+                    ensureConnection();
+
+                    // Add success message
+                    addMessage({
+                      id: `approved-${Date.now()}`,
+                      role: "assistant",
+                      message: `✅ 제안을 승인했습니다. "${result.planSummary.name}" 실행을 시작합니다.`,
+                      timestamp: new Date(),
+                      status: "success",
+                    });
+                  }
+                } catch (error) {
+                  console.error('Failed to approve proposal:', error);
+                  addMessage({
+                    id: `error-${Date.now()}`,
+                    role: "assistant",
+                    message: "제안 승인에 실패했습니다. 다시 시도해주세요.",
+                    timestamp: new Date(),
+                    status: "error",
+                  });
+                }
+              }}
+              onReject={async (proposalId) => {
+                try {
+                  await rejectProposal(proposalId);
+                  addMessage({
+                    id: `reject-${Date.now()}`,
+                    role: "assistant",
+                    message: "제안을 거절했습니다.",
+                    timestamp: new Date(),
+                    status: "success",
+                  });
+                } catch (error) {
+                  console.error('Failed to reject proposal:', error);
+                }
+              }}
+            />
+          </div>
+        )}
+
         {isProcessing &&
           messages.every(
             (m) => m.role !== "user" || m.status !== "sending"
