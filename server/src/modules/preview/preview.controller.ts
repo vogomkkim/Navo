@@ -31,9 +31,56 @@ async function getAllNodesRecursively(vfsRepository: VfsRepositoryImpl, projectI
   return allNodes;
 }
 
+// Helper function to fix asset paths in HTML content
+function fixAssetPaths(html: string, projectId: string): string {
+  // Fix <link> tags (CSS)
+  html = html.replace(
+    /<link\s+([^>]*?)href=["']([^"']+?)["']([^>]*?)>/gi,
+    (match, before, href, after) => {
+      // Skip if already absolute path or external URL
+      if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('/api/')) {
+        return match;
+      }
+      // Convert relative path to VFS endpoint
+      const fixedHref = `/api/preview/${projectId}/files/${href}`;
+      return `<link ${before}href="${fixedHref}"${after}>`;
+    }
+  );
+
+  // Fix <script> tags (JS)
+  html = html.replace(
+    /<script\s+([^>]*?)src=["']([^"']+?)["']([^>]*?)>/gi,
+    (match, before, src, after) => {
+      // Skip if already absolute path or external URL
+      if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/api/')) {
+        return match;
+      }
+      // Convert relative path to VFS endpoint
+      const fixedSrc = `/api/preview/${projectId}/files/${src}`;
+      return `<script ${before}src="${fixedSrc}"${after}>`;
+    }
+  );
+
+  // Fix <img> tags (images)
+  html = html.replace(
+    /<img\s+([^>]*?)src=["']([^"']+?)["']([^>]*?)>/gi,
+    (match, before, src, after) => {
+      // Skip if already absolute path or external URL
+      if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/api/') || src.startsWith('data:')) {
+        return match;
+      }
+      // Convert relative path to VFS endpoint
+      const fixedSrc = `/api/preview/${projectId}/files/${src}`;
+      return `<img ${before}src="${fixedSrc}"${after}>`;
+    }
+  );
+
+  return html;
+}
+
 // A very basic renderer to convert VFS nodes to an HTML page.
 // In a real application, this would be a sophisticated engine (e.g., using a virtual DOM).
-function renderToHtml(nodes: any[], targetNodeId?: string): string {
+function renderToHtml(nodes: any[], targetNodeId?: string, projectId?: string): string {
   // Reduce verbose logs to avoid leaking content
   console.log('=== renderToHtml ===', { totalNodes: nodes.length });
 
@@ -75,7 +122,12 @@ function renderToHtml(nodes: any[], targetNodeId?: string): string {
   }
 
   // Get file content and create a basic React-like preview
-  const fileContent = entryFile.content || '';
+  let fileContent = entryFile.content || '';
+
+  // If it's an HTML file, post-process to fix asset paths
+  if (entryFile.name.toLowerCase().endsWith('.html') && projectId) {
+    fileContent = fixAssetPaths(fileContent, projectId);
+  }
 
   // If it's a React component, create a basic preview
   if (entryFile.name.toLowerCase().includes('.tsx') || entryFile.name.toLowerCase().includes('.jsx')) {
@@ -159,6 +211,7 @@ function renderToHtml(nodes: any[], targetNodeId?: string): string {
 export function previewController(app: FastifyInstance) {
   const vfsRepository = new VfsRepositoryImpl(app);
 
+  // Main preview endpoint
   app.get('/api/preview/:projectId', async (request: any, reply: any) => {
     try {
       const params = request.params as any;
@@ -186,12 +239,57 @@ export function previewController(app: FastifyInstance) {
       // Debug logging
       app.log.info(`Preview request for project ${projectId}, nodeId: ${nodeId || 'default'}, nodes=${nodes.length}`);
 
-      const html = renderToHtml(nodes, nodeId);
+      const html = renderToHtml(nodes, nodeId, projectId);
 
       reply.type('text/html').send(html);
     } catch (error) {
       app.log.error(error, 'Error generating project preview');
       reply.status(500).send('Failed to generate preview.');
+    }
+  });
+
+  // Serve individual VFS files (CSS, JS, images, etc.)
+  app.get('/api/preview/:projectId/files/*', async (request: any, reply: any) => {
+    try {
+      const params = request.params as any;
+      const { projectId } = params;
+      const filePath = (request.params as any)['*']; // Get the wildcard path
+
+      app.log.info(`VFS file request: projectId=${projectId}, path=${filePath}`);
+
+      // Get all project nodes
+      const allNodes = await vfsRepository.listNodesByProject(projectId);
+
+      // Find the requested file by name
+      const fileNode = allNodes.find(node =>
+        node.nodeType === 'FILE' && node.name === filePath
+      );
+
+      if (!fileNode) {
+        app.log.warn(`File not found in VFS: ${filePath}`);
+        return reply.status(404).send(`File not found: ${filePath}`);
+      }
+
+      const content = fileNode.content || '';
+
+      // Determine content type
+      let contentType = 'text/plain';
+      if (filePath.endsWith('.css')) {
+        contentType = 'text/css';
+      } else if (filePath.endsWith('.js')) {
+        contentType = 'application/javascript';
+      } else if (filePath.endsWith('.html')) {
+        contentType = 'text/html';
+      } else if (filePath.endsWith('.json')) {
+        contentType = 'application/json';
+      } else if (filePath.match(/\.(png|jpg|jpeg|gif|svg|webp|ico)$/i)) {
+        contentType = 'image/*';
+      }
+
+      reply.type(contentType).send(content);
+    } catch (error) {
+      app.log.error(error, 'Error serving VFS file');
+      reply.status(500).send('Failed to serve file.');
     }
   });
 }
