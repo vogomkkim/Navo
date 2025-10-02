@@ -18,151 +18,157 @@ import { workflowController } from "@/modules/workflow/workflow.controller";
 import websocket from "@fastify/websocket";
 import cors from "@fastify/cors";
 
-// Fastify v4 인스턴스 생성
-const app = fastify<RawServerDefault, IncomingMessage, ServerResponse>({
-  logger: true,
-  genReqId: (req) => {
-    const header = req.headers["x-request-id"] as string | string[] | undefined;
-    const fromHeader = Array.isArray(header) ? header[0] : header;
-    return fromHeader ?? randomUUID();
-  },
-});
-
-// Register CORS for all routes, allowing localhost:3000 for development
-app.register(cors, {
-  origin: "http://localhost:3000",
-  credentials: true,
-});
-
-// Register WebSocket plugin
-app.register(websocket);
-
-// 커스텀 로거 훅 등록
-app.decorateRequest("_startTime", undefined);
-
-app.addHook("onRequest", (req, _reply, done) => {
-  const requestLogger = createRequestLogger(req.id as string);
-  req._startTime = Date.now();
-  requestLogger.info(
-    {
-      method: req.method,
-      url: req.url,
-      host: req.headers.host,
-      requestId: req.id,
+export async function buildApp(options = {}) {
+  // Fastify v4 인스턴스 생성
+  const app = fastify<RawServerDefault, IncomingMessage, ServerResponse>({
+    logger: true,
+    genReqId: (req) => {
+      const header = req.headers["x-request-id"] as string | string[] | undefined;
+      const fromHeader = Array.isArray(header) ? header[0] : header;
+      return fromHeader ?? randomUUID();
     },
-    "요청 수신"
-  );
-  done();
-});
+    ...options,
+  });
 
-// 에러 훅: 스택 포함 에러 상세 로깅
-app.addHook("onError", (req, _reply, err, done) => {
-  const requestLogger = createRequestLogger(req.id as string);
-  requestLogger.error(
-    {
-      method: req.method,
-      url: req.url,
-      err,
-    },
-    "요청 처리 중 오류"
-  );
-  done();
-});
+  // Register CORS for all routes, allowing localhost:3000 for development
+  app.register(cors, {
+    origin: "http://localhost:3000",
+    credentials: true,
+  });
 
-// 응답 바디 프리뷰 로깅 (개발 환경 전용)
-app.addHook("onSend", (req, reply, payload, done) => {
-  if (process.env.NODE_ENV === "development") {
-    try {
-      const requestLogger = createRequestLogger(req.id as string);
-      const contentType = String(reply.getHeader("content-type") || "");
-      const shouldLogBody =
-        contentType.includes("application/json") ||
-        contentType.startsWith("text/");
+  // Register WebSocket plugin
+  app.register(websocket);
 
-      let bodyPreview: string | undefined;
-      if (shouldLogBody) {
-        let text: string;
-        if (Buffer.isBuffer(payload)) {
-          text = payload.toString("utf8");
-        } else if (typeof payload === "string") {
-          text = payload;
-        } else {
-          try {
-            text = JSON.stringify(payload);
-          } catch {
-            text = String(payload);
+  // 커스텀 로거 훅 등록
+  app.decorateRequest("_startTime", undefined);
+
+  app.addHook("onRequest", (req, _reply, done) => {
+    const requestLogger = createRequestLogger(req.id as string);
+    req._startTime = Date.now();
+    requestLogger.info(
+      {
+        method: req.method,
+        url: req.url,
+        host: req.headers.host,
+        requestId: req.id,
+      },
+      "요청 수신"
+    );
+    done();
+  });
+
+  // 에러 훅: 스택 포함 에러 상세 로깅
+  app.addHook("onError", (req, _reply, err, done) => {
+    const requestLogger = createRequestLogger(req.id as string);
+    requestLogger.error(
+      {
+        method: req.method,
+        url: req.url,
+        err,
+      },
+      "요청 처리 중 오류"
+    );
+    done();
+  });
+
+  // 응답 바디 프리뷰 로깅 (개발 환경 전용)
+  app.addHook("onSend", (req, reply, payload, done) => {
+    if (process.env.NODE_ENV === "development") {
+      try {
+        const requestLogger = createRequestLogger(req.id as string);
+        const contentType = String(reply.getHeader("content-type") || "");
+        const shouldLogBody =
+          contentType.includes("application/json") ||
+          contentType.startsWith("text/");
+
+        let bodyPreview: string | undefined;
+        if (shouldLogBody) {
+          let text: string;
+          if (Buffer.isBuffer(payload)) {
+            text = payload.toString("utf8");
+          } else if (typeof payload === "string") {
+            text = payload;
+          } else {
+            try {
+              text = JSON.stringify(payload);
+            } catch {
+              text = String(payload);
+            }
           }
+          const maxLen = 2000;
+          bodyPreview =
+            text.length > maxLen
+              ? text.slice(0, maxLen) +
+                `... [추가 ${text.length - maxLen}자 생략]`
+              : text;
         }
-        const maxLen = 2000;
-        bodyPreview =
-          text.length > maxLen
-            ? text.slice(0, maxLen) +
-              `... [추가 ${text.length - maxLen}자 생략]`
-            : text;
+
+        requestLogger.info(
+          {
+            method: req.method,
+            url: req.url,
+            statusCode: reply.statusCode,
+            contentType,
+            body: bodyPreview ?? "[바디 로깅 제외]",
+          },
+          "응답 바디"
+        );
+      } catch {
+        // 로깅 중 오류는 무시
       }
-
-      requestLogger.info(
-        {
-          method: req.method,
-          url: req.url,
-          statusCode: reply.statusCode,
-          contentType,
-          body: bodyPreview ?? "[바디 로깅 제외]",
-        },
-        "응답 바디"
-      );
-    } catch {
-      // 로깅 중 오류는 무시
     }
-  }
-  done(null, payload);
-});
+    done(null, payload);
+  });
 
-app.addHook("onResponse", (req, reply, done) => {
-  const requestLogger = createRequestLogger(req.id as string);
-  const start = req._startTime;
-  const latencyMs = start ? Date.now() - start : undefined;
-  requestLogger.info(
-    {
-      method: req.method,
-      url: req.url,
-      statusCode: reply.statusCode,
-      requestId: req.id,
-      latencyMs,
-    },
-    "요청 처리 완료"
-  );
-  done();
-});
+  app.addHook("onResponse", (req, reply, done) => {
+    const requestLogger = createRequestLogger(req.id as string);
+    const start = req._startTime;
+    const latencyMs = start ? Date.now() - start : undefined;
+    requestLogger.info(
+      {
+        method: req.method,
+        url: req.url,
+        statusCode: reply.statusCode,
+        requestId: req.id,
+        latencyMs,
+      },
+      "요청 처리 완료"
+    );
+    done();
+  });
 
-// Add a preHandler hook to gracefully handle empty JSON bodies
-app.addHook("preHandler", (req, reply, done) => {
-  if (req.headers["content-type"] === "application/json" && !req.body) {
-    req.body = {};
-  }
-  done();
-});
+  // Add a preHandler hook to gracefully handle empty JSON bodies
+  app.addHook("preHandler", (req, reply, done) => {
+    if (req.headers["content-type"] === "application/json" && !req.body) {
+      req.body = {};
+    }
+    done();
+  });
 
-// 전역 에러 핸들러 등록
-errorHandler(app);
+  // 전역 에러 핸들러 등록
+  errorHandler(app);
 
-// 전역 인증 미들웨어 등록 (모듈 간 의존성 위반 방지)
-app.decorate("authenticateToken", authenticateToken);
+  // 전역 인증 미들웨어 등록 (모듈 간 의존성 위반 방지)
+  app.decorate("authenticateToken", authenticateToken);
 
-// 컨트롤러 등록
-app.register((instance) => authController(instance), { prefix: "/api/auth" });
-healthController(app);
-app.register(eventsController, { prefix: "/api" });
-projectsController(app);
-workflowController(app);
-analyticsController(app);
-previewController(app); // Register the new preview controller
-app.register((instance) => vercelController(instance), {
-  prefix: "/api/vercel",
-});
+  // 컨트롤러 등록
+  app.register((instance) => authController(instance), { prefix: "/api/auth" });
+  healthController(app);
+  app.register(eventsController, { prefix: "/api" });
+  projectsController(app);
+  workflowController(app);
+  analyticsController(app);
+  previewController(app); // Register the new preview controller
+  app.register((instance) => vercelController(instance), {
+    prefix: "/api/vercel",
+  });
+
+  return app;
+}
 
 // 서버 시작 함수
 const start = async () => {
+  const app = await buildApp();
   try {
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
     await app.listen({ port, host: "0.0.0.0" });
@@ -190,7 +196,11 @@ const start = async () => {
   }
 };
 
-start();
+// This condition allows the file to be run directly (e.g. `node server.js`)
+// but also to be imported in tests without starting the server.
+if (process.env.NODE_ENV !== 'test') {
+    start();
+}
 
 // 전역 예외/거부 처리: 파일로 즉시 기록
 const __filename = fileURLToPath(import.meta.url);

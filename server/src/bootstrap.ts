@@ -1,20 +1,13 @@
-/**
- * Bootstrap Entry Point
- * 서버 구동 전 진단 및 초기화를 담당하는 진입점
- */
-
-// Bootstrap modules
 import { bootstrapLogger } from './bootstrap/logger';
 import { setupBootstrapErrorHandlers, logBootstrapError } from './bootstrap/errorHandler';
 import { runDiagnostics } from './bootstrap/diagnostics';
+import { buildApp } from './server'; // Import the buildApp function
 
 /**
  * Bootstrap 시스템 초기화
  */
 const initializeBootstrap = () => {
-  // 전역 에러 핸들러 설정
   setupBootstrapErrorHandlers();
-
   bootstrapLogger.info('Bootstrap system initialized');
 };
 
@@ -23,17 +16,15 @@ const initializeBootstrap = () => {
  */
 export async function startServer() {
   try {
-    // Bootstrap 시스템 초기화
     initializeBootstrap();
-
-    // 진단 실행
     await runDiagnostics();
-
     bootstrapLogger.info('서버 시작 준비 완료');
 
-    // 서버 시작
-    await import('./server');
+    const app = await buildApp();
 
+    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+    await app.listen({ port, host: "0.0.0.0" });
+    
   } catch (err) {
     bootstrapLogger.error('진단 실패', err);
     logBootstrapError('[Bootstrap] 진단 실패', err);

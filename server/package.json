@@ -8,7 +8,7 @@
     "build": "tsc -p ./tsconfig.json",
     "start": "dotenvx run -o -e .env -e .env.local -- node dist/bootstrap.js",
     "lint": "eslint . --ext .ts --config ../eslint.config.js",
-    "test": "dotenvx run -o -e .env -e .env.local -- vitest",
+    "test": "dotenvx run -o -e .env -e .env.local -- npx vitest",
     "sim:gen": "tsx src/scripts/run-code-generator.ts",
     "format": "biome format --write .",
     "clean": "rmdir /s /q node_modules"
