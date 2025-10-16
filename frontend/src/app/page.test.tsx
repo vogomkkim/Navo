@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react/pure';
+import { vi } from 'vitest';
 
 import { AuthProvider } from '@/app/context/AuthContext';
 import { ComponentDefinitionProvider } from '@/app/context/ComponentDefinitionContext';
@@ -9,15 +10,15 @@ import { LayoutProvider } from '@/app/context/LayoutContext';
 import Home from './page';
 
 // Mock the API hooks to avoid actual API calls during tests
-jest.mock('@/hooks/api', () => ({
-  ...jest.requireActual('@/hooks/api'), // Import and retain default behavior
-  useListProjects: jest.fn(() => ({
+vi.mock('@/hooks/api', () => ({
+  ...vi.importActual('@/hooks/api'), // Import and retain default behavior
+  useListProjects: vi.fn(() => ({
     data: { projects: [] },
     isLoading: false,
     isError: false,
     error: null,
   })),
-  usePageLayout: jest.fn(() => ({
+  usePageLayout: vi.fn(() => ({
     data: { layout: { components: [] } },
     isLoading: false,
     isError: false,
@@ -26,32 +27,32 @@ jest.mock('@/hooks/api', () => ({
 }));
 
 // Mock next/navigation for useRouter
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(() => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    reload: jest.fn(),
-    back: jest.fn(),
-    prefetch: jest.fn(),
-    beforePopState: jest.fn(),
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    reload: vi.fn(),
+    back: vi.fn(),
+    prefetch: vi.fn(),
+    beforePopState: vi.fn(),
     events: {
-      on: jest.fn(),
-      off: jest.fn(),
-      emit: jest.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+      emit: vi.fn(),
     },
     isFallback: false,
   })),
 }));
 
 // Mock the useAuth hook to avoid actual localStorage access and redirects
-jest.mock('@/app/context/AuthContext', () => ({
-  ...jest.requireActual('@/app/context/AuthContext'),
-  useAuth: jest.fn(() => ({
+vi.mock('@/app/context/AuthContext', () => ({
+  ...vi.importActual('@/app/context/AuthContext'),
+  useAuth: vi.fn(() => ({
     isAuthenticated: true,
     user: { id: 'test-user', email: 'test@example.com', name: 'Test User' },
     token: 'test-token',
-    login: jest.fn(),
-    logout: jest.fn(),
+    login: vi.fn(),
+    logout: vi.fn(),
   })),
 }));
 

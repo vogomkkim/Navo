@@ -39,7 +39,9 @@ export async function fetchApi<T>(
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  const fullUrl = url;
+  // API base URL 설정
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
 
   if (process.env.NODE_ENV !== 'production') {
     console.log('API 호출 시작:', {

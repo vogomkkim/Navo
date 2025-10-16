@@ -113,22 +113,22 @@ export default {
 
    ```bash
    # Terminal 1: backend (Fastify)
-   npm run dev             # runs @navo/server
+   cd server && pnpm dev
 
    # Terminal 2: frontend (Next.js)
-   cd frontend && npm run dev
+   cd frontend && pnpm dev
    ```
 
 6. **Production build and start**
 
    ```bash
    # Backend
-   npm run build           # build @navo/server
-   npm start               # start @navo/server
+   cd server && pnpm build
+   cd server && pnpm start
 
    # Frontend
-   cd frontend && npm run build
-   cd frontend && npm start
+   cd frontend && pnpm build
+   cd frontend && pnpm start
    ```
 
 ## 📚 Available Scripts
@@ -136,34 +136,35 @@ export default {
 ### Root (monorepo)
 
 ```bash
-npm run dev                 # Start backend dev server (@navo/server)
-npm run build               # Build backend (@navo/server)
-npm start                   # Start backend in production (@navo/server)
+pnpm build                  # Build all workspaces
+pnpm lint                   # Lint all workspaces
+pnpm format                 # Format all workspaces
+pnpm clean                  # Clean all node_modules
 
-npm run lint                # Lint repo
-npm run format              # Format repo
+# Database operations
+pnpm db:generate            # Generate Drizzle migrations
+pnpm db:push                # Push schema to DB
+pnpm db:pull                # Introspect database
 ```
 
 ### Server workspace (`@navo/server`)
 
 ```bash
-# From repo root with workspace flag
-npm run db:generate -w @navo/server   # Generate Drizzle migrations
-npm run db:push -w @navo/server       # Push schema to DB
-npm run db:pull -w @navo/server       # Introspect database
-
-# Or inside server/
-cd server && npm run dev
-cd server && npm run build
-cd server && npm start
+cd server && pnpm dev       # Start dev server
+cd server && pnpm build     # Build server
+cd server && pnpm start     # Start production server
+cd server && pnpm test       # Run tests
+cd server && pnpm test:run   # Run tests (CI mode)
 ```
 
 ### Frontend workspace (`frontend`)
 
 ```bash
-cd frontend && npm run dev             # Next.js dev server (http://localhost:3000)
-cd frontend && npm run build
-cd frontend && npm start
+cd frontend && pnpm dev     # Next.js dev server (http://localhost:3000)
+cd frontend && pnpm build   # Build frontend
+cd frontend && pnpm start   # Start production frontend
+cd frontend && pnpm test     # Run tests
+cd frontend && pnpm test:run # Run tests (CI mode)
 ```
 
 ## 🏛️ Project Structure

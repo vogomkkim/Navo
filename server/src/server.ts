@@ -188,7 +188,7 @@ const start = async () => {
 
     // 개발 환경에서는 환경변수를 그대로 한 번 출력
     if (process.env.NODE_ENV === "development") {
-      pinoLogger.info({ env: process.env }, "개발 환경: 환경변수 전체 출력");
+      // pinoLogger.info({ env: process.env }, "개발 환경: 환경변수 전체 출력");
     }
   } catch (err) {
     pinoLogger.error(err, "서버 시작 실패");

@@ -23,8 +23,8 @@ export async function startServer() {
     const app = await buildApp();
 
     const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
-    await app.listen({ port, host: "0.0.0.0" });
-    
+    await app.listen({ port });
+
   } catch (err) {
     bootstrapLogger.error('진단 실패', err);
     logBootstrapError('[Bootstrap] 진단 실패', err);

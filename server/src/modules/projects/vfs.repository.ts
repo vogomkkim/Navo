@@ -376,10 +376,74 @@ export class VfsRepositoryImpl implements VfsRepository {
     nodeId: string;
   }): Promise<boolean> {
     return db.transaction(async (tx) => {
-      await this.ensureRootNodeExists(params.projectId, tx);
-      // ... (rest of the logic)
+      // 1. 삭제할 노드가 존재하는지 확인
+      const nodeToDelete = await tx
+        .select()
+        .from(vfsNodes)
+        .where(and(
+          eq(vfsNodes.id, params.nodeId),
+          eq(vfsNodes.projectId, params.projectId)
+        ))
+        .limit(1);
+
+      if (nodeToDelete.length === 0) {
+        this.app.log.warn(`Node ${params.nodeId} not found in project ${params.projectId}`);
+        return false;
+      }
+
+      const node = nodeToDelete[0] as VfsNode;
+
+      // 2. 루트 노드는 삭제할 수 없음
+      if (node.parentId === null) {
+        this.app.log.warn(`Cannot delete root node ${params.nodeId}`);
+        return false;
+      }
+
+      // 3. 디렉토리인 경우 하위 노드들도 모두 삭제 (재귀적 삭제)
+      if (node.nodeType === 'DIRECTORY') {
+        await this.deleteNodeRecursively(params.projectId, params.nodeId, tx);
+      }
+
+      // 4. 노드 삭제
+      await tx
+        .delete(vfsNodes)
+        .where(and(
+          eq(vfsNodes.id, params.nodeId),
+          eq(vfsNodes.projectId, params.projectId)
+        ));
+
+      this.app.log.info(`Deleted node ${params.nodeId} from project ${params.projectId}`);
       return true;
     });
+  }
+
+  private async deleteNodeRecursively(
+    projectId: string,
+    nodeId: string,
+    tx: any
+  ): Promise<void> {
+    // 하위 노드들 조회
+    const childNodes = await tx
+      .select()
+      .from(vfsNodes)
+      .where(and(
+        eq(vfsNodes.projectId, projectId),
+        eq(vfsNodes.parentId, nodeId)
+      ));
+
+    // 각 하위 노드에 대해 재귀적으로 삭제
+    for (const childNode of childNodes) {
+      if (childNode.nodeType === 'DIRECTORY') {
+        await this.deleteNodeRecursively(projectId, childNode.id, tx);
+      }
+
+      await tx
+        .delete(vfsNodes)
+        .where(and(
+          eq(vfsNodes.id, childNode.id),
+          eq(vfsNodes.projectId, projectId)
+        ));
+    }
   }
 
   async findByPath(

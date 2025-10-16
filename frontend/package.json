@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "format": "biome format --write .",
-    "test": "jest",
+    "test": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
     "clean": "rmdir /s /q node_modules"
   },
   "dependencies": {
@@ -32,20 +34,23 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/testing-library__jest-dom": "^5.14.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "@vitest/ui": "^3.2.4",
     "autoprefixer": "^10.4.21",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "class-variance-authority": "^0.7.1",
     "eslint-config-next": "15.5.0",
-    "jest-environment-jsdom": "^30.0.5",
+    "jsdom": "^27.0.0",
     "postcss": "^8.5.6",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^3.4.17",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   },
   "_comment": "✅ TAILWIND CSS v3.4.17 사용 중 - 안정적인 v3 버전으로 Vercel 빌드 호환성 확보"
 }

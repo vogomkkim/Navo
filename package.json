@@ -3,26 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "frontend",
-    "server",
-    "packages/*"
-  ],
+  "packageManager": "pnpm@10.18.3",
   "scripts": {
-    "build": "npm run -ws build",
-    "dev": "run-p dev:server dev:frontend",
-    "dev:shared": "npm -w @navo/shared run build:watch",
-    "dev:all": "run-p dev:shared dev:server dev:frontend",
-    "dev:server": "npm -w @navo/server run dev",
-    "dev:frontend": "npm -w @navo/frontend run dev",
-    "start": "npm -w @navo/server run start",
-    "lint": "npm run -ws --if-present lint",
-    "test": "npm run -ws --if-present test",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r --if-present lint",
     "format": "biome format --write .",
-    "db:generate": "npx dotenv -e .env -- npx drizzle-kit generate",
-    "db:push": "npx dotenv -e .env -- npx drizzle-kit push",
-    "db:pull": "npx drizzle-kit introspect",
-    "clean": "npm run -ws clean && rmdir /s /q node_modules"
+    "db:generate": "pnpm exec dotenv -e .env -- pnpm exec drizzle-kit generate",
+    "db:push": "pnpm exec dotenv -e .env -- pnpm exec drizzle-kit push",
+    "db:pull": "pnpm exec drizzle-kit introspect",
+    "clean": "pnpm -r clean && Remove-Item -Recurse -Force node_modules"
   },
   "engines": {
     "node": ">=20.11"
@@ -35,7 +24,6 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.34.0",
     "@next/eslint-plugin-next": "^15.5.2",
-    "@types/jest": "^30.0.0",
     "@types/node": "^24.2.1",
     "cross-env": "^10.0.0",
     "dotenv-cli": "^10.0.0",
@@ -46,7 +34,6 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "execa": "^9.6.0",
-    "jest": "^30.1.2",
     "json-schema-to-zod": "^2.6.1",
     "npm-run-all": "^4.1.5",
     "ts-node": "^10.9.2",
